@@ -268,6 +268,7 @@ function showTool(type) {
 }
 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeTool()  { document.getElementById('modalOverlay').classList.remove('open'); }
 
 function renderPasswordTool() {
   return `<div class="tool-form"><label class="tool-label">Enter password to analyze</label><input type="password" class="tool-input" id="pwInput" placeholder="Enter password..." oninput="livePasswordCheck(this.value)"><div id="pwResult"></div><button class="tool-btn" onclick="checkPassword()">Analyze Password</button><p style="font-size:10px;color:var(--text3);text-align:center">🔒 Password never sent anywhere. Analysis is 100% local.</p></div>`;
