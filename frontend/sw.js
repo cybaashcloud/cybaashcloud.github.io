@@ -83,6 +83,10 @@ self.addEventListener('fetch', event => {
   }
 
   // ── 2. JSON data files — network-first (admin may have updated them) ──────
+  // data_ai_config.json: always network, never cache — it must never serve stale
+  if (url.pathname.endsWith('data_ai_config.json')) {
+    return;  // fall through to browser default (network-only)
+  }
   if (url.pathname.endsWith('.json')) {
     event.respondWith(networkFirstWithCache(request, DATA_CACHE));
     return;

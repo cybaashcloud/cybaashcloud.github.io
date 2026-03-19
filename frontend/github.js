@@ -784,7 +784,11 @@ export async function saveSection(section, value) {
     } else if (section === '_ai_config') {
       const AI_FILE = 'frontend/data_ai_config.json'
       const sha = await fetchSha(cfg, AI_FILE)
-      await writeFile(cfg, AI_FILE, value, sha)
+      // SECURITY: strip all key fields before writing to GitHub
+      const { gemini_api_key: _k1, apiKey: _k2, key: _k3,
+              api_key: _k4, secret: _k5, token: _k6,
+              ...safeConfig } = value
+      await writeFile(cfg, AI_FILE, safeConfig, sha)
 
     }
   } catch (e) {
