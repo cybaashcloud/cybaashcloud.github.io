@@ -42,7 +42,7 @@ jobs:
       - name: Assemble _site
         run: |
           set -euo pipefail
-          mkdir -p _site/portfolio _site/admin _site/icons
+          mkdir -p _site/portfolio _site/admin _site/icons _site/cyberbot
 
           # ── Main pages ──────────────────────────────────────────────────
           cp frontend/index.html          _site/index.html
@@ -51,26 +51,26 @@ jobs:
           cp frontend/offline.html        _site/offline.html
 
           # ── CyberBot standalone page ─────────────────────────────────────
-          cp -r frontend/cyberbot _site/cyberbot
+          cp -r frontend/cyberbot/. _site/cyberbot/
 
-          # ── Chatbot widget (referenced by index.html) ───────────────────
+          # ── Chatbot widget (referenced by index.html) ────────────────────
           cp frontend/cybaash-ai.js       _site/cybaash-ai.js
           cp frontend/cybaash-ai.css      _site/cybaash-ai.css
 
-          # ── Core JS files ───────────────────────────────────────────────
+          # ── Core JS files ────────────────────────────────────────────────
           cp frontend/script.js           _site/script.js
           cp frontend/github.js           _site/github.js
           [ -f frontend/cyberbot-script.js ] && cp frontend/cyberbot-script.js _site/cyberbot-script.js || true
 
-          # ── SaaS integration (referenced by index.html) ─────────────────
+          # ── SaaS integration (referenced by index.html) ──────────────────
           cp frontend/saas-integration.js _site/saas-integration.js
 
-          # ── Portfolio assets ────────────────────────────────────────────
-          [ -f frontend/avatar.png           ] && cp frontend/avatar.png           _site/portfolio/avatar.png
-          [ -f frontend/li-logo.jpg          ] && cp frontend/li-logo.jpg          _site/portfolio/li-logo.jpg
-          [ -f frontend/project_eatpqa2f.png ] && cp frontend/project_eatpqa2f.png _site/portfolio/project_eatpqa2f.png
+          # ── Portfolio assets ─────────────────────────────────────────────
+          [ -f frontend/avatar.png           ] && cp frontend/avatar.png           _site/portfolio/avatar.png           || true
+          [ -f frontend/li-logo.jpg          ] && cp frontend/li-logo.jpg          _site/portfolio/li-logo.jpg          || true
+          [ -f frontend/project_eatpqa2f.png ] && cp frontend/project_eatpqa2f.png _site/portfolio/project_eatpqa2f.png || true
 
-          # ── Data files → portfolio/ (matches fetch paths in JS) ─────────
+          # ── Data files → portfolio/ (matches fetch paths in JS) ──────────
           for f in data_main.json \
                    data_creds_1.json \
                    data_creds_2.json \
@@ -80,10 +80,10 @@ jobs:
             [ -f "frontend/$f" ] && cp "frontend/$f" "_site/portfolio/$f" && echo "OK $f" || echo "SKIP $f"
           done
 
-          # ── Admin panel (Vite build output) ─────────────────────────────
+          # ── Admin panel (Vite build output) ──────────────────────────────
           cp -r frontend/admin/dist/. _site/admin/
 
-          # ── AI config (chatbot reads this at runtime) ────────────────────
+          # ── AI config (chatbot reads this at runtime) ─────────────────────
           # SECURITY: Validate that no API key was accidentally committed
           if [ -f frontend/data_ai_config.json ]; then
             if python3 -c "
@@ -105,23 +105,20 @@ print('OK: No API keys in data_ai_config.json')
             echo "SKIP data_ai_config.json"
           fi
 
-          # ── Chatbot terminal integration ─────────────────────────────────
+          # ── Chatbot terminal integration ──────────────────────────────────
           [ -f frontend/cybaash_chatbot.js ] && cp frontend/cybaash_chatbot.js _site/cybaash_chatbot.js && echo "OK cybaash_chatbot.js" || echo "SKIP cybaash_chatbot.js"
 
-          # ── Service worker (patched sw.js) ──────────────────────────────
-          cp frontend/sw.js _site/sw.js
-
-          # ── PWA files ───────────────────────────────────────────────────
+          # ── PWA files ────────────────────────────────────────────────────
           cp frontend/manifest.json   _site/manifest.json
           cp frontend/sw.js           _site/sw.js
           cp frontend/_headers        _site/_headers
 
-          # ── PWA icons → /icons/ (matches all HTML + manifest references) 
-          for icon in frontend/icons/*.png frontend/icons/*.ico; do
-            [ -f "$icon" ] && cp "$icon" "_site/icons/$(basename $icon)" || true
+          # ── PWA icons → /icons/ (matches all HTML + manifest references) ─
+          find frontend/icons \( -name '*.png' -o -name '*.ico' \) | while read -r icon; do
+            cp "$icon" "_site/icons/$(basename "$icon")"
           done
 
-          # ── Prevent Jekyll processing ────────────────────────────────────
+          # ── Prevent Jekyll processing ─────────────────────────────────────
           touch _site/.nojekyll
 
           echo "=== Final _site structure ==="
