@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberBot — AI Cybersecurity Assistant</title>
+<meta name="description" content="AI-powered cybersecurity assistant. Learn about vulnerabilities, secure coding, penetration testing concepts, and system hardening.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── SCAN LINE EFFECT ──────────────────────────────────────────── -->
+<div class="scanline"></div>
+<div class="noise"></div>
+
+<!-- ── HEADER ───────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z" stroke="var(--cyan)" stroke-width="1.5" fill="none"/>
+          <circle cx="12" cy="12" r="3" fill="var(--cyan)" opacity="0.8"/>
+          <path d="M12 9v6M9 12h6" stroke="var(--bg)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="logo-text">CYBER<span class="logo-accent">BOT</span></span>
+      <span class="logo-badge">AI</span>
+    </div>
+    <nav class="nav">
+      <a href="#chat" class="nav-link active">Chat</a>
+      <a href="#tools" class="nav-link">Tools</a>
+      <a href="#about" class="nav-link">About</a>
+    </nav>
+    <div class="header-status">
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status-text" id="statusText">Connecting…</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── HERO ─────────────────────────────────────────────────────── -->
+<section class="hero" id="hero">
+  <div class="hero-grid">
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-dot"></span>
+        Ethical AI · Educational Only
+      </div>
+      <h1 class="hero-title">
+        Your AI<br>
+        <span class="title-accent">Cybersecurity</span><br>
+        Assistant
+      </h1>
+      <p class="hero-desc">
+        Ask about vulnerabilities, secure coding, penetration testing methodology, cryptography, and system hardening. Powered by Gemini AI with a cybersecurity-specialized system prompt.
+      </p>
+      <div class="hero-chips">
+        <button class="chip" onclick="sendQuick('Explain SQL injection with a code example')">SQLi</button>
+        <button class="chip" onclick="sendQuick('How does XSS work and how to prevent it?')">XSS</button>
+        <button class="chip" onclick="sendQuick('How do I securely store passwords in Python?')">Passwords</button>
+        <button class="chip" onclick="sendQuick('Explain the penetration testing methodology')">Pen Testing</button>
+        <button class="chip" onclick="sendQuick('What is the OWASP Top 10?')">OWASP Top 10</button>
+        <button class="chip" onclick="sendQuick('How does a buffer overflow work?')">Buffer Overflow</button>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="terminal-preview">
+        <div class="tp-header">
+          <span class="tp-dot red"></span>
+          <span class="tp-dot yellow"></span>
+          <span class="tp-dot green"></span>
+          <span class="tp-title">cyberbot — bash</span>
+        </div>
+        <div class="tp-body" id="termPreview"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CHAT SECTION ──────────────────────────────────────────────── -->
+<section class="chat-section" id="chat">
+  <div class="chat-container">
+
+    <!-- Sidebar -->
+    <aside class="chat-sidebar">
+      <div class="sidebar-title">// SESSIONS</div>
+      <button class="new-chat-btn" onclick="newSession()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        New Session
+      </button>
+      <div class="session-list" id="sessionList"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">// QUICK ACTIONS</div>
+        <button class="qa-btn" onclick="showTool('password')">🔐 Password Check</button>
+        <button class="qa-btn" onclick="showTool('url')">🔗 URL Analyzer</button>
+        <button class="qa-btn" onclick="showTool('code')">🔍 Code Scanner</button>
+        <button class="qa-btn" onclick="showTool('file')">📁 File Upload</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">// TOPICS</div>
+        <button class="topic-btn" onclick="sendQuick('Explain SQL injection in detail with Python examples')">SQL Injection</button>
+        <button class="topic-btn" onclick="sendQuick('Explain Cross-Site Scripting (XSS) attack types')">XSS Attacks</button>
+        <button class="topic-btn" onclick="sendQuick('How does CSRF work and what are defenses?')">CSRF</button>
+        <button class="topic-btn" onclick="sendQuick('Explain buffer overflow attacks')">Buffer Overflow</button>
+        <button class="topic-btn" onclick="sendQuick('What is OWASP Top 10 for 2023?')">OWASP Top 10</button>
+        <button class="topic-btn" onclick="sendQuick('Explain JWT security best practices')">JWT Security</button>
+        <button class="topic-btn" onclick="sendQuick('What is zero trust architecture?')">Zero Trust</button>
+      </div>
+    </aside>
+
+    <!-- Main chat -->
+    <main class="chat-main">
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <div class="bot-avatar">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 1L2 4.5v4C2 11.5 4.5 14.1 8 15c3.5-.9 6-3.5 6-6.5v-4L8 1z" stroke="var(--cyan)" stroke-width="1.2" fill="none"/>
+              <circle cx="8" cy="8" r="2" fill="var(--cyan)"/>
+            </svg>
+          </div>
+          <div>
+            <div class="chat-bot-name">CyberBot</div>
+            <div class="chat-bot-sub" id="typingStatus">Ready — Ask me anything</div>
+          </div>
+        </div>
+        <button class="clear-btn" onclick="clearChat()" title="Clear conversation">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div class="messages" id="messages">
+        <!-- Welcome message injected by JS -->
+      </div>
+
+      <!-- Tool panels -->
+      <div class="tool-panel" id="toolPanel" style="display:none">
+        <div class="tool-panel-header">
+          <span id="toolTitle">Tool</span>
+          <button onclick="closeTool()" class="tool-close">✕</button>
+        </div>
+        <div id="toolContent"></div>
+      </div>
+
+      <!-- Input -->
+      <div class="chat-input-area">
+        <div class="input-flags" id="inputFlags"></div>
+        <div class="input-row">
+          <div class="input-wrapper">
+            <textarea
+              id="messageInput"
+              placeholder="Ask about vulnerabilities, secure coding, pen testing..."
+              rows="1"
+              maxlength="4000"
+            ></textarea>
+            <div class="input-actions">
+              <label class="attach-btn" title="Upload file for analysis">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 11V3M5 6l3-3 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                <input type="file" id="fileInput" accept=".txt,.log,.py,.js,.php,.html,.sh,.json,.yaml" onchange="handleFileUpload(this)" hidden>
+              </label>
+            </div>
+          </div>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 9l14-7-7 14V9H2z" fill="currentColor"/></svg>
+          </button>
+        </div>
+        <div class="input-meta">
+          <span id="charCount">0 / 4000</span>
+          <span>Model: Gemini 2.0 Flash · Educational use only</span>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ── TOOLS SECTION ─────────────────────────────────────────────── -->
+<section class="tools-section" id="tools">
+  <div class="section-header">
+    <div class="section-eyebrow">Security Tools</div>
+    <h2 class="section-title">Analyze & Detect</h2>
+    <p class="section-desc">Run security checks without sending data to the AI — all analysis happens locally.</p>
+  </div>
+  <div class="tools-grid">
+    <div class="tool-card" onclick="showTool('password')">
+      <div class="tool-card-icon">🔐</div>
+      <h3>Password Strength</h3>
+      <p>NIST SP 800-63B aligned password analysis with entropy calculation and actionable feedback.</p>
+      <span class="tool-card-cta">Check Now →</span>
+    </div>
+    <div class="tool-card" onclick="showTool('url')">
+      <div class="tool-card-icon">🔗</div>
+      <h3>URL Safety</h3>
+      <p>Detect phishing patterns, suspicious TLDs, IP-based URLs, and domain spoofing indicators.</p>
+      <span class="tool-card-cta">Analyze →</span>
+    </div>
+    <div class="tool-card" onclick="showTool('code')">
+      <div class="tool-card-icon">🔍</div>
+      <h3>Code Scanner</h3>
+      <p>Detect eval(), hardcoded secrets, insecure functions, and OWASP patterns in Python, JS, PHP.</p>
+      <span class="tool-card-cta">Scan Code →</span>
+    </div>
+    <div class="tool-card" onclick="showTool('file')">
+      <div class="tool-card-icon">📁</div>
+      <h3>File Analysis</h3>
+      <p>Upload .py, .js, .php, .txt, .log files for comprehensive security scanning.</p>
+      <span class="tool-card-cta">Upload File →</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── ABOUT SECTION ─────────────────────────────────────────────── -->
+<section class="about-section" id="about">
+  <div class="about-grid">
+    <div class="about-content">
+      <div class="section-eyebrow">About This Project</div>
+      <h2 class="section-title">Built for Security Professionals</h2>
+      <p>CyberBot is a production-ready AI assistant demonstrating the intersection of Python, FastAPI, and LLM engineering applied to cybersecurity education.</p>
+      <div class="tech-stack">
+        <div class="tech-item"><span class="tech-icon">🐍</span>Python + FastAPI</div>
+        <div class="tech-item"><span class="tech-icon">🤖</span>Google Gemini 1.5</div>
+        <div class="tech-item"><span class="tech-icon">🗄️</span>SQLite Analytics</div>
+        <div class="tech-item"><span class="tech-icon">🛡️</span>OWASP Patterns</div>
+        <div class="tech-item"><span class="tech-icon">⚡</span>Rate Limiting</div>
+        <div class="tech-item"><span class="tech-icon">📊</span>Query Analytics</div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">334+</div><div class="stat-label">Security Patterns</div></div>
+      <div class="stat-card"><div class="stat-num">5</div><div class="stat-label">Analysis Modules</div></div>
+      <div class="stat-card"><div class="stat-num">Gemini</div><div class="stat-label">AI Model</div></div>
+      <div class="stat-card"><div class="stat-num">OWASP</div><div class="stat-label">Top 10 Coverage</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-logo">CYBER<span>BOT</span></div>
+    <p>Educational AI Cybersecurity Assistant · Built by Mohamed Aasiq · <a href="https://cybaash.github.io">cybaash.github.io</a></p>
+    <p class="footer-disclaimer">⚠️ For educational purposes only. Never use these techniques against systems you don't own or have explicit permission to test.</p>
+  </div>
+</footer>
+
+<!-- ── MODAL ─────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span id="modalTitle">Tool</span>
+      <button onclick="closeModal()" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
