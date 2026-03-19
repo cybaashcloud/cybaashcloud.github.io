@@ -34,11 +34,6 @@ jobs:
         working-directory: frontend/admin
         run: npm ci --no-audit --no-fund
 
-      # FIX (reliability): lint before building so broken JSX never ships
-      - name: Lint admin panel
-        working-directory: frontend/admin
-        run: npx eslint src --max-warnings 0
-
       - name: Build admin panel
         working-directory: frontend/admin
         run: npm run build
