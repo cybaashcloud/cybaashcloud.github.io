@@ -42,7 +42,7 @@ jobs:
               --fail --silent --show-error
             echo "Render deploy hook triggered."
           else
-            echo "No RENDER_DEPLOY_HOOK_URL secret set — skipping."
+            echo "No RENDER_DEPLOY_HOOK_URL secret set -- skipping."
           fi
 
       - name: Deploy summary
@@ -52,5 +52,5 @@ jobs:
           echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Required env vars on Render" >> $GITHUB_STEP_SUMMARY
-          echo "- \`GEMINI_API_KEY\` — Google AI Studio key" >> $GITHUB_STEP_SUMMARY
-          echo "- \`CYBERBOT_API_KEY\` — Admin panel password" >> $GITHUB_STEP_SUMMARY
+          echo "- \`GEMINI_API_KEY\` -- Google AI Studio key" >> $GITHUB_STEP_SUMMARY
+          echo "- \`CYBERBOT_API_KEY\` -- Admin panel password" >> $GITHUB_STEP_SUMMARY
