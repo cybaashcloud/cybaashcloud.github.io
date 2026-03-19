@@ -48,7 +48,9 @@ app.add_middleware(
         "http://127.0.0.1:5500",
         "http://localhost:5500",
         "https://cybaash.github.io",
-        "*",   # open for demo — restrict in production
+        # FIX (critical): wildcard "*" is browser-rejected when allow_credentials=True.
+        # The browser enforces: if credentials are on, the ACAO header must be an
+        # explicit origin — not "*". Removed wildcard; add origins explicitly above.
     ],
     allow_credentials=True,
     allow_methods=["*"],

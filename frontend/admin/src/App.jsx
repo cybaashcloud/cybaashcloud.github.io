@@ -785,6 +785,11 @@ function Login({ onAuth }) {
 // ══════════════════════════════════════════════════════════════════════════
 function Dashboard({ data, lastSync, ghCfg }) {
   const creds = data.credentials || []
+  // FIX (medium): Warn before hitting the hard 420-credential storage cap so
+  // the user isn't surprised by a runtime error during save. 90% = 378.
+  const CRED_CAPACITY     = 420
+  const CRED_WARN_AT      = Math.floor(CRED_CAPACITY * 0.9)
+  const credCapacityWarn  = creds.length >= CRED_WARN_AT
   const counts = {
     skills:       data.skills?.reduce((a,c)=>a+(c.items?.length||0),0)||0,
     credentials:  creds.length,
@@ -799,7 +804,7 @@ function Dashboard({ data, lastSync, ghCfg }) {
       <div className="stat-grid">
         {[
           {label:'Skills',      value:counts.skills,       sub:'tracked'},
-          {label:'Credentials', value:counts.credentials,  sub:`${counts.credly} badges · ${counts.professional} certs · ${counts.linkedin} LinkedIn`},
+          {label:'Credentials', value:counts.credentials,  sub:`${counts.credly} badges · ${counts.professional} certs · ${counts.linkedin} LinkedIn${credCapacityWarn ? ` ⚠ ${counts.credentials}/${CRED_CAPACITY} — near capacity` : ''}`},
           {label:'Projects',    value:counts.projects,     sub:'portfolio'},
           {label:'Experience',  value:counts.experience,   sub:'positions'},
         ].map(s=>(
@@ -2341,7 +2346,12 @@ export default function App() {
 
   const lastSaveRef = useRef(null)
 
-  const handleSave = useCallback(async (section, value) => {
+  // FIX (critical): was useCallback(..., []) — empty dep array created a stale closure.
+  // setSyncState, setSyncError, setData, setLastSync, syncTimer were all captured at
+  // mount and never updated, causing saves after the first render to call stale setters
+  // and making the retry button silently no-op. Removed useCallback entirely — the
+  // function re-creates on each render but is stable enough via lastSaveRef.
+  const handleSave = async (section, value) => {
     lastSaveRef.current = { section, value }
     setSyncState('saving')
     try {
@@ -2365,14 +2375,19 @@ export default function App() {
       console.error('[Admin] Save failed:', msg)
       if (isAuthError) console.error('[Admin] TOKEN ERROR — go to Settings > Disconnect and re-enter a fresh GitHub PAT with Contents read+write permission')
     }
-  }, [])
+  }
+
+  // FIX: handleSave is now a plain async function (not useCallback), so [handleSave]
+  // dep would change every render. Use a stable ref to always call the latest version.
+  const handleSaveRef = useRef(handleSave)
+  handleSaveRef.current = handleSave
 
   const handleRetry = useCallback(() => {
     if (lastSaveRef.current) {
       const { section, value } = lastSaveRef.current
-      handleSave(section, value)
+      handleSaveRef.current(section, value)
     }
-  }, [handleSave])
+  }, [])
 
   const counts = {
     skills:      data.skills?.reduce((a,c)=>a+(c.items?.length||0),0)||0,
