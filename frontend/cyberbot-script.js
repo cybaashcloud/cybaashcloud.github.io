@@ -5,8 +5,7 @@
  */
 
 const CONFIG = {
-  geminiKey:   '',
-  geminiModel: 'gemini-2.0-flash',
+    geminiModel: 'gemini-2.0-flash',
   maxHistory:  10,
   systemPrompt: `You are CyberBot — an expert cybersecurity assistant for educational and ethical purposes.
 Explain vulnerabilities (SQLi, XSS, CSRF, buffer overflows, RCE, LFI, SSRF), teach secure coding,
@@ -35,15 +34,10 @@ async function loadGeminiConfig() {
       const r = await fetch(path + '?v=' + Date.now(), { cache: 'no-store' });
       if (!r.ok) continue;
       const c = await r.json();
-      if (c.gemini_api_key) {
-        CONFIG.geminiKey   = c.gemini_api_key;
-        CONFIG.geminiModel = c.gemini_model || CONFIG.geminiModel;
-        if (c.system_prompt) CONFIG.systemPrompt = c.system_prompt;
-        break;
-      }
+      // Key managed server-side only
     } catch { continue; }
   }
-  if (CONFIG.geminiKey) {
+  if (CONFIG.backendOk) {
     state.online = true;
     if (dot)  dot.className    = 'status-dot online';
     if (text) text.textContent = 'Online';
@@ -64,7 +58,7 @@ function initSession() {
 }
 
 async function callGemini(userMessage) {
-  if (!CONFIG.geminiKey) return localFallback(userMessage);
+  if (!CONFIG.backendOk) return localFallback(userMessage);
   chatHistory.push({ role: 'user', parts: [{ text: userMessage }] });
   if (chatHistory.length > CONFIG.maxHistory * 2) chatHistory = chatHistory.slice(-CONFIG.maxHistory * 2);
   const payload = {
@@ -78,7 +72,7 @@ async function callGemini(userMessage) {
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
     ],
   };
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.geminiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.backendOk}`;
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(30000) });
   if (r.status === 429) throw new Error('Rate limited — Gemini free tier quota reached. Wait 60 seconds and try again.');
   if (r.status === 400) throw new Error('Invalid Gemini API key. Set a valid key in Admin → Settings.');
@@ -91,8 +85,8 @@ async function callGemini(userMessage) {
 }
 
 async function callGeminiAnalyze(prompt) {
-  if (!CONFIG.geminiKey) return null;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.geminiKey}`;
+  if (!CONFIG.backendOk) return null;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.backendOk}`;
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 512 } }), signal: AbortSignal.timeout(20000) });
   if (!r.ok) return null;
   const data = await r.json();
@@ -325,7 +319,7 @@ async function checkURL() {
   const risk=score>=60?'HIGH':score>=30?'MEDIUM':'LOW';
   const color=risk==='HIGH'?'var(--red)':risk==='MEDIUM'?'var(--yellow)':'var(--green)';
   let aiInsight='';
-  if(CONFIG.geminiKey){
+  if(CONFIG.backendOk){
     try { aiInsight=await callGeminiAnalyze(`Analyze this URL for security risks in 2-3 sentences. URL: ${url}\nRespond concisely, no markdown.`)||''; } catch{}
   }
   el.innerHTML=`<div class="result-card" style="margin-top:12px"><span style="color:${color};font-family:var(--mono);font-size:12px;font-weight:bold">${risk} RISK — Score: ${Math.min(score,100)}/100</span>${flags.length?`<ul style="margin-top:10px">${flags.map(f=>`<li class="result-flag-item">⚠ ${escapeHtml(f)}</li>`).join('')}</ul>`:'<p style="font-size:11px;color:var(--green);margin-top:8px">✓ No suspicious patterns detected</p>'}${aiInsight?`<div style="margin-top:12px;padding:10px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:4px;font-size:11px;color:var(--text2);line-height:1.6">${escapeHtml(aiInsight)}</div>`:''}</div>`;
@@ -341,7 +335,7 @@ async function scanCode() {
   if(!code)return;
   const el=document.getElementById('codeResult');
   el.innerHTML='<div style="color:var(--text3);font-size:11px;margin-top:10px">Scanning…</div>';
-  if(!CONFIG.geminiKey){el.innerHTML='<div style="color:var(--yellow);font-size:11px;margin-top:10px">⚠ Set a Gemini API key in Admin → Settings to enable AI code scanning.</div>';return;}
+  if(!CONFIG.backendOk){el.innerHTML='<div style="color:var(--yellow);font-size:11px;margin-top:10px">⚠ Set a Gemini API key in Admin → Settings to enable AI code scanning.</div>';return;}
   try {
     const result=await callGeminiAnalyze(`Security scan this ${lang} code for vulnerabilities. List each issue as: SEVERITY | Line | Description | Fix. If clean say "✓ No security issues detected".\n\`\`\`${lang}\n${code.slice(0,3000)}\n\`\`\``);
     el.innerHTML=`<div class="result-card" style="margin-top:12px"><div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px">AI Security Scan — ${lang}</div><div style="font-size:12px;color:var(--text);line-height:1.7">${renderMarkdown(result||'No response')}</div></div>`;
@@ -358,7 +352,7 @@ async function analyzeUploadedFile(input){const file=input.files[0];if(file)anal
 async function analyzeFile(file,targetId){
   const el=document.getElementById(targetId);
   if(!el)return;
-  if(!CONFIG.geminiKey){el.innerHTML='<div style="color:var(--yellow);font-size:11px;margin-top:10px">⚠ Set a Gemini API key in Admin → Settings to enable file analysis.</div>';return;}
+  if(!CONFIG.backendOk){el.innerHTML='<div style="color:var(--yellow);font-size:11px;margin-top:10px">⚠ Set a Gemini API key in Admin → Settings to enable file analysis.</div>';return;}
   el.innerHTML='<div style="color:var(--text3);font-size:11px;margin-top:10px">Reading and scanning…</div>';
   try {
     const text=await file.text();
