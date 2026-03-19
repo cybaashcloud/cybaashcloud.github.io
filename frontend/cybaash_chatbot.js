@@ -485,39 +485,32 @@
     }
   }
 
-  function typewriterPrint(lineObjects, baseDelay) {
-    lineObjects.forEach(function(obj, i) {
-      setTimeout(function() { tPrint([obj]); }, i * baseDelay);
-    });
-  }
-
   function renderHumanResponse(lines, query) {
-    var opener = pick(OPENERS);
-    var followUp = pick(FOLLOW_UPS);
-    var output = [];
+    try {
+      var opener = pick(OPENERS);
+      var followUp = pick(FOLLOW_UPS);
 
-    output.push({ t: 't-sys', v: '\u2500\u2500 ' + query.slice(0, 55) + ' \u2500\u2500' });
-    output.push({ t: 't-dim', v: '' });
-    output.push({ t: 't-out', v: '  ' + opener });
-    output.push({ t: 't-dim', v: '' });
+      tPrint([{ t: 't-sys', v: '  -- ' + query.slice(0, 55) + ' --' }]);
+      tPrint([{ t: 't-dim', v: '' }]);
+      tPrint([{ t: 't-out', v: '  ' + opener }]);
+      tPrint([{ t: 't-dim', v: '' }]);
 
-    lines.forEach(function(line) {
-      if (line === '') {
-        output.push({ t: 't-dim', v: '' });
-      } else if (line.match(/^\s+[\u2192\u25cf\u2713\u2717]/)) {
-        output.push({ t: 't-out', v: line });
-      } else if (line.startsWith('  ')) {
-        output.push({ t: 't-dim', v: line });
-      } else {
-        output.push({ t: 't-out', v: line });
-      }
-    });
+      lines.forEach(function(line) {
+        if (line === '') {
+          tPrint([{ t: 't-dim', v: '' }]);
+        } else if (line.startsWith('  ')) {
+          tPrint([{ t: 't-dim', v: line }]);
+        } else {
+          tPrint([{ t: 't-out', v: line }]);
+        }
+      });
 
-    output.push({ t: 't-dim', v: '' });
-    output.push({ t: 't-dim', v: '  ' + followUp });
-    output.push({ t: 't-dim', v: '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500' });
-
-    typewriterPrint(output, 16);
+      tPrint([{ t: 't-dim', v: '' }]);
+      tPrint([{ t: 't-dim', v: '  ' + followUp }]);
+      tPrint([{ t: 't-dim', v: '--------------------------------------------' }]);
+    } catch(e) {
+      console.error('[CYBAASH Chatbot] renderHumanResponse error:', e);
+    }
   }
 
   /* ─────────────────────────────────────────────────────────────────────────
@@ -545,38 +538,36 @@
     var thinking = pick(THINKING);
     tPrint([{ t: 't-dim', v: '  ' + thinking }]);
 
-    setTimeout(function() {
-      var localLines = lookupChatbot(query);
+    var localLines = lookupChatbot(query);
 
-      if (localLines) {
-        renderHumanResponse(localLines, query);
+    if (localLines) {
+      renderHumanResponse(localLines, query);
+      return;
+    }
+
+    if (typeof GEMINI_AI !== 'undefined' && typeof GEMINI_AI.localLookup === 'function') {
+      var mainLocal = GEMINI_AI.localLookup(query.toLowerCase());
+      if (mainLocal) {
+        renderHumanResponse(mainLocal.split('\n'), query);
         return;
       }
+    }
 
-      if (typeof GEMINI_AI !== 'undefined' && typeof GEMINI_AI.localLookup === 'function') {
-        var mainLocal = GEMINI_AI.localLookup(query.toLowerCase());
-        if (mainLocal) {
-          renderHumanResponse(mainLocal.split('\n'), query);
-          return;
-        }
-      }
-
-      if (typeof GEMINI_AI !== 'undefined' && typeof GEMINI_AI.ask === 'function') {
-        tPrint([{ t: 't-dim', v: "  not in my local knowledge \u2014 asking Gemini AI..." }]);
-        GEMINI_AI.ask(query);
-      } else {
-        tPrint([
-          { t: 't-out', v: '  Hmm, I don\'t have a specific answer for "' + query + '".' },
-          { t: 't-dim', v: '' },
-          { t: 't-dim', v: '  Topics I can talk about right now:' },
-          { t: 't-dim', v: '  apt \u00b7 zero-day \u00b7 supply chain \u00b7 ransomware \u00b7 threat hunting' },
-          { t: 't-dim', v: '  honeypot \u00b7 malware analysis \u00b7 network forensics \u00b7 cloud security' },
-          { t: 't-dim', v: '  social engineering \u00b7 password cracking \u00b7 osint \u00b7 threat intel' },
-          { t: 't-dim', v: '' },
-          { t: 't-dim', v: '  Or set a Gemini key for anything else: gemini key YOUR_KEY' },
-        ]);
-      }
-    }, 380);
+    if (typeof GEMINI_AI !== 'undefined' && typeof GEMINI_AI.ask === 'function') {
+      tPrint([{ t: 't-dim', v: "  not in my local knowledge -- asking Gemini AI..." }]);
+      GEMINI_AI.ask(query);
+    } else {
+      tPrint([
+        { t: 't-out', v: "  Hmm, I don't have a specific answer for that." },
+        { t: 't-dim', v: '' },
+        { t: 't-dim', v: '  Topics I can talk about right now:' },
+        { t: 't-dim', v: '  apt, zero-day, supply chain, ransomware, threat hunting' },
+        { t: 't-dim', v: '  honeypot, malware analysis, network forensics, cloud security' },
+        { t: 't-dim', v: '  social engineering, password cracking, osint, threat intel' },
+        { t: 't-dim', v: '' },
+        { t: 't-dim', v: '  Or set a Gemini key for anything else: gemini key YOUR_KEY' },
+      ]);
+    }
   }
 
   /* ─────────────────────────────────────────────────────────────────────────
