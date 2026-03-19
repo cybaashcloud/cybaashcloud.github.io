@@ -3,11 +3,15 @@
 scripts/deploy_ai_config.py
 Called by sync.yml during GitHub Pages deploy.
 
-Does two things:
-  1. BLOCKS the deploy if any API key field contains a real value
-     (catches accidental commits of secrets).
-  2. Strips private key field names from the deployed copy so the
-     config schema is not exposed to the public on GitHub Pages.
+cybaash-ai.js is fully serverless and reads gemini_api_key directly from
+/data_ai_config.json at runtime in the browser. The key is intentionally
+stored in this public JSON file -- it is set by the user via the admin panel
+and written back to the repo. An empty key means demo mode.
+
+This script:
+  1. Checks that the file exists and is valid JSON (fast-fail on corruption).
+  2. Warns if a Gemini key is present (so you are aware it will be public).
+  3. Copies the file as-is to _site/ -- NO fields are stripped.
 """
 
 import json
@@ -17,34 +21,24 @@ import sys
 SRC  = "frontend/data_ai_config.json"
 DEST = "_site/data_ai_config.json"
 
-# Fields that must never have values committed to the repo,
-# and whose names should not appear in the public deployed copy.
-KEY_FIELDS = [
-    "gemini_api_key",
-    "apiKey",
-    "api_key",
-    "access_key",
-    "private_key",
-]
-
 if not os.path.exists(SRC):
     print("SKIP: frontend/data_ai_config.json not found")
     sys.exit(0)
 
-if not os.path.exists(DEST):
-    print("SKIP: _site/data_ai_config.json not present (not copied by Assemble step)")
-    sys.exit(0)
-
-d = json.load(open(SRC))
-
-# Block if any key field has a non-empty value
-bad = [k for k in KEY_FIELDS if d.get(k, "").strip()]
-if bad:
-    print(f"BLOCKED: data_ai_config.json contains live API key values in fields: {bad}")
-    print("Remove the key values before deploying (keys are injected at runtime by the chatbot).")
+# Validate JSON is not corrupted
+try:
+    d = json.load(open(SRC))
+except json.JSONDecodeError as e:
+    print(f"ERROR: frontend/data_ai_config.json is invalid JSON: {e}")
     sys.exit(1)
 
-# Write sanitized copy to _site -- strip field names so schema is not public
-clean = {k: v for k, v in d.items() if k not in KEY_FIELDS}
-json.dump(clean, open(DEST, "w"), indent=2)
-print(f"OK: deployed sanitized data_ai_config.json ({len(d) - len(clean)} key fields stripped)")
+# Warn (but don't block) if a Gemini key is committed
+key = d.get("gemini_api_key", "") or d.get("apiKey", "")
+if key.strip():
+    print(f"NOTE: data_ai_config.json contains a Gemini API key -- it will be public on GitHub Pages.")
+    print("      This is expected for the serverless chatbot. Rotate the key if it was leaked.")
+
+# Deploy as-is -- cybaash-ai.js needs all fields including the key
+import shutil
+shutil.copy2(SRC, DEST)
+print(f"OK: deployed data_ai_config.json ({len(d)} fields)")
