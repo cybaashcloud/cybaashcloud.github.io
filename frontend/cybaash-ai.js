@@ -34,28 +34,40 @@
   });
 
   function loadConfig() {
-    // Try the root path first (GitHub Pages serves frontend/ as root),
-    // then fall back to /portfolio/ path for legacy setups
+    // Priority 1: localStorage (set by Admin Panel - never touches git)
+    var lsKey = localStorage.getItem('cybaash_gemini_key') || '';
+    if (lsKey) {
+      cfg.key = lsKey;
+      // Also load model/prompt settings from JSON, but key is already set
+      _loadJsonSettings(function() { setStatus(true); });
+      return;
+    }
+    // Priority 2: JSON config file (fallback - key should be empty here)
+    _loadJsonSettings(function() { setStatus(!!cfg.key); });
+  }
+
+  function _loadJsonSettings(done) {
     var paths = [
       '/data_ai_config.json',
       './data_ai_config.json',
       '/portfolio/data_ai_config.json',
     ];
     function tryNext(idx) {
-      if (idx >= paths.length) { setStatus(false); return; }
+      if (idx >= paths.length) { if (done) done(); return; }
       fetch(paths[idx] + '?v=' + Date.now(), { cache: 'no-store' })
         .then(function (r) {
           if (!r.ok) { tryNext(idx + 1); return null; }
           return r.json();
         })
         .then(function (c) {
-          if (!c) return;
-          if (c.gemini_api_key) cfg.key    = c.gemini_api_key;
+          if (!c) { if (done) done(); return; }
+          // Only use key from JSON if localStorage has none
+          if (c.gemini_api_key && !cfg.key) cfg.key = c.gemini_api_key;
           if (c.gemini_model)   cfg.model  = c.gemini_model;
           if (c.max_tokens)     cfg.tokens = parseInt(c.max_tokens)    || 1024;
           if (c.temperature)    cfg.temp   = parseFloat(c.temperature) || 0.4;
           if (c.system_prompt)  cfg.prompt = c.system_prompt;
-          setStatus(!!cfg.key);
+          if (done) done();
         })
         .catch(function () { tryNext(idx + 1); });
     }

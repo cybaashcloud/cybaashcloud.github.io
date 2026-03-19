@@ -1893,14 +1893,35 @@ function GeminiConfigCard({ ghCfg }) {
   }
 
   const saveConfig = async () => {
-    if (!ghCfg?.token) { setStatus({ok:false,txt:'✗ Not connected to GitHub'}); return }
     setLoading(true); setStatus(null)
     try {
-      // Save directly to GitHub repo via existing saveSection mechanism
-      const { saveSection } = await import('./github.js')
-      // We use a custom path — save the whole form as a new section key
-      await saveSection('_ai_config', form)
-      setStatus({ok:true, txt:'✓ AI config saved to GitHub repo — chatbot will use these settings'})
+      const key = form.gemini_api_key?.trim() || ''
+
+      // SECURITY: API key is saved to localStorage ONLY — never committed to git.
+      // localStorage is shared across all pages on the same origin (cybaashcloud.github.io),
+      // so the chatbot widget on index.html picks it up instantly without a page reload.
+      if (key) {
+        localStorage.setItem('cybaash_gemini_key', key)
+      } else {
+        localStorage.removeItem('cybaash_gemini_key')
+      }
+
+      // Non-secret settings (model, tokens, prompt) are saved to GitHub repo
+      // so they persist across devices and browsers.
+      if (ghCfg?.token) {
+        const { saveSection } = await import('./github.js')
+        const nonSecretForm = { ...form, gemini_api_key: '', apiKey: '' }
+        await saveSection('_ai_config', nonSecretForm)
+        setStatus({ok:true, txt: key
+          ? '✓ API key saved to this browser. Model/prompt settings synced to GitHub.'
+          : '✓ Settings saved. API key cleared from this browser.'
+        })
+      } else {
+        setStatus({ok:true, txt: key
+          ? '✓ API key saved to this browser (connect GitHub to sync other settings).'
+          : '✓ API key cleared from this browser.'
+        })
+      }
     } catch (e) {
       setStatus({ok:false, txt:`✗ Save failed: ${e.message}`})
     }
@@ -1982,7 +2003,7 @@ function GeminiConfigCard({ ghCfg }) {
       )}
 
       <div style={{fontSize:9,color:'var(--tx3)',marginBottom:14,letterSpacing:1,lineHeight:1.6}}>
-        Stored in your GitHub repo as <code style={{color:'var(--blue)'}}>frontend/data_ai_config.json</code>.
+        Saved to <strong>this browser only</strong> (never committed to git). Model and prompt settings sync to GitHub.
         The chatbot reads this file at runtime — no backend required.
       </div>
 

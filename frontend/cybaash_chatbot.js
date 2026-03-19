@@ -610,12 +610,13 @@
       return;
     }
 
-    defCmd('ask', function(args) { handleAsk(args); });
-    defCmd('chatbot', function(args) { handleChatbot(args); });
+    defCmd('ask', function(args) { handleAsk(Array.isArray(args) ? args.join(' ') : (args || '')); });
+    defCmd('chatbot', function(args) { handleChatbot(Array.isArray(args) ? args.join(' ') : (args || '')); });
 
     if (typeof TERM_COMMANDS !== 'undefined') {
       var existingAi = TERM_COMMANDS['ai'];
       defCmd('ai', function(args) {
+        args = Array.isArray(args) ? args.join(' ') : (args || '');
         if (!args || !args.trim()) {
           if (typeof existingAi === 'function') existingAi(args);
           else handleChatbot('');
