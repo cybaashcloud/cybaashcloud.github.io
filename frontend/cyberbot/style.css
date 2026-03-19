@@ -266,3 +266,154 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); font
   .nav-link { padding: 6px 8px; font-size: 11px; }
   .header { padding: 0 14px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CYBERBOT — MOBILE FEATURE PARITY PATCH
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Safe area + base */
+:root {
+  --sai-top:    env(safe-area-inset-top, 0px);
+  --sai-bottom: env(safe-area-inset-bottom, 0px);
+  --sai-left:   env(safe-area-inset-left, 0px);
+  --sai-right:  env(safe-area-inset-right, 0px);
+}
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+*, *::before, *::after { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+/* Header — safe area */
+.header {
+  padding-left:  max(24px, var(--sai-left));
+  padding-right: max(24px, var(--sai-right));
+  padding-top:   max(0px, var(--sai-top));
+}
+
+/* iOS input zoom fix */
+#messageInput,
+.tool-input,
+.tool-textarea,
+input[type="text"],
+input[type="search"],
+textarea {
+  font-size: max(16px, 13px) !important;
+}
+
+/* Chat input area — safe area above home bar */
+.chat-input-area {
+  padding-bottom: max(14px, calc(var(--sai-bottom) + 10px));
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+/* Send button — proper touch target */
+.send-btn {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  touch-action: manipulation;
+}
+
+/* Hero chips — touch targets */
+.chip {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  touch-action: manipulation;
+}
+
+/* Nav links — touch targets */
+.nav-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  touch-action: manipulation;
+}
+
+/* Sidebar quick action buttons */
+.qa-btn, .topic-btn, .new-chat-btn {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Modal — bottom sheet on mobile */
+@media (max-width: 768px) {
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 92dvh !important;
+    padding-bottom: max(0px, var(--sai-bottom));
+  }
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 36px; height: 3px;
+    background: rgba(0,212,255,.25);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .modal-body { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+}
+
+/* Tool cards — touch feedback */
+@media (hover: none) and (pointer: coarse) {
+  .tool-card:hover { transform: none; box-shadow: none; }
+  .tool-card:active { transform: scale(.98); opacity: .9; }
+  .chip:hover { transform: none; }
+  .chip:active { opacity: .8; }
+}
+
+/* Scrollable messages */
+.messages {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Message bubbles — don't get too wide on mobile */
+@media (max-width: 480px) {
+  .msg-content { max-width: 92%; }
+  .msg-bubble  { font-size: 13px; line-height: 1.65; padding: 10px 13px; }
+  /* Hero chips scroll horizontally on tiny screens */
+  .hero-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 8px, #000 calc(100% - 8px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 8px, #000 calc(100% - 8px), transparent 100%);
+  }
+  .hero-chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; }
+  /* Tool panel full width */
+  .tool-panel { padding: 12px 14px; }
+  .tool-input, .tool-textarea { font-size: 16px !important; }
+  .tool-btn { min-height: 44px; }
+}
+
+/* Sidebar hidden on mobile — show quick actions in header instead */
+@media (max-width: 768px) {
+  /* Chat sidebar already display:none at 768px */
+  /* Compensate by showing topic chips in hero */
+  .hero-chips { flex-wrap: wrap; }
+
+  /* Footer safe area */
+  .footer {
+    padding-bottom: max(28px, calc(var(--sai-bottom) + 20px));
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

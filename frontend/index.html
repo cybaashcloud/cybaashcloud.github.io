@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CYBAASH // Autonomous Cyber Range</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
@@ -1647,6 +1647,926 @@ body.attacker-mode #attackerBadge { display: block; }
 @keyframes atkBadgePulse {
   0%,100%{ box-shadow: 0 0 10px rgba(255,34,68,.3); }
   50%    { box-shadow: 0 0 25px rgba(255,34,68,.6); }
+}
+
+
+
+/* ═══ HEADER MOBILE FIX — always-visible action buttons ═══ */
+
+/* At ≤860px the header-stats hides everything including
+   TERMINAL and RECRUITER VIEW buttons. We fix this by
+   showing a dedicated sticky action bar below the header
+   that is ALWAYS visible on any screen < 900px wide,
+   regardless of touch/hover media query. */
+
+@media (max-width: 900px) {
+  /* Show only the 3 critical action buttons inline in header */
+  .header-stats { display: flex !important; gap: 6px !important; }
+  /* Hide the stat pills — only show action buttons */
+  .header-stats .stat-pill   { display: none !important; }
+  /* Show these 3 action buttons always */
+  .header-stats .btn-red,
+  .header-stats .btn-green,
+  #termToggleBtn,
+  #cybaash-nav-btn {
+    display: inline-flex !important;
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Very small screens: stack logo + buttons */
+  .header {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .logo { font-size: 13px !important; letter-spacing: 1px !important; }
+  .logo > span:last-child { display: none; }
+  .header-stats {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  .header-stats .btn-red,
+  .header-stats .btn-green,
+  #termToggleBtn,
+  #cybaash-nav-btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 8px;
+    padding: 6px 8px;
+    min-height: 36px;
+  }
+}
+
+/* Also ensure the terminal overlay itself is reachable */
+#termOverlay {
+  z-index: 9000 !important;
+}
+/* Terminal open state on mobile — full width */
+@media (max-width: 768px) {
+  #termOverlay.term-open {
+    transform: translateY(0) !important;
+    height: clamp(260px, 50vh, 55vh) !important;
+    border-radius: 12px 12px 0 0;
+  }
+  /* Input row stays above keyboard */
+  .term-input-row {
+    position: sticky;
+    bottom: 0;
+    background: rgba(2,6,10,.98);
+    padding: 8px 12px max(8px, env(safe-area-inset-bottom)) 12px;
+    z-index: 2;
+  }
+  #termInput {
+    font-size: 16px !important;
+    min-height: 44px;
+    -webkit-appearance: none;
+    border-radius: 2px;
+  }
+}
+/* ═══════════════════════════════════════════════════════ */
+
+/* === MOBILE PATCH === */
+/* ═══════════════════════════════════════════════════════════════════
+   CYBAASH · MOBILE PATCH FOR CYBER RANGE (index.html)
+   Targets the inline CSS in the Autonomous Cyber Range interface
+   Add <link rel="stylesheet" href="mobile-patch.css"> in index.html
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── iOS/Android Safe Area Support ─────────────────────────────── */
+:root {
+  --sai-top:    env(safe-area-inset-top, 0px);
+  --sai-right:  env(safe-area-inset-right, 0px);
+  --sai-bottom: env(safe-area-inset-bottom, 0px);
+  --sai-left:   env(safe-area-inset-left, 0px);
+}
+
+/* ── DISABLE CUSTOM CURSOR ON TOUCH DEVICES ─────────────────────
+   The cyber range has a custom CSS cursor (cursor: none) that breaks
+   usability on touch devices. Restore default on touch.
+   ─────────────────────────────────────────────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  *, *::before, *::after {
+    cursor: auto !important;
+  }
+  a, button, [role="button"], select, input, textarea, .tab, .btn,
+  .phase-cell, .panel-title, .decision-box, .scenario-card,
+  .skill-bar-row, .cmd-item, .rp-ev {
+    cursor: pointer !important;
+  }
+  /* Hide cursor overlay elements entirely on touch */
+  #cyb-cursor,
+  #cyb-cursor-ring {
+    display: none !important;
+  }
+}
+
+/* ── HEADER (Cyber Range) ───────────────────────────────────────── */
+.header {
+  padding-left: max(14px, var(--sai-left));
+  padding-right: max(14px, var(--sai-right));
+  padding-top: max(10px, var(--sai-top));
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: max(10px, var(--sai-top)) max(12px, var(--sai-right)) 10px max(12px, var(--sai-left));
+    gap: 8px;
+    min-height: 52px;
+  }
+  .logo {
+    font-size: clamp(13px, 4vw, 16px);
+    letter-spacing: clamp(1px, .5vw, 3px);
+  }
+  /* Hide complex stats, show compact version */
+  .header-stats {
+    display: none;
+  }
+  /* Ensure header doesn't wrap badly */
+  .header > * { flex-shrink: 0; }
+}
+
+@media (max-width: 480px) {
+  .logo { font-size: 13px; letter-spacing: 1px; }
+  .logo small { display: none; }
+}
+
+/* ── TABS (horizontal scroll, touch-momentum) ────────────────────
+   Existing code does this but we enhance for premium feel.
+   ─────────────────────────────────────────────────────────────── */
+.tabs {
+  /* Already handles overflow-x: auto, we add smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  /* Fade edges to indicate scrollability */
+  -webkit-mask-image: linear-gradient(to right, transparent 0px, #000 12px, #000 calc(100% - 12px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0px, #000 12px, #000 calc(100% - 12px), transparent 100%);
+}
+
+@media (max-width: 768px) {
+  .tabs {
+    padding: 0 8px;
+  }
+  .tab {
+    padding: 0 10px;
+    min-height: 44px;
+    min-width: 44px;
+    display: flex; align-items: center;
+    font-size: clamp(9px, 2.2vw, 11px);
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+}
+
+/* ── MAIN LAYOUT (3-panel → single column on mobile) ─────────────
+   The existing code handles this. We add scroll improvements.
+   ─────────────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .main {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+    /* Extra space at bottom for iOS home bar */
+    padding-bottom: var(--sai-bottom);
+  }
+  .panel {
+    border-right: none !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border);
+  }
+  /* All panels visible */
+  .panel:last-child { display: block !important; }
+  .center { min-height: 45vh; }
+}
+
+/* ── PANEL TITLES — Touch-friendly collapse toggles ──────────────*/
+@media (max-width: 768px) {
+  .panel-title {
+    min-height: 44px;
+    cursor: pointer;
+    display: flex; align-items: center;
+    justify-content: space-between;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .panel-title:active { background: rgba(0,212,255,.05); }
+}
+
+/* ── BUTTONS — Touch targets ─────────────────────────────────────*/
+@media (max-width: 768px) {
+  .btn {
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+  }
+  .controls {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Stack control buttons on very small screens */
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .btn { width: 100%; justify-content: center; font-size: 9px; }
+}
+
+/* ── PHASE BAR — Touch-friendly ──────────────────────────────────*/
+@media (max-width: 768px) {
+  .phase-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .phase-cell {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    text-align: center;
+    padding: 4px;
+    touch-action: manipulation;
+  }
+}
+
+/* ── TERMINAL OVERLAY — Mobile optimization ──────────────────────*/
+#termOverlay {
+  /* Support iOS safe area at bottom */
+  padding-bottom: var(--sai-bottom);
+}
+
+@media (max-width: 768px) {
+  #termOverlay {
+    height: 50vh !important;
+    max-height: 60vh;
+    /* Slide from bottom feels natural on mobile */
+    border-radius: 16px 16px 0 0;
+    /* Handle safe area for iPhones with home indicator */
+    padding-bottom: max(4px, var(--sai-bottom));
+  }
+
+  /* Drag handle for terminal resize */
+  .term-titlebar {
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+  
+  /* Larger touch dots */
+  .term-dot { width: 12px; height: 12px; }
+
+  /* Input row */
+  .term-input-row {
+    padding: clamp(8px, 2vw, 10px) clamp(10px, 2.5vw, 14px);
+    /* Give room above keyboard */
+    padding-bottom: max(8px, var(--sai-bottom));
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  #termInput {
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+  
+  /* Terminal output */
+  #termOutput {
+    font-size: 11px;
+    padding: 8px 12px 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .term-line { font-size: 11px; }
+}
+
+/* ── NETWORK CANVAS ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  #netContainer,
+  #netCanvas {
+    height: clamp(180px, 35vw, 260px) !important;
+    width: 100% !important;
+    touch-action: pan-y pinch-zoom;
+  }
+}
+
+/* ── SCORE GRID ──────────────────────────────────────────────────*/
+@media (max-width: 768px) {
+  .score-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+    padding: 10px 12px 12px;
+  }
+  .score-val { font-size: clamp(16px, 5vw, 22px) !important; }
+  .score-label { font-size: 7px; }
+}
+
+/* ── MODALS — Full-screen on small devices ───────────────────────*/
+@media (max-width: 640px) {
+  .modal {
+    width: 95vw !important;
+    max-height: 85vh !important;
+    max-width: none !important;
+    margin: 0 auto;
+    border-radius: 8px !important;
+  }
+  .modal-body { padding: clamp(12px, 3vw, 20px) !important; }
+  .modal-title { font-size: clamp(12px, 3vw, 14px) !important; }
+}
+
+/* ── COMMAND PALETTE — Mobile optimized ─────────────────────────*/
+@media (max-width: 768px) {
+  #cmdPalette { padding-top: 8vh; align-items: flex-start; }
+  #cmdBox {
+    width: 96vw;
+    max-height: 75vh;
+    border-radius: 8px;
+    margin-top: max(0px, var(--sai-top));
+  }
+  #cmdSearch {
+    font-size: 16px !important; /* Prevent iOS zoom */
+    min-height: 52px;
+    padding: 14px 16px;
+  }
+  .cmd-item { 
+    min-height: 52px;
+    padding: 12px 16px;
+    touch-action: manipulation;
+  }
+  .cmd-label { font-size: 13px; }
+  .cmd-key { font-size: 10px; min-width: 60px; }
+}
+
+/* ── SCENARIO & SKILL GRIDS ─────────────────────────────────────*/
+@media (max-width: 768px) {
+  .scenario-grid, .sc-grid,
+  .whatif-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .scenario-card { padding: 12px; }
+  .scenario-title { font-size: 12px; }
+  
+  /* What-if sliders */
+  .whatif-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .whatif-row input[type=range] {
+    width: 100%;
+    height: 4px;
+    /* Larger touch target */
+    padding: 12px 0;
+    cursor: pointer;
+  }
+}
+
+/* ── EVENT LOG — Readable on mobile ─────────────────────────────*/
+@media (max-width: 768px) {
+  #eventLog { height: auto !important; max-height: 200px; }
+  .event-item {
+    padding: 6px 10px;
+    font-size: 10px;
+    gap: 6px;
+  }
+  .event-time { font-size: 9px; }
+  .event-type { min-width: 40px; font-size: 9px; }
+}
+
+/* ── GRAPH CANVAS ────────────────────────────────────────────────*/
+@media (max-width: 768px) {
+  #graphCanvas { height: clamp(240px, 50vw, 360px) !important; }
+}
+
+/* ── ATTACKER MODE BADGE ─────────────────────────────────────────*/
+#attackerBadge {
+  /* Ensure it doesn't hide behind notch */
+  top: max(0px, var(--sai-top));
+}
+
+/* ── ALERT BANNER ────────────────────────────────────────────────*/
+#alertBanner {
+  padding-left: max(16px, var(--sai-left));
+  padding-right: max(16px, var(--sai-right));
+}
+
+/* ── GLOBAL OVERFLOW FIX ─────────────────────────────────────────*/
+@media (max-width: 768px) {
+  /* Ensure no horizontal scroll */
+  .main, .panel, .center, #leftPanel, #rightPanel {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  /* All tables scroll horizontally */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  
+  /* Fix inline flex rows wrapping on mobile */
+  [style*="display:flex"],
+  [style*="display: flex"] {
+    flex-wrap: wrap;
+  }
+
+  /* Fix grids with 2+ columns on mobile */
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"],
+  [style*="grid-template-columns:repeat(2"],
+  [style*="grid-template-columns:repeat(3"],
+  [style*="grid-template-columns:repeat(4"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Allow 2-col on landscape mobile */
+  @media (min-width: 480px) {
+    [style*="grid-template-columns:1fr 1fr"],
+    [style*="grid-template-columns: 1fr 1fr"] {
+      grid-template-columns: 1fr 1fr !important;
+    }
+  }
+  
+  /* Fix fixed-width containers */
+  [style*="width:"] { max-width: 100% !important; }
+}
+
+/* ── REPLAY / DECISIONS / KNOWLEDGE GRAPH ───────────────────────*/
+@media (max-width: 768px) {
+  .rp-stat-n { font-size: 14px; }
+  .decision-row { flex-direction: column; gap: 4px; padding: 8px 10px; }
+  .decision-box { margin: 6px 10px; padding: 8px 10px; }
+  .decision-action { font-size: 10px; }
+  .decision-reason { font-size: 11px; }
+}
+
+/* ── SCORE RING ──────────────────────────────────────────────────*/
+@media (max-width: 480px) {
+  .score-ring-container svg { 
+    width: clamp(120px, 40vw, 180px) !important;
+    height: clamp(120px, 40vw, 180px) !important;
+  }
+}
+
+/* ── SKILL BAR ROWS ──────────────────────────────────────────────*/
+@media (max-width: 480px) {
+  .skill-bar-row {
+    padding: 5px 10px;
+  }
+  .skill-name { font-size: 9px; width: 70px; }
+  .skill-count { font-size: 9px; }
+}
+
+/* ── REDUCED MOTION support for range animations ─────────────────*/
+@media (prefers-reduced-motion: reduce) {
+  .ring, .ring-1, .ring-2, .ring-3 { animation: none !important; }
+  .pulse-dot { animation: none !important; }
+  .tab.active, .btn:hover { transition: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CYBAASH · MOBILE FEATURES CSS
+   Styles for UI elements injected by mobile-features.js
+   Add to ALL pages: <link rel="stylesheet" href="mobile-features.css">
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --touch-min:  44px;
+  --sai-bottom: env(safe-area-inset-bottom, 0px);
+  --sai-left:   env(safe-area-inset-left, 0px);
+}
+
+/* ── 1. NETWORK CANVAS TOOLTIP — tap-friendly ─────────────────── */
+#tooltip {
+  /* Position tooltip safely on mobile (won't get cut off) */
+  max-width: min(260px, 80vw);
+  z-index: 9000;
+  /* Allow tapping tooltip to dismiss */
+  pointer-events: auto;
+}
+@media (max-width: 768px) {
+  #tooltip {
+    font-size: 11px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.6);
+  }
+}
+
+/* ── 2. KNOWLEDGE GRAPH CANVAS ───────────────────────────────── */
+@media (max-width: 768px) {
+  #kgCanvas {
+    touch-action: none;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  /* Hint text for mobile users */
+  #kgCanvas::after {
+    content: 'Drag to pan · Double-tap to reset';
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: rgba(90,122,154,.6);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+}
+
+/* ── 3. TERMINAL — Mobile enhancements ───────────────────────── */
+@media (max-width: 768px) {
+  #termOverlay {
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 40px rgba(0,0,0,.6);
+  }
+  /* Drag handle indicator */
+  .term-titlebar::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 3px;
+    background: rgba(0,212,255,.25);
+    border-radius: 2px;
+  }
+  .term-titlebar {
+    position: relative;
+    padding-top: 14px;
+  }
+}
+
+/* ── 4. TERMINAL SEND BUTTON (injected by JS) ─────────────────── */
+#termSendBtn {
+  /* shown only on touch via inline style in JS */
+  transition: background .15s, transform .1s;
+}
+#termSendBtn:active {
+  background: rgba(0,255,136,.22) !important;
+  transform: scale(.93);
+}
+
+/* ── 5. COMMAND PALETTE MOBILE FAB (injected by JS) ──────────── */
+#mobilePaletteBtn {
+  /* Base styles set in JS; animation here */
+  animation: fabEntrance .4s ease .8s both;
+}
+#mobilePaletteBtn:active {
+  transform: scale(.9) !important;
+  background: rgba(0,212,255,.22) !important;
+}
+@keyframes fabEntrance {
+  from { opacity: 0; transform: translateY(10px) scale(.8); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── 6. MOBILE HEADER ACTION STRIP (injected by JS) ──────────── */
+#mobileHeaderActions {
+  scrollbar-width: none;
+}
+#mobileHeaderActions::-webkit-scrollbar { display: none; }
+#mobileHeaderActions .btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+
+/* ── 7. SLIDER VALUE BUBBLES (injected by JS) ─────────────────── */
+.slider-value-bubble {
+  transition: color .15s;
+}
+
+/* ── 8. RANGE SLIDER TOUCH TARGETS ───────────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  input[type="range"] {
+    /* Tall touch target */
+    height: 28px;
+    cursor: pointer;
+    /* Remove default appearance for consistent styling */
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border, #1a3a5c);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--blue, #00d4ff);
+    box-shadow: 0 0 8px rgba(0,212,255,.4);
+    margin-top: -10px;
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border, #1a3a5c);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--blue, #00d4ff);
+    border: none;
+    box-shadow: 0 0 8px rgba(0,212,255,.4);
+    cursor: pointer;
+  }
+  /* Replay slider — purple accent */
+  #rpSlider::-webkit-slider-thumb {
+    background: var(--purple, #aa44ff);
+    box-shadow: 0 0 8px rgba(170,68,255,.4);
+  }
+  #rpSlider::-moz-range-thumb {
+    background: var(--purple, #aa44ff);
+  }
+}
+
+/* ── 9. WHAT-IF ROWS — Touch layout ──────────────────────────── */
+@media (max-width: 768px) {
+  .whatif-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .whatif-row .whatif-label {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+  }
+  .whatif-row input[type="range"] {
+    width: 100%;
+  }
+  .whatif-val {
+    font-size: 11px;
+  }
+}
+
+/* ── 10. PHASE BAR — Touch-friendly ──────────────────────────── */
+@media (max-width: 768px) {
+  .phase-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+  }
+  .phase-cell {
+    min-height: var(--touch-min);
+    font-size: clamp(7px, 1.8vw, 9px);
+    padding: 4px 2px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    cursor: pointer;
+    letter-spacing: .5px;
+  }
+}
+
+/* ── 11. MODAL — Swipe-down indicator ────────────────────────── */
+@media (max-width: 768px) {
+  .modal {
+    position: relative;
+  }
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 3px;
+    background: rgba(0,212,255,.25);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  /* Ensure modal has scroll room for swipe gesture */
+  .modal-body {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── 12. CYBAASH AI PANEL — Mobile fullscreen ─────────────────── */
+@media (max-width: 768px) {
+  #cybaash-ai-panel {
+    border-radius: 0 !important;
+    max-height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #cybaash-ai-overlay {
+    padding: 0 !important;
+  }
+  .cyb-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: inherit;
+  }
+  .cyb-close {
+    min-height: var(--touch-min);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    touch-action: manipulation;
+  }
+  .cyb-suggestions {
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    gap: 8px;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .cyb-suggestions::-webkit-scrollbar { display: none; }
+  .cyb-sug-btn {
+    flex-shrink: 0;
+    min-height: var(--touch-min);
+    white-space: nowrap;
+    touch-action: manipulation;
+  }
+  .cyb-tools {
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    gap: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .cyb-tools::-webkit-scrollbar { display: none; }
+  .cyb-tool-tab {
+    flex-shrink: 0;
+    min-height: var(--touch-min);
+    padding: 8px 12px;
+    touch-action: manipulation;
+    font-size: 10px;
+  }
+  /* Chat input area */
+  .cyb-input-row {
+    position: sticky;
+    bottom: max(0px, var(--sai-bottom));
+    background: inherit;
+  }
+  #cybaash-chat-input {
+    font-size: 16px !important;
+    min-height: var(--touch-min);
+  }
+}
+
+/* ── 13. SCORE RING ───────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .score-ring-container {
+    overflow: hidden;
+  }
+  .score-ring-container svg {
+    max-width: min(180px, 50vw);
+    height: auto;
+  }
+}
+
+/* ── 14. RECRUITER MODE PANEL ─────────────────────────────────── */
+@media (max-width: 768px) {
+  #recruiterMode {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .recruiter-close {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    min-height: var(--touch-min);
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--bg2, #060f18);
+    touch-action: manipulation;
+  }
+  .recruiter-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .recruiter-card {
+    padding: 16px;
+  }
+}
+
+/* ── 15. SCAN LINE EFFECT — Reduce on mobile for perf ─────────── */
+@media (max-width: 768px) {
+  body::before {
+    /* Lighter scanlines on mobile = better performance */
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,.015) 3px,
+      rgba(0,0,0,.015) 6px
+    ) !important;
+  }
+}
+
+/* ── 16. DECISION ENGINE BOXES ────────────────────────────────── */
+@media (max-width: 768px) {
+  .decision-box {
+    margin: 6px 10px;
+    padding: 9px 11px;
+    touch-action: manipulation;
+  }
+  .decision-action { font-size: clamp(9px, 2.5vw, 11px); }
+  .decision-reason { font-size: clamp(10px, 2.8vw, 12px); line-height: 1.55; }
+  .decision-outcome { font-size: clamp(9px, 2.4vw, 10px); }
+}
+
+/* ── 17. SCENARIO CARDS ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .scenario-card {
+    padding: clamp(10px, 3vw, 14px);
+    touch-action: manipulation;
+  }
+  .scenario-title { font-size: clamp(11px, 3vw, 13px); }
+  .tag { font-size: 7px; padding: 2px 5px; }
+}
+
+/* ── 18. GLOBAL — Touch-active feedback for all clickable items ─ */
+@media (hover: none) and (pointer: coarse) {
+  .tab:active,
+  .btn:active,
+  .filter-btn:active,
+  .phase-cell:active,
+  .scenario-card:active,
+  .decision-box:active {
+    opacity: .8;
+    transform: scale(.98);
+    transition: opacity .1s, transform .1s;
+  }
+}
+
+/* ── 19. REPLAY PANEL ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .rp-ev {
+    min-height: 40px;
+    padding: 6px 0;
+    touch-action: manipulation;
+  }
+  .rp-ev-msg { font-size: clamp(9px, 2.5vw, 10px); }
+}
+
+/* ── 20. LOADING / BOOT SCREEN ────────────────────────────────── */
+@media (max-width: 480px) {
+  .sim-loading {
+    padding: max(24px, env(safe-area-inset-top, 24px)) 20px
+             max(24px, env(safe-area-inset-bottom, 24px)) 20px;
+  }
+  .loading-text {
+    font-size: clamp(10px, 3vw, 13px);
+    letter-spacing: clamp(2px, 1vw, 4px);
+  }
+}
+
+/* ── 21. PRINT — remove mobile additions ─────────────────────── */
+@media print {
+  #mobilePaletteBtn,
+  #mobileHeaderActions,
+  #termSendBtn {
+    display: none !important;
+  }
+}
+
+/* ── 22. REDUCED MOTION ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  #mobilePaletteBtn { animation: none !important; }
+  .slider-value-bubble { transition: none !important; }
+  .phase-cell { transition: none !important; }
 }
 
 </style>
@@ -7717,5 +8637,1032 @@ Drop file or click to upload<br>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js" integrity="sha384-odPBjvtXVM/5hOYIr3A1dB+flh0c3wAT3bSesIOqEGmyUA4JoKf/YTWy0XKOYAY7" crossorigin="anonymous" defer></script>
 <script src="cybaash-ai.js" defer></script>
 <script src="cybaash_chatbot.js" defer></script>
+
+<script>
+/* === MOBILE FEATURES === */
+/**
+ * CYBAASH — Mobile Navigation
+ * Handles hamburger menu toggle, drawer, and keyboard accessibility.
+ * Add <\script src="mobile-nav.js" defer><\/script> before <\/body> in index.html
+ */
+
+(function () {
+  'use strict';
+
+  // ── Wait for DOM ──────────────────────────────────────────────
+  function init() {
+
+    // ── Inject hamburger + drawer into .topbar-inner ──────────
+    const topbarInner = document.querySelector('.topbar-inner');
+    if (!topbarInner) return;
+
+    // Check if hamburger already injected (idempotent)
+    if (document.getElementById('navHamburger')) return;
+
+    // ── Hamburger button ──────────────────────────────────────
+    const hamburger = document.createElement('button');
+    hamburger.id = 'navHamburger';
+    hamburger.className = 'nav-hamburger';
+    hamburger.setAttribute('aria-label', 'Open navigation menu');
+    hamburger.setAttribute('aria-expanded', 'false');
+    hamburger.setAttribute('aria-controls', 'navDrawer');
+    hamburger.innerHTML = `
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    `;
+    topbarInner.appendChild(hamburger);
+
+    // ── Mobile drawer ─────────────────────────────────────────
+    const drawer = document.createElement('nav');
+    drawer.id = 'navDrawer';
+    drawer.className = 'nav-drawer';
+    drawer.setAttribute('aria-label', 'Mobile navigation');
+    drawer.setAttribute('aria-hidden', 'true');
+    drawer.innerHTML = `
+      <a href="#about"    class="drawer-link" data-close>ABOUT</a>
+      <a href="#skills"   class="drawer-link" data-close>SKILLS</a>
+      <a href="#experience" class="drawer-link" data-close>EXPERIENCE</a>
+      <a href="#projects" class="drawer-link" data-close>PROJECTS</a>
+      <a href="#cybaash"  class="drawer-link ai-link" data-close>CYBAASH AI ⬡</a>
+      <a href="#contact"  class="drawer-link" data-close>CONTACT</a>
+      <div class="drawer-footer">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <span class="pulse"></span>
+          <span>SYSTEMS ONLINE</span>
+        </div>
+        <div style="opacity:.5">© 2025 Mohamed Aasiq</div>
+      </div>
+    `;
+    document.body.appendChild(drawer);
+
+    // ── Overlay backdrop ──────────────────────────────────────
+    const backdrop = document.createElement('div');
+    backdrop.id = 'navBackdrop';
+    backdrop.style.cssText = `
+      position:fixed; inset:0; z-index:998;
+      background:rgba(3,10,15,.6);
+      backdrop-filter:blur(4px);
+      -webkit-backdrop-filter:blur(4px);
+      opacity:0; pointer-events:none;
+      transition:opacity .3s ease;
+    `;
+    document.body.appendChild(backdrop);
+
+    // ── Open / close ──────────────────────────────────────────
+    let isOpen = false;
+
+    function openDrawer() {
+      isOpen = true;
+      hamburger.classList.add('open');
+      hamburger.setAttribute('aria-expanded', 'true');
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+      backdrop.style.opacity = '1';
+      backdrop.style.pointerEvents = 'auto';
+      document.body.classList.add('drawer-open');
+
+      // Focus first link
+      const firstLink = drawer.querySelector('.drawer-link');
+      if (firstLink) requestAnimationFrame(() => firstLink.focus());
+    }
+
+    function closeDrawer() {
+      isOpen = false;
+      hamburger.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+      drawer.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+      backdrop.style.opacity = '0';
+      backdrop.style.pointerEvents = 'none';
+      document.body.classList.remove('drawer-open');
+      hamburger.focus();
+    }
+
+    function toggleDrawer() {
+      isOpen ? closeDrawer() : openDrawer();
+    }
+
+    // ── Event listeners ───────────────────────────────────────
+    hamburger.addEventListener('click', toggleDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+
+    // Close on nav link click
+    drawer.querySelectorAll('[data-close]').forEach(link => {
+      link.addEventListener('click', () => {
+        closeDrawer();
+      });
+    });
+
+    // Keyboard: Escape closes drawer
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isOpen) closeDrawer();
+    });
+
+    // Focus trap inside drawer
+    drawer.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const focusable = drawer.querySelectorAll('a, button, [tabindex]:not([tabindex="-1"])');
+      const first = focusable[0];
+      const last  = focusable[focusable.length - 1];
+      if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      }
+    });
+
+    // Close drawer if window resized past mobile breakpoint
+    const mq = window.matchMedia('(min-width: 768px)');
+    mq.addEventListener('change', (e) => {
+      if (e.matches && isOpen) closeDrawer();
+    });
+
+    // ── Smooth anchor scrolling (accounts for sticky header) ──
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', (e) => {
+        const target = document.querySelector(anchor.getAttribute('href'));
+        if (!target) return;
+        e.preventDefault();
+        const topbar = document.querySelector('.topbar');
+        const offset = topbar ? topbar.offsetHeight + 8 : 0;
+        const top = target.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
+      });
+    });
+  }
+
+  // ── Run ───────────────────────────────────────────────────────
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+
+/**
+ * CYBAASH — Mobile Feature Parity
+ * ════════════════════════════════════════════════════════════════
+ * Ensures EVERY desktop feature works on touch / mobile devices.
+ *
+ * Fixes:
+ *  1. Network Canvas — touch hover/tooltip
+ *  2. Knowledge Graph Canvas — touch pan/interact
+ *  3. Terminal drag-resize — touch drag handle
+ *  4. Terminal input — virtual keyboard / iOS quirks
+ *  5. Command Palette — mobile FAB trigger (Ctrl+K unavailable)
+ *  6. File drop zone — tap-to-upload fallback
+ *  7. Range sliders (What-If, Replay) — larger touch targets
+ *  8. Header button overflow — show TERMINAL + RECRUITER on mobile
+ *  9. Keyboard shortcuts replaced with gesture / swipe alternatives
+ * 10. Phase bar — tap to highlight
+ * 11. Canvas tooltip — tap shows tooltip, tap-away dismisses
+ * 12. Modals — swipe-down to close
+ * 13. Tab bar — scroll active tab into view
+ * 14. iOS input: prevent zoom, handle keyboard showing/hiding
+ * 15. Attacker mode — all hover glows become tap glows on touch
+ * ════════════════════════════════════════════════════════════════
+ * Add to index.html: <\script src="mobile-features.js" defer><\/script>
+ */
+
+(function () {
+  'use strict';
+
+  /* ─────────────────────────────────────────────────────────────
+     HELPERS
+  ───────────────────────────────────────────────────────────── */
+  const isTouchDevice = () =>
+    window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
+    ('ontouchstart' in window) ||
+    navigator.maxTouchPoints > 0;
+
+  function ready(fn) {
+    if (document.readyState !== 'loading') fn();
+    else document.addEventListener('DOMContentLoaded', fn);
+  }
+
+  function onLoad(fn) {
+    if (document.readyState === 'complete') fn();
+    else window.addEventListener('load', fn);
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     1. NETWORK CANVAS — Touch tooltip support
+     Desktop: mousemove triggers handleCanvasHover
+     Mobile:  tap on canvas shows/hides tooltip
+  ───────────────────────────────────────────────────────────── */
+  function patchNetworkCanvas() {
+    const canvas = document.getElementById('networkCanvas');
+    if (!canvas) return;
+
+    // Allow canvas to be scrolled past on mobile (don't block page scroll)
+    canvas.style.touchAction = 'pan-y';
+
+    let tooltipShown = false;
+
+    canvas.addEventListener('touchstart', function (e) {
+      // Single tap — show tooltip for the touched node
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+
+      // Simulate a mouse event so handleCanvasHover (if defined) works
+      if (typeof handleCanvasHover === 'function') {
+        const synth = {
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+        };
+        handleCanvasHover(synth);
+        tooltipShown = true;
+      }
+    }, { passive: true });
+
+    // Tap anywhere else dismisses tooltip
+    document.addEventListener('touchstart', function (e) {
+      if (tooltipShown && e.target !== canvas) {
+        const tip = document.getElementById('tooltip');
+        if (tip) tip.style.display = 'none';
+        tooltipShown = false;
+      }
+    }, { passive: true });
+
+    // On touch devices, also add tap-to-select-node for info
+    canvas.addEventListener('touchend', function (e) {
+      if (e.changedTouches.length !== 1) return;
+      const touch = e.changedTouches[0];
+      const tip = document.getElementById('tooltip');
+      if (!tip || tip.style.display !== 'block') return;
+
+      // Position tooltip near tap (not under finger)
+      const vpW = window.innerWidth;
+      const tx = touch.clientX;
+      tip.style.left = (tx > vpW / 2 ? tx - tip.offsetWidth - 12 : tx + 12) + 'px';
+      tip.style.top  = (touch.clientY - 40) + 'px';
+    }, { passive: true });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     2. KNOWLEDGE GRAPH CANVAS — Touch pan support
+     Desktop: mouse drag to pan the graph
+     Mobile:  one-finger pan
+  ───────────────────────────────────────────────────────────── */
+  function patchKnowledgeGraphCanvas() {
+    const canvas = document.getElementById('kgCanvas');
+    if (!canvas) return;
+
+    canvas.style.touchAction = 'none'; // we handle pan ourselves
+
+    let lastTouchX = 0, lastTouchY = 0;
+    let panOffsetX = 0, panOffsetY = 0;
+
+    canvas.addEventListener('touchstart', function (e) {
+      if (e.touches.length === 1) {
+        lastTouchX = e.touches[0].clientX;
+        lastTouchY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', function (e) {
+      e.preventDefault(); // prevent page scroll while interacting with graph
+      if (e.touches.length === 1) {
+        const dx = e.touches[0].clientX - lastTouchX;
+        const dy = e.touches[0].clientY - lastTouchY;
+        lastTouchX = e.touches[0].clientX;
+        lastTouchY = e.touches[0].clientY;
+        panOffsetX += dx;
+        panOffsetY += dy;
+
+        // Apply pan offset to knowledge graph if it exposes a pan function
+        if (typeof kgSetPan === 'function') {
+          kgSetPan(panOffsetX, panOffsetY);
+        } else {
+          // Fallback: use CSS transform on canvas
+          canvas.style.transform = `translate(${panOffsetX}px, ${panOffsetY}px)`;
+        }
+      }
+    }, { passive: false });
+
+    // Double-tap to reset pan
+    let lastTap = 0;
+    canvas.addEventListener('touchend', function () {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        panOffsetX = 0;
+        panOffsetY = 0;
+        canvas.style.transform = '';
+        if (typeof kgSetPan === 'function') kgSetPan(0, 0);
+      }
+      lastTap = now;
+    }, { passive: true });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     3. TERMINAL DRAG-RESIZE — Touch support
+     Desktop: mousedown on titlebar + mousemove
+     Mobile:  touchstart on titlebar + touchmove
+  ───────────────────────────────────────────────────────────── */
+  function patchTerminalDrag() {
+    const overlay = document.getElementById('termOverlay');
+    const handle  = document.getElementById('termDragHandle');
+    if (!overlay || !handle) return;
+
+    let touchStartY = null;
+    let startH      = null;
+
+    handle.addEventListener('touchstart', function (e) {
+      if (e.target.classList.contains('term-dot')) return;
+      touchStartY = e.touches[0].clientY;
+      startH = overlay.getBoundingClientRect().height;
+      e.preventDefault(); // prevent scroll while dragging
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function (e) {
+      if (touchStartY === null) return;
+      const delta = touchStartY - e.touches[0].clientY;
+      const newH  = Math.max(120, Math.min(window.innerHeight * 0.85, startH + delta));
+      overlay.style.height = newH + 'px';
+    }, { passive: true });
+
+    document.addEventListener('touchend', function () {
+      touchStartY = null;
+    }, { passive: true });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     4. TERMINAL INPUT — iOS virtual keyboard fixes
+     - Prevent iOS auto-scroll when terminal input gets focus
+     - Keep terminal output visible above keyboard
+     - Send button for mobile (Enter key not always obvious)
+  ───────────────────────────────────────────────────────────── */
+  function patchTerminalInput() {
+    const termOverlay = document.getElementById('termOverlay');
+    const termInput   = document.getElementById('termInput');
+    if (!termOverlay || !termInput) return;
+
+    // Inject a mobile send button next to the input
+    const inputRow = document.querySelector('.term-input-row');
+    if (inputRow && !document.getElementById('termSendBtn')) {
+      const sendBtn = document.createElement('button');
+      sendBtn.id = 'termSendBtn';
+      sendBtn.textContent = '↵';
+      sendBtn.setAttribute('aria-label', 'Send command');
+      sendBtn.style.cssText = `
+        display: none;
+        min-width: 44px; min-height: 44px;
+        background: rgba(0,255,136,.12);
+        border: 1px solid var(--green, #00ff88);
+        color: var(--green, #00ff88);
+        font-family: 'Orbitron', monospace;
+        font-size: 16px;
+        border-radius: 2px;
+        cursor: pointer;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+      `;
+      sendBtn.addEventListener('click', function () {
+        // Dispatch Enter keydown on the input
+        termInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      });
+      inputRow.appendChild(sendBtn);
+
+      // Show send button on touch devices
+      if (isTouchDevice()) {
+        sendBtn.style.display = 'flex';
+      }
+    }
+
+    // Prevent iOS from scrolling page when terminal input focused
+    termInput.addEventListener('focus', function () {
+      if (!isTouchDevice()) return;
+      setTimeout(() => {
+        termOverlay.scrollIntoView({ block: 'end', behavior: 'smooth' });
+      }, 320); // wait for keyboard to appear
+    }, { passive: true });
+
+    // Prevent default scroll behavior on terminal output (use container scroll)
+    const termOutput = document.getElementById('termOutput');
+    if (termOutput) {
+      termOutput.addEventListener('touchmove', function (e) {
+        e.stopPropagation();
+      }, { passive: true });
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     5. COMMAND PALETTE — Mobile FAB trigger
+     Desktop: Ctrl+K keyboard shortcut
+     Mobile:  floating "⌘" button or tap-to-open in header
+  ───────────────────────────────────────────────────────────── */
+  function patchCommandPalette() {
+    if (!isTouchDevice()) return;
+    if (document.getElementById('mobilePaletteBtn')) return;
+
+    // Inject a fixed "⌘" button bottom-left on mobile
+    const btn = document.createElement('button');
+    btn.id = 'mobilePaletteBtn';
+    btn.innerHTML = '⌘';
+    btn.setAttribute('aria-label', 'Open command palette');
+    btn.style.cssText = `
+      position: fixed;
+      bottom: max(24px, env(safe-area-inset-bottom, 24px));
+      left: max(16px, env(safe-area-inset-left, 16px));
+      width: 44px; height: 44px;
+      background: rgba(0,212,255,.12);
+      border: 1px solid rgba(0,212,255,.35);
+      color: #00d4ff;
+      font-family: 'Orbitron', monospace;
+      font-size: 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 998;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: manipulation;
+      box-shadow: 0 4px 16px rgba(0,212,255,.15);
+      transition: background .2s, transform .15s;
+    `;
+    btn.addEventListener('touchstart', function () {
+      btn.style.background = 'rgba(0,212,255,.22)';
+      btn.style.transform = 'scale(.93)';
+    }, { passive: true });
+    btn.addEventListener('touchend', function () {
+      btn.style.background = 'rgba(0,212,255,.12)';
+      btn.style.transform = '';
+      if (typeof openPalette === 'function') openPalette();
+    }, { passive: true });
+
+    document.body.appendChild(btn);
+
+    // Make command palette search input not zoom on iOS
+    const cmdSearch = document.getElementById('cmdSearch');
+    if (cmdSearch) {
+      cmdSearch.style.fontSize = '16px';
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     6. FILE DROP ZONE — Tap to upload on mobile
+     Desktop: drag-and-drop
+     Mobile:  tap the zone to trigger hidden file input
+  ───────────────────────────────────────────────────────────── */
+  function patchFileDropZone() {
+    const zone = document.getElementById('file-drop');
+    if (!zone || !isTouchDevice()) return;
+
+    // Update label to indicate tap-to-upload
+    const hint = zone.querySelector('.file-drop-hint');
+    if (hint) hint.textContent = 'Tap to upload · .py .js .php .html .txt .log';
+
+    const icon = zone.querySelector('.file-drop-icon');
+    if (icon) icon.textContent = '📎';
+
+    // Create a hidden file input and trigger it on tap
+    let fileInput = document.getElementById('file-drop-input-mobile');
+    if (!fileInput) {
+      fileInput = document.createElement('input');
+      fileInput.id     = 'file-drop-input-mobile';
+      fileInput.type   = 'file';
+      fileInput.accept = '.txt,.log,.py,.js,.php,.html,.sh,.ts,.jsx,.tsx,.css,.json,.xml,.yaml,.yml,.env,.conf,.ini';
+      fileInput.style.cssText = 'position:absolute;opacity:0;width:0;height:0;pointer-events:none;';
+      fileInput.setAttribute('aria-hidden', 'true');
+      fileInput.addEventListener('change', function () {
+        if (this.files && this.files[0]) {
+          // Call the existing processFile function
+          if (typeof processFile === 'function') {
+            processFile(this.files[0]);
+          } else if (typeof runFileAnalysis === 'function') {
+            runFileAnalysis(this);
+          }
+        }
+      });
+      zone.style.position = 'relative';
+      zone.appendChild(fileInput);
+    }
+
+    // Tap on zone triggers file picker
+    zone.addEventListener('click', function (e) {
+      e.preventDefault();
+      fileInput.click();
+    });
+    zone.style.cursor = 'pointer';
+
+    // Visual feedback on tap
+    zone.addEventListener('touchstart', function () {
+      zone.style.borderColor = 'var(--blue)';
+    }, { passive: true });
+    zone.addEventListener('touchend', function () {
+      setTimeout(() => { zone.style.borderColor = ''; }, 300);
+    }, { passive: true });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     7. RANGE SLIDERS — Larger touch targets + value display
+     All input[type=range] get a live value bubble on mobile
+  ───────────────────────────────────────────────────────────── */
+  function patchRangeSliders() {
+    if (!isTouchDevice()) return;
+
+    document.querySelectorAll('input[type="range"]').forEach(function (slider) {
+      // Already patched
+      if (slider.dataset.mobilePatch) return;
+      slider.dataset.mobilePatch = '1';
+
+      // Ensure slider has good touch target height
+      slider.style.height = '28px';
+      slider.style.cursor = 'pointer';
+
+      // Create value bubble
+      const bubble = document.createElement('span');
+      bubble.className = 'slider-value-bubble';
+      bubble.style.cssText = `
+        display: inline-block;
+        min-width: 36px;
+        text-align: center;
+        font-family: 'Orbitron', monospace;
+        font-size: 10px;
+        color: var(--blue, #00d4ff);
+        background: var(--panel2, #0d1e2e);
+        border: 1px solid var(--border, #1a3a5c);
+        border-radius: 2px;
+        padding: 2px 5px;
+        margin-left: 6px;
+        vertical-align: middle;
+        flex-shrink: 0;
+        transition: color .15s;
+      `;
+      bubble.textContent = slider.value;
+
+      // Insert after slider
+      slider.parentNode.insertBefore(bubble, slider.nextSibling);
+
+      // Update on input
+      function updateBubble() {
+        bubble.textContent = slider.value;
+        bubble.style.color = 'var(--green, #00ff88)';
+        setTimeout(() => { bubble.style.color = 'var(--blue, #00d4ff)'; }, 400);
+      }
+      slider.addEventListener('input', updateBubble);
+      slider.addEventListener('change', updateBubble);
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     8. HEADER MOBILE BUTTONS — Show critical actions on mobile
+     On mobile, the .header-stats div is hidden, but TERMINAL
+     and RECRUITER VIEW buttons need to be accessible.
+  ───────────────────────────────────────────────────────────── */
+  function patchMobileHeader() {
+    if (window.innerWidth > 900) return; // only on mobile widths
+
+    const header = document.querySelector('.header');
+    if (!header || document.getElementById('mobileHeaderActions')) return;
+
+    // Create a compact action strip beneath the header
+    const strip = document.createElement('div');
+    strip.id = 'mobileHeaderActions';
+    strip.style.cssText = `
+      display: flex;
+      gap: 6px;
+      padding: 6px 12px;
+      padding-left: max(12px, env(safe-area-inset-left));
+      padding-right: max(12px, env(safe-area-inset-right));
+      background: rgba(6,15,24,.97);
+      border-bottom: 1px solid var(--border, #1a3a5c);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    `;
+
+    const actions = [
+      { label: '⌨ TERMINAL',      cls: 'btn-green',  fn: 'termToggle()'  },
+      { label: '◈ RECRUITER',      cls: 'btn-red',    fn: "window.open('recruiter.html','_blank','noopener,noreferrer')" },
+      { label: '◈ DASHBOARD',      cls: 'btn-blue',   fn: "window.open('dashboard.html','_blank','noopener,noreferrer')" },
+      { label: '▶ LAUNCH',         cls: 'btn-green',  fn: 'launchAttack && launchAttack()' },
+      { label: '↺ SCENARIO',       cls: 'btn-blue',   fn: 'generateScenario && generateScenario()' },
+    ];
+
+    actions.forEach(a => {
+      const btn = document.createElement('button');
+      btn.className = `btn ${a.cls}`;
+      btn.innerHTML = a.label;
+      btn.style.cssText = `
+        padding: 6px 10px;
+        font-size: 9px;
+        min-height: 34px;
+        letter-spacing: 1px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        touch-action: manipulation;
+      `;
+      btn.addEventListener('click', function () {
+        try { eval(a.fn); } catch(e) { /* ignore if function not defined */ }
+      });
+      strip.appendChild(btn);
+    });
+
+    // Insert after header
+    header.insertAdjacentElement('afterend', strip);
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     9. TAB BAR — Scroll active tab into view on mobile
+     When switchTab() is called, scroll the active tab into view
+  ───────────────────────────────────────────────────────────── */
+  function patchTabScrolling() {
+    const tabsContainer = document.querySelector('.tabs');
+    if (!tabsContainer) return;
+
+    // Observe class changes on tabs
+    const observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) {
+        if (m.target.classList.contains('active')) {
+          m.target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center',
+          });
+        }
+      });
+    });
+
+    tabsContainer.querySelectorAll('.tab').forEach(function (tab) {
+      observer.observe(tab, { attributes: true, attributeFilter: ['class'] });
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    10. PHASE BAR — Touch tap to activate (no hover on mobile)
+  ───────────────────────────────────────────────────────────── */
+  function patchPhaseBar() {
+    const phaseBar = document.getElementById('phaseBar');
+    if (!phaseBar || !isTouchDevice()) return;
+
+    phaseBar.querySelectorAll('.phase-cell').forEach(function (cell) {
+      cell.style.minHeight = '44px';
+      cell.style.display = 'flex';
+      cell.style.alignItems = 'center';
+      cell.style.justifyContent = 'center';
+      cell.style.touchAction = 'manipulation';
+
+      cell.addEventListener('touchend', function (e) {
+        e.preventDefault();
+        cell.click();
+      }, { passive: false });
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    11. MODALS — Swipe-down to close on mobile
+  ───────────────────────────────────────────────────────────── */
+  function patchModals() {
+    if (!isTouchDevice()) return;
+
+    function addSwipeClose(modal) {
+      if (modal.dataset.swipePatch) return;
+      modal.dataset.swipePatch = '1';
+
+      let startY = null;
+
+      modal.addEventListener('touchstart', function (e) {
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+
+      modal.addEventListener('touchend', function (e) {
+        if (startY === null) return;
+        const dy = e.changedTouches[0].clientY - startY;
+        if (dy > 80) {
+          // Swipe down > 80px — close modal
+          const closeBtn = modal.querySelector('.modal-close, .close-btn, [onclick*="close"], [onclick*="Close"]');
+          if (closeBtn) closeBtn.click();
+          else modal.style.display = 'none';
+        }
+        startY = null;
+      }, { passive: true });
+    }
+
+    // Watch for modals being added to DOM
+    const observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) {
+        m.addedNodes.forEach(function (node) {
+          if (node.nodeType === 1) {
+            if (node.classList && (node.classList.contains('modal') || node.id === 'reportModal')) {
+              addSwipeClose(node);
+            }
+            node.querySelectorAll && node.querySelectorAll('.modal').forEach(addSwipeClose);
+          }
+        });
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Patch existing modals
+    document.querySelectorAll('.modal, #reportModal').forEach(addSwipeClose);
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    12. iOS KEYBOARD — Prevent viewport jump when input focused
+        Fix: when any input is focused on iOS, prevent the page
+        from jumping by setting position:fixed briefly
+  ───────────────────────────────────────────────────────────── */
+  function patchIOSKeyboard() {
+    if (!isTouchDevice()) return;
+
+    // Detect iOS
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (!isIOS) return;
+
+    const inputs = ['termInput', 'cmdSearch', 'cybaash-chat-input',
+                    'cybaash-url-inp', 'cybaash-pass-inp', 'cybaash-code-inp'];
+
+    inputs.forEach(function (id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('focus', function () {
+        // Scroll element into view above keyboard
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+      }, { passive: true });
+    });
+
+    // Delegate for dynamically created inputs
+    document.addEventListener('focusin', function (e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setTimeout(() => {
+          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 350);
+      }
+    }, { passive: true });
+
+    // When keyboard dismisses (focus lost), scroll back to top of page
+    document.addEventListener('focusout', function (e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setTimeout(() => window.scrollTo({ top: window.scrollY, behavior: 'instant' }), 100);
+      }
+    }, { passive: true });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    13. AI CHATBOT OVERLAY — Mobile send button + input
+        The CYBAASH AI chatbot has a textarea with Shift+Enter
+        handling — on mobile, add a visible SEND button
+  ───────────────────────────────────────────────────────────── */
+  function patchChatbot() {
+    if (!isTouchDevice()) return;
+
+    // Main portfolio chatbot send button
+    const sendBtn = document.getElementById('chat-send');
+    if (sendBtn) {
+      sendBtn.style.minWidth = '44px';
+      sendBtn.style.minHeight = '44px';
+    }
+
+    // CYBAASH AI panel send
+    const cybSend = document.querySelector('.cyb-send');
+    if (cybSend) {
+      cybSend.style.minWidth = '44px';
+      cybSend.style.minHeight = '44px';
+    }
+
+    // Fix textarea font size to prevent iOS zoom
+    const chatTextareas = document.querySelectorAll(
+      '#chat-input, .chat-textarea, #cybaash-chat-input, .cyb-input'
+    );
+    chatTextareas.forEach(function (ta) {
+      ta.style.fontSize = '16px';
+    });
+
+    // Suggestion buttons — ensure 44px touch targets
+    document.querySelectorAll('.suggest-btn, .cyb-sug-btn, .ai-suggestion-btn').forEach(function (btn) {
+      btn.style.minHeight = '44px';
+      btn.style.touchAction = 'manipulation';
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    14. RECRUITER VIEW MODAL — Full-screen on mobile
+        On mobile, the recruiter modal / view should use
+        full height with scrollable content
+  ───────────────────────────────────────────────────────────── */
+  function patchRecruiterMode() {
+    if (!isTouchDevice()) return;
+
+    const recruiterEl = document.getElementById('recruiterMode');
+    if (!recruiterEl) return;
+
+    recruiterEl.style.overflowY = 'auto';
+    recruiterEl.style.webkitOverflowScrolling = 'touch';
+    recruiterEl.style.overscrollBehavior = 'contain';
+
+    // Ensure close button is easily tappable
+    const closeBtn = recruiterEl.querySelector('.recruiter-close');
+    if (closeBtn) {
+      closeBtn.style.minHeight = '44px';
+      closeBtn.style.display = 'flex';
+      closeBtn.style.alignItems = 'center';
+      closeBtn.style.padding = '8px 16px';
+      closeBtn.style.touchAction = 'manipulation';
+    }
+
+    // Score ring — ensure it doesn't overflow
+    const scoreRing = recruiterEl.querySelector('svg');
+    if (scoreRing) {
+      scoreRing.style.maxWidth = '100%';
+      scoreRing.style.height = 'auto';
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    15. WHAT-IF ENGINE SLIDERS — Ensure they work on iOS
+        iOS can have issues with range inputs inside flex containers
+  ───────────────────────────────────────────────────────────── */
+  function patchWhatIfSliders() {
+    if (!isTouchDevice()) return;
+
+    // Re-run whenever whatif view is shown
+    const observer = new MutationObserver(function () {
+      document.querySelectorAll('.whatif-row').forEach(function (row) {
+        const slider = row.querySelector('input[type="range"]');
+        if (!slider) return;
+        slider.style.width = '100%';
+        slider.style.minWidth = '0';
+        slider.style.flex = '1';
+        slider.style.touchAction = 'pan-x';
+      });
+      // patch value bubbles for new sliders
+      patchRangeSliders();
+    });
+
+    const whatifDisplay = document.getElementById('whatifDisplay');
+    if (whatifDisplay) {
+      observer.observe(whatifDisplay, { childList: true, subtree: true });
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    16. HORIZONTAL OVERFLOW GUARD — Real-time fix
+        Catch any dynamically injected wide content and constrain it
+  ───────────────────────────────────────────────────────────── */
+  function patchOverflowGuard() {
+    if (!isTouchDevice()) return;
+
+    function fixOverflow(root) {
+      const vw = window.innerWidth;
+      root.querySelectorAll('[style]').forEach(function (el) {
+        const w = el.style.width;
+        if (w && w.includes('px')) {
+          const px = parseInt(w);
+          if (px > vw) {
+            el.style.maxWidth = '100%';
+            el.style.overflowX = 'auto';
+          }
+        }
+      });
+    }
+
+    const mo = new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) {
+        m.addedNodes.forEach(function (node) {
+          if (node.nodeType === 1) fixOverflow(node);
+        });
+      });
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    17. REPLAY TIMELINE SLIDER — Touch-friendly scrubbing
+  ───────────────────────────────────────────────────────────── */
+  function patchReplaySlider() {
+    const slider = document.getElementById('rpSlider');
+    if (!slider || !isTouchDevice()) return;
+
+    slider.style.height = '24px';
+    slider.style.cursor = 'pointer';
+    slider.style.touchAction = 'pan-x';
+
+    // Show current position as visual marker
+    slider.addEventListener('input', function () {
+      // rpJump is already wired via oninput attribute; just ensure visual feedback
+      slider.style.accentColor = 'var(--purple, #aa44ff)';
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    18. CYBAASH AI PANEL — Mobile full-screen fix
+        On small screens, the AI panel should be full-height
+        and scrollable, with close button always visible
+  ───────────────────────────────────────────────────────────── */
+  function patchAIPanel() {
+    if (!isTouchDevice()) return;
+
+    const panel = document.getElementById('cybaash-ai-panel');
+    if (!panel) return;
+
+    if (window.innerWidth <= 768) {
+      panel.style.width = '100vw';
+      panel.style.height = '100vh';
+      panel.style.height = '100dvh';
+      panel.style.borderRadius = '0';
+      panel.style.position = 'fixed';
+      panel.style.top = '0';
+      panel.style.left = '0';
+      panel.style.bottom = '0';
+      panel.style.right = '0';
+      panel.style.zIndex = '9999';
+      panel.style.overflowY = 'auto';
+      panel.style.webkitOverflowScrolling = 'touch';
+    }
+
+    const closeBtn = panel.querySelector('.cyb-close');
+    if (closeBtn) {
+      closeBtn.style.minHeight = '44px';
+      closeBtn.style.padding = '8px 16px';
+      closeBtn.style.touchAction = 'manipulation';
+    }
+
+    // Make suggestions scrollable
+    const suggestions = panel.querySelector('.cyb-suggestions');
+    if (suggestions) {
+      suggestions.style.overflowX = 'auto';
+      suggestions.style.webkitOverflowScrolling = 'touch';
+      suggestions.style.flexWrap = 'nowrap';
+      suggestions.style.scrollbarWidth = 'none';
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    19. SCORE RING SVG — Scale correctly on mobile
+  ───────────────────────────────────────────────────────────── */
+  function patchScoreRing() {
+    const container = document.querySelector('.score-ring-container');
+    if (!container) return;
+
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+
+    svg.style.maxWidth = '100%';
+    svg.style.height = 'auto';
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+    // Watch for ring updates
+    const mo = new MutationObserver(function () {
+      const newSvg = container.querySelector('svg');
+      if (newSvg) {
+        newSvg.style.maxWidth = '100%';
+        newSvg.style.height = 'auto';
+      }
+    });
+    mo.observe(container, { childList: true, subtree: true });
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    20. CTRL+K HINT — Replace with tap hint on mobile
+  ───────────────────────────────────────────────────────────── */
+  function patchKbHint() {
+    if (!isTouchDevice()) return;
+    const hint = document.getElementById('kbHint');
+    if (hint) {
+      hint.textContent = '⌘ — Command Palette';
+      hint.style.left = '70px';
+      hint.style.right = 'auto';
+      hint.style.bottom = 'max(24px, env(safe-area-inset-bottom, 24px))';
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+    INIT — Run all patches
+  ───────────────────────────────────────────────────────────── */
+  ready(function () {
+    patchTerminalInput();
+    patchCommandPalette();
+    patchTabScrolling();
+    patchPhaseBar();
+    patchModals();
+    patchIOSKeyboard();
+    patchChatbot();
+    patchRecruiterMode();
+    patchWhatIfSliders();
+    patchOverflowGuard();
+    patchKbHint();
+  });
+
+  onLoad(function () {
+    patchNetworkCanvas();
+    patchKnowledgeGraphCanvas();
+    patchTerminalDrag();
+    patchFileDropZone();
+    patchRangeSliders();
+    patchMobileHeader();
+    patchReplaySlider();
+    patchAIPanel();
+    patchScoreRing();
+  });
+
+})();
+
+</script>
 </body>
 </html>

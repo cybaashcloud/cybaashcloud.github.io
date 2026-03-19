@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CyberBot — AI Cybersecurity Assistant</title>
 <meta name="description" content="AI-powered cybersecurity assistant. Learn about vulnerabilities, secure coding, penetration testing concepts, and system hardening.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -258,5 +258,38 @@
 </div>
 
 <script src="cyberbot_script.js"></script>
+
+<script>
+/* === MOBILE FEATURES === */
+
+(function(){
+  'use strict';
+  var isTouch = window.matchMedia('(hover:none) and (pointer:coarse)').matches || navigator.maxTouchPoints > 0;
+  if (!isTouch) return;
+  var touchStartY = null;
+  document.addEventListener('touchstart', function(e){
+    var modal = e.target.closest('.modal');
+    if (modal) touchStartY = e.touches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    if (touchStartY === null) return;
+    var dy = e.changedTouches[0].clientY - touchStartY;
+    touchStartY = null;
+    if (dy > 80) {
+      var o = document.getElementById('modalOverlay');
+      if (o) o.classList.remove('open');
+    }
+  }, {passive:true});
+  document.addEventListener('focusin', function(e){
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')
+      setTimeout(function(){ e.target.scrollIntoView({behavior:'smooth',block:'center'}); }, 350);
+  }, {passive:true});
+  var fl = document.querySelector('label.attach-btn');
+  if (fl) fl.style.cssText += ';min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;';
+  var msg = document.getElementById('messages');
+  if (msg) msg.style.overscrollBehavior = 'contain';
+})();
+
+</script>
 </body>
 </html>

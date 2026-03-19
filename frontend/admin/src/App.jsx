@@ -444,6 +444,266 @@ const CSS = `
     .cred-section-banner{font-size:9px;padding:8px 10px}
     .cred-tab{padding:10px 10px;font-size:8px}
   }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MOBILE FEATURE PARITY — Full touch + iOS/Android support
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Safe area support */
+  :root {
+    --sai-top:    env(safe-area-inset-top, 0px);
+    --sai-bottom: env(safe-area-inset-bottom, 0px);
+    --sai-left:   env(safe-area-inset-left, 0px);
+    --sai-right:  env(safe-area-inset-right, 0px);
+  }
+
+  /* Prevent iOS text size inflation */
+  html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+
+  /* Tap highlight removal */
+  *,*::before,*::after { -webkit-tap-highlight-color:transparent; }
+
+  /* Accessible focus ring */
+  :focus-visible { outline:2px solid var(--blue); outline-offset:3px; border-radius:2px; }
+
+  /* ── iOS input zoom fix: font-size must be ≥ 16px ── */
+  .form-input,
+  .form-textarea,
+  .form-select,
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="url"],
+  input[type="number"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: max(16px, .85rem) !important;
+  }
+
+  /* ── TOPBAR — safe area + logout button on mobile ── */
+  .topbar {
+    padding-left:  max(14px, var(--sai-left));
+    padding-right: max(14px, var(--sai-right));
+    padding-top:   max(0px,  var(--sai-top));
+  }
+  /* Logout button visible in topbar on mobile (sidebar-footer is hidden) */
+  .topbar-logout-mobile {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 0 10px;
+    transition: border-color .15s, color .15s;
+    touch-action: manipulation;
+    border-radius: 2px;
+  }
+  .topbar-logout-mobile:hover,
+  .topbar-logout-mobile:active { border-color: var(--red); color: var(--red); }
+
+  /* ── BOTTOM NAV — safe area for iOS home bar ── */
+  @media(max-width:900px) {
+    .sidebar {
+      order: 3;
+      /* move to bottom like a native app */
+      padding-bottom: max(0px, var(--sai-bottom)) !important;
+      min-height: calc(52px + var(--sai-bottom));
+    }
+    .main { order: 1; }
+    /* Show logout in topbar since sidebar-footer hidden */
+    .topbar-logout-mobile { display: flex; }
+    .topbar-right { gap: 8px; }
+    /* Scroll active nav item into center */
+    .nav { scroll-behavior: smooth; }
+    .nav-item {
+      touch-action: manipulation;
+      min-height: max(48px, calc(44px + 0px));
+    }
+    /* Content area: leave room for bottom nav */
+    .content {
+      padding-bottom: max(14px, calc(var(--sai-bottom) + 8px));
+    }
+  }
+
+  /* ── MOBILE: show logout in topbar ── */
+  @media(max-width:768px) {
+    .topbar-logout-mobile { display: flex; }
+    .topbar { min-height: 48px; height: 48px; }
+  }
+
+  /* ── FILE UPLOAD — tap-friendly on mobile ── */
+  .file-drop {
+    /* Larger tap target */
+    min-height: 80px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .file-drop input[type="file"] {
+    /* Accessible hidden input — still tappable */
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    left: 0; top: 0;
+    cursor: pointer;
+    z-index: 1;
+  }
+  /* Relative positioning so hidden input covers drop zone */
+  .file-drop { position: relative; }
+
+  /* ── MODALS — swipe-down indicator + iOS scroll ── */
+  @media(max-width:768px) {
+    .modal {
+      position: fixed;
+      bottom: 0;
+      top: auto;
+      left: 0;
+      right: 0;
+      width: 100vw !important;
+      max-width: 100vw !important;
+      max-height: 92dvh !important;
+      border-radius: 16px 16px 0 0 !important;
+      padding-bottom: max(0px, var(--sai-bottom));
+    }
+    .modal::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 36px; height: 3px;
+      background: rgba(0,212,255,.25);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .modal-body {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    .modal-overlay {
+      align-items: flex-end;
+      padding: 0;
+    }
+  }
+
+  /* ── CONTENT SCROLL — safe area at bottom ── */
+  .content {
+    padding-left:  max(clamp(10px,3vw,24px), var(--sai-left));
+    padding-right: max(clamp(10px,3vw,24px), var(--sai-right));
+  }
+
+  /* ── CREDENTIAL TABS — fade edge scroll affordance ── */
+  .cred-tabs {
+    -webkit-mask-image: linear-gradient(to right, transparent 0px, #000 8px, #000 calc(100% - 8px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0px, #000 8px, #000 calc(100% - 8px), transparent 100%);
+  }
+
+  /* ── BUTTONS — touch feedback ── */
+  @media(hover:none) and (pointer:coarse) {
+    .btn:hover { transform: none !important; box-shadow: none !important; }
+    .btn:active { opacity: .85; transform: scale(.97); }
+    .nav-item:hover { background: none; color: var(--dim); border-left-color: transparent; }
+    .nav-item:active { background: rgba(0,212,255,.08); }
+  }
+
+  /* ── TAG INPUT — larger remove buttons ── */
+  .tag-remove {
+    min-width: 24px;
+    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  @media(max-width:768px) {
+    .tag-wrap { min-height: 48px; }
+    .tag-input { font-size: 16px !important; }
+  }
+
+  /* ── AUTH SCREENS — safe area ── */
+  .auth-shell {
+    padding-top:    max(24px, var(--sai-top));
+    padding-bottom: max(24px, var(--sai-bottom));
+  }
+  @media(max-width:480px) {
+    .auth-box {
+      width: min(440px, 96vw) !important;
+      padding: 24px 16px !important;
+    }
+  }
+
+  /* ── SECTION HEADERS — action buttons wrap properly ── */
+  @media(max-width:768px) {
+    .section-header {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .section-header > div:last-child {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .section-header .btn { flex: 1; justify-content: center; min-height: 44px; }
+  }
+
+  /* ── SKILL ROWS — readable on mobile ── */
+  @media(max-width:480px) {
+    .skill-row {
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .skill-row .btn-icon {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+
+  /* ── DASHBOARD STAT CARDS ── */
+  @media(max-width:480px) {
+    .stat-card { padding: 10px 12px; }
+    .stat-val  { font-size: clamp(18px, 6vw, 24px); }
+    .stat-lbl  { font-size: 8px; letter-spacing: 1px; }
+    .stat-grid { gap: 6px; }
+  }
+
+  /* ── SAVING BAR — safe area ── */
+  .saving-bar {
+    top: max(0px, var(--sai-top));
+  }
+
+  /* ── SYNC TOAST — safe area ── */
+  @media(max-width:768px) {
+    .sync-toast {
+      bottom: max(16px, calc(var(--sai-bottom) + 60px));
+    }
+  }
+
+  /* ── OVERFLOW GUARD ── */
+  @media(max-width:768px) {
+    .content { overflow-x: hidden; }
+    table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  }
+
+  /* ── REDUCED MOTION ── */
+  @media(prefers-reduced-motion:reduce) {
+    *,*::before,*::after {
+      animation-duration: .01ms !important;
+      transition-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+
 `
 
 // ── Shared components ──────────────────────────────────────────────────────
@@ -472,6 +732,7 @@ function TagInput({ value=[], onChange, placeholder='Add tag, press Enter' }) {
 
 function FileUpload({ value, onChange, accept='image/*', label='Upload File' }) {
   const [dragging, setDragging] = useState(false)
+  const isTouch = () => window.matchMedia('(hover:none) and (pointer:coarse)').matches || navigator.maxTouchPoints > 0
   const handleFile = async f => { if(!f) return; try { const b=await fileToB64(f); onChange(b) } catch(e) { alert(e.message) } }
   const isImg = value && value.startsWith('data:image')
   const isPDF = value && value.includes('pdf')
@@ -480,11 +741,13 @@ function FileUpload({ value, onChange, accept='image/*', label='Upload File' }) 
       <div className={`file-drop${dragging?' dragging':''}`}
         onDragOver={e=>{e.preventDefault();setDragging(true)}}
         onDragLeave={()=>setDragging(false)}
-        onDrop={e=>{e.preventDefault();setDragging(false);handleFile(e.dataTransfer.files[0])}}>
+        onDrop={e=>{e.preventDefault();setDragging(false);handleFile(e.dataTransfer.files[0])}}
+        onTouchStart={()=>setDragging(true)}
+        onTouchEnd={()=>setDragging(false)}>
         <input type="file" accept={accept} onChange={e=>handleFile(e.target.files[0])}/>
         <div className="file-drop-icon">📁</div>
         <div className="file-drop-text">{label}</div>
-        <div className="file-drop-sub">Drag & drop or click · Max 5MB</div>
+        <div className="file-drop-sub">{isTouch() ? 'Tap to upload · Max 5MB' : 'Drag & drop or click · Max 5MB'}</div>
       </div>
       {value && (
         <div className="file-preview">
@@ -506,7 +769,7 @@ function Confirm({ msg, onConfirm, onCancel }) {
   }, [onCancel])
   return (
     <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)onCancel()}} role="dialog" aria-modal="true" aria-label="Confirm action">
-      <div className="confirm-box">
+      <div className="confirm-box" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <div className="confirm-icon" aria-hidden="true">⚠</div>
         <div className="confirm-msg">{msg}</div>
         <div className="confirm-btns">
@@ -519,14 +782,21 @@ function Confirm({ msg, onConfirm, onCancel }) {
 }
 
 function Modal({ onClose, title, titleColor, children, footerChildren }) {
+  const touchStartY = useRef(null)
   useEffect(()=>{
     const handler = e => { if(e.key==='Escape') onClose() }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
+  const handleTouchStart = e => { touchStartY.current = e.touches[0].clientY }
+  const handleTouchEnd = e => {
+    if (touchStartY.current === null) return
+    if (e.changedTouches[0].clientY - touchStartY.current > 80) onClose()
+    touchStartY.current = null
+  }
   return (
     <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)onClose()}} role="dialog" aria-modal="true">
-      <div className="modal">
+      <div className="modal" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <div className="modal-header">
           <span className="modal-title" style={titleColor?{color:titleColor}:{}}>{title}</span>
           <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
@@ -2452,6 +2722,7 @@ export default function App() {
             <div className="topbar-right">
               <Clock/>
               <span className="badge badge-green" style={{fontSize:10}}>LIVE</span>
+              <button className="topbar-logout-mobile" onClick={()=>setAuthed(false)} title="Logout" aria-label="Logout">⏻</button>
             </div>
           </div>
           <div className="content">
