@@ -9,7 +9,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;background:#030a0f;color:#c8e0f4;font-family:'Share Tech Mono',monospace;overflow:hidden}
+html,body{height:100%;background:#030a0f;color:#c8e0f4;font-family:'Share Tech Mono',monospace;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px)}
 .wrap{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:24px;position:relative;z-index:1}
@@ -227,6 +227,110 @@ html {
   .btn { min-width: 120px; }
 }
 
+/* ╔══════════════════════════════════════════════════════════╗
+   ║  OFFLINE — APPLE-LEVEL MOBILE COMPLETE FIX              ║
+   ╚══════════════════════════════════════════════════════════╝ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 100dvh;
+}
+
+.wrap {
+  min-height: 100dvh !important;
+  overflow-y: auto;
+  padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)) !important;
+  gap: clamp(16px, 4vw, 24px);
+}
+
+.logo {
+  font-size: clamp(24px, 8vw, 48px) !important;
+  letter-spacing: clamp(.06em, 1.5vw, .12em) !important;
+  line-height: 1;
+}
+
+.status {
+  font-size: clamp(8px, 2.2vw, 10px) !important;
+  letter-spacing: clamp(.3em, 1.5vw, .5em) !important;
+}
+
+.icon {
+  width: clamp(60px, 18vw, 80px);
+  height: clamp(60px, 18vw, 80px);
+  font-size: clamp(26px, 8vw, 36px);
+}
+
+.msg-box {
+  width: min(500px, 94vw) !important;
+  padding: clamp(16px, 4vw, 24px) clamp(16px, 4vw, 28px) !important;
+}
+.msg-title { font-size: clamp(9px, 2.5vw, 11px) !important; letter-spacing: clamp(.15em, 1vw, .3em) !important; }
+.msg-text  { font-size: clamp(11px, 2.8vw, 14px) !important; line-height: 1.8 !important; }
+
+.cached {
+  width: min(500px, 94vw) !important;
+  padding: clamp(10px, 3vw, 14px) clamp(14px, 3.5vw, 20px) !important;
+}
+.cached-title { font-size: clamp(7px, 2vw, 9px) !important; letter-spacing: .25em !important; }
+.cached-links { flex-wrap: wrap; gap: 8px; }
+.cached-link {
+  min-height: 44px !important;
+  padding: 8px 14px !important;
+  font-size: clamp(9px, 2.5vw, 10px) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  flex: 1;
+  justify-content: center;
+  text-align: center;
+  touch-action: manipulation;
+}
+
+.actions {
+  display: flex !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: min(500px, 94vw) !important;
+}
+.btn {
+  min-height: 48px !important;
+  padding: clamp(10px, 2.5vw, 12px) clamp(18px, 4vw, 24px) !important;
+  font-size: clamp(9px, 2.3vw, 10px) !important;
+  letter-spacing: clamp(.1em, .5vw, .2em) !important;
+  touch-action: manipulation;
+  flex: 1;
+  justify-content: center;
+  min-width: 130px;
+  border-radius: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(.97); opacity: .9; }
+
+.pulse-bar { width: min(200px, 60vw) !important; }
+
+@media (max-width: 360px) {
+  .wrap { gap: 12px; padding: max(16px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)) !important; }
+  .msg-box { padding: 14px !important; }
+  .cached-link { min-width: 80px; }
+  .btn { min-width: 110px; }
+}
+
+/* ── Touch active states ── */
+@media (hover: none) and (pointer: coarse) {
+  .btn-blue:hover  { background: none !important; box-shadow: none !important; }
+  .btn-ghost:hover { border-color: #1a3a5c !important; color: #5a7a9a !important; }
+  .btn-blue:active  { background: rgba(0,212,255,.1) !important; box-shadow: 0 0 20px rgba(0,212,255,.3) !important; }
+  .btn-ghost:active { border-color: #5a7a9a !important; color: #c8e0f4 !important; }
+  .cached-link:active { color: #00d4ff; border-color: rgba(0,212,255,.3); }
+}
+/* ─────────────────────────────── */
 </style>
 </head>
 <body>

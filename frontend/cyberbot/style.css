@@ -417,3 +417,198 @@ textarea {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* ╔══════════════════════════════════════════════════════════╗
+   ║  CYBERBOT — APPLE-LEVEL MOBILE COMPLETE FIX             ║
+   ╚══════════════════════════════════════════════════════════╝ */
+
+/* ── iOS zoom prevention — ALL inputs 16px ── */
+#messageInput,
+.tool-input,
+.tool-textarea,
+.tool-select,
+input, textarea, select {
+  font-size: 16px !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ── dvh fix: use dynamic viewport height ── */
+.chat-main {
+  height: calc(100dvh - 56px) !important;
+  position: sticky;
+  top: 56px;
+}
+
+/* ── Input area: always above iOS keyboard ── */
+.chat-input-area {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  background: var(--bg);
+  padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+  padding-left:  max(14px, env(safe-area-inset-left));
+  padding-right: max(14px, env(safe-area-inset-right));
+}
+
+/* ── Messages: contain scroll, no bounce bleed ── */
+.messages {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* ── Header safe area ── */
+.header {
+  padding-left:  max(24px, env(safe-area-inset-left)) !important;
+  padding-right: max(24px, env(safe-area-inset-right)) !important;
+  padding-top:   max(0px, env(safe-area-inset-top)) !important;
+}
+
+/* ── Footer safe area ── */
+.footer {
+  padding-bottom: max(28px, calc(env(safe-area-inset-bottom) + 20px)) !important;
+}
+
+@media (max-width: 768px) {
+  /* ── Chat takes full height ── */
+  .chat-main { height: calc(100dvh - 56px) !important; }
+  .chat-header {
+    padding: 10px 14px;
+    flex-shrink: 0;
+  }
+  .chat-bot-name { font-size: 13px; }
+  .clear-btn { min-width: 44px; min-height: 44px; touch-action: manipulation; }
+
+  /* ── Messages area ── */
+  .messages { padding: 14px !important; gap: 12px !important; }
+  .msg-content { max-width: 90% !important; }
+  .msg-bubble {
+    font-size: 13px !important;
+    line-height: 1.65 !important;
+    padding: 10px 13px !important;
+  }
+
+  /* ── Input area ── */
+  .chat-input-area { padding: 10px 12px !important; padding-bottom: max(10px, env(safe-area-inset-bottom)) !important; }
+  #messageInput {
+    font-size: 16px !important;
+    line-height: 1.5;
+    min-height: 24px;
+  }
+  .input-wrapper { padding: 8px 10px !important; }
+  .send-btn {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    touch-action: manipulation;
+  }
+  .attach-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+  }
+  .input-meta { font-size: 9px; margin-top: 5px; }
+
+  /* ── Nav links ── */
+  .nav-link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px !important;
+    touch-action: manipulation;
+  }
+  .header-inner { height: 56px; gap: 12px; }
+  .header-status { display: none; } /* too cramped on mobile */
+
+  /* ── Hero section ── */
+  .hero { padding: clamp(24px, 6vw, 40px) clamp(14px, 4vw, 24px) !important; }
+  .hero-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    gap: 8px;
+  }
+  .hero-chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0 !important;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    touch-action: manipulation;
+  }
+
+  /* ── Tool panel ── */
+  .tool-panel { padding: 12px 14px !important; }
+  .tool-input, .tool-textarea, .tool-select { font-size: 16px !important; min-height: 44px; }
+  .tool-textarea { min-height: 120px; font-size: 16px !important; }
+  .tool-btn { min-height: 44px; touch-action: manipulation; }
+  .tool-close { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
+
+  /* ── Modal — bottom sheet ── */
+  .modal-overlay { align-items: flex-end !important; }
+  .modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 92dvh !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 36px; height: 3px;
+    background: rgba(0,212,255,.25);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .modal-header { padding: 16px 16px 12px !important; }
+  .modal-body { padding: 14px 16px !important; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Sections ── */
+  .tools-section, .about-section { padding: clamp(32px, 8vw, 48px) clamp(14px, 4vw, 20px) !important; }
+  .tools-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .tool-card { padding: 16px 14px !important; min-height: 120px; touch-action: manipulation; }
+  .about-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
+  .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .stat-num { font-size: clamp(18px, 5vw, 22px) !important; }
+  .tech-stack { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+  .tech-item { padding: 8px 10px !important; font-size: 11px; }
+
+  /* ── PW checks ── */
+  .pw-checks { grid-template-columns: 1fr !important; }
+
+  /* ── Overflow ── */
+  body { overflow-x: hidden; }
+}
+
+@media (max-width: 480px) {
+  .hero-title { font-size: clamp(24px, 8vw, 32px) !important; }
+  .tools-grid { grid-template-columns: 1fr !important; }
+  .tech-stack { grid-template-columns: 1fr !important; }
+  .stats-grid { grid-template-columns: 1fr 1fr !important; }
+  .header { padding: 0 clamp(12px, 4vw, 16px) !important; padding-top: max(0px, env(safe-area-inset-top)) !important; }
+  .nav-link { padding: 6px 8px !important; font-size: 11px; }
+  .section-title { font-size: clamp(20px, 7vw, 26px) !important; }
+}
+
+/* ── Touch active states ── */
+@media (hover: none) and (pointer: coarse) {
+  .tool-card:hover { transform: none !important; box-shadow: none !important; }
+  .tool-card:active { opacity: .88; transform: scale(.98); }
+  .chip:hover { transform: none !important; }
+  .chip:active { opacity: .82; }
+  .nav-link:hover { background: none; color: var(--text2); }
+  .nav-link:active { background: rgba(0,212,255,.08); color: var(--cyan); }
+}
+
+/* ─────────────────────────────── */

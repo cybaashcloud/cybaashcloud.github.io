@@ -8,6 +8,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+
+<style>
+:root{--sai-top:env(safe-area-inset-top,0px);--sai-bottom:env(safe-area-inset-bottom,0px);--sai-left:env(safe-area-inset-left,0px);--sai-right:env(safe-area-inset-right,0px)}
+*,*::before,*::after{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+:focus-visible{outline:2px solid #00d4ff;outline-offset:3px}
+</style>
 </head>
 <body>
 
@@ -153,6 +160,11 @@
           <div class="input-wrapper">
             <textarea
               id="messageInput"
+              style="font-size:16px;-webkit-appearance:none"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
               placeholder="Ask about vulnerabilities, secure coding, pen testing..."
               rows="1"
               maxlength="4000"
