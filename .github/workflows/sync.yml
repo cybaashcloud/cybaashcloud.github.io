@@ -60,6 +60,7 @@ jobs:
 
           cp frontend/cybaash-ai.js     _site/cybaash-ai.js
           cp frontend/cybaash-ai.css    _site/cybaash-ai.css
+          [ -f frontend/style.css ] && cp frontend/style.css _site/style.css || true
           cp frontend/script.js         _site/script.js
           cp frontend/github.js         _site/github.js
           [ -f frontend/cyberbot-script.js ] && cp frontend/cyberbot-script.js _site/cyberbot-script.js || true
