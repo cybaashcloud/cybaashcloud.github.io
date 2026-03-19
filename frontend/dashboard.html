@@ -1860,34 +1860,51 @@ async function doLaunch() {
 }
 
 // ════════════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════════════
 // CERT UPLOAD — attach PDF/image to any credential card
+// Saves to cybaash-data/cert_pdfs.json (sidecar) — never
+// touches data_creds_*.json so no conflict with admin panel.
 // ════════════════════════════════════════════════════════════
 
-// Which data_creds_N.json file does this cert live in?
-let _certFileMap = {}; // id -> { fileIndex, sha }
+const CERT_PDF_MAP_PATH = 'cert_pdfs.json'; // in cybaash-data repo
+let _certPdfMap = null; // { certId: rawUrl, … }
 
-async function _buildCertFileMap() {
-  if (Object.keys(_certFileMap).length) return;
-  for (let i = 1; i <= 5; i++) {
-    try {
-      const res = await fetch(`portfolio/data_creds_${i}.json?v=${Date.now()}`,{cache:'no-store'});
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (!data?.credentials) continue;
-      data.credentials.forEach(c => { _certFileMap[c.id] = { fileIndex: i }; });
-    } catch(_) {}
-  }
+async function _loadCertPdfMap() {
+  if (_certPdfMap) return _certPdfMap;
+  if (!TOKEN || !USER) { _certPdfMap = {}; return _certPdfMap; }
+  try {
+    const m = await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${CERT_PDF_MAP_PATH}`);
+    _certPdfMap = m ? JSON.parse(atob(m.content.replace(/\n/g,''))) : {};
+  } catch(_) { _certPdfMap = {}; }
+  return _certPdfMap;
+}
+
+async function _saveCertPdfMap(map) {
+  // Read current SHA (file may or may not exist yet)
+  const existing = await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${CERT_PDF_MAP_PATH}`).catch(()=>null);
+  const enc = btoa(unescape(encodeURIComponent(JSON.stringify(map, null, 2))));
+  await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${CERT_PDF_MAP_PATH}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      message: 'cert: update pdf map',
+      content: enc,
+      ...(existing?.sha ? { sha: existing.sha } : {}),
+    }),
+  });
+}
+
+// Called once after login to patch ALL_CERTS with any saved PDFs
+async function applyCertPdfMap() {
+  if (!TOKEN || !USER || !ALL_CERTS.length) return;
+  const map = await _loadCertPdfMap();
+  ALL_CERTS.forEach(c => { if (map[c.id]) c.pdf = map[c.id]; });
 }
 
 async function uploadCertFile(certId, btn) {
-  // Must be logged in
   if (!TOKEN || !USER) {
     alert('Please log in with your GitHub PAT first to upload certificate files.');
     return;
   }
 
-  // Create hidden file input
   const inp = document.createElement('input');
   inp.type = 'file';
   inp.accept = '.pdf,.jpg,.jpeg,.png,.webp';
@@ -1900,24 +1917,21 @@ async function uploadCertFile(certId, btn) {
     if (!file) return;
 
     const ext = file.name.split('.').pop().toLowerCase();
-    const maxMB = 5;
-    if (file.size > maxMB * 1024 * 1024) {
-      alert(`File too large. Max ${maxMB}MB.`); return;
-    }
+    if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5MB.'); return; }
 
     btn.classList.add('uploading');
     btn.textContent = '⟳ UPLOADING…';
 
     try {
-      // Read file as base64
-      const b64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+      // 1. Read as base64
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = e => res(e.target.result.split(',')[1]);
+        r.onerror = rej;
+        r.readAsDataURL(file);
       });
 
-      // Upload binary file to GitHub
+      // 2. Upload binary to cybaash-data/certs/{id}.ext
       const ghPath = `certs/${certId}.${ext}`;
       const existing = await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${ghPath}`).catch(()=>null);
       await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${ghPath}`, {
@@ -1929,43 +1943,33 @@ async function uploadCertFile(certId, btn) {
         }),
       });
 
-      // Build raw URL for the file
       const rawUrl = `https://raw.githubusercontent.com/${USER.login}/${DATA_REPO}/main/${ghPath}`;
 
-      // Update the cert JSON — find which file this cert is in
-      await _buildCertFileMap();
-      const fileInfo = _certFileMap[certId];
-      if (fileInfo) {
-        const path = `portfolio/data_creds_${fileInfo.fileIndex}.json`;
-        const { content: jsonData, sha } = await ghRead(USER.login, path);
-        const idx = jsonData.credentials.findIndex(c => c.id === certId);
-        if (idx >= 0) {
-          jsonData.credentials[idx].pdf = rawUrl;
-          await ghWrite(USER.login, path, jsonData, sha);
-          // Update in-memory cert too
-          const memIdx = ALL_CERTS.findIndex(c => c.id === certId);
-          if (memIdx >= 0) ALL_CERTS[memIdx].pdf = rawUrl;
-        }
-      }
+      // 3. Update sidecar cert_pdfs.json — NEVER touches data_creds_*.json
+      const map = await _loadCertPdfMap();
+      map[certId] = rawUrl;
+      await _saveCertPdfMap(map);
 
-      // Update card UI
+      // 4. Update in-memory cert
+      const mem = ALL_CERTS.findIndex(c => c.id === certId);
+      if (mem >= 0) ALL_CERTS[mem].pdf = rawUrl;
+
+      // 5. Update card UI
       btn.classList.remove('uploading');
       btn.classList.add('done');
       btn.textContent = '✓ UPLOADED';
 
-      // Inject preview link next to button
       const row = btn.parentElement;
-      const oldLink = row.querySelector('.cert-pdf-link');
-      if (oldLink) oldLink.remove();
+      const old = row.querySelector('.cert-pdf-link');
+      if (old) old.remove();
       const link = document.createElement('a');
       link.className = 'cert-pdf-link';
       link.href = rawUrl;
       link.target = '_blank';
       link.rel = 'noopener';
-      link.textContent = ext === 'pdf' ? '↗ VIEW PDF' : '↗ VIEW IMAGE';
+      link.textContent = ext === 'pdf' ? '↗ PDF' : '↗ IMAGE';
       row.appendChild(link);
 
-      // If image, show thumbnail
       if (['jpg','jpeg','png','webp'].includes(ext)) {
         const card = btn.closest('.cert-card');
         let thumb = card.querySelector('.cert-img-thumb');
@@ -1980,7 +1984,7 @@ async function uploadCertFile(certId, btn) {
 
     } catch(err) {
       btn.classList.remove('uploading');
-      btn.textContent = '↑ UPLOAD';
+      btn.textContent = '↑ UPLOAD CERT';
       alert('Upload failed: ' + (err.message || err));
     }
   };
@@ -2035,6 +2039,7 @@ function classifyCerts(certs) {
 async function renderCerts(mc) {
   mc.innerHTML = '<div class="loading-row"><span class="blink">▋</span> Loading credentials…</div>';
   if (!certsLoaded) await loadCertsInBackground();
+  await applyCertPdfMap();
   buildCertsUI(mc);
 }
 
