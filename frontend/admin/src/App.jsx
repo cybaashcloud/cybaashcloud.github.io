@@ -1876,19 +1876,26 @@ function GeminiConfigCard({ ghCfg }) {
   useEffect(() => { loadConfig() }, [ghCfg])
 
   const loadConfig = async () => {
-    if (!ghCfg?.token) return
     setLoading(true)
-    try {
-      const { loadSection } = await import('./github.js')
-      const saved = await loadSection('_ai_config', null)
-      if (saved) {
-        setForm(f => ({ ...f, ...saved }))
-      }
-      setLoaded(true)
-    } catch (e) {
-      // File doesn't exist yet — use defaults
-      setLoaded(true)
+    // Always restore key from localStorage first (it's never stored in GitHub)
+    const lsKey = localStorage.getItem('cybaash_gemini_key') || ''
+    if (lsKey) {
+      setForm(f => ({ ...f, gemini_api_key: lsKey }))
     }
+    // Load non-secret settings (model, prompt, tokens) from GitHub
+    if (ghCfg?.token) {
+      try {
+        const { loadSection } = await import('./github.js')
+        const saved = await loadSection('_ai_config', null)
+        if (saved) {
+          // Merge GitHub settings but keep localStorage key
+          setForm(f => ({ ...f, ...saved, gemini_api_key: lsKey || f.gemini_api_key }))
+        }
+      } catch (e) {
+        // File doesn't exist yet — use defaults
+      }
+    }
+    setLoaded(true)
     setLoading(false)
   }
 

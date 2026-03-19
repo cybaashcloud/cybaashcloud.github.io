@@ -2149,7 +2149,7 @@ async function loadPortfolioData() {
   let mainData = null;
   try {
     const mainRes = await _fetchWithRetry('portfolio/data_main.json' + _cbv);
-    if (mainRes) mainData = JSON.parse(await mainRes.text());
+    if (mainRes) { mainData = JSON.parse(await mainRes.text()); window._mainData = mainData; }
   } catch (e) {
     console.warn('[Portfolio] data_main.json failed:', e.message);
   }
@@ -7328,8 +7328,8 @@ if (typeof defCmd === 'function') {
 ════════════════════════════════════════════════ -->
 <script>
 function generateResumePDF() {
-  // Pull live data
-  const m   = (typeof D !== 'undefined' && D?.main) || {};
+  // Pull live data from window._mainData (set by loadPortfolioData)
+  const m   = (typeof window._mainData !== 'undefined' && window._mainData) || {};
   const ab  = m.about || {};
   const ct  = m.contact || {};
   const exp = m.experience || [];
