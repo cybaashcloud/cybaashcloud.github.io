@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CYBAASH // Offline</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00d4ff">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#030a0f;color:#c8e0f4;font-family:'Share Tech Mono',monospace;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px)}
+.wrap{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:24px;position:relative;z-index:1}
+/* Animated grid */
+.wrap::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);
+  background-size:60px 60px}
+.icon{width:80px;height:80px;border-radius:50%;border:2px solid rgba(0,212,255,.3);
+  display:flex;align-items:center;justify-content:center;font-size:36px;
+  background:rgba(0,212,255,.05);margin:0 auto;position:relative;
+  animation:pulse 2s ease-in-out infinite}
+.icon::before{content:'';position:absolute;inset:-8px;border-radius:50%;
+  border:1px solid rgba(0,212,255,.15);animation:pulse 2s ease-in-out .5s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,.2)}50%{box-shadow:0 0 0 16px rgba(0,212,255,0)}}
+.logo{font-family:'Orbitron',monospace;font-size:clamp(28px,8vw,48px);font-weight:900;letter-spacing:.12em;
+  color:#00d4ff;text-shadow:0 0 30px rgba(0,212,255,.5)}
+.logo span{color:#ff2244;text-shadow:0 0 30px rgba(255,34,68,.5)}
+.status{font-size:10px;letter-spacing:.5em;color:#5a7a9a;text-transform:uppercase;margin-top:-12px}
+.msg-box{border:1px solid rgba(0,212,255,.15);background:rgba(10,21,32,.8);padding:24px 28px;max-width:500px;width:100%;position:relative}
+.msg-box::before{content:'';position:absolute;top:-1px;left:-1px;right:-1px;height:1.5px;
+  background:linear-gradient(90deg,transparent,#00d4ff,transparent)}
+.msg-box::after{content:'';position:absolute;top:-1px;left:-1px;width:10px;height:10px;
+  border-top:2px solid #00d4ff;border-left:2px solid #00d4ff}
+.msg-title{font-size:11px;letter-spacing:.3em;color:#00d4ff;text-transform:uppercase;margin-bottom:12px}
+.msg-text{font-size:clamp(12px,2.5vw,14px);color:#8aaac4;line-height:1.8;font-family:'Share Tech Mono',monospace}
+.msg-text strong{color:#c8e0f4}
+.actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.btn{border:1px solid;padding:12px 24px;font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;
+  background:none;transition:all .2s;text-decoration:none;display:inline-flex;
+  align-items:center;gap:8px;min-height:44px}
+.btn-blue{border-color:#00d4ff;color:#00d4ff}
+.btn-blue:hover{background:rgba(0,212,255,.1);box-shadow:0 0 20px rgba(0,212,255,.3)}
+.btn-ghost{border-color:#1a3a5c;color:#5a7a9a}
+.btn-ghost:hover{border-color:#5a7a9a;color:#c8e0f4}
+/* Cached pages notice */
+.cached{border:1px solid rgba(0,255,136,.12);background:rgba(0,255,136,.04);
+  padding:14px 20px;max-width:500px;width:100%}
+.cached-title{font-size:9px;letter-spacing:.3em;color:#00ff88;margin-bottom:10px}
+.cached-links{display:flex;gap:10px;flex-wrap:wrap}
+.cached-link{font-size:10px;color:#5a7a9a;padding:8px 14px;border:1px solid rgba(26,58,92,.6);
+  text-decoration:none;transition:all .2s;min-height:36px;display:flex;align-items:center}
+.cached-link:hover{color:#00d4ff;border-color:rgba(0,212,255,.3)}
+/* Pulse bar */
+.pulse-bar{width:200px;height:2px;background:rgba(0,212,255,.1);margin:0 auto;position:relative;overflow:hidden}
+.pulse-bar::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,#00d4ff,transparent);
+  animation:slide 2s linear infinite}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(200%)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="icon">⬡</div>
+  <div>
+    <div class="logo">CYB<span>AASH</span></div>
+    <div class="status">// Autonomous Cyber Range</div>
+  </div>
+  <div class="pulse-bar"></div>
+  <div class="msg-box">
+    <div class="msg-title">[ CONNECTION LOST ]</div>
+    <div class="msg-text">
+      You appear to be <strong>offline</strong>.<br>
+      Previously cached pages are still available below.<br>
+      The cyber range will reconnect automatically when your network returns.
+    </div>
+  </div>
+  <div class="cached">
+    <div class="cached-title">// CACHED PAGES AVAILABLE</div>
+    <div class="cached-links">
+      <a href="/" class="cached-link">⬡ Cyber Range</a>
+      <a href="/dashboard.html" class="cached-link">◈ Dashboard</a>
+      <a href="/recruiter.html" class="cached-link">◆ Recruiter</a>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-blue" onclick="window.location.reload()">↺ Retry Connection</button>
+    <a href="/" class="btn btn-ghost">⬡ Go Home</a>
+  </div>
+</div>
+
+<script>
+// Auto-reload when connection is restored
+window.addEventListener('online', () => {
+  document.querySelector('.msg-title').textContent = '[ CONNECTION RESTORED ]';
+  document.querySelector('.msg-text').innerHTML = 'Network connection restored. <strong>Reloading…</strong>';
+  setTimeout(() => window.location.reload(), 1200);
+});
+// Check if we came back online already
+if (navigator.onLine) {
+  window.history.back();
+}
+</script>
+</body>
+</html>
