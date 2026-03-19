@@ -1,0 +1,122 @@
+name: Deploy CYBAASH AI to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/sync.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install admin dependencies
+        working-directory: frontend/admin
+        run: npm ci --no-audit --no-fund
+
+      - name: Build admin panel
+        working-directory: frontend/admin
+        run: npm run build
+        env:
+          VITE_BASE_URL: /admin/
+
+      - name: Assemble _site
+        run: |
+          set -euo pipefail
+          mkdir -p _site/portfolio _site/admin _site/icons
+
+          # ── Main pages ──────────────────────────────────────────────────
+          cp frontend/index.html          _site/index.html
+          cp frontend/recruiter.html      _site/recruiter.html
+          cp frontend/dashboard.html      _site/dashboard.html
+          cp frontend/offline.html        _site/offline.html
+
+          # ── CyberBot standalone page ─────────────────────────────────────
+          cp -r frontend/cyberbot-standalone _site/cyberbot-standalone
+
+          # ── Chatbot widget (referenced by index.html) ───────────────────
+          cp frontend/cybaash-ai.js       _site/cybaash-ai.js
+          cp frontend/cybaash-ai.css      _site/cybaash-ai.css
+
+          # ── Core JS files ───────────────────────────────────────────────
+          cp frontend/script.js           _site/script.js
+          cp frontend/github.js           _site/github.js
+          [ -f frontend/cyberbot-script.js ] && cp frontend/cyberbot-script.js _site/cyberbot-script.js || true
+
+          # ── SaaS integration (referenced by index.html) ─────────────────
+          cp frontend/saas-integration.js _site/saas-integration.js
+
+          # ── Portfolio assets ────────────────────────────────────────────
+          [ -f frontend/avatar.png           ] && cp frontend/avatar.png           _site/portfolio/avatar.png
+          [ -f frontend/li-logo.jpg          ] && cp frontend/li-logo.jpg          _site/portfolio/li-logo.jpg
+          [ -f frontend/project_eatpqa2f.png ] && cp frontend/project_eatpqa2f.png _site/portfolio/project_eatpqa2f.png
+
+          # ── Data files → portfolio/ (matches fetch paths in JS) ─────────
+          for f in data_main.json \
+                   data_creds_1.json \
+                   data_creds_2.json \
+                   data_creds_3.json \
+                   data_creds_4.json \
+                   data_creds_5.json; do
+            [ -f "frontend/$f" ] && cp "frontend/$f" "_site/portfolio/$f" && echo "OK $f" || echo "SKIP $f"
+          done
+
+          # ── Admin panel (Vite build output) ─────────────────────────────
+          cp -r frontend/admin/dist/. _site/admin/
+
+          # ── AI config (chatbot reads this at runtime) ────────────────────
+          [ -f frontend/data_ai_config.json ] && cp frontend/data_ai_config.json _site/data_ai_config.json && echo "OK data_ai_config.json" || echo "SKIP data_ai_config.json"
+
+          # ── PWA files ───────────────────────────────────────────────────
+          cp frontend/manifest.json   _site/manifest.json
+          cp frontend/sw.js           _site/sw.js
+          cp frontend/_headers        _site/_headers
+
+          # ── PWA icons → /icons/ (matches all HTML + manifest references) 
+          for icon in frontend/icons/*.png frontend/icons/*.ico; do
+            [ -f "$icon" ] && cp "$icon" "_site/icons/$(basename $icon)" || true
+          done
+
+          # ── Prevent Jekyll processing ────────────────────────────────────
+          touch _site/.nojekyll
+
+          echo "=== Final _site structure ==="
+          find _site -type f | sort
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
