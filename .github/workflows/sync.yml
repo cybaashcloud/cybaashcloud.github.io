@@ -6,6 +6,7 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/sync.yml'
+      - 'scripts/**'
   workflow_dispatch:
 
 permissions:
@@ -22,7 +23,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # FIX (perf): cache npm modules — saves 30-60s per run
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
@@ -40,109 +40,73 @@ jobs:
         env:
           VITE_BASE_URL: /admin/
 
+      - name: Verify admin build output
+        run: |
+          test -d frontend/admin/dist || { echo "ERROR: frontend/admin/dist/ missing"; exit 1; }
+          test -f frontend/admin/dist/index.html || { echo "ERROR: admin dist/index.html missing"; exit 1; }
+          echo "Admin build OK: $(find frontend/admin/dist -type f | wc -l) files"
+
       - name: Assemble _site
         run: |
           set -euo pipefail
           mkdir -p _site/portfolio _site/admin _site/icons _site/cyberbot
 
-          # ── Main pages ──────────────────────────────────────────────────
-          cp frontend/index.html          _site/index.html
-          cp frontend/recruiter.html      _site/recruiter.html
-          cp frontend/dashboard.html      _site/dashboard.html
-          cp frontend/offline.html        _site/offline.html
+          cp frontend/index.html        _site/index.html
+          cp frontend/recruiter.html    _site/recruiter.html
+          cp frontend/dashboard.html    _site/dashboard.html
+          cp frontend/offline.html      _site/offline.html
 
-          # ── CyberBot standalone page ─────────────────────────────────────
           cp -r frontend/cyberbot/. _site/cyberbot/
 
-          # ── Chatbot widget (referenced by index.html) ────────────────────
-          cp frontend/cybaash-ai.js       _site/cybaash-ai.js
-          cp frontend/cybaash-ai.css      _site/cybaash-ai.css
-
-          # ── Core JS files ────────────────────────────────────────────────
-          cp frontend/script.js           _site/script.js
-          cp frontend/github.js           _site/github.js
+          cp frontend/cybaash-ai.js     _site/cybaash-ai.js
+          cp frontend/cybaash-ai.css    _site/cybaash-ai.css
+          cp frontend/script.js         _site/script.js
+          cp frontend/github.js         _site/github.js
           [ -f frontend/cyberbot-script.js ] && cp frontend/cyberbot-script.js _site/cyberbot-script.js || true
-
-          # ── SaaS integration (referenced by index.html) ──────────────────
           cp frontend/saas-integration.js _site/saas-integration.js
 
-          # ── Portfolio assets ─────────────────────────────────────────────
           [ -f frontend/avatar.png           ] && cp frontend/avatar.png           _site/portfolio/avatar.png           || true
           [ -f frontend/li-logo.jpg          ] && cp frontend/li-logo.jpg          _site/portfolio/li-logo.jpg          || true
           [ -f frontend/project_eatpqa2f.png ] && cp frontend/project_eatpqa2f.png _site/portfolio/project_eatpqa2f.png || true
 
-          # ── Data files → portfolio/ (matches fetch paths in index.html) ──
-          # NOTE: No key scan here — these are portfolio content files (resume,
-          # certifications, skills). They legitimately contain fields named
-          # "key", "token", "auth" etc. in a non-secret context.
-          # API key scanning is applied only to data_ai_config.json below.
-          for f in data_main.json \
-                   data_creds_1.json \
-                   data_creds_2.json \
-                   data_creds_3.json \
-                   data_creds_4.json \
-                   data_creds_5.json; do
+          for f in data_main.json data_creds_1.json data_creds_2.json data_creds_3.json data_creds_4.json data_creds_5.json; do
             [ -f "frontend/$f" ] && cp "frontend/$f" "_site/portfolio/$f" && echo "OK $f" || echo "SKIP $f"
           done
 
-          # FIX (bug): also copy data_main.json to the root so script.js
-          # fetch('data_main.json') resolves correctly (index.html uses
-          # portfolio/data_main.json but script.js uses the bare path).
           [ -f frontend/data_main.json ] && cp frontend/data_main.json _site/data_main.json || true
 
-          # ── Admin panel (Vite build output) ──────────────────────────────
           cp -r frontend/admin/dist/. _site/admin/
 
-          # ── AI config (chatbot reads this at runtime) ─────────────────────
-          # SECURITY: Validate that no API key was accidentally committed.
-          # Checks only the fields that are actually expected to hold API keys.
-          if [ -f frontend/data_ai_config.json ]; then
-            if python3 -c "
-import json, sys
-d = json.load(open('frontend/data_ai_config.json'))
-bad = [k for k in ['gemini_api_key','apiKey','api_key','access_key','private_key'] if d.get(k,'').strip()]
-if bad:
-    print(f'ERROR: data_ai_config.json contains key fields: {bad}')
-    sys.exit(1)
-print('OK: data_ai_config.json')
-"; then
-              cp frontend/data_ai_config.json _site/data_ai_config.json
-              echo "OK data_ai_config.json"
-            else
-              echo "BLOCKED: data_ai_config.json contains API keys — fix before deploying"
-              exit 1
-            fi
-          else
-            echo "SKIP data_ai_config.json"
-          fi
+          [ -f frontend/data_ai_config.json ] && cp frontend/data_ai_config.json _site/data_ai_config.json || true
 
-          # ── Chatbot terminal integration ──────────────────────────────────
           [ -f frontend/cybaash_chatbot.js ] && cp frontend/cybaash_chatbot.js _site/cybaash_chatbot.js && echo "OK cybaash_chatbot.js" || echo "SKIP cybaash_chatbot.js"
 
-          # ── PWA files ────────────────────────────────────────────────────
-          cp frontend/manifest.json   _site/manifest.json
-          cp frontend/sw.js           _site/sw.js
-          cp frontend/_headers        _site/_headers
+          cp frontend/manifest.json _site/manifest.json
+          cp frontend/sw.js         _site/sw.js
+          cp frontend/_headers      _site/_headers
 
-          # ── PWA icons → /icons/ (matches all HTML + manifest references) ─
           find frontend/icons \( -name '*.png' -o -name '*.ico' \) | while read -r icon; do
             cp "$icon" "_site/icons/$(basename "$icon")"
           done
 
-          # ── Prevent Jekyll processing ─────────────────────────────────────
           touch _site/.nojekyll
 
-          # FIX (reliability): sanity-check that critical files landed
           echo "=== Validating _site ==="
-          test -f _site/index.html              || { echo "MISSING: index.html";              exit 1; }
-          test -f _site/admin/index.html        || { echo "MISSING: admin/index.html";        exit 1; }
+          test -f _site/index.html               || { echo "MISSING: index.html";               exit 1; }
+          test -f _site/admin/index.html         || { echo "MISSING: admin/index.html";         exit 1; }
           test -f _site/portfolio/data_main.json || { echo "MISSING: portfolio/data_main.json"; exit 1; }
-          test -f _site/data_main.json          || { echo "MISSING: root data_main.json";     exit 1; }
-          test -f _site/cybaash-ai.js           || { echo "MISSING: cybaash-ai.js";           exit 1; }
+          test -f _site/data_main.json           || { echo "MISSING: root data_main.json";      exit 1; }
+          test -f _site/cybaash-ai.js            || { echo "MISSING: cybaash-ai.js";            exit 1; }
           echo "All critical files present."
-
-          echo "=== Final _site structure ==="
           find _site -type f | sort
+
+      - name: Sanitize AI config
+        run: python3 scripts/deploy_ai_config.py
+
+      - name: Stamp SW cache version
+        run: |
+          sed -i "s/const CACHE_VERSION = '[^']*'/const CACHE_VERSION = '${{ github.sha }}'/" _site/sw.js
+          grep "CACHE_VERSION" _site/sw.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -155,9 +119,6 @@ print('OK: data_ai_config.json')
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    # FIX (clarity): explicit permissions on the deploy job — not inherited
-    # from the top-level block — so changes to global permissions can't
-    # silently break the deploy.
     permissions:
       pages: write
       id-token: write
