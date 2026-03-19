@@ -8,11 +8,16 @@
 (function () {
   'use strict';
 
-  /* ── RUNTIME CONFIG ──────────────────────────────────────── */
+  /* ── RUNTIME CONFIG (loaded from repo) ───────────────────── */
   var cfg = {
-    backend:   'https://cybaash-ai.onrender.com',  // Render backend holds the key
-    backendOk: false,  // set true after health check succeeds
-    sessionId: 'cyb_' + Math.random().toString(36).slice(2, 11),
+    key:    '',
+    model:  'gemini-1.5-flash',
+    tokens: 1024,
+    temp:   0.4,
+    prompt: 'You are CyberBot — an expert cybersecurity assistant for educational purposes. ' +
+            'Explain vulnerabilities (SQLi, XSS, CSRF, buffer overflows, RCE, LFI, SSRF), ' +
+            'teach secure coding, guide pen-testing concepts (CTF/lab only). ' +
+            'Never help attack real systems. Use markdown. Be concise and direct.',
   };
 
   /* ── STATE ───────────────────────────────────────────────── */
@@ -29,28 +34,47 @@
   });
 
   function loadConfig() {
-    // Check if the backend is configured by probing /api/health.
-    // The key is stored server-side (Render env var / SQLite) — never in the browser.
-    fetch(cfg.backend + '/api/health', { cache: 'no-store' })
-      .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(h) {
-        if (h && h.status === 'ok') {
-          cfg.backendOk = true;
-          setStatus(true);
-        } else {
-          cfg.backendOk = false;
-          setStatus(false);
-        }
-      })
-      .catch(function() {
-        cfg.backendOk = false;
-        setStatus(false);
-      });
+    // Priority 1: localStorage (set by Admin Panel - domain-restricted key is safe here)
+    var lsKey = localStorage.getItem('cybaash_gemini_key') || '';
+    if (lsKey) {
+      cfg.key = lsKey;
+      _loadJsonSettings(function() { setStatus(true); });
+      return;
+    }
+    // Priority 2: JSON config file fallback
+    _loadJsonSettings(function() { setStatus(!!cfg.key); });
+  }
+
+  function _loadJsonSettings(done) {
+    var paths = [
+      '/data_ai_config.json',
+      './data_ai_config.json',
+      '/portfolio/data_ai_config.json',
+    ];
+    function tryNext(idx) {
+      if (idx >= paths.length) { if (done) done(); return; }
+      fetch(paths[idx] + '?v=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) {
+          if (!r.ok) { tryNext(idx + 1); return null; }
+          return r.json();
+        })
+        .then(function (c) {
+          if (!c) { if (done) done(); return; }
+          if (c.gemini_api_key && !cfg.key) cfg.key = c.gemini_api_key;
+          if (c.gemini_model)   cfg.model  = c.gemini_model;
+          if (c.max_tokens)     cfg.tokens = parseInt(c.max_tokens)    || 1024;
+          if (c.temperature)    cfg.temp   = parseFloat(c.temperature) || 0.4;
+          if (c.system_prompt)  cfg.prompt = c.system_prompt;
+          if (done) done();
+        })
+        .catch(function () { tryNext(idx + 1); });
+    }
+    tryNext(0);
   }
 
   function setStatus(online) {
-    var msg = online ? '● AI Online' : '● AI Offline';
-    var cls = online ? 'cyb-online'  : 'cyb-offline';
+    var msg = online ? '● Gemini Online' : '● Demo Mode';
+    var cls = online ? 'cyb-online'      : 'cyb-offline';
     ['cybaash-backend-status', 'cybaash-status-txt'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) { el.textContent = msg; el.className = cls; }
@@ -91,7 +115,7 @@
     appendMsg('user', msg, []);
     showTyping(true);
 
-    if (cfg.backendOk) {
+    if (cfg.key) {
       callGemini(msg)
         .then(function (reply) {
           showTyping(false);
@@ -119,29 +143,47 @@
 
   /* ── GEMINI API ──────────────────────────────────────────── */
   function callGemini(userMessage) {
-    // Route through the Render backend — key is stored server-side only.
-    // The browser never sees the Gemini API key.
     history.push({ role: 'user', parts: [{ text: userMessage }] });
+    var contents = history.slice(-20);
 
-    return fetch(cfg.backend + '/api/chat', {
+    var payload = {
+      system_instruction: { parts: [{ text: cfg.prompt }] },
+      contents: contents,
+      generationConfig: { temperature: cfg.temp, maxOutputTokens: cfg.tokens, topP: 0.95 },
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      ]
+    };
+
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+              cfg.model + ':generateContent?key=' + cfg.key;
+
+    return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message:    userMessage,
-        session_id: cfg.sessionId,
-      }),
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000)
     })
-    .then(function(r) {
-      if (r.status === 503) throw new Error('AI backend offline — try again shortly.');
-      if (r.status === 429) throw new Error('Rate limit reached — wait a moment and try again.');
-      if (!r.ok) throw new Error('Backend error ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      var reply = data.reply || 'No response received.';
-      history.push({ role: 'model', parts: [{ text: reply }] });
-      return reply;
-    });
+      .then(function (r) {
+        if (r.status === 429) throw new Error('Rate limited — Gemini free tier quota reached. Wait 60 seconds and try again.');
+        if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 200)); });
+        return r.json();
+      })
+      .then(function (data) {
+        var reply = data &&
+          data.candidates &&
+          data.candidates[0] &&
+          data.candidates[0].content &&
+          data.candidates[0].content.parts &&
+          data.candidates[0].content.parts[0] &&
+          data.candidates[0].content.parts[0].text;
+        if (!reply) throw new Error('Empty Gemini response');
+        history.push({ role: 'model', parts: [{ text: reply }] });
+        return reply;
+      });
   }
 
   window.cybaashKey = function (e) {
@@ -255,7 +297,7 @@
     var res = document.getElementById('cybaash-code-res');
     res.innerHTML = '<span style="color:#5a7a9a;font-size:.75rem">Scanning...</span>';
 
-    if (cfg.backendOk) {
+    if (cfg.key) {
       var prompt =
         'Analyze this ' + lang + ' code for security vulnerabilities. ' +
         'Return ONLY valid JSON (no markdown, no backticks): ' +
@@ -279,8 +321,8 @@
     var res = document.getElementById('cybaash-file-res');
     res.innerHTML = '<span style="color:#5a7a9a;font-size:.75rem">Analyzing ' + esc(file.name) + '...</span>';
 
-    if (!cfg.backendOk) {
-      res.innerHTML = '<div class="cyb-result-card" style="padding:12px;color:#5a7a9a">AI backend is offline. Check Render deployment.</div>';
+    if (!cfg.key) {
+      res.innerHTML = '<div class="cyb-result-card" style="padding:12px;color:#5a7a9a">Set a Gemini API key in Admin → Settings to enable file analysis.</div>';
       return;
     }
 

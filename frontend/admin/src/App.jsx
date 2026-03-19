@@ -785,11 +785,6 @@ function Login({ onAuth }) {
 // ══════════════════════════════════════════════════════════════════════════
 function Dashboard({ data, lastSync, ghCfg }) {
   const creds = data.credentials || []
-  // FIX (medium): Warn before hitting the hard 420-credential storage cap so
-  // the user isn't surprised by a runtime error during save. 90% = 378.
-  const CRED_CAPACITY     = 420
-  const CRED_WARN_AT      = Math.floor(CRED_CAPACITY * 0.9)
-  const credCapacityWarn  = creds.length >= CRED_WARN_AT
   const counts = {
     skills:       data.skills?.reduce((a,c)=>a+(c.items?.length||0),0)||0,
     credentials:  creds.length,
@@ -804,7 +799,7 @@ function Dashboard({ data, lastSync, ghCfg }) {
       <div className="stat-grid">
         {[
           {label:'Skills',      value:counts.skills,       sub:'tracked'},
-          {label:'Credentials', value:counts.credentials,  sub:`${counts.credly} badges · ${counts.professional} certs · ${counts.linkedin} LinkedIn${credCapacityWarn ? ` ⚠ ${counts.credentials}/${CRED_CAPACITY} — near capacity` : ''}`},
+          {label:'Credentials', value:counts.credentials,  sub:`${counts.credly} badges · ${counts.professional} certs · ${counts.linkedin} LinkedIn`},
           {label:'Projects',    value:counts.projects,     sub:'portfolio'},
           {label:'Experience',  value:counts.experience,   sub:'positions'},
         ].map(s=>(
@@ -1864,219 +1859,187 @@ const AI_CONFIG_DEFAULTS = {
     'Tone: Professional, direct — like a senior security engineer mentoring a junior.',
 }
 
-function GeminiConfigCard() {
-  // Security model:
-  //   - Gemini API key lives ONLY as a Render env var (GEMINI_API_KEY)
-  //   - CYBERBOT_API_KEY (admin password) is entered here per session
-  //   - Admin key stored in sessionStorage only — cleared when tab closes
-  //   - Key is sent via X-Admin-Key header to POST /api/admin/settings
-  //   - Browser NEVER sees the Gemini key — backend reads it from env var
-  //   - No localStorage, no GitHub commits, no exposure
+function GeminiConfigCard({ ghCfg }) {
+  const [form,    setForm]    = useState(AI_CONFIG_DEFAULTS)
+  const [status,  setStatus]  = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [showKey, setShowKey] = useState(false)
+  const [loaded,  setLoaded]  = useState(false)
 
-  const BACKEND = 'https://cybaash-ai.onrender.com'
-  const SK = 'cybaash_admin_session'  // sessionStorage key for admin password
+  // Load config from GitHub on mount
+  useEffect(() => { loadConfig() }, [ghCfg])
 
-  const [adminKey,  setAdminKey]  = useState(sessionStorage.getItem(SK) || '')
-  const [form,      setForm]      = useState({
-    gemini_model:         'gemini-2.0-flash',
-    gemini_model_premium: 'gemini-2.0-flash',
-    max_tokens:           '1024',
-    max_tokens_premium:   '2048',
-    temperature:          '0.4',
-    system_prompt:        'You are CyberBot — an expert cybersecurity assistant for educational and ethical purposes.',
-    bot_name:             'CyberBot',
-  })
-  const [geminiKey, setGeminiKey] = useState('')  // only held in memory, never stored
-  const [status,    setStatus]    = useState(null)
-  const [loading,   setLoading]   = useState(false)
-  const [keyStatus, setKeyStatus] = useState(null)  // 'set' | 'unset' | null
-  const [testing,   setTesting]   = useState(false)
-  const [showKey,   setShowKey]   = useState(false)
-
-  // Persist admin key to sessionStorage so it survives re-renders (not page reloads)
-  const handleAdminKey = (v) => {
-    setAdminKey(v)
-    if (v) sessionStorage.setItem(SK, v)
-    else    sessionStorage.removeItem(SK)
-  }
-
-  // Load current settings from backend (key will be redacted)
-  const loadSettings = async () => {
-    if (!adminKey.trim()) return
-    setLoading(true); setStatus(null)
-    try {
-      const r = await fetch(BACKEND + '/api/admin/settings', {
-        headers: { 'X-Admin-Key': adminKey }
-      })
-      if (r.status === 403) { setStatus({ok:false, txt:'✗ Wrong admin key'}); return }
-      if (!r.ok) throw new Error('Backend returned ' + r.status)
-      const d = await r.json()
-      setForm(f => ({
-        ...f,
-        gemini_model:         d.gemini_model         || f.gemini_model,
-        gemini_model_premium: d.gemini_model_premium || f.gemini_model_premium,
-        max_tokens:           d.max_tokens           || f.max_tokens,
-        temperature:          d.temperature          || f.temperature,
-        system_prompt:        d.system_prompt        || f.system_prompt,
-        bot_name:             d.bot_name             || f.bot_name,
-      }))
-      setKeyStatus(d.gemini_api_key_set ? 'set' : 'unset')
-      setStatus({ok:true, txt:'✓ Settings loaded from backend'})
-    } catch(e) {
-      setStatus({ok:false, txt:'✗ ' + e.message})
+  const loadConfig = async () => {
+    setLoading(true)
+    // Restore key from localStorage first (key is domain-restricted, safe in localStorage)
+    const lsKey = localStorage.getItem('cybaash_gemini_key') || ''
+    if (lsKey) setForm(f => ({ ...f, gemini_api_key: lsKey }))
+    // Load non-secret settings from GitHub
+    if (ghCfg?.token) {
+      try {
+        const { loadSection } = await import('./github.js')
+        const saved = await loadSection('_ai_config', null)
+        if (saved) setForm(f => ({ ...f, ...saved, gemini_api_key: lsKey || f.gemini_api_key }))
+      } catch (e) { /* silent - GitHub optional */ }
     }
+    setLoaded(true)
     setLoading(false)
   }
 
-  // Save settings to backend — key sent only if user entered one
-  const saveSettings = async () => {
-    if (!adminKey.trim()) { setStatus({ok:false, txt:'Enter your admin key first'}); return }
+  const saveConfig = async () => {
     setLoading(true); setStatus(null)
-    try {
-      const body = { ...form }
-      if (geminiKey.trim()) body.gemini_api_key = geminiKey.trim()  // only send if user typed one
-      const r = await fetch(BACKEND + '/api/admin/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
-        body: JSON.stringify(body),
-      })
-      if (r.status === 403) { setStatus({ok:false, txt:'✗ Wrong admin key'}); return }
-      if (!r.ok) throw new Error('Backend returned ' + r.status)
-      setGeminiKey('')  // clear from memory after save
-      if (geminiKey.trim()) setKeyStatus('set')
-      setStatus({ok:true, txt: geminiKey.trim()
-        ? '✓ Settings saved. Gemini key updated on server — never stored in browser.'
-        : '✓ Settings saved to backend.'
-      })
-    } catch(e) {
-      setStatus({ok:false, txt:'✗ ' + e.message})
-    }
+    const key = form.gemini_api_key?.trim() || ''
+    // Save key to localStorage (domain-restricted key is safe here)
+    if (key) localStorage.setItem('cybaash_gemini_key', key)
+    else localStorage.removeItem('cybaash_gemini_key')
+    // Show success immediately
+    setStatus({ok:true, txt: key ? '✓ API key saved. Chatbot is now active.' : '✓ Key cleared.'})
     setLoading(false)
+    // Sync non-secret settings to GitHub in background
+    if (ghCfg?.token) {
+      try {
+        const { saveSection } = await import('./github.js')
+        await saveSection('_ai_config', { ...form, gemini_api_key: '', apiKey: '' })
+        setStatus({ok:true, txt: key ? '✓ Key saved. Settings synced to GitHub.' : '✓ Settings saved.'})
+      } catch (e) {
+        const isAuth = /401|403|bad credentials|token/i.test(e.message)
+        setStatus({ok:true, txt: key
+          ? `✓ Key saved to browser. ${isAuth ? 'GitHub sync skipped (token expired).' : 'GitHub sync failed.'}`
+          : '✓ Key cleared.'
+        })
+      }
+    }
   }
 
-  // Test key directly against Gemini (via backend test endpoint)
   const testKey = async () => {
-    const key = geminiKey.trim()
-    if (!key) { setStatus({ok:false, txt:'Enter a key to test first'}); return }
-    if (!adminKey.trim()) { setStatus({ok:false, txt:'Enter your admin key first'}); return }
+    const key = form.gemini_api_key?.trim()
+    if (!key) { setStatus({ok:false, txt:'Enter an API key first'}); return }
     setTesting(true); setStatus(null)
     try {
-      const r = await fetch(BACKEND + '/api/admin/settings/test-key', {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`
+      const r = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
-        body: JSON.stringify({ api_key: key }),
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          contents:[{role:'user',parts:[{text:'Reply with only: OK'}]}],
+          generationConfig:{maxOutputTokens:5}
+        })
       })
-      const d = await r.json()
-      setStatus({ok: d.ok, txt: d.message})
-    } catch(e) {
-      setStatus({ok:false, txt:'✗ ' + e.message})
+      if (r.ok)              setStatus({ok:true,  txt:'✓ API key is valid and working'})
+      else if (r.status===400) setStatus({ok:false, txt:'⚠ Bad request — check key format'})
+      else if (r.status===403) setStatus({ok:false, txt:'✗ Key rejected — invalid or expired'})
+      else                     setStatus({ok:false, txt:`✗ Gemini returned HTTP ${r.status}`})
+    } catch (e) {
+      setStatus({ok:false, txt:`✗ Network error: ${e.message}`})
     }
     setTesting(false)
   }
+
+  const F = (label, field, type='text', opts={}) => (
+    <div className="form-group">
+      <label className="form-label">{label}</label>
+      {opts.textarea
+        ? <textarea className="form-textarea" rows={opts.rows||4} value={form[field]||''}
+            onChange={e=>setForm(f=>({...f,[field]:e.target.value}))}
+            style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10}}/>
+        : opts.select
+        ? <select className="form-select" value={form[field]||''} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))}>
+            {opts.options.map(o=><option key={o} value={o}>{o}</option>)}
+          </select>
+        : <input className="form-input" type={type} value={form[field]||''}
+            onChange={e=>setForm(f=>({...f,[field]:e.target.value}))}/>
+      }
+    </div>
+  )
+
+  if (!ghCfg?.token) return (
+    <div className="card" style={{marginBottom:20}}>
+      <div className="card-corner tl"/><div className="card-corner tr"/>
+      <div className="card-corner bl"/><div className="card-corner br"/>
+      <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--blue)',letterSpacing:2,marginBottom:10}}>
+        ⚡ GEMINI AI CONFIGURATION
+      </div>
+      <p style={{fontSize:12,color:'var(--tx3)'}}>Connect to GitHub first to manage AI settings.</p>
+    </div>
+  )
 
   return (
     <div className="card" style={{marginBottom:20}}>
       <div className="card-corner tl"/><div className="card-corner tr"/>
       <div className="card-corner bl"/><div className="card-corner br"/>
 
-      <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:11,color:'var(--g)',letterSpacing:2,marginBottom:16}}>
-        AI CONFIGURATION
-      </div>
-
-      {/* Security info box */}
-      <div style={{background:'rgba(0,212,255,.06)',border:'1px solid rgba(0,212,255,.2)',borderRadius:4,padding:'10px 14px',marginBottom:18,fontSize:10,color:'var(--dim)',lineHeight:1.8}}>
-        🔒 <strong style={{color:'var(--blue)'}}>Zero-exposure security</strong><br/>
-        Gemini API key lives only as a Render environment variable.<br/>
-        It is never stored in your browser, git repo, or any file.<br/>
-        Set <code style={{color:'var(--blue)'}}>GEMINI_API_KEY</code> and <code style={{color:'var(--blue)'}}>CYBERBOT_API_KEY</code> once in Render → Environment.
-      </div>
-
-      {/* Admin key (session only) */}
-      <div className="form-group">
-        <label className="form-label">
-          Admin Key
-          <span style={{fontSize:9,color:'var(--dim)',marginLeft:8}}>session only · clears on tab close</span>
-        </label>
-        <input className="form-input" type="password"
-          placeholder="CYBERBOT_API_KEY from Render environment"
-          value={adminKey}
-          onChange={e => handleAdminKey(e.target.value)}
-        />
-      </div>
-
-      <div style={{display:'flex',gap:8,marginBottom:20}}>
-        <button className="btn btn-ghost btn-sm" onClick={loadSettings} disabled={loading||!adminKey.trim()}>
-          {loading ? '…' : '↓ Load Settings'}
-        </button>
-      </div>
-
-      {/* Gemini key */}
-      <div className="form-group">
-        <label className="form-label">
-          Gemini API Key
-          <span style={{fontSize:9,marginLeft:8,color:
-            keyStatus==='set' ? 'var(--g)' : keyStatus==='unset' ? 'var(--red)' : 'var(--dim)'
-          }}>
-            {keyStatus==='set' ? '● active on server' : keyStatus==='unset' ? '● not set on server' : '● unknown'}
-          </span>
-        </label>
-        <div style={{display:'flex',gap:8}}>
-          <input className="form-input" type={showKey?'text':'password'}
-            placeholder={keyStatus==='set' ? 'Leave blank to keep current key' : 'AIza… — get free at aistudio.google.com'}
-            value={geminiKey}
-            style={{flex:1}}
-            onChange={e => setGeminiKey(e.target.value)}
-          />
-          <button className="btn btn-ghost btn-sm" onClick={() => setShowKey(s=>!s)}>
-            {showKey ? 'Hide' : 'Show'}
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={testKey} disabled={testing||!geminiKey.trim()||!adminKey.trim()}>
-            {testing ? '…' : 'Test'}
-          </button>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+        <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--blue)',letterSpacing:2}}>
+          ⚡ GEMINI AI CONFIGURATION
         </div>
-        <div style={{fontSize:9,color:'var(--dim)',marginTop:4}}>
-          Key sent directly to your backend — never touches this browser's storage.
-        </div>
+        <span style={{fontSize:9,color:form.gemini_api_key?'var(--g)':'var(--red)',letterSpacing:1}}>
+          {form.gemini_api_key ? '● KEY SET' : '● NO KEY'}
+        </span>
       </div>
 
-      {/* Non-secret settings */}
-      <div className="form-group">
-        <label className="form-label">Model</label>
-        <select className="form-input" value={form.gemini_model}
-          onChange={e => setForm(f=>({...f, gemini_model: e.target.value}))}>
-          <option value="gemini-2.0-flash">gemini-2.0-flash (fast, free)</option>
-          <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-          <option value="gemini-1.5-pro">gemini-1.5-pro (slower, smarter)</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">System Prompt</label>
-        <textarea className="form-textarea" rows={5} value={form.system_prompt}
-          onChange={e => setForm(f=>({...f, system_prompt: e.target.value}))}
-          style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10}}
-        />
-      </div>
-
-      {/* Status */}
       {status && (
-        <div style={{
-          padding:'8px 12px', borderRadius:3, marginBottom:12, fontSize:10,
-          background: status.ok ? 'rgba(0,255,136,.08)' : 'rgba(255,34,68,.08)',
-          border: '1px solid ' + (status.ok ? 'rgba(0,255,136,.3)' : 'rgba(255,34,68,.3)'),
-          color: status.ok ? 'var(--g)' : 'var(--red)',
-        }}>
+        <div style={{padding:'10px 14px',border:`1px solid ${status.ok?'var(--g)':'var(--red)'}`,
+          color:status.ok?'var(--g)':'var(--red)',fontSize:11,marginBottom:16,
+          fontFamily:"'Share Tech Mono',monospace"}}>
           {status.txt}
         </div>
       )}
 
-      <button className="btn btn-blue" onClick={saveSettings} disabled={loading||!adminKey.trim()}>
-        {loading ? '⠿ Saving…' : '⊕ Save to Backend'}
-      </button>
+      <div style={{fontSize:9,color:'var(--tx3)',marginBottom:14,letterSpacing:1,lineHeight:1.6}}>
+        Key saved to browser (domain-restricted — safe). Model/prompt settings sync to GitHub.
+        The chatbot reads this file at runtime — no backend required.
+      </div>
+
+      {/* API Key */}
+      <div className="form-group">
+        <label className="form-label">
+          Gemini API Key
+          {form.gemini_api_key && <span style={{color:'var(--g)',fontSize:9,marginLeft:8}}>● set</span>}
+        </label>
+        <div style={{display:'flex',gap:8}}>
+          <input className="form-input" type={showKey?'text':'password'}
+            placeholder="AIza… — get free at aistudio.google.com/app/apikey"
+            value={form.gemini_api_key||''} style={{flex:1}}
+            onChange={e=>setForm(f=>({...f,gemini_api_key:e.target.value}))}/>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setShowKey(s=>!s)}>
+            {showKey?'🙈':'👁'}
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={testKey} disabled={testing||!form.gemini_api_key}>
+            {testing?'…':'Test'}
+          </button>
+        </div>
+      </div>
+
+      <div className="form-row form-row-2">
+        {F('Default Model', 'gemini_model', 'text', {select:true, options:[
+          'gemini-2.0-flash','gemini-2.0-flash-lite','gemini-2.5-pro-preview-03-25'
+        ]})}
+        {F('Premium Model', 'gemini_model_premium', 'text', {select:true, options:[
+          'gemini-2.5-pro-preview-03-25','gemini-2.0-flash','gemini-2.0-flash-lite'
+        ]})}
+      </div>
+
+      <div className="form-row form-row-3">
+        {F('Max Tokens', 'max_tokens')}
+        {F('Max Tokens (premium)', 'max_tokens_premium')}
+        {F('Temperature (0–1)', 'temperature')}
+      </div>
+
+      {F('Bot Display Name', 'bot_name')}
+      {F('System Prompt', 'system_prompt', 'text', {textarea:true, rows:7})}
+
+      <div style={{display:'flex',gap:10,marginTop:4}}>
+        <button className="btn btn-blue" onClick={saveConfig} disabled={loading}>
+          {loading ? '⠿ Saving…' : '⊕ Save AI Config'}
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={loadConfig} disabled={loading}>
+          ↺ Reload
+        </button>
+      </div>
     </div>
   )
 }
-
 
 function SettingsSection({ data, ghCfg, onDisconnect }) {
   const [pwd, setPwd] = useState({old:'',newP:'',confirm:''})
@@ -2112,7 +2075,7 @@ function SettingsSection({ data, ghCfg, onDisconnect }) {
       <div className="section-header"><div><span className="section-title">Settings</span></div></div>
 
       {/* ── GEMINI AI CONFIG ── */}
-      <GeminiConfigCard/>
+      <GeminiConfigCard ghCfg={ghCfg} />
 
       {/* ── PASSWORD + GITHUB ── */}
       <div className="grid-2" style={{marginBottom:20}}>
@@ -2388,11 +2351,6 @@ export default function App() {
 
   const lastSaveRef = useRef(null)
 
-  // FIX (critical): was useCallback(..., []) — empty dep array created a stale closure.
-  // setSyncState, setSyncError, setData, setLastSync, syncTimer were all captured at
-  // mount and never updated, causing saves after the first render to call stale setters
-  // and making the retry button silently no-op. Removed useCallback entirely — the
-  // function re-creates on each render but is stable enough via lastSaveRef.
   const handleSave = async (section, value) => {
     lastSaveRef.current = { section, value }
     setSyncState('saving')
@@ -2415,15 +2373,12 @@ export default function App() {
       clearTimeout(syncTimer.current)
       syncTimer.current = setTimeout(()=>{ setSyncState('idle'); setSyncError('') }, 6000)
       console.error('[Admin] Save failed:', msg)
-      if (isAuthError) console.error('[Admin] TOKEN ERROR — go to Settings > Disconnect and re-enter a fresh GitHub PAT with Contents read+write permission')
+      if (isAuthError) console.error('[Admin] TOKEN ERROR — reconnect in Settings')
     }
   }
 
-  // FIX: handleSave is now a plain async function (not useCallback), so [handleSave]
-  // dep would change every render. Use a stable ref to always call the latest version.
   const handleSaveRef = useRef(handleSave)
   handleSaveRef.current = handleSave
-
   const handleRetry = useCallback(() => {
     if (lastSaveRef.current) {
       const { section, value } = lastSaveRef.current

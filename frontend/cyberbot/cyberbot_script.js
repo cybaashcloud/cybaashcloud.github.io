@@ -5,10 +5,14 @@
  */
 
 const CONFIG = {
-  backend:    'https://cybaash-ai.onrender.com',
-  backendOk:  false,
-  maxHistory: 10,
-  sessionId:  'cyb_' + Math.random().toString(36).slice(2, 11),
+  geminiKey:   '',
+  geminiModel: 'gemini-2.0-flash',
+  maxHistory:  10,
+  systemPrompt: `You are CyberBot — an expert cybersecurity assistant for educational and ethical purposes.
+Explain vulnerabilities (SQLi, XSS, CSRF, buffer overflows, RCE, LFI, SSRF), teach secure coding,
+guide penetration testing concepts (CTF/lab only), and advise on system hardening.
+Rules: Never help attack real systems. Always use educational context. Use markdown formatting.
+Tone: Professional, direct — like a senior security engineer mentoring a junior.`,
 };
 
 let chatHistory = [];
@@ -25,23 +29,31 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadGeminiConfig() {
   const dot  = document.getElementById('statusDot');
   const text = document.getElementById('statusText');
-  // Security: check backend health instead of reading key from browser storage.
-  // Gemini key lives only as a Render env var — never in browser.
-  try {
-    const r = await fetch(CONFIG.backend + '/api/health', { cache: 'no-store' });
-    if (r.ok) {
-      const h = await r.json();
-      if (h.status === 'ok') {
-        CONFIG.backendOk = true;
-        if (dot)  { dot.className  = 'status-dot online'; }
-        if (text) { text.textContent = 'AI Online'; }
-        return;
-      }
-    }
-  } catch(_) {}
-  CONFIG.backendOk = false;
-  if (dot)  { dot.className  = 'status-dot offline'; }
-  if (text) { text.textContent = 'AI Offline — check Render deployment'; }
+  const paths = ['../data_ai_config.json', '/data_ai_config.json', '/portfolio/data_ai_config.json'];
+  for (const path of paths) {
+    try {
+      const r = await fetch(path + '?v=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) continue;
+      const c = await r.json();
+      // API key is NEVER stored in JSON — read from localStorage only
+      if (c.gemini_model)   CONFIG.geminiModel  = c.gemini_model;
+      if (c.system_prompt)  CONFIG.systemPrompt = c.system_prompt;
+      break;
+    } catch { continue; }
+  }
+  // Also check localStorage (shared with terminal gemini command and admin panel)
+  const lsKey = localStorage.getItem('cybaash_gemini_key') || '';
+  if (lsKey) CONFIG.geminiKey = lsKey;
+
+  if (CONFIG.geminiKey) {
+    state.online = true;
+    if (dot)  dot.className    = 'status-dot online';
+    if (text) text.textContent = 'Online';
+  } else {
+    state.online = false;
+    if (dot)  dot.className    = 'status-dot offline';
+    if (text) text.textContent = 'Demo Mode — Set Gemini key in Admin';
+  }
 }
 
 function initSession() {
@@ -54,31 +66,39 @@ function initSession() {
 }
 
 async function callGemini(userMessage) {
-  if (!CONFIG.backendOk) return localFallback(userMessage);
-  const r = await fetch(CONFIG.backend + '/api/chat', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: userMessage, session_id: CONFIG.sessionId }),
-    signal: AbortSignal.timeout(30000),
-  });
-  if (r.status === 503) throw new Error('AI backend offline — check Render deployment');
-  if (r.status === 429) throw new Error('Rate limit reached — wait a moment');
-  if (!r.ok) throw new Error('Backend error ' + r.status);
+  if (!CONFIG.geminiKey) return localFallback(userMessage);
+  chatHistory.push({ role: 'user', parts: [{ text: userMessage }] });
+  if (chatHistory.length > CONFIG.maxHistory * 2) chatHistory = chatHistory.slice(-CONFIG.maxHistory * 2);
+  const payload = {
+    system_instruction: { parts: [{ text: CONFIG.systemPrompt }] },
+    contents: chatHistory,
+    generationConfig: { temperature: 0.4, maxOutputTokens: 1024, topP: 0.95 },
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+    ],
+  };
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.geminiKey}`;
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(30000) });
+  if (r.status === 429) throw new Error('Rate limited — Gemini free tier quota reached. Wait 60 seconds and try again.');
+  if (r.status === 400) throw new Error('Invalid Gemini API key. Set a valid key in Admin → Settings.');
+  if (!r.ok) throw new Error(`Gemini error ${r.status}`);
   const data = await r.json();
-  return { reply: data.reply || 'No response.', tokens: data.tokens_used };
+  const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!reply) throw new Error('Empty response from Gemini');
+  chatHistory.push({ role: 'model', parts: [{ text: reply }] });
+  return { reply, tokens: data?.usageMetadata?.totalTokenCount || null };
 }
 
 async function callGeminiAnalyze(prompt) {
-  if (!CONFIG.backendOk) return null;
-  const r = await fetch(CONFIG.backend + '/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: prompt, session_id: CONFIG.sessionId + '_analyze' }),
-    signal: AbortSignal.timeout(20000),
-  });
+  if (!CONFIG.geminiKey) return null;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.geminiKey}`;
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 512 } }), signal: AbortSignal.timeout(20000) });
   if (!r.ok) return null;
   const data = await r.json();
-  return data.reply || null;
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
 }
 
 function localFallback(msg) {
@@ -308,7 +328,7 @@ async function checkURL() {
   const risk=score>=60?'HIGH':score>=30?'MEDIUM':'LOW';
   const color=risk==='HIGH'?'var(--red)':risk==='MEDIUM'?'var(--yellow)':'var(--green)';
   let aiInsight='';
-  if(CONFIG.backendOk){
+  if(CONFIG.geminiKey){
     try { aiInsight=await callGeminiAnalyze(`Analyze this URL for security risks in 2-3 sentences. URL: ${url}\nRespond concisely, no markdown.`)||''; } catch{}
   }
   el.innerHTML=`<div class="result-card" style="margin-top:12px"><span style="color:${color};font-family:var(--mono);font-size:12px;font-weight:bold">${risk} RISK — Score: ${Math.min(score,100)}/100</span>${flags.length?`<ul style="margin-top:10px">${flags.map(f=>`<li class="result-flag-item">⚠ ${escapeHtml(f)}</li>`).join('')}</ul>`:'<p style="font-size:11px;color:var(--green);margin-top:8px">✓ No suspicious patterns detected</p>'}${aiInsight?`<div style="margin-top:12px;padding:10px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:4px;font-size:11px;color:var(--text2);line-height:1.6">${escapeHtml(aiInsight)}</div>`:''}</div>`;
@@ -324,7 +344,7 @@ async function scanCode() {
   if(!code)return;
   const el=document.getElementById('codeResult');
   el.innerHTML='<div style="color:var(--text3);font-size:11px;margin-top:10px">Scanning…</div>';
-  if(!CONFIG.backendOk){el.innerHTML='<div style="color:var(--yellow);font-size:11px;margin-top:10px">⚠ Set a Gemini API key in Admin → Settings to enable AI code scanning.</div>';return;}
+  if(!CONFIG.geminiKey){el.innerHTML='<div style="color:var(--yellow);font-size:11px;margin-top:10px">⚠ Set a Gemini API key in Admin → Settings to enable AI code scanning.</div>';return;}
   try {
     const result=await callGeminiAnalyze(`Security scan this ${lang} code for vulnerabilities. List each issue as: SEVERITY | Line | Description | Fix. If clean say "✓ No security issues detected".\n\`\`\`${lang}\n${code.slice(0,3000)}\n\`\`\``);
     el.innerHTML=`<div class="result-card" style="margin-top:12px"><div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px">AI Security Scan — ${lang}</div><div style="font-size:12px;color:var(--text);line-height:1.7">${renderMarkdown(result||'No response')}</div></div>`;
@@ -341,7 +361,7 @@ async function analyzeUploadedFile(input){const file=input.files[0];if(file)anal
 async function analyzeFile(file,targetId){
   const el=document.getElementById(targetId);
   if(!el)return;
-  if(!CONFIG.backendOk){el.innerHTML='<div style="color:var(--yellow);font-size:11px;margin-top:10px">⚠ Set a Gemini API key in Admin → Settings to enable file analysis.</div>';return;}
+  if(!CONFIG.geminiKey){el.innerHTML='<div style="color:var(--yellow);font-size:11px;margin-top:10px">⚠ Set a Gemini API key in Admin → Settings to enable file analysis.</div>';return;}
   el.innerHTML='<div style="color:var(--text3);font-size:11px;margin-top:10px">Reading and scanning…</div>';
   try {
     const text=await file.text();
@@ -416,7 +436,7 @@ async function handleFileUpload(input) {
   showTyping();
   setSendState(true);
   try {
-    if (!CONFIG.backendOk) {
+    if (!CONFIG.geminiKey) {
       hideTyping();
       appendMessage('bot', '⚠️ Set a Gemini API key in Admin → Settings to enable file analysis.', [], null, false, true);
       return;
