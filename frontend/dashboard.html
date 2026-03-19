@@ -300,8 +300,35 @@ body::before {
 .cert-date   { color:var(--dim); font-size:8px; }
 .cert-tags   { display:flex; flex-wrap:wrap; gap:4px; margin-top:2px; }
 .cert-tag    { font-size:8px; padding:1px 5px; border:1px solid var(--border); color:var(--dim); border-radius:2px; }
-.cert-link   { color:var(--blue); font-size:9px; text-decoration:none; margin-top:auto; }
+.cert-link   { color:var(--blue); font-size:9px; text-decoration:none; }
 .cert-link:hover { text-decoration:underline; }
+
+/* ── CERT UPLOAD ─────────────────────────────────── */
+.cert-upload-row {
+  display:flex; align-items:center; gap:6px; margin-top:auto; padding-top:6px;
+  border-top:1px solid rgba(26,58,92,.5);
+}
+.cert-upload-btn {
+  display:inline-flex; align-items:center; gap:4px;
+  background:none; border:1px solid var(--border); color:var(--dim);
+  font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:.5px;
+  padding:3px 8px; border-radius:2px; cursor:pointer;
+  transition:border-color .15s,color .15s;
+  white-space:nowrap; flex-shrink:0;
+}
+.cert-upload-btn:hover { border-color:var(--blue); color:var(--blue); }
+.cert-upload-btn.uploading { opacity:.5; pointer-events:none; }
+.cert-upload-btn.done { border-color:var(--green); color:var(--green); }
+.cert-pdf-link {
+  color:var(--green); font-size:9px; text-decoration:none;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;
+}
+.cert-pdf-link:hover { text-decoration:underline; }
+.cert-img-thumb {
+  width:100%; max-height:80px; object-fit:contain;
+  border:1px solid var(--border); border-radius:2px; margin-top:4px; display:block;
+}
+.cert-no-login { color:var(--dim); font-size:8px; margin-top:auto; padding-top:4px; }
 .cert-featured { position:relative; }
 .cert-featured::before {
   content:'★'; position:absolute; top:8px; right:10px; color:var(--yellow);
@@ -325,6 +352,22 @@ body::before {
 
 /* ── PROFILE ─────────────────────────────────────── */
 .profile-grid { display:grid; grid-template-columns:200px 1fr; gap:28px; }
+@media (max-width: 768px) {
+  .profile-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    align-items: center;
+  }
+  .profile-grid > div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+  .profile-grid > div:last-child { width: 100%; }
+}
 .profile-identity { text-align:center; }
 .profile-avatar-big { width:80px; height:80px; border-radius:50%; border:2px solid var(--border); margin-bottom:12px; }
 .profile-username { font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:var(--blue); letter-spacing:2px; margin-bottom:8px; }
@@ -534,11 +577,11 @@ img, svg { max-width: 100%; }
   .skill-bar-label { font-size: 9px; width: 70px; }
 
   /* Mission cards */
-  .mission-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .mission-card { flex-direction: column; align-items: flex-start; gap: 8px; }
   .mission-actions { width: 100%; justify-content: flex-end; }
 
-  /* Buttons */
-  .btn, button { min-height: 44px; }
+  /* Buttons — compact, not giant */
+  .btn, button { min-height: 32px; }
 
   /* Login */
   .login-box {
@@ -914,8 +957,10 @@ input, textarea, select {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px;
   }
-  .stat-card { padding: 12px; }
-  .stat-big  { font-size: clamp(22px, 7vw, 34px) !important; }
+  .stat-card { padding: 10px 12px; }
+  .stat-big  { font-size: clamp(18px, 5.5vw, 24px) !important; text-shadow: none !important; }
+  .stat-card-label { font-size: 7px !important; letter-spacing: 1.5px !important; margin-bottom: 5px !important; }
+  .stat-sub { font-size: 8px !important; }
   .stat-card.wide { grid-column: span 2; }
   .stat-card-label { font-size: 7px; letter-spacing: 1.5px; margin-bottom: 7px; }
   .stat-sub  { font-size: 8px; }
@@ -986,10 +1031,12 @@ input, textarea, select {
 /* ── RANK / XP ───────────────────────────────────────────────────*/
 @media (max-width: 768px) {
   .rank-name {
-    font-size: clamp(14px, 5vw, 20px);
-    letter-spacing: 2px;
+    font-size: clamp(12px, 3.8vw, 16px);
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    text-shadow: none;
   }
-  .xp-row { flex-wrap: wrap; gap: 6px; }
+  .xp-row { flex-wrap: wrap; gap: 4px; }
   .xp-track { flex: 1 1 100%; }
   .xp-meta  { font-size: 8px; }
 }
@@ -1813,6 +1860,135 @@ async function doLaunch() {
 }
 
 // ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+// CERT UPLOAD — attach PDF/image to any credential card
+// ════════════════════════════════════════════════════════════
+
+// Which data_creds_N.json file does this cert live in?
+let _certFileMap = {}; // id -> { fileIndex, sha }
+
+async function _buildCertFileMap() {
+  if (Object.keys(_certFileMap).length) return;
+  for (let i = 1; i <= 5; i++) {
+    try {
+      const res = await fetch(`portfolio/data_creds_${i}.json?v=${Date.now()}`,{cache:'no-store'});
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!data?.credentials) continue;
+      data.credentials.forEach(c => { _certFileMap[c.id] = { fileIndex: i }; });
+    } catch(_) {}
+  }
+}
+
+async function uploadCertFile(certId, btn) {
+  // Must be logged in
+  if (!TOKEN || !USER) {
+    alert('Please log in with your GitHub PAT first to upload certificate files.');
+    return;
+  }
+
+  // Create hidden file input
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.pdf,.jpg,.jpeg,.png,.webp';
+  inp.style.display = 'none';
+  document.body.appendChild(inp);
+
+  inp.onchange = async () => {
+    const file = inp.files[0];
+    document.body.removeChild(inp);
+    if (!file) return;
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    const maxMB = 5;
+    if (file.size > maxMB * 1024 * 1024) {
+      alert(`File too large. Max ${maxMB}MB.`); return;
+    }
+
+    btn.classList.add('uploading');
+    btn.textContent = '⟳ UPLOADING…';
+
+    try {
+      // Read file as base64
+      const b64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Upload binary file to GitHub
+      const ghPath = `certs/${certId}.${ext}`;
+      const existing = await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${ghPath}`).catch(()=>null);
+      await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${ghPath}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          message: `cert: upload ${certId}.${ext}`,
+          content: b64,
+          ...(existing?.sha ? { sha: existing.sha } : {}),
+        }),
+      });
+
+      // Build raw URL for the file
+      const rawUrl = `https://raw.githubusercontent.com/${USER.login}/${DATA_REPO}/main/${ghPath}`;
+
+      // Update the cert JSON — find which file this cert is in
+      await _buildCertFileMap();
+      const fileInfo = _certFileMap[certId];
+      if (fileInfo) {
+        const path = `portfolio/data_creds_${fileInfo.fileIndex}.json`;
+        const { content: jsonData, sha } = await ghRead(USER.login, path);
+        const idx = jsonData.credentials.findIndex(c => c.id === certId);
+        if (idx >= 0) {
+          jsonData.credentials[idx].pdf = rawUrl;
+          await ghWrite(USER.login, path, jsonData, sha);
+          // Update in-memory cert too
+          const memIdx = ALL_CERTS.findIndex(c => c.id === certId);
+          if (memIdx >= 0) ALL_CERTS[memIdx].pdf = rawUrl;
+        }
+      }
+
+      // Update card UI
+      btn.classList.remove('uploading');
+      btn.classList.add('done');
+      btn.textContent = '✓ UPLOADED';
+
+      // Inject preview link next to button
+      const row = btn.parentElement;
+      const oldLink = row.querySelector('.cert-pdf-link');
+      if (oldLink) oldLink.remove();
+      const link = document.createElement('a');
+      link.className = 'cert-pdf-link';
+      link.href = rawUrl;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = ext === 'pdf' ? '↗ VIEW PDF' : '↗ VIEW IMAGE';
+      row.appendChild(link);
+
+      // If image, show thumbnail
+      if (['jpg','jpeg','png','webp'].includes(ext)) {
+        const card = btn.closest('.cert-card');
+        let thumb = card.querySelector('.cert-img-thumb');
+        if (!thumb) {
+          thumb = document.createElement('img');
+          thumb.className = 'cert-img-thumb';
+          card.appendChild(thumb);
+        }
+        thumb.src = rawUrl;
+        thumb.alt = 'Certificate';
+      }
+
+    } catch(err) {
+      btn.classList.remove('uploading');
+      btn.textContent = '↑ UPLOAD';
+      alert('Upload failed: ' + (err.message || err));
+    }
+  };
+
+  inp.click();
+}
+
+// ════════════════════════════════════════════════════════════
 // CREDENTIALS VIEW — reads from existing data_creds_*.json
 // ════════════════════════════════════════════════════════════
 let certsLoaded=false, certsSearch='', certsFilter='all';
@@ -1894,7 +2070,7 @@ function buildCertsUI(mc, search=certsSearch, filter=certsFilter) {
     ${!list.length ? `<div class="empty-state"><div class="empty-icon">◆</div><div>No credentials match.</div></div>` : `
       <div class="certs-grid">
         ${list.slice(0,200).map(c=>`
-          <div class="cert-card ${c.featured?'cert-featured':''}">
+          <div class="cert-card ${c.featured?'cert-featured':''}" id="cert-card-${escHTML(c.id||'')}">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <span class="cert-icon">◆</span>
               <span class="cert-card-type ${c.type||''}">${(c.type||'').toUpperCase()}</span>
@@ -1911,6 +2087,14 @@ function buildCertsUI(mc, search=certsSearch, filter=certsFilter) {
               </div>
             `:''}
             ${c.url?`<a class="cert-link" href="${c.url}" target="_blank" rel="noopener">↗ VIEW CREDENTIAL</a>`:''}
+            <div class="cert-upload-row">
+              <button class="cert-upload-btn ${c.pdf?'done':''}"
+                onclick="uploadCertFile('${escHTML(c.id||'')}',this)">
+                ${c.pdf ? '✓ UPLOADED' : '↑ UPLOAD CERT'}
+              </button>
+              ${c.pdf ? `<a class="cert-pdf-link" href="${escHTML(c.pdf)}" target="_blank" rel="noopener">${c.pdf.endsWith('.pdf')?'↗ PDF':'↗ FILE'}</a>` : ''}
+            </div>
+            ${c.pdf && !c.pdf.endsWith('.pdf') ? `<img class="cert-img-thumb" src="${escHTML(c.pdf)}" alt="Certificate" loading="lazy">` : ''}
           </div>
         `).join('')}
       </div>
