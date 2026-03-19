@@ -342,7 +342,7 @@ function switchTab(tab, triggerEl) {
   var panel = document.getElementById('panel-' + tab);
   if (panel) panel.classList.add('active');
 
-  // Update bottom tab bar
+  // Update bottom tab bar buttons
   document.querySelectorAll('.tab-btn').forEach(function(b) {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
@@ -352,8 +352,11 @@ function switchTab(tab, triggerEl) {
     a.classList.toggle('active', a.dataset.tab === tab);
   });
 
-  // Scroll to top of new panel
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Chat panel is position:fixed on mobile — others scroll normally
+  // Reset scroll for Tools/About panels
+  if (tab !== 'chat') {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
 }
 
 /* Desktop nav link clicks */
