@@ -1,0 +1,65 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd frontend/admin
+        - npm ci --no-audit --no-fund
+    build:
+      commands:
+        - npm run build
+        - cd ../..
+        - mkdir -p _site/portfolio _site/admin _site/icons _site/cyberbot
+
+        # ── Main pages ──────────────────────────────────────────────
+        - cp frontend/index.html          _site/index.html
+        - cp frontend/recruiter.html      _site/recruiter.html
+        - cp frontend/dashboard.html      _site/dashboard.html
+        - cp frontend/offline.html        _site/offline.html
+
+        # ── CyberBot standalone ─────────────────────────────────────
+        - cp -r frontend/cyberbot/. _site/cyberbot/
+
+        # ── Chatbot widget ──────────────────────────────────────────
+        - cp frontend/cybaash-ai.js       _site/cybaash-ai.js
+        - cp frontend/cybaash-ai.css      _site/cybaash-ai.css
+
+        # ── Core JS ─────────────────────────────────────────────────
+        - cp frontend/script.js           _site/script.js
+        - cp frontend/github.js           _site/github.js
+        - cp frontend/saas-integration.js _site/saas-integration.js
+
+        # ── Portfolio assets ────────────────────────────────────────
+        - '[ -f frontend/avatar.png ] && cp frontend/avatar.png _site/portfolio/avatar.png || true'
+        - '[ -f frontend/li-logo.jpg ] && cp frontend/li-logo.jpg _site/portfolio/li-logo.jpg || true'
+        - '[ -f frontend/project_eatpqa2f.png ] && cp frontend/project_eatpqa2f.png _site/portfolio/project_eatpqa2f.png || true'
+
+        # ── Data files ──────────────────────────────────────────────
+        - for f in data_main.json data_creds_1.json data_creds_2.json data_creds_3.json data_creds_4.json data_creds_5.json; do [ -f "frontend/$f" ] && cp "frontend/$f" "_site/portfolio/$f" || true; done
+
+        # ── Admin panel ─────────────────────────────────────────────
+        - cp -r frontend/admin/dist/. _site/admin/
+
+        # ── AI config ───────────────────────────────────────────────
+        - '[ -f frontend/data_ai_config.json ] && cp frontend/data_ai_config.json _site/data_ai_config.json || true'
+
+        # ── PWA files ───────────────────────────────────────────────
+        - cp frontend/manifest.json _site/manifest.json
+        - cp frontend/sw.js         _site/sw.js
+
+        # ── Icons ───────────────────────────────────────────────────
+        - for icon in frontend/icons/*.png frontend/icons/*.ico; do [ -f "$icon" ] && cp "$icon" "_site/icons/$(basename $icon)" || true; done
+
+        # ── No Jekyll ───────────────────────────────────────────────
+        - touch _site/.nojekyll
+
+        - echo "=== Build complete ===" && find _site -type f | sort
+
+  artifacts:
+    baseDirectory: _site
+    files:
+      - '**/*'
+
+  cache:
+    paths:
+      - frontend/admin/node_modules/**/*
