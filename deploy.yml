@@ -1,0 +1,56 @@
+name: Deploy CYBAASH AI Backend to Render
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint check
+        working-directory: backend
+        run: |
+          pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Trigger Render Deploy
+        run: |
+          HOOK="${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          if [ -n "$HOOK" ]; then
+            curl -X POST "$HOOK" \
+              -H "Content-Type: application/json" \
+              --fail --silent --show-error
+            echo "Render deploy hook triggered."
+          else
+            echo "No RENDER_DEPLOY_HOOK_URL secret set — skipping."
+          fi
+
+      - name: Deploy summary
+        run: |
+          echo "## CYBAASH AI Backend Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Required env vars on Render" >> $GITHUB_STEP_SUMMARY
+          echo "- \`GEMINI_API_KEY\` — Google AI Studio key" >> $GITHUB_STEP_SUMMARY
+          echo "- \`CYBERBOT_API_KEY\` — Admin panel password" >> $GITHUB_STEP_SUMMARY
