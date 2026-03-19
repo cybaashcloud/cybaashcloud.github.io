@@ -51,7 +51,7 @@ jobs:
           cp frontend/offline.html        _site/offline.html
 
           # ── CyberBot standalone page ─────────────────────────────────────
-          cp -r frontend/cyberbot-standalone _site/cyberbot-standalone
+          cp -r frontend/cyberbot _site/cyberbot
 
           # ── Chatbot widget (referenced by index.html) ───────────────────
           cp frontend/cybaash-ai.js       _site/cybaash-ai.js
