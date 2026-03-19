@@ -84,7 +84,32 @@ jobs:
           cp -r frontend/admin/dist/. _site/admin/
 
           # ── AI config (chatbot reads this at runtime) ────────────────────
-          [ -f frontend/data_ai_config.json ] && cp frontend/data_ai_config.json _site/data_ai_config.json && echo "OK data_ai_config.json" || echo "SKIP data_ai_config.json"
+          # SECURITY: Validate that no API key was accidentally committed
+          if [ -f frontend/data_ai_config.json ]; then
+            if python3 -c "
+import json, sys
+d = json.load(open('frontend/data_ai_config.json'))
+bad = [k for k in ['gemini_api_key','apiKey','key','api_key'] if d.get(k,'').strip()]
+if bad:
+    print(f'ERROR: data_ai_config.json contains key fields: {bad}')
+    sys.exit(1)
+print('OK: No API keys in data_ai_config.json')
+"; then
+              cp frontend/data_ai_config.json _site/data_ai_config.json
+              echo "OK data_ai_config.json"
+            else
+              echo "BLOCKED: data_ai_config.json contains API keys — fix before deploying"
+              exit 1
+            fi
+          else
+            echo "SKIP data_ai_config.json"
+          fi
+
+          # ── Chatbot terminal integration ─────────────────────────────────
+          [ -f frontend/cybaash_chatbot.js ] && cp frontend/cybaash_chatbot.js _site/cybaash_chatbot.js && echo "OK cybaash_chatbot.js" || echo "SKIP cybaash_chatbot.js"
+
+          # ── Service worker (patched sw.js) ──────────────────────────────
+          cp frontend/sw.js _site/sw.js
 
           # ── PWA files ───────────────────────────────────────────────────
           cp frontend/manifest.json   _site/manifest.json
