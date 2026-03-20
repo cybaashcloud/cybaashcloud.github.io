@@ -31,6 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write   # needed to commit images + JSON back to the repo
+      pages: write      # needed to trigger Pages deployment
+      id-token: write   # needed for Pages OIDC auth
 
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────
@@ -219,7 +221,7 @@ jobs:
             echo "No changes — all images already present."
           else
             COUNT=$(git diff --cached --name-only | grep -c "certificates/auto" || true)
-            git commit -m "feat: add ${COUNT} cert images via fetch workflow [skip ci]"
+            git commit -m "feat: add ${COUNT} cert images via fetch workflow"
             git push
             echo "Pushed ${COUNT} new cert images."
           fi
