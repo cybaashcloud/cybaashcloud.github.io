@@ -323,7 +323,7 @@
     },
     {
       "id": "pro012",
-      "pdf": "https://cybaashcloud.github.io/certificates/digital_marketing.jpeg",
+      "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/c9c4d396cbe6ef60cfd8323c6375a973eb025a4d6715956b1a63eeed800c2427",
       "date": "2026-03",
       "logo": "https://www.google.com/s2/favicons?domain=contentmarketinginstitute.com&sz=128",
@@ -334,7 +334,7 @@
         "Marketing"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro012_image.jpg",
       "title": "Digital Marketing Professional Certificate by Content Marketing Institute",
       "issuer": "Content Marketing Institute",
       "courseId": "digital-marketing-professional-certificate-by-content-market",
