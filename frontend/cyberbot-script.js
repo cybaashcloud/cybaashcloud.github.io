@@ -6,7 +6,7 @@
 
 const CONFIG = {
   geminiKey:   '',
-  geminiModel: 'gemini-2.5-flash-lite-preview-06-17',
+  geminiModel: 'gemini-2.5-pro',
   maxHistory:  10,
   systemPrompt: `You are CyberBot — an expert cybersecurity assistant for educational and ethical purposes.
 Explain vulnerabilities (SQLi, XSS, CSRF, buffer overflows, RCE, LFI, SSRF), teach secure coding,

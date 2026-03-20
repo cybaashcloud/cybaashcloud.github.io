@@ -91,7 +91,7 @@ async def init_db() -> None:
         # Seed defaults — only if not already present
         defaults = {
             "gemini_api_key":       os.getenv("GEMINI_API_KEY", ""),
-            "gemini_model":         "gemini-2.5-flash-lite-preview-06-17",
+            "gemini_model":         "gemini-2.5-pro",
             "gemini_model_premium": "gemini-2.5-flash",
             "max_tokens":           "1024",
             "max_tokens_premium":   "2048",

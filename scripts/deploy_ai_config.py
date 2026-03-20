@@ -22,7 +22,7 @@ DEST = "_site/data_ai_config.json"
 
 # ── Model policy ─────────────────────────────────────────────────────────
 # Default model used when none is set or a retired one is detected.
-RECOMMENDED_DEFAULT = "gemini-2.5-flash-lite-preview-06-17"
+RECOMMENDED_DEFAULT = "gemini-2.5-pro"
 RECOMMENDED_PREMIUM = "gemini-2.5-flash"
 
 # Any model in this set is retired / known to return 429 or 404.
@@ -35,7 +35,10 @@ RETIRED_MODELS = {
     "gemini-1.5-pro",
     "gemini-1.0-pro",
     "gemini-pro",
-    "gemini-2.5-pro-preview-03-25",   # old preview — superseded
+    "gemini-2.5-pro-preview-03-25",        # old preview — superseded
+    "gemini-2.5-pro-preview-05-06",        # old preview — superseded
+    "gemini-2.5-flash-lite-preview-06-17", # old preview — use gemini-2.5-pro
+    "gemini-2.5-flash-lite",               # lighter model — use gemini-2.5-pro
 }
 
 # ── Load ──────────────────────────────────────────────────────────────────
