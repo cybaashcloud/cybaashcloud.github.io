@@ -95,6 +95,8 @@ jobs:
               'shea hanson','head of learning content strategy',
               # Generic words that are not skills
               'certificate','professional','certified',
+              # Header text that bleeds into OCR when the cert layout shifts
+              'top skills covered','top skill covered','skills covered',
               # ── Issuer / brand names — never valid as skill tags ─────────
               'adobe',
               'anaconda','anaconda, inc.','anaconda inc',
@@ -283,8 +285,13 @@ jobs:
                   if _is_noise_line(lw):
                       continue
 
-                  # Skip footer bleed
                   ltx = ' '.join(wp['word'] for wp in lw).lower()
+
+                  # Skip the header if it falls inside the pill band
+                  if re.search(r'top\s+skills?\s+covered', ltx, re.IGNORECASE):
+                      continue
+
+                  # Skip footer bleed
                   if any(x in ltx for x in ['hanson', 'hancon', 'certificate id',
                                              'content strat', 'completed by',
                                              ' utc ', ' hours ', ' minute']):
