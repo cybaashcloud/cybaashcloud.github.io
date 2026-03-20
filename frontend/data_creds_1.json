@@ -412,7 +412,7 @@
         "LinkedIn Learning"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro016_image.jpg",
       "title": "Career Essentials in GitHub Professional Certificate",
       "issuer": "GitHub",
       "courseId": "career-essentials-in-github-professional-certificate",
