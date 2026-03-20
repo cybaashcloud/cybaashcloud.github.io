@@ -238,6 +238,43 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .proj-noimg svg{width:28px;height:28px;opacity:.12}
 .cr-logo-top{width:100%;height:90px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
 
+/* ── Credential Card (cc-*) — unified Apple-style layout ── */
+.cc-card{cursor:pointer}
+/* Top image area */
+.cc-top{width:100%;height:130px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.cc-banner{width:100%;height:100%;object-fit:cover;display:block}
+.cc-top-noimg{background:linear-gradient(135deg,rgba(0,212,255,.04),rgba(0,0,0,0))}
+/* Credly badge panel — slightly taller, subtle radial glow */
+.cc-top-badge{height:130px;background:radial-gradient(ellipse at 50% 60%,rgba(247,147,30,.07) 0%,transparent 70%),var(--panel2)}
+.cc-badge-img{width:90px;height:90px;object-fit:contain;border-radius:8px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}
+/* Card body */
+.cc-body{padding:14px 16px 16px}
+/* Header row: meta+logo left, type badge right */
+.cc-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
+.cc-meta-row{display:flex;align-items:center;gap:7px;min-width:0}
+.cc-logo{width:20px;height:20px;object-fit:contain;border-radius:3px;flex-shrink:0}
+.cc-logo-credly{width:18px;height:18px;border-radius:50%;object-fit:contain;opacity:.7}
+.cc-meta{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:wrap}
+.cc-issuer{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;font-size:11px;font-weight:500;color:var(--dim);letter-spacing:.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.cc-dot{color:rgba(255,255,255,.2);font-size:10px}
+.cc-date{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.2px;white-space:nowrap}
+/* Type badge */
+.cc-type-badge{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;font-size:9px;font-weight:600;letter-spacing:.6px;padding:3px 7px;border:1px solid;border-radius:4px;white-space:nowrap;flex-shrink:0;text-transform:uppercase}
+.cc-type-badge.credly{border-color:rgba(247,147,30,.4);color:#f7931e;background:rgba(247,147,30,.06)}
+.cc-type-badge.cert{border-color:rgba(0,255,136,.3);color:var(--green);background:rgba(0,255,136,.05)}
+.cc-type-badge.linkedin{border-color:rgba(10,102,194,.35);color:#4d9fec;background:rgba(10,102,194,.06)}
+/* Title — Apple SF Pro Display feel */
+.cc-title{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;font-size:13px;font-weight:600;color:var(--text);line-height:1.4;letter-spacing:-.1px;margin-bottom:9px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* Tags */
+.cc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.cc-tag{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;font-size:10px;font-weight:400;letter-spacing:.1px;padding:2px 8px;border-radius:20px;border:1px solid rgba(0,212,255,.15);color:rgba(0,212,255,.55);background:rgba(0,212,255,.04)}
+.cc-tag.hl{border-color:rgba(0,212,255,.4);color:var(--blue);background:rgba(0,212,255,.08)}
+/* Footer button */
+.cc-footer{display:flex;gap:8px}
+.cc-btn{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;font-size:11px;font-weight:500;letter-spacing:.2px;padding:5px 12px;border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.45);background:rgba(255,255,255,.04);text-decoration:none;transition:all .18s ease;display:inline-flex;align-items:center;gap:5px}
+.cc-btn:hover{border-color:rgba(0,212,255,.4);color:var(--blue);background:rgba(0,212,255,.06)}
+.cc-btn svg{width:9px;height:9px;opacity:.7}
+
 /* ── CERT CARD — project-card style ─────────────────────────── */
 .cert-card{background:var(--panel);border:1px solid var(--border);position:relative;transition:border-color .2s;overflow:hidden;text-decoration:none;display:block;color:inherit}
 .cert-card:hover{border-color:rgba(0,212,255,.28)}
@@ -1746,13 +1783,11 @@ function credCard(c){
   const isCert = c.type==='certificate';
   const isLI   = !isC && !isCert;
 
-  // ── Type badge label & colour (mirrors proj-card stat-b) ──
   const typeLbl  = isC ? 'CREDLY' : isCert ? 'CERTIFICATE' : 'LINKEDIN';
   const typeClass= isC ? 'credly' : isCert ? 'cert' : 'linkedin';
 
-  // ── Resolve images ──
-  // certJpeg = full-width banner (LinkedIn/cert JPEGs stored in pdf field)
-  // logoSrc  = small square icon shown centered (Credly badge, fallback logo)
+  // certJpeg → full-width top banner (LinkedIn/cert JPEG stored in pdf field)
+  // logoSrc  → small issuer icon in the body row
   const certJpeg = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : '';
   let logoSrc = '';
   if(isC){
@@ -1764,50 +1799,46 @@ function credCard(c){
     logoSrc = c.logo || c.image || '';
   }
 
-  // ── Top section ──
-  // Cert cards  → full-width JPEG banner (proj-img)
-  // Credly/LI   → dark panel with small centered logo
+  // ── Top image area ──
+  // Cert  → full JPEG banner
+  // Credly → dark panel with badge centered (badge IS the credential visual)
+  // Else  → plain dark panel
   let topHtml = '';
   if(certJpeg){
-    // Full-width certificate image
-    topHtml = `<img class="proj-img" src="${x(certJpeg)}" alt="${x(c.title||'')}" loading="lazy"
-      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-    ><div class="proj-noimg" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
-  } else if(logoSrc){
-    // Small centered logo on a dark background panel
-    topHtml = `<div class="cr-logo-top">
-      <img src="${x(logoSrc)}" alt="${x(c.title||'')}" loading="lazy"
-        onerror="this.style.display='none'"
-        style="max-width:80px;max-height:80px;width:auto;height:auto;object-fit:contain;border-radius:6px">
-    </div>`;
+    topHtml = `<div class="cc-top"><img class="cc-banner" src="${x(certJpeg)}" alt="${x(c.title||'')}" loading="lazy" onerror="this.parentElement.classList.add('cc-top-noimg');this.style.display='none'"></div>`;
+  } else if(isC && logoSrc){
+    topHtml = `<div class="cc-top cc-top-badge"><img class="cc-badge-img" src="${x(logoSrc)}" alt="${x(c.title||'')}" loading="lazy" onerror="this.style.display='none'"></div>`;
   } else {
-    topHtml = `<div class="proj-noimg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+    topHtml = `<div class="cc-top cc-top-noimg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="width:28px;height:28px;opacity:.12"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
   }
 
-  // ── Tags row (reuse tech-t style) ──
+  // ── Tags ──
   const tagsHtml = (c.tags||[]).length
-    ? `<div class="tech-row">${(c.tags).map(t=>`<span class="tech-t${HL.has(t)?' hl':''}">${x(t)}</span>`).join('')}</div>`
+    ? `<div class="cc-tags">${(c.tags).map(t=>`<span class="cc-tag${HL.has(t)?' hl':''}">${x(t)}</span>`).join('')}</div>`
     : '';
 
-  // ── Action link button ──
   const isPdf = c.pdf && c.pdf.endsWith('.pdf');
   const href  = c.url || c.pdf || '#';
-  const linkHtml = `<a class="pl" href="${x(href)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-    ${isPdf ? 'PDF' : isC ? 'BADGE' : 'CERT'}
-  </a>`;
+  const btnLbl = isPdf ? 'View PDF' : isC ? 'View Badge' : 'View Cert';
 
-  return `<div class="proj-card" onclick="window.open('${x(href)}','_blank')">
+  // Small logo in body row — credly shows tiny version, certs show LI badge
+  let bodyLogoHtml = '';
+  if(logoSrc){
+    const extraClass = isC ? ' cc-logo-credly' : '';
+    bodyLogoHtml = `<img class="cc-logo${extraClass}" src="${x(logoSrc)}" alt="${x(c.issuer||'')}" loading="lazy" onerror="this.style.display='none'">`;
+  }
+
+  return `<div class="proj-card cc-card" onclick="window.open('${x(href)}','_blank')">
     <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
     ${topHtml}
-    <div class="proj-body">
-      <div class="proj-hdr">
-        <div class="proj-title">${x(c.title||'Untitled')}</div>
-        <span class="stat-b ${typeClass}">${typeLbl}</span>
+    <div class="cc-body">
+      <div class="cc-hdr">
+        <div class="cc-meta-row">${bodyLogoHtml}<div class="cc-meta"><span class="cc-issuer">${x(c.issuer||'')}</span>${c.date?`<span class="cc-dot">·</span><span class="cc-date">${x(c.date)}</span>`:''}</div></div>
+        <span class="cc-type-badge ${typeClass}">${typeLbl}</span>
       </div>
-      <p class="proj-desc">${x(c.issuer||'')}${c.date ? ' &middot; ' + x(c.date) : ''}</p>
+      <div class="cc-title">${x(c.title||'Untitled')}</div>
       ${tagsHtml}
-      <div class="proj-links">${linkHtml}</div>
+      <div class="cc-footer"><a class="cc-btn" href="${x(href)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${btnLbl}</a></div>
     </div>
   </div>`;
 }
