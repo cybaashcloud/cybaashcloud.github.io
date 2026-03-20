@@ -1,6 +1,173 @@
 {
   "credentials": [
     {
+      "id": "li0100",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Conditional Image Generation",
+        "Artificial Intelligence for Design",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0100.jpg",
+      "title": "Generative AI Imaging: What Creative Pros Need to Know",
+      "issuer": "LinkedIn",
+      "courseId": "generative-ai-imaging-what-creative-pros-need-to-know",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925"
+    },
+    {
+      "id": "li0101",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Artificial Intelligence (AI",
+        "Responsible AI",
+        "Copyright Law"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0101.jpg",
+      "title": "Generative AI: Business and Legal Concerns for Creatives",
+      "issuer": "LinkedIn",
+      "courseId": "generative-ai-business-and-legal-concerns-for-creatives",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc"
+    },
+    {
+      "id": "li0102",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/66dde9127100b148ad120df760a3049dffbc2d83347b5ef979a2246177b97aec",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Large Language Models (LLM",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0102.jpg",
+      "title": "Generative AI: Introduction to Large Language Models",
+      "issuer": "LinkedIn",
+      "courseId": "generative-ai-introduction-to-large-language-models",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "66dde9127100b148ad120df760a3049dffbc2d83347b5ef979a2246177b97aec"
+    },
+    {
+      "id": "li0103",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/7717e41e5cba66fac1776834fc40e471028032a1e8538af985b7a8ff9b007c0a",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Large Language Models (LLM",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0103.jpg",
+      "title": "Generative AI: Working with Large Language Models",
+      "issuer": "LinkedIn",
+      "courseId": "generative-ai-working-with-large-language-models",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "7717e41e5cba66fac1776834fc40e471028032a1e8538af985b7a8ff9b007c0a"
+    },
+    {
+      "id": "li0104",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/f06eb99aad1bbc00c261da76d118e0ed659e0ffd97a9479e103159537e9e55bf",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0104.jpg",
+      "title": "Git Essential Training",
+      "issuer": "LinkedIn",
+      "courseId": "git-essential-training",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "f06eb99aad1bbc00c261da76d118e0ed659e0ffd97a9479e103159537e9e55bf"
+    },
+    {
+      "id": "li0105",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/aca100da058fbcc3df7bcf202c87d35942a21d2e98ba521609728bfa8948938c",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "AI Agents",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0105.jpg",
+      "title": "Governing Agentic AI Systems by All Tech Is Human",
+      "issuer": "LinkedIn",
+      "courseId": "governing-agentic-ai-systems-by-all-tech-is-human",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "aca100da058fbcc3df7bcf202c87d35942a21d2e98ba521609728bfa8948938c"
+    },
+    {
+      "id": "li0106",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/290803d6387da0f2f5df81fbccdf40482c0324aaca803807b8863eacb80c420a",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0106.jpg",
+      "title": "Grammar Foundations",
+      "issuer": "LinkedIn",
+      "courseId": "grammar-foundations",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "290803d6387da0f2f5df81fbccdf40482c0324aaca803807b8863eacb80c420a"
+    },
+    {
+      "id": "li0107",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/c7e108ee0670710dc949784a1b904fe7de558dc1fa65a4934a7c4ae25734d7e4",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "AI Productivity",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0107.jpg",
+      "title": "Grammarly: Your AI Writing Partner",
+      "issuer": "LinkedIn",
+      "courseId": "grammarly-your-ai-writing-partner",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "c7e108ee0670710dc949784a1b904fe7de558dc1fa65a4934a7c4ae25734d7e4"
+    },
+    {
+      "id": "li0108",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/e202b9d5d201966de2202dabf93b4a6faf3b774d6c866fa8b0d8f30cae2817a4",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Artificial Intelligence (AI) Responsible AI",
+        "ID:"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0108.jpg",
+      "title": "History of Responsible AI: From Principles to Professionalization by All Tech Is Human",
+      "issuer": "LinkedIn",
+      "courseId": "history-of-responsible-ai-from-principles-to-professionaliza",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "e202b9d5d201966de2202dabf93b4a6faf3b774d6c866fa8b0d8f30cae2817a4"
+    },
+    {
       "id": "li0109",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/8085692723ac804f5d023d16a7ca539cc1338acf0472a98e0f3bf3919200d0a8",
@@ -1382,169 +1549,6 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "e0322259a18c03f1c133e901527b29990fd3d670b0b2c0f99017bd2c08325f2b"
-    },
-    {
-      "id": "li0184",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/142c90aa710d34f329d8fbbbc71f997292e3508cd6d7a2d4cc1219f367cd96c3",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Brand Storytelling"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0184.jpg",
-      "title": "Marketing: How to Use High-Impact Storytelling",
-      "issuer": "LinkedIn",
-      "courseId": "marketing-how-to-use-high-impact-storytelling",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "142c90aa710d34f329d8fbbbc71f997292e3508cd6d7a2d4cc1219f367cd96c3"
-    },
-    {
-      "id": "li0185",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/eed3d44feef30cd64ec2ea06dd88882ecaade1eecbf0ecfd0ea93b328a9f6f59",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Machine Learning Azure AI Foundry Artificial Intelligence (AI",
-        "ID:"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0185.jpg",
-      "title": "Microsoft Azure AI Essentials: Workloads and Machine Learning on Azure",
-      "issuer": "LinkedIn",
-      "courseId": "microsoft-azure-ai-essentials-workloads-and-machine-learning",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "eed3d44feef30cd64ec2ea06dd88882ecaade1eecbf0ecfd0ea93b328a9f6f59"
-    },
-    {
-      "id": "li0186",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/6a14472cd57b1559030e01bd1fd66d65edb0841ec689ad1312b4a7106f6d9ad7",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "AI Prompting",
-        "Microsoft Copilot",
-        "AI Productivity"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0186.jpg",
-      "title": "Microsoft Copilot: The Art of Prompt Writing",
-      "issuer": "LinkedIn",
-      "courseId": "microsoft-copilot-the-art-of-prompt-writing",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "6a14472cd57b1559030e01bd1fd66d65edb0841ec689ad1312b4a7106f6d9ad7"
-    },
-    {
-      "id": "li0187",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/948e46545c05916ae9f93c0786eef824936fc4f5950888425b0fe8a4c78e5405",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Incident Response"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0187.jpg",
-      "title": "Microsoft Security Copilot",
-      "issuer": "LinkedIn",
-      "courseId": "microsoft-security-copilot",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "948e46545c05916ae9f93c0786eef824936fc4f5950888425b0fe8a4c78e5405"
-    },
-    {
-      "id": "li0188",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/61d5046a70d1990d3069738b999fbdf2db1211bb001faaea7c9b686199d5026d",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Microsoft Security Governance, Risk Management, and Compliance (GRC) Cloud Security",
-        "ID:"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0188.jpg",
-      "title": "Microsoft Security Essentials: Concepts, Solutions, and AI-Powered Protection",
-      "issuer": "LinkedIn",
-      "courseId": "microsoft-security-essentials-concepts-solutions-and-ai-powe",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "61d5046a70d1990d3069738b999fbdf2db1211bb001faaea7c9b686199d5026d"
-    },
-    {
-      "id": "li0189",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/bd65524c812de59f217585026cc248202afd43b5bbcb66d9a98b942225c3f1af",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Microsoft 365",
-        "Project Management"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0189.jpg",
-      "title": "Modern Project Management in Microsoft 365",
-      "issuer": "LinkedIn",
-      "courseId": "modern-project-management-in-microsoft-365",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "bd65524c812de59f217585026cc248202afd43b5bbcb66d9a98b942225c3f1af"
-    },
-    {
-      "id": "li0190",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/b44840227794603231590045b7126f6830587a02ad010f3022bc18c8dde303e3",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0190.jpg",
-      "title": "Negotiating with Agility",
-      "issuer": "LinkedIn",
-      "courseId": "negotiating-with-agility",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "b44840227794603231590045b7126f6830587a02ad010f3022bc18c8dde303e3"
-    },
-    {
-      "id": "li0191",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/b6707113f4f9b457c73271dbdc5094448a7917ad3d51822dc2365f6f298fe8c8",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0191.jpg",
-      "title": "Negotiation Foundations",
-      "issuer": "LinkedIn",
-      "courseId": "negotiation-foundations",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "b6707113f4f9b457c73271dbdc5094448a7917ad3d51822dc2365f6f298fe8c8"
-    },
-    {
-      "id": "li0192",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/dd8db0ece9367cdf81f51ebed98c8836162be24868f7f35008581aa81d3bedf4",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "JavaScript"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0192.jpg",
-      "title": "Node.js Essential Training",
-      "issuer": "LinkedIn",
-      "courseId": "node-js-essential-training",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "dd8db0ece9367cdf81f51ebed98c8836162be24868f7f35008581aa81d3bedf4"
     }
   ]
 }
