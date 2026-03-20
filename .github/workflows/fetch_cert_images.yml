@@ -1,7 +1,6 @@
 name: Fetch Missing Cert Images
 
 on:
-  # Run manually from Actions tab with optional controls
   workflow_dispatch:
     inputs:
       file:
@@ -21,8 +20,6 @@ on:
         default: false
         type: boolean
 
-  # Also run automatically once a week (Sunday 02:00 UTC)
-  # catches any new creds added via the admin panel
   schedule:
     - cron: '0 2 * * 0'
 
@@ -30,19 +27,15 @@ jobs:
   fetch-images:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # needed to commit images + JSON back to the repo
-      pages: write      # needed to trigger Pages deployment
-      id-token: write   # needed for Pages OIDC auth
+      contents: write
 
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────────────────
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
 
-      # ── 2. Python + deps ─────────────────────────────────────────────────
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -50,24 +43,45 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install requests beautifulsoup4
+        run: |
+          pip install requests beautifulsoup4 pymupdf pillow
 
-      # ── 3. Write the fetch script inline ─────────────────────────────────
       - name: Write fetch script
         run: |
           cat > fetch_cert_images.py << 'PYEOF'
           #!/usr/bin/env python3
           """
-          Fetches og:image from each cert URL, downloads the image into
-          frontend/certificates/auto/ and writes the local path into c.image.
-          LinkedIn CDN blocks hotlinking — local copies avoid Access Denied.
+          fetch_cert_images.py  v3
+          ════════════════════════
+          Routing is by ISSUER NAME, not URL — because AWS SkillBuilder and
+          Cisco NetAcad do not have scrapeable shareable certificate pages.
+
+          ┌─────────────────────────────────────────────┬──────────────────────┐
+          │ Issuer contains                             │ Strategy             │
+          ├─────────────────────────────────────────────┼──────────────────────┤
+          │ "Amazon Web Services"                       │ PDF render           │
+          │   PDFs in frontend/certificates/aws/        │ title-match → JPEG   │
+          ├─────────────────────────────────────────────┼──────────────────────┤
+          │ "Cisco"  (type=certificate, NetAcad PDFs)   │ PDF render           │
+          │   Static map: PDF filename → cert ID        │                      │
+          ├─────────────────────────────────────────────┼──────────────────────┤
+          │ Everything else with a URL                  │ og:image scrape      │
+          └─────────────────────────────────────────────┴──────────────────────┘
+
+          pdfUrl is written to the JSON for PDF-rendered certs so the
+          "View PDF" button works on the site.
           """
-          import argparse, json, sys, time
+
+          import argparse, json, os, re, time
           from pathlib import Path
           from urllib.parse import urlparse
 
           import requests
           from bs4 import BeautifulSoup
+          import fitz          # PyMuPDF
+          from PIL import Image
+
+          # ── Constants ─────────────────────────────────────────────────────────────
 
           HEADERS = {
               "User-Agent": (
@@ -87,9 +101,28 @@ jobs:
           DELAY_PAGE, DELAY_IMG, TIMEOUT = 0.9, 0.4, 15
           AUTO_DIR_REL = "certificates/auto"
 
-          def fetch_og(page_url):
+          # Static map: Cisco PDF filename → cert ID
+          # Add a new entry here whenever a new Cisco PDF cert lands in the repo.
+          CISCO_PDF_MAP = {
+              "cisco_packet_tracer.pdf":                "pro011",
+              # "cisco_some_future_cert.pdf":           "proXXX",
+          }
+
+          # ── Issuer helpers ─────────────────────────────────────────────────────────
+
+          def is_aws(issuer: str) -> bool:
+              return "amazon web services" in issuer.lower()
+
+          def is_cisco_cert(issuer: str, ctype: str) -> bool:
+              # Only non-Credly Cisco certs need PDF render; Credly badges are handled separately
+              return "cisco" in issuer.lower() and ctype != "credly"
+
+          # ── og:image scraper (LinkedIn Learning, etc.) ─────────────────────────────
+
+          def fetch_og(page_url: str):
               try:
-                  r = requests.get(page_url, headers=HEADERS, timeout=TIMEOUT, allow_redirects=True)
+                  r = requests.get(page_url, headers=HEADERS, timeout=TIMEOUT,
+                                   allow_redirects=True)
                   if r.status_code != 200:
                       print(f"    page HTTP {r.status_code}")
                       return None
@@ -110,23 +143,23 @@ jobs:
                   print(f"    fetch error: {e}")
               return None
 
-          def download_image(img_url, save_dir, cred_id):
+          def download_image(img_url: str, save_dir: Path, cred_id: str):
               try:
                   r = requests.get(img_url, headers=IMG_HEADERS, timeout=TIMEOUT, stream=True)
                   if r.status_code != 200:
                       print(f"    image HTTP {r.status_code}")
                       return None
-                  ct = r.headers.get("Content-Type", "image/jpeg")
-                  ext = "png" if "png" in ct else "webp" if "webp" in ct else "gif" if "gif" in ct else "jpg"
-                  up = urlparse(img_url).path.lower()
-                  for e in ["png", "webp", "gif", "svg"]:
+                  ct  = r.headers.get("Content-Type", "image/jpeg")
+                  ext = "png" if "png" in ct else "webp" if "webp" in ct else "jpg"
+                  up  = urlparse(img_url).path.lower()
+                  for e in ["png", "webp", "gif"]:
                       if up.endswith(f".{e}"):
                           ext = e; break
                   fname = f"{cred_id}.{ext}"
-                  dest = save_dir / fname
+                  dest  = save_dir / fname
                   save_dir.mkdir(parents=True, exist_ok=True)
-                  with open(dest, "wb") as f:
-                      for chunk in r.iter_content(8192): f.write(chunk)
+                  with open(dest, "wb") as fh:
+                      for chunk in r.iter_content(8192): fh.write(chunk)
                   kb = dest.stat().st_size / 1024
                   print(f"    saved {fname} ({kb:.0f} KB)")
                   return fname
@@ -134,94 +167,252 @@ jobs:
                   print(f"    download error: {e}")
               return None
 
-          def process_file(path, frontend_dir, dry_run):
+          # ── PDF → JPEG renderer ────────────────────────────────────────────────────
+
+          def pdf_to_jpeg(pdf_path: Path, out_path: Path, dpi: int = 150) -> bool:
+              """Render first page of a PDF to JPEG. Returns True on success."""
+              try:
+                  doc  = fitz.open(str(pdf_path))
+                  page = doc[0]
+                  mat  = fitz.Matrix(dpi / 72, dpi / 72)
+                  pix  = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB)
+                  img  = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                  out_path.parent.mkdir(parents=True, exist_ok=True)
+                  img.save(str(out_path), "JPEG", quality=88, optimize=True)
+                  kb = out_path.stat().st_size / 1024
+                  print(f"    rendered {pdf_path.name} → {out_path.name} ({kb:.0f} KB)")
+                  return True
+              except Exception as e:
+                  print(f"    PDF render error ({pdf_path.name}): {e}")
+                  return False
+
+          # ── AWS: PDF title matcher ─────────────────────────────────────────────────
+
+          def pdf_first_page_text(pdf_path: Path) -> str:
+              try:
+                  doc  = fitz.open(str(pdf_path))
+                  text = doc[0].get_text("text")
+                  return re.sub(r"\s+", " ", text).strip().lower()
+              except Exception:
+                  return ""
+
+          def word_overlap(a: str, b: str) -> float:
+              wa = set(re.findall(r"[a-z0-9]+", a))
+              wb = set(re.findall(r"[a-z0-9]+", b))
+              if not wa or not wb:
+                  return 0.0
+              return len(wa & wb) / max(len(wa), len(wb))
+
+          def match_aws_pdfs(pdf_dir: Path, aws_certs: list) -> dict:
+              """
+              Match each PDF in pdf_dir to the best-fitting cert by word overlap
+              between PDF page-1 text and cert title.
+              Returns {cert_id: Path}.
+              """
+              pdfs = sorted(pdf_dir.glob("*.pdf"))
+              if not pdfs:
+                  print(f"  ⚠ No PDFs found in {pdf_dir}")
+                  return {}
+
+              print(f"\n  Matching {len(pdfs)} AWS PDF(s) to {len(aws_certs)} cert(s)…")
+              pdf_texts  = {p: pdf_first_page_text(p) for p in pdfs}
+              mapping    = {}
+              used_pdfs  = set()
+
+              for c in sorted(aws_certs, key=lambda x: x["id"]):
+                  cid    = c["id"]
+                  ctitle = c.get("title", "").lower()
+                  best_score, best_pdf = 0.0, None
+
+                  for p in pdfs:
+                      if p in used_pdfs:
+                          continue
+                      score = word_overlap(ctitle, pdf_texts[p])
+                      if score > best_score:
+                          best_score = score
+                          best_pdf   = p
+
+                  if best_pdf and best_score >= 0.35:
+                      mapping[cid] = best_pdf
+                      used_pdfs.add(best_pdf)
+                      print(f"    ✓ {cid} ← {best_pdf.name}  (score={best_score:.2f})")
+                  else:
+                      print(f"    ✗ {cid}  no PDF match (best score={best_score:.2f})")
+
+              return mapping
+
+          # ── Per-file processor ─────────────────────────────────────────────────────
+
+          def process_file(path: Path, frontend_dir: Path, dry_run: bool):
               data  = json.loads(path.read_text(encoding="utf-8"))
               creds = data.get("credentials", [])
               auto  = frontend_dir / AUTO_DIR_REL
+
+              # Pre-build AWS map (only certs without an image yet)
+              aws_pending = [
+                  c for c in creds
+                  if not (c.get("image") or "")
+                  and c.get("type") != "credly"
+                  and is_aws(c.get("issuer", ""))
+              ]
+              aws_pdf_dir = frontend_dir / "certificates" / "aws"
+              aws_map = match_aws_pdfs(aws_pdf_dir, aws_pending) if aws_pending else {}
+
               fetched = skipped = 0
               changed = False
+
               for idx, c in enumerate(creds):
-                  img   = c.get("image") or ""
-                  pdf   = c.get("pdf")   or ""
-                  url   = c.get("url")   or ""
-                  ctype = c.get("type",  "")
-                  has_img = bool(img) or (pdf and not pdf.endswith(".pdf"))
-                  if has_img or ctype == "credly" or not url:
-                      skipped += 1; continue
-                  print(f"[{c['id']}] {c.get('title','')[:60]}")
-                  print(f"  url: {url}")
+                  img    = c.get("image") or ""
+                  url    = c.get("url")   or ""
+                  ctype  = c.get("type",  "")
+                  cid    = c["id"]
+                  issuer = c.get("issuer", "")
+
+                  # Already has an image, or is a Credly badge (Credly supplies its own image)
+                  if img or ctype == "credly":
+                      skipped += 1
+                      continue
+
+                  print(f"\n[{cid}] {c.get('title','')[:65]}")
+                  print(f"  issuer: {issuer}")
+
                   if dry_run:
-                      print("  (dry-run)"); continue
-                  og = fetch_og(url)
-                  time.sleep(DELAY_PAGE)
-                  if not og:
-                      print("  ✗ no og:image"); skipped += 1; continue
-                  print(f"  og: {og[:80]}")
-                  fname = download_image(og, auto, c["id"])
-                  time.sleep(DELAY_IMG)
-                  creds[idx]["image"] = f"/{AUTO_DIR_REL}/{fname}" if fname else og
-                  fetched += 1; changed = True
+                      if is_aws(issuer):
+                          pdf = aws_map.get(cid)
+                          print(f"  → AWS PDF render: {pdf.name if pdf else 'NO PDF MATCH'}")
+                      elif is_cisco_cert(issuer, ctype):
+                          mapped = next((f for f, i in CISCO_PDF_MAP.items() if i == cid), None)
+                          print(f"  → Cisco PDF render: {mapped or 'NOT IN CISCO_PDF_MAP — add it'}")
+                      else:
+                          print(f"  → og:image scrape: {url or '(no URL)'}")
+                      continue
+
+                  saved_fname  = None
+                  pdf_rel_path = None
+
+                  # ── AWS: PDF render ───────────────────────────────────────────────
+                  if is_aws(issuer):
+                      pdf_path = aws_map.get(cid)
+                      if not pdf_path:
+                          print(f"  ✗ no PDF matched for {cid} — skipping")
+                          skipped += 1
+                          continue
+                      out_path = auto / f"{cid}.jpg"
+                      if pdf_to_jpeg(pdf_path, out_path):
+                          saved_fname  = f"{cid}.jpg"
+                          pdf_rel_path = f"/certificates/aws/{pdf_path.name}"
+                      else:
+                          skipped += 1
+                          continue
+
+                  # ── Cisco (non-Credly): PDF render via static map ─────────────────
+                  elif is_cisco_cert(issuer, ctype):
+                      cisco_dir = frontend_dir / "certificates"
+                      pdf_fname = next((f for f, i in CISCO_PDF_MAP.items() if i == cid), None)
+                      if not pdf_fname:
+                          print(f"  ⚠ {cid} not in CISCO_PDF_MAP — add mapping manually then re-run")
+                          skipped += 1
+                          continue
+                      pdf_path = cisco_dir / pdf_fname
+                      if not pdf_path.exists():
+                          print(f"  ✗ PDF not found: {pdf_path}")
+                          skipped += 1
+                          continue
+                      out_path = auto / f"{cid}.jpg"
+                      if pdf_to_jpeg(pdf_path, out_path):
+                          saved_fname  = f"{cid}.jpg"
+                          pdf_rel_path = f"/certificates/{pdf_fname}"
+                      else:
+                          skipped += 1
+                          continue
+
+                  # ── Everything else: og:image scrape ─────────────────────────────
+                  else:
+                      if not url:
+                          print(f"  ✗ no URL — skipping")
+                          skipped += 1
+                          continue
+                      print(f"  url: {url}")
+                      og = fetch_og(url)
+                      time.sleep(DELAY_PAGE)
+                      if not og:
+                          print(f"  ✗ no og:image")
+                          skipped += 1
+                          continue
+                      print(f"  og: {og[:80]}")
+                      saved_fname = download_image(og, auto, cid)
+                      time.sleep(DELAY_IMG)
+                      if not saved_fname:
+                          skipped += 1
+                          continue
+
+                  # ── Write back to JSON ────────────────────────────────────────────
+                  creds[idx]["image"] = f"/{AUTO_DIR_REL}/{saved_fname}"
+                  if pdf_rel_path:
+                      creds[idx]["pdfUrl"] = pdf_rel_path
+                      print(f"  ✓ pdfUrl → {pdf_rel_path}")
+
+                  fetched += 1
+                  changed  = True
+
               if changed and not dry_run:
                   data["credentials"] = creds
-                  path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-                  print(f"Saved {path.name} (+{fetched})")
+                  path.write_text(
+                      json.dumps(data, indent=2, ensure_ascii=False),
+                      encoding="utf-8")
+                  print(f"\nSaved {path.name} (+{fetched} images)")
+
               return fetched, skipped
 
+          # ── Main ──────────────────────────────────────────────────────────────────
+
           parser = argparse.ArgumentParser()
-          parser.add_argument("--dir",  default=".")
+          parser.add_argument("--dir",     default=".")
           parser.add_argument("--dry-run", action="store_true")
-          parser.add_argument("--file", type=int, choices=[1,2,3,4], default=None)
+          parser.add_argument("--file",    type=int, choices=[1,2,3,4], default=None)
           args = parser.parse_args()
+
           frontend = Path(args.dir).expanduser().resolve()
-          nums = [args.file] if args.file else [1,2,3,4]
-          tf = ts = 0
+          nums     = [args.file] if args.file else [1,2,3,4]
+          tf = ts  = 0
           for n in nums:
               p = frontend / f"data_creds_{n}.json"
               if not p.exists(): continue
-              print(f"\n=== data_creds_{n}.json ===")
+              print(f"\n{'='*60}\n  data_creds_{n}.json\n{'='*60}")
               f, s = process_file(p, frontend, args.dry_run)
               tf += f; ts += s
-          print(f"\nDone. Downloaded={tf} Skipped={ts}")
-          # Write summary for GitHub Actions
-          import os
+
+          print(f"\n{'='*60}")
+          print(f"  Done.  Rendered/fetched={tf}  Skipped={ts}")
+          print(f"{'='*60}")
+
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
           if summary:
-              with open(summary, "a") as f:
-                  f.write(f"## Cert Image Fetch Results\n")
-                  f.write(f"- **Downloaded:** {tf}\n")
-                  f.write(f"- **Skipped / already have image:** {ts}\n")
-                  if tf > 0:
-                      f.write(f"\nImages saved to `frontend/certificates/auto/`\n")
+              with open(summary, "a") as fh:
+                  fh.write("## Cert Image Fetch v3\n")
+                  fh.write(f"- **Rendered / fetched:** {tf}\n")
+                  fh.write(f"- **Skipped (already have image):** {ts}\n")
           PYEOF
 
-      # ── 4. Run the script ─────────────────────────────────────────────────
       - name: Fetch missing cert images
         run: |
           ARGS="--dir frontend"
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
-            ARGS="$ARGS --dry-run"
-          fi
-          if [ -n "${{ inputs.file }}" ]; then
-            ARGS="$ARGS --file ${{ inputs.file }}"
-          fi
+          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
+          [ -n "${{ inputs.file }}"  ]          && ARGS="$ARGS --file ${{ inputs.file }}"
           echo "Running: python fetch_cert_images.py $ARGS"
           python fetch_cert_images.py $ARGS
 
-      # ── 5. Commit only if files changed ───────────────────────────────────
       - name: Commit images and updated JSON
         if: ${{ inputs.dry_run != true }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git add frontend/certificates/auto/ frontend/data_creds_*.json
-
-          # Only commit if there's actually something new
           if git diff --cached --quiet; then
             echo "No changes — all images already present."
           else
             COUNT=$(git diff --cached --name-only | grep -c "certificates/auto" || true)
-            git commit -m "feat: add ${COUNT} cert images via fetch workflow"
+            git commit -m "feat: render ${COUNT} PDF cert images [skip ci]"
             git push
             echo "Pushed ${COUNT} new cert images."
           fi
