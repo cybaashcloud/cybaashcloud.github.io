@@ -260,17 +260,11 @@ async function _uploadCredImage(cfg, certId, field, dataUrl) {
 
 /**
  * Strip base64 blobs from credential logo/image fields before writing to GitHub.
- * Rules:
- *   - logoUpload: always deleted (transient staging field)
- *   - credly type: logo/image base64 cleared (credlyImageUrl is the display field)
- *   - certificate/other: if base64 > 50KB, upload as a file and store the URL instead
- *   - certificate logos ≤50KB: kept inline
- * Returns a new credential object; the original is not mutated.
- * NOTE: This is now async because large images are uploaded to GitHub.
+ * By the time this runs, large images have already been uploaded to files by
+ * CredentialsSection.commit() in App.jsx — so only credly base64 remains to clear.
  */
-async function _stripCredentialBlobs(cred, cfg) {
+function _stripCredentialBlobs(cred) {
   const out = { ...cred }
-  // Always remove the transient upload staging field
   delete out.logoUpload
 
   const type = out.type || ''
@@ -278,24 +272,10 @@ async function _stripCredentialBlobs(cred, cfg) {
   for (const field of ['logo', 'image']) {
     const v = out[field]
     if (typeof v !== 'string' || !v.startsWith('data:')) continue
-
-    const isCredly = type === 'credly'
-    const tooBig   = v.length > _GENERAL_MAX_B64
-
-    if (isCredly) {
-      // Credly always uses credlyImageUrl — drop any base64 logo
-      out[field] = ''
-      console.warn(`[GitHub] _stripCredentialBlobs: cleared ${field} on cred[${cred.id}] (credly type)`)
-    } else if (tooBig && cfg) {
-      // Too large to store inline — upload as a file and store the URL
-      console.info(`[GitHub] _stripCredentialBlobs: uploading ${field} for cred[${cred.id}] (${(v.length/1024).toFixed(0)}KB)`)
-      out[field] = await _uploadCredImage(cfg, cred.id, field, v)
-    } else if (tooBig) {
-      // No cfg available — can't upload, just clear it
-      out[field] = ''
-      console.warn(`[GitHub] _stripCredentialBlobs: cleared ${field} on cred[${cred.id}] (${(v.length/1024).toFixed(0)}KB, no cfg)`)
-    }
-    // else: small enough to keep inline — leave it as-is
+    // Only credly should still have base64 here — clear it (credlyImageUrl is correct field)
+    // Any other base64 that slipped through gets cleared too as a safety net
+    out[field] = ''
+    console.warn(`[GitHub] _stripCredentialBlobs: cleared ${field} on cred[${cred.id}] (${(v.length/1024).toFixed(0)}KB, type=${type})`)
   }
 
   return out
@@ -836,12 +816,9 @@ async function _saveSection(section, value) {
       await writeFile(cfg, MAIN_FILE, updated, sha)
 
     } else if (section === 'credentials') {
-      // Strip base64 blobs — large images are uploaded as files, URL stored instead.
-      // _stripCredentialBlobs is now async so we await each one sequentially.
-      const cleanCreds = []
-      for (const cred of value) {
-        cleanCreds.push(await _stripCredentialBlobs(cred, cfg))
-      }
+      // Images have already been uploaded to files by App.jsx commit().
+      // _stripCredentialBlobs just clears any remaining base64 as a safety net.
+      const cleanCreds = value.map(_stripCredentialBlobs)
       const chunks = splitCredentials(cleanCreds)
 
       // Write files SEQUENTIALLY — not in parallel — so each write fetches

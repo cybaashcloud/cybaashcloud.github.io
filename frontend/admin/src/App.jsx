@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { invalidateAll as invalidatePipelineCache } from './data/cache.js'
 import {
   getGithubConfig, saveGithubConfig, clearGithubConfig, resetClient,
-  loadAll, saveSection, testConnection, registerCacheInvalidator
+  loadAll, saveSection, testConnection, registerCacheInvalidator, uploadImage
 } from './github.js'
 
 // Wire pipeline cache invalidation so saveSection clears both caches
@@ -1601,14 +1601,43 @@ function CredentialsSection({ data, onSave }) {
   useEffect(()=>{ setCreds(data||[]) }, [data])
 
   const commit = async (u, prev) => {
-    setCreds(u)            // optimistic update
     setSaving(true)
     try {
-      await onSave(u)
+      // Pre-upload any large base64 images so they become URLs before saving.
+      // This means subsequent saves never see base64 and never re-upload.
+      const cfg = getGithubConfig()
+      const MAX = 50_000
+      const cleaned = await Promise.all(u.map(async c => {
+        if (!cfg?.token) return c
+        const out = { ...c }
+        for (const field of ['logo', 'image']) {
+          const v = out[field]
+          if (typeof v === 'string' && v.startsWith('data:') && v.length > MAX && c.type !== 'credly') {
+            try {
+              const match = v.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/)
+              if (match) {
+                const ext = match[1].split('/')[1].replace('jpeg','jpg').replace('svg+xml','svg')
+                const fname = `cert_logos/${c.id}_${field}.${ext}`
+                const url = await uploadImage(fname, match[2])
+                // uploadImage returns a path like "frontend/cert_logos/..." — convert to raw URL
+                out[field] = url.startsWith('http')
+                  ? url
+                  : `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/main/${url}`
+              }
+            } catch(e) {
+              console.warn(`[CredentialsSection] pre-upload failed for ${c.id}.${field}:`, e.message)
+            }
+          }
+        }
+        delete out.logoUpload
+        return out
+      }))
+      setCreds(cleaned)      // update state with URLs — base64 gone from memory
+      await onSave(cleaned)
     } catch (e) {
-      setCreds(prev)       // rollback on failure so UI matches GitHub
+      setCreds(prev)         // rollback on failure
       console.error('[CredentialsSection] save failed:', e.message)
-      throw e              // bubble up so SyncToast shows the error
+      throw e
     } finally { setSaving(false) }
   }
 
