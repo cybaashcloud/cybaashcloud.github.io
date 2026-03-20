@@ -2391,8 +2391,8 @@ const AI_CONFIG_FILE = 'frontend/data_ai_config.json'
 
 const AI_CONFIG_DEFAULTS = {
   gemini_api_key:       '',
-  gemini_model:         'gemini-2.5-pro',
-  gemini_model_premium: 'gemini-2.5-flash',
+  gemini_model:         'gemini-2.5-flash-lite',
+  gemini_model_premium: 'gemini-2.5-flash-lite',
   max_tokens:           '1024',
   max_tokens_premium:   '1024',
   temperature:          '0.4',
@@ -2463,7 +2463,7 @@ function GeminiConfigCard({ ghCfg }) {
     if (!key) { setStatus({ok:false, txt:'Enter an API key first'}); return }
     setTesting(true); setStatus(null)
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${key}`
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`
       const r = await fetch(url, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
@@ -2559,10 +2559,10 @@ function GeminiConfigCard({ ghCfg }) {
 
       <div className="form-row form-row-2">
         {F('Default Model', 'gemini_model', 'text', {select:true, options:[
-          'gemini-2.5-pro','gemini-2.5-flash'
+          'gemini-2.5-flash-lite','gemini-2.5-flash-lite'
         ]})}
         {F('Premium Model', 'gemini_model_premium', 'text', {select:true, options:[
-          'gemini-2.5-flash','gemini-2.5-pro','gemini-2.5-pro-preview-05-06'
+          'gemini-2.5-flash-lite','gemini-2.5-flash-lite','gemini-2.5-flash-preview-05-06'
         ]})}
       </div>
 

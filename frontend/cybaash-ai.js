@@ -28,10 +28,10 @@
   /* ── CONFIG ──────────────────────────────────────────────── */
   var cfg = {
     key:    '',
-    model:  'gemini-2.5-pro',
+    model:  'gemini-2.5-flash-lite',
     tokens: 800,
     temp:   0.4,
-    rpm:    4,    // client-side cap — 1 under the 5 RPM free tier limit of gemini-2.5-pro
+    rpm:    8,    // client-side cap — 2 under the 10 RPM free tier limit of gemini-2.5-flash-lite
     prompt: [
       'You are CyberBot — an expert cybersecurity assistant embedded in',
       'Mohamed Aasiq\'s portfolio at cybaashcloud.github.io.',

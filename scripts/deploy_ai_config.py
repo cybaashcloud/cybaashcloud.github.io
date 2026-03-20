@@ -3,31 +3,26 @@
 scripts/deploy_ai_config.py
 Called by sync.yml during GitHub Pages deploy.
 
-Validates data_ai_config.json and copies it to _site/.
-Also enforces the current recommended Gemini model — if a retired or
-unknown model is found it is silently corrected before deploy so the
-live site never serves a config that causes 429 / model-not-found errors.
-
-The Gemini API key is stored in the user's browser localStorage only
-(set via Admin Panel) and is never committed to this file.
+Validates data_ai_config.json, enforces the correct Gemini model
+based on actual free-tier availability for this project, and copies
+the file to _site/. Corrects retired or unsuitable models automatically.
 """
 
-import json
-import os
-import sys
-import shutil
+import json, os, sys, shutil
 
 SRC  = "frontend/data_ai_config.json"
 DEST = "_site/data_ai_config.json"
 
 # ── Model policy ─────────────────────────────────────────────────────────
-# Default model used when none is set or a retired one is detected.
-RECOMMENDED_DEFAULT = "gemini-2.5-pro"
-RECOMMENDED_PREMIUM = "gemini-2.5-flash"
+# Based on actual rate-limit dashboard for project cybaash:
+#   gemini-2.5-flash-lite  →  10 RPM, 250K TPM  ✅ best available
+#   gemini-2.5-flash       →  5 RPM,  30 RPD    ❌ 30 req/day too low
+#   gemini-2.5-pro         →  0 RPM,  0 RPD     ❌ not available on this key
+RECOMMENDED_DEFAULT = "gemini-2.5-flash-lite"
+RECOMMENDED_PREMIUM = "gemini-2.5-flash-lite"
 
-# Any model in this set is retired / known to return 429 or 404.
-# Add new entries here whenever Google retires a model.
 RETIRED_MODELS = {
+    # Officially retired — return 404
     "gemini-2.0-flash",
     "gemini-2.0-flash-lite",
     "gemini-2.0-flash-exp",
@@ -35,10 +30,13 @@ RETIRED_MODELS = {
     "gemini-1.5-pro",
     "gemini-1.0-pro",
     "gemini-pro",
-    "gemini-2.5-pro-preview-03-25",        # old preview — superseded
-    "gemini-2.5-pro-preview-05-06",        # old preview — superseded
-    "gemini-2.5-flash-lite-preview-06-17", # old preview — use gemini-2.5-pro
-    "gemini-2.5-flash-lite",               # lighter model — use gemini-2.5-pro
+    # Old preview aliases — retired
+    "gemini-2.5-flash-lite-preview-06-17",
+    "gemini-2.5-pro-preview-03-25",
+    "gemini-2.5-pro-preview-05-06",
+    # Too restrictive for portfolio use
+    "gemini-2.5-flash",   # only 30 RPD on free tier
+    "gemini-2.5-pro",     # 0 RPM on this key — not available
 }
 
 # ── Load ──────────────────────────────────────────────────────────────────
@@ -49,20 +47,17 @@ if not os.path.exists(SRC):
 try:
     d = json.load(open(SRC))
 except json.JSONDecodeError as e:
-    print(f"ERROR: frontend/data_ai_config.json is invalid JSON: {e}")
+    print(f"ERROR: Invalid JSON: {e}")
     sys.exit(1)
 
 # ── Key leak check ────────────────────────────────────────────────────────
-KEY_FIELDS = ["gemini_api_key", "apiKey", "api_key"]
-leaked = [k for k in KEY_FIELDS if d.get(k, "").strip()]
+leaked = [k for k in ["gemini_api_key", "apiKey"] if d.get(k, "").strip()]
 if leaked:
-    print(f"WARNING: Key fields have values in source: {leaked}")
-    print("These are public! Revoke them at console.cloud.google.com/apis/credentials")
-    print("The Admin Panel saves keys to localStorage only — not to this file.")
+    print(f"WARNING: API key present in source file: {leaked}")
+    print("Revoke at console.cloud.google.com/apis/credentials")
 
 # ── Model enforcement ─────────────────────────────────────────────────────
 MODEL_FIELDS = {
-    # field_in_json               recommended_value
     "gemini_model":         RECOMMENDED_DEFAULT,
     "gemini_model_premium": RECOMMENDED_PREMIUM,
     "defaultModel":         RECOMMENDED_DEFAULT,
@@ -72,27 +67,21 @@ MODEL_FIELDS = {
 corrected = []
 for field, recommended in MODEL_FIELDS.items():
     current = d.get(field, "")
-    if not current:
+    if not current or current in RETIRED_MODELS:
         d[field] = recommended
-        corrected.append(f"  {field}: (missing) → {recommended}")
-    elif current in RETIRED_MODELS:
-        d[field] = recommended
-        corrected.append(f"  {field}: '{current}' is retired → {recommended}")
+        corrected.append(f"  {field}: '{current or 'missing'}' → {recommended}")
     else:
         print(f"  {field}: {current}  ✓")
 
 if corrected:
     print("\n⚠ Model corrections applied:")
-    for c in corrected:
-        print(c)
-    # Write corrected config back so source stays in sync with deployed version
+    for c in corrected: print(c)
     with open(SRC, "w") as f:
         json.dump(d, f, indent=2, ensure_ascii=False)
         f.write("\n")
-    print(f"  Source file updated: {SRC}")
+    print(f"  Source updated: {SRC}")
 else:
-    print("\nAll models OK — no corrections needed.")
+    print("\nAll models OK.")
 
-# ── Deploy ────────────────────────────────────────────────────────────────
 shutil.copy2(SRC, DEST)
-print(f"\nOK: deployed data_ai_config.json ({len(d)} fields) → {DEST}")
+print(f"\nOK: deployed {DEST} ({len(d)} fields)")
