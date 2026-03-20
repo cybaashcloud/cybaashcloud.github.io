@@ -1,6 +1,169 @@
 {
   "credentials": [
     {
+      "id": "li0016",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Body Language",
+        "Leadership"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0016.jpg",
+      "title": "Body Language for Leaders and Managers",
+      "issuer": "LinkedIn",
+      "courseId": "body-language-for-leaders-and-managers",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf"
+    },
+    {
+      "id": "li0017",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Tech Career Skills",
+        "Information Security Awareness"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0017.jpg",
+      "title": "Build Your Cybersecurity Awareness Skills",
+      "issuer": "LinkedIn",
+      "courseId": "build-your-cybersecurity-awareness-skills",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861"
+    },
+    {
+      "id": "li0018",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/bd2ae17d87ff083fe61fc6ab928660e4de3c4ecf32bb086b5ef16bec9e36663d",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Cybersecurity",
+        "Information Security Awareness"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0018.jpg",
+      "title": "Building a Cybersecurity Awareness Program",
+      "issuer": "LinkedIn",
+      "courseId": "building-a-cybersecurity-awareness-program",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "bd2ae17d87ff083fe61fc6ab928660e4de3c4ecf32bb086b5ef16bec9e36663d"
+    },
+    {
+      "id": "li0019",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/a928a2736b56711f98c532f102519e382400deeee7f4416f281739c0651542f6",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Cybersecurity",
+        "Information Security Management"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0019.jpg",
+      "title": "Building and Managing a Cybersecurity Program",
+      "issuer": "LinkedIn",
+      "courseId": "building-and-managing-a-cybersecurity-program",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "a928a2736b56711f98c532f102519e382400deeee7f4416f281739c0651542f6"
+    },
+    {
+      "id": "li0020",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/86ad1609f5b56c9bf4c8ec47442aa59039fa2e947b5799fa833938a17cd1310a",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Application Development",
+        "Conversational AI",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0020.jpg",
+      "title": "Building Generative AI Apps to Talk to Your Data",
+      "issuer": "LinkedIn",
+      "courseId": "building-generative-ai-apps-to-talk-to-your-data",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "86ad1609f5b56c9bf4c8ec47442aa59039fa2e947b5799fa833938a17cd1310a"
+    },
+    {
+      "id": "li0021",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/852d19ecc6f2f747b03399074de08bdd99d88061634757352943a2780f746c1e",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0021.jpg",
+      "title": "Building Rapport with Customers (2022)",
+      "issuer": "LinkedIn",
+      "courseId": "building-rapport-with-customers-2022",
+      "featured": false,
+      "learningPathName": ""
+    },
+    {
+      "id": "li0022",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/6cdf4c5e9ba12eaf14db115092e8b7409906d777984b256fe9c0c256e1112b52",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Leadership Development"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0022.jpg",
+      "title": "Building the Reputation and Skills to Become a First-Time Manager",
+      "issuer": "LinkedIn",
+      "courseId": "building-the-reputation-and-skills-to-become-a-first-time-ma",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "6cdf4c5e9ba12eaf14db115092e8b7409906d777984b256fe9c0c256e1112b52"
+    },
+    {
+      "id": "li0023",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/1f695e031abe003970789890f6c12c08103f9eed42e008a4110237f39d6e81c5",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Cybersecurity",
+        "Security"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0023.jpg",
+      "title": "Building Your Cybersecurity Talent Pipeline",
+      "issuer": "LinkedIn",
+      "courseId": "building-your-cybersecurity-talent-pipeline",
+      "featured": false,
+      "learningPathName": ""
+    },
+    {
+      "id": "li0024",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/8627f4dbaf83bccc6f4128e603fd3fdbff8b383b82309d02ca992c43740d9a0f",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0024.jpg",
+      "title": "Building Your Innovation Skills",
+      "issuer": "LinkedIn",
+      "courseId": "building-your-innovation-skills",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "8627f4dbaf83bccc6f4128e603fd3fdbff8b383b82309d02ca992c43740d9a0f"
+    },
+    {
       "id": "li0025",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/0617f01c744b5cc95eed856987f69e66ae50af3f4d68e08b29996dcaef473f7b",
@@ -1397,173 +1560,6 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "a12976f56c009c8efb6bc74ffc72fe48afc6da1badaadc26de92f8d90fd0bdba"
-    },
-    {
-      "id": "li0100",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Conditional Image Generation",
-        "Artificial Intelligence for Design",
-        "Artificial Intelligence (AI"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0100.jpg",
-      "title": "Generative AI Imaging: What Creative Pros Need to Know",
-      "issuer": "LinkedIn",
-      "courseId": "generative-ai-imaging-what-creative-pros-need-to-know",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925"
-    },
-    {
-      "id": "li0101",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Artificial Intelligence (AI",
-        "Responsible AI",
-        "Copyright Law"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0101.jpg",
-      "title": "Generative AI: Business and Legal Concerns for Creatives",
-      "issuer": "LinkedIn",
-      "courseId": "generative-ai-business-and-legal-concerns-for-creatives",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc"
-    },
-    {
-      "id": "li0102",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/66dde9127100b148ad120df760a3049dffbc2d83347b5ef979a2246177b97aec",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Large Language Models (LLM",
-        "Artificial Intelligence (AI"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0102.jpg",
-      "title": "Generative AI: Introduction to Large Language Models",
-      "issuer": "LinkedIn",
-      "courseId": "generative-ai-introduction-to-large-language-models",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "66dde9127100b148ad120df760a3049dffbc2d83347b5ef979a2246177b97aec"
-    },
-    {
-      "id": "li0103",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/7717e41e5cba66fac1776834fc40e471028032a1e8538af985b7a8ff9b007c0a",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Large Language Models (LLM",
-        "Artificial Intelligence (AI"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0103.jpg",
-      "title": "Generative AI: Working with Large Language Models",
-      "issuer": "LinkedIn",
-      "courseId": "generative-ai-working-with-large-language-models",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "7717e41e5cba66fac1776834fc40e471028032a1e8538af985b7a8ff9b007c0a"
-    },
-    {
-      "id": "li0104",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/f06eb99aad1bbc00c261da76d118e0ed659e0ffd97a9479e103159537e9e55bf",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0104.jpg",
-      "title": "Git Essential Training",
-      "issuer": "LinkedIn",
-      "courseId": "git-essential-training",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "f06eb99aad1bbc00c261da76d118e0ed659e0ffd97a9479e103159537e9e55bf"
-    },
-    {
-      "id": "li0105",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/aca100da058fbcc3df7bcf202c87d35942a21d2e98ba521609728bfa8948938c",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "AI Agents",
-        "Artificial Intelligence (AI"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0105.jpg",
-      "title": "Governing Agentic AI Systems by All Tech Is Human",
-      "issuer": "LinkedIn",
-      "courseId": "governing-agentic-ai-systems-by-all-tech-is-human",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "aca100da058fbcc3df7bcf202c87d35942a21d2e98ba521609728bfa8948938c"
-    },
-    {
-      "id": "li0106",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/290803d6387da0f2f5df81fbccdf40482c0324aaca803807b8863eacb80c420a",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0106.jpg",
-      "title": "Grammar Foundations",
-      "issuer": "LinkedIn",
-      "courseId": "grammar-foundations",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "290803d6387da0f2f5df81fbccdf40482c0324aaca803807b8863eacb80c420a"
-    },
-    {
-      "id": "li0107",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/c7e108ee0670710dc949784a1b904fe7de558dc1fa65a4934a7c4ae25734d7e4",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "AI Productivity",
-        "Artificial Intelligence (AI"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0107.jpg",
-      "title": "Grammarly: Your AI Writing Partner",
-      "issuer": "LinkedIn",
-      "courseId": "grammarly-your-ai-writing-partner",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "c7e108ee0670710dc949784a1b904fe7de558dc1fa65a4934a7c4ae25734d7e4"
-    },
-    {
-      "id": "li0108",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/e202b9d5d201966de2202dabf93b4a6faf3b774d6c866fa8b0d8f30cae2817a4",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Artificial Intelligence (AI) Responsible AI",
-        "ID:"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0108.jpg",
-      "title": "History of Responsible AI: From Principles to Professionalization by All Tech Is Human",
-      "issuer": "LinkedIn",
-      "courseId": "history-of-responsible-ai-from-principles-to-professionaliza",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "e202b9d5d201966de2202dabf93b4a6faf3b774d6c866fa8b0d8f30cae2817a4"
     }
   ]
 }
