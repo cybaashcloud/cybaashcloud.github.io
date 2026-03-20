@@ -186,7 +186,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .fb{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;padding:4px 12px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;transition:all .2s;text-transform:uppercase}
 .fb:hover{color:var(--text);border-color:var(--dim)}
 .fb.on{color:var(--blue);border-color:var(--blue);background:rgba(0,212,255,.06)}
-.cred-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:7px}
+.cred-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
 .cr{background:var(--panel);border:1px solid var(--border);padding:12px 14px;text-decoration:none;display:block;transition:all .2s}
 .cr:hover{border-color:rgba(0,212,255,.28);background:var(--panel2)}
 .cr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:7px;margin-bottom:5px}
@@ -271,6 +271,9 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .stat-b.In-Progress{border-color:rgba(255,215,0,.28);color:var(--yellow)}
 .stat-b.Planned{border-color:rgba(0,212,255,.28);color:var(--blue)}
 .stat-b.Archived{border-color:rgba(255,34,68,.28);color:var(--red)}
+.stat-b.credly{border-color:rgba(247,147,30,.35);color:#f7931e}
+.stat-b.cert{border-color:rgba(0,255,136,.28);color:var(--green)}
+.stat-b.linkedin{border-color:rgba(10,102,194,.35);color:#4d9fec}
 .feat-b{display:inline-block;font-family:'Orbitron',monospace;font-size:7px;letter-spacing:1px;color:var(--yellow);border:1px solid rgba(255,215,0,.25);padding:1px 6px;margin-bottom:5px}
 .proj-desc{font-family:'Rajdhani',sans-serif;font-size:12px;color:var(--dim);line-height:1.6;margin-bottom:11px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-weight:400}
 .tech-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
@@ -1738,80 +1741,65 @@ function setCF(v){CF=v;CS=30;rCreds()}
 function filteredCreds(){return CF==='all'?D.creds:D.creds.filter(c=>(c.tags||[]).includes(CF))}
 
 function credCard(c){
-  const isC  = c.type==='credly';
+  const isC    = c.type==='credly';
   const isCert = c.type==='certificate';
-  const isLI = !isC && !isCert;
-  const tags = (c.tags||[]).map(t=>`<span class="ct${HL.has(t)?' hl':''}">${x(t)}</span>`).join('');
+  const isLI   = !isC && !isCert;
 
-  // ── Certificate image (JPEG from pdf field) ──
-  const certImg = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : '';
+  // ── Type badge label & colour (mirrors proj-card stat-b) ──
+  const typeLbl  = isC ? 'CREDLY' : isCert ? 'CERTIFICATE' : 'LINKEDIN';
+  const typeClass= isC ? 'credly' : isCert ? 'cert' : 'linkedin';
 
-  // ── Issuer logo — shown in body UNLESS cert image is already on top ──
-  let logoHtml = '';
-  if(!certImg){
-    // Only show logo when no cert image — avoids duplicating the image
-    if(isC){
-      const credSrc = c.credlyImageUrl||(c.credlyBadgeId?`https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png`:'');
-      logoHtml = credSrc
-        ? `<div class="cr-logo-wrap credly"><img src="${x(credSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('credly',c.issuer))}" onerror="_imgFallback(this)"></div>`
-        : _makePlaceholder('credly', c.issuer);
-    } else if(isLI){
-      logoHtml = `<div class="cr-logo-wrap li"><img src="${LI_BADGE}" alt="LinkedIn" loading="lazy"></div>`;
-    } else {
-      const lSrc = c.logo||c.image||'';
-      logoHtml = lSrc
-        ? `<div class="cr-logo-wrap"><img src="${x(lSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('cert',c.issuer))}" onerror="_imgFallback(this)"></div>`
-        : _makePlaceholder('cert', c.issuer);
-    }
+  // ── Resolve thumbnail image ──
+  // Priority: cert jpeg > credly badge image > linkedin logo > issuer placeholder
+  let imgSrc = '';
+  if(c.pdf && !c.pdf.endsWith('.pdf')){
+    imgSrc = c.pdf; // JPEG cert image stored in pdf field
+  } else if(isC){
+    imgSrc = c.credlyImageUrl
+      || (c.credlyBadgeId ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png` : '');
+  } else if(isLI){
+    imgSrc = LI_BADGE;
   } else {
-    // Has cert image on top — show small logo overlay in bottom-left of image instead
-    let lSrc = '';
-    if(isC) lSrc = c.credlyImageUrl||(c.credlyBadgeId?`https://images.credly.com/size/80x80/images/${c.credlyBadgeId}/image.png`:'');
-    else if(isLI) lSrc = LI_BADGE;
-    else lSrc = c.logo||'';
-    if(lSrc) logoHtml = lSrc; // just store src, used in overlay below
+    imgSrc = c.logo || c.image || '';
   }
 
-  // ── Top section ──
-  const topHtml = certImg
-    ? `<div style="position:relative;border-bottom:1px solid var(--border)">
-        <img class="proj-img" src="${x(certImg)}" alt="${x(c.title||'')}" loading="lazy" style="height:120px;margin-bottom:0">
-        ${logoHtml?`<div style="position:absolute;bottom:6px;left:8px;width:26px;height:26px;background:rgba(3,10,15,.8);border:1px solid rgba(255,255,255,.12);border-radius:3px;overflow:hidden;display:flex;align-items:center;justify-content:center">
-          <img src="${x(logoHtml)}" style="width:20px;height:20px;object-fit:contain" loading="lazy" onerror="this.parentElement.style.display='none'">
-        </div>`:''}
-      </div>`
+  // ── Top image / placeholder (identical sizing to proj-img) ──
+  const topHtml = imgSrc
+    ? `<img class="proj-img" src="${x(imgSrc)}" alt="${x(c.title||'')}" loading="lazy"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+       ><div class="proj-noimg" style="display:none">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+       </div>`
+    : `<div class="proj-noimg">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+       </div>`;
+
+  // ── Tags row (reuse tech-t style) ──
+  const tagsHtml = (c.tags||[]).length
+    ? `<div class="tech-row">${(c.tags).map(t=>`<span class="tech-t${HL.has(t)?' hl':''}">${x(t)}</span>`).join('')}</div>`
     : '';
 
-  // Reset logoHtml to actual HTML for cards without certImg
-  if(certImg) logoHtml = ''; // already handled in overlay
-
-  // ── PDF / cert link ──
+  // ── Action link button ──
   const isPdf = c.pdf && c.pdf.endsWith('.pdf');
-  const certBadge = c.pdf
-    ? `<a class="cr-cert-badge" href="${x(c.pdf)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${isPdf?'↗ PDF':'↗ CERT'}</a>`
-    : '';
-
-  const href = c.url || c.pdf || '#';
-
-  return `<a class="cr" href="${x(href)}" target="_blank" rel="noopener noreferrer" style="padding:0;overflow:hidden">
-    ${topHtml}
-    <div style="padding:12px 14px">
-      <div class="${logoHtml?'cr-has-logo':''}">
-        ${logoHtml}
-        <div style="flex:1;min-width:0">
-          <div class="cr-top">
-            <div class="cr-name">${x(c.title||'')}</div>
-            ${isC?'<span class="cr-v">CREDLY</span>':`<span class="cr-date">${x(c.date||'')}</span>`}
-          </div>
-          ${tags?`<div class="cr-tags">${tags}</div>`:''}
-          <div class="cr-bot">
-            <span class="cr-iss">${x(c.issuer||'')}</span>
-            <span style="display:flex;align-items:center;gap:5px">${certBadge}<span class="cr-arrow">↗</span></span>
-          </div>
-        </div>
-      </div>
-    </div>
+  const href  = c.url || c.pdf || '#';
+  const linkHtml = `<a class="pl" href="${x(href)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    ${isPdf ? 'PDF' : isC ? 'BADGE' : 'CERT'}
   </a>`;
+
+  return `<div class="proj-card" onclick="window.open('${x(href)}','_blank')">
+    <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
+    ${topHtml}
+    <div class="proj-body">
+      <div class="proj-hdr">
+        <div class="proj-title">${x(c.title||'Untitled')}</div>
+        <span class="stat-b ${typeClass}">${typeLbl}</span>
+      </div>
+      <p class="proj-desc">${x(c.issuer||'')}${c.date ? ' &middot; ' + x(c.date) : ''}</p>
+      ${tagsHtml}
+      <div class="proj-links">${linkHtml}</div>
+    </div>
+  </div>`;
 }
 
 function rCredGrid(grouped){
