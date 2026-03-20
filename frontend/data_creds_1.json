@@ -513,7 +513,7 @@
         "Java"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro021_image.jpg",
       "title": "Java Foundations Professional Certificate by JetBrains",
       "issuer": "JetBrains",
       "courseId": "java-foundations-professional-certificate-by-jetbrains",
