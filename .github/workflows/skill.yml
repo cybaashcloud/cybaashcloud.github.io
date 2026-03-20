@@ -95,6 +95,21 @@ jobs:
               'shea hanson','head of learning content strategy',
               # Generic words that are not skills
               'certificate','professional','certified',
+              # ── Issuer / brand names — never valid as skill tags ─────────
+              'adobe',
+              'anaconda','anaconda, inc.','anaconda inc',
+              'aha!','aha',
+              'american negotiation institute',
+              'canonical',
+              'cybrary',
+              'udemy',
+              'openedg c++ institute','openedg',
+              'content marketing institute',
+              'all tech is human',
+              'cisco networking academy',
+              'wolfram',
+              # "Management" alone is always the Aha! issuer label, not a skill
+              'management',
           }
 
           def is_junk(tag: str) -> bool:
@@ -102,7 +117,10 @@ jobs:
                   return True
               if not re.match(r'[A-Za-z.]', tag):
                   return True
-              return tag.lower() in JUNK
+              # Normalise punctuation variants: "Anaconda, Inc." → "anaconda inc"
+              normalised = re.sub(r'[,.]', '', tag.lower()).strip()
+              normalised = re.sub(r'\s+', ' ', normalised)
+              return tag.lower() in JUNK or normalised in JUNK
 
           def fix_ocr(text: str) -> str:
               text = re.sub(r'\bAl\b', 'AI', text)
@@ -175,16 +193,30 @@ jobs:
               return result
 
           # ── OCR pill extraction ────────────────────────────────────────────────────
+          #
+          # LinkedIn Learning cert images are 1280×989 px.
+          # Layout (measured from actual images):
+          #   "Top skills covered" header  — rows ~445–470  (45–48% of height)
+          #   Skill pills                  — rows ~590–680  (60–69% of height)
+          #
+          # WHY TWO PASSES:
+          #   High contrast (2.5×) makes metadata/header text readable but
+          #   DESTROYS pill text — the rounded pill elements are semi-transparent
+          #   UI widgets whose text gets blown out at high contrast.
+          #   Pass 1 uses high contrast ONLY to confirm the header exists.
+          #   Pass 2 uses NO contrast boost on the pill band — pills read cleanly
+          #   at native contrast with 3× upscale, and image_to_data gives us
+          #   pixel positions so the horizontal-gap pill splitter works correctly.
+          #
+          OCR_SCALE    = 3   # upscale factor for Tesseract
+          OCR_CONF_MIN = 15  # minimum Tesseract word confidence
+          PILL_GAP     = 80  # px gap (at 3× scale) between pills vs within a pill
 
-          # All LinkedIn Learning cert images are 1280×989 px.
-          # "Top skills covered" header: row ~449 = 45.4% of height.
-          # Pills: rows ~500–580 = 50–59%.
-          # Zone: 42%–70% reliably captures the header + all pill rows.
-          OCR_ZONE_TOP    = 0.42
-          OCR_ZONE_BOTTOM = 0.70
-          OCR_SCALE       = 3      # upscale factor for Tesseract
-          OCR_CONF_MIN    = 15     # minimum Tesseract word confidence
-          PILL_GAP        = 80     # px gap (at 3× scale) between pills vs within a pill
+          def _is_noise_line(words: list) -> bool:
+              """True if the line looks like background-decoration OCR garbage.
+              Real skill text has at least one word longer than 4 letters.
+              Noise lines consist entirely of 1–4-char fragments."""
+              return all(len(re.sub(r'[^a-zA-Z]', '', w['word'])) <= 4 for w in words)
 
           def ocr_pills(img_path: Path) -> list:
               try:
@@ -194,21 +226,31 @@ jobs:
                   return []
 
               w, h = img.size
-              zone = (0, int(h * OCR_ZONE_TOP), w, int(h * OCR_ZONE_BOTTOM))
-              crop = img.crop(zone)
 
-              # Upscale + high contrast greyscale
-              crop = crop.resize(
-                  (crop.width * OCR_SCALE, crop.height * OCR_SCALE),
-                  Image.LANCZOS)
-              crop = ImageEnhance.Contrast(crop).enhance(2.5).convert('L')
+              # ── Pass 1: confirm "Top skills covered" header ────────────────────
+              # High contrast helps metadata text; we only need a yes/no here.
+              z1 = (0, int(h * 0.42), w, int(h * 0.73))
+              c1 = img.crop(z1)
+              c1 = c1.resize((c1.width * OCR_SCALE, c1.height * OCR_SCALE), Image.LANCZOS)
+              c1 = ImageEnhance.Contrast(c1).enhance(2.5).convert('L')
+              txt1 = pytesseract.image_to_string(c1, config='--psm 6')
+
+              if not re.search(r'top\s+skills?\s+covered', txt1, re.IGNORECASE):
+                  print('    ⚠ "Top skills covered" not found — not a LinkedIn Learning cert')
+                  return []
+
+              # ── Pass 2: read pills with pixel positions — NO contrast ───────────
+              # Pills sit at ~60–69%; a wider band (57–75%) is safe.
+              z2 = (0, int(h * 0.57), w, int(h * 0.75))
+              c2 = img.crop(z2)
+              c2 = c2.resize((c2.width * OCR_SCALE, c2.height * OCR_SCALE), Image.LANCZOS)
+              c2 = c2.convert('L')   # greyscale only — NO contrast change
 
               data = pytesseract.image_to_data(
-                  crop,
-                  config='--psm 6',
+                  c2, config='--psm 6',
                   output_type=pytesseract.Output.DICT)
 
-              # Collect words with position + confidence
+              # Collect confident words with pixel positions
               words = []
               for i, word in enumerate(data['text']):
                   if not word.strip():
@@ -223,7 +265,7 @@ jobs:
                   })
 
               if not words:
-                  print('    ⚠ Tesseract returned no words')
+                  print('    ⚠ pass 2 returned no words')
                   return []
 
               # Group words into lines by vertical proximity
@@ -233,68 +275,61 @@ jobs:
                   key = round(wp['top'] / LINE_TOL) * LINE_TOL
                   lines.setdefault(key, []).append(wp)
 
-              found_header = False
-              all_pills    = []
-
+              all_pills = []
               for key in sorted(lines):
-                  lw  = sorted(lines[key], key=lambda x: x['left'])
-                  ltx = ' '.join(w['word'] for w in lw)
+                  lw = sorted(lines[key], key=lambda x: x['left'])
 
-                  # Detect "Top skills covered" header
-                  if re.search(r'top\s+skills?\s+covered', ltx, re.IGNORECASE):
-                      found_header = True
+                  # Skip background-decoration noise (all short fragments)
+                  if _is_noise_line(lw):
                       continue
 
-                  if not found_header:
+                  # Skip footer bleed
+                  ltx = ' '.join(wp['word'] for wp in lw).lower()
+                  if any(x in ltx for x in ['hanson', 'hancon', 'certificate id',
+                                             'content strat', 'completed by',
+                                             ' utc ', ' hours ', ' minute']):
                       continue
-
-                  # Skip noise lines below the header
-                  ll = ltx.lower()
-                  if any(n in ll for n in [
-                      'shea hanson', 'certificate id', 'learning content',
-                      'completed by', 'utc', 'hours', 'minutes',
-                  ]):
-                      break   # we've gone past the pills into the footer
 
                   if len(re.sub(r'[^a-zA-Z]', '', ltx)) < 3:
                       continue
 
-                  # ── Split line into individual pills by horizontal gap ──────────
-                  # At 3× scale: within-pill word gap ≈ 20–40px → joins words
-                  #              between-pill gap    ≈ 100–150px → splits pills
+                  # ── Split by horizontal pixel gap ─────────────────────────────
+                  # At 3× scale: within-pill gap ≈ 20–40px, between-pill ≈ 100–150px
                   pill       = []
                   prev_right = None
-
                   for wp in lw:
                       gap = (wp['left'] - prev_right) if prev_right is not None else 0
                       if prev_right is not None and gap > PILL_GAP:
                           if pill:
-                              all_pills.append(' '.join(pill))
+                              all_pills.append(' '.join(w['word'] for w in pill))
                               pill = []
-                      pill.append(wp['word'])
+                      pill.append(wp)
                       prev_right = wp['right']
                   if pill:
-                      all_pills.append(' '.join(pill))
+                      all_pills.append(' '.join(wp['word'] for wp in pill))
 
               if not all_pills:
-                  if found_header:
-                      print('    ⚠ header found but no pills extracted')
-                  else:
-                      print('    ⚠ "Top skills covered" not found in OCR output')
+                  print('    ⚠ header found but no pills extracted from pass 2')
                   return []
 
-              # Clean + deduplicate
+              # ── Clean + deduplicate ────────────────────────────────────────────
               seen    = set()
               cleaned = []
               for p in all_pills:
                   p = fix_ocr(p)
                   if is_junk(p):
                       continue
+                  if len(re.sub(r'[^a-zA-Z]', '', p)) < 3:
+                      continue
                   k = p.lower()
                   if k not in seen:
                       seen.add(k)
                       cleaned.append(p)
 
+              if cleaned:
+                  print(f'    ✓ OCR → {cleaned}')
+              else:
+                  print('    ⚠ header found but no pills survived cleaning')
               return cleaned
 
           # ── Per-file processing ────────────────────────────────────────────────────
