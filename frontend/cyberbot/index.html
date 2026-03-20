@@ -518,7 +518,7 @@ textarea, input, select { font: inherit; color: inherit; }
 </style>
 <link rel="stylesheet" href="../mobile-clean.css">
 </head>
-<body>
+<body class="page-cyberbot">
 
 <div class="app">
 
@@ -681,10 +681,16 @@ textarea, input, select { font: inherit; color: inherit; }
    SIDEBAR (mobile)
 ═══════════════════════════════════════════════════════════ */
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  sidebar.classList.toggle('open');
+  if (overlay) overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
 }
 function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  sidebar.classList.remove('open');
+  if (overlay) overlay.style.display = 'none';
 }
 
 /* ═══════════════════════════════════════════════════════════
