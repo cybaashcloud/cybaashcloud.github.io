@@ -1,0 +1,225 @@
+name: Fetch Missing Cert Images
+
+on:
+  # Run manually from Actions tab with optional controls
+  workflow_dispatch:
+    inputs:
+      file:
+        description: 'Only process one file (leave blank for all)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+      dry_run:
+        description: 'Dry run — list creds without fetching'
+        required: false
+        default: false
+        type: boolean
+
+  # Also run automatically once a week (Sunday 02:00 UTC)
+  # catches any new creds added via the admin panel
+  schedule:
+    - cron: '0 2 * * 0'
+
+jobs:
+  fetch-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit images + JSON back to the repo
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      # ── 2. Python + deps ─────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      # ── 3. Write the fetch script inline ─────────────────────────────────
+      - name: Write fetch script
+        run: |
+          cat > fetch_cert_images.py << 'PYEOF'
+          #!/usr/bin/env python3
+          """
+          Fetches og:image from each cert URL, downloads the image into
+          frontend/certificates/auto/ and writes the local path into c.image.
+          LinkedIn CDN blocks hotlinking — local copies avoid Access Denied.
+          """
+          import argparse, json, sys, time
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          import requests
+          from bs4 import BeautifulSoup
+
+          HEADERS = {
+              "User-Agent": (
+                  "Mozilla/5.0 (X11; Linux x86_64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/124.0.0.0 Safari/537.36"
+              ),
+              "Accept-Language": "en-US,en;q=0.9",
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Referer": "https://www.linkedin.com/",
+          }
+          IMG_HEADERS = {
+              "User-Agent": HEADERS["User-Agent"],
+              "Referer": "https://www.linkedin.com/",
+              "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+          }
+          DELAY_PAGE, DELAY_IMG, TIMEOUT = 0.9, 0.4, 15
+          AUTO_DIR_REL = "certificates/auto"
+
+          def fetch_og(page_url):
+              try:
+                  r = requests.get(page_url, headers=HEADERS, timeout=TIMEOUT, allow_redirects=True)
+                  if r.status_code != 200:
+                      print(f"    page HTTP {r.status_code}")
+                      return None
+                  soup = BeautifulSoup(r.text, "html.parser")
+                  for prop in ["og:image", "og:image:secure_url"]:
+                      tag = soup.find("meta", property=prop)
+                      if tag and tag.get("content"):
+                          return tag["content"].strip()
+                  tag = soup.find("meta", attrs={"name": "twitter:image"})
+                  if tag and tag.get("content"):
+                      return tag["content"].strip()
+                  for img in soup.find_all("img"):
+                      src = img.get("src", "")
+                      alt = img.get("alt", "").lower()
+                      if ("certificate" in alt or "cert" in src.lower()) and src.startswith("http"):
+                          return src.strip()
+              except Exception as e:
+                  print(f"    fetch error: {e}")
+              return None
+
+          def download_image(img_url, save_dir, cred_id):
+              try:
+                  r = requests.get(img_url, headers=IMG_HEADERS, timeout=TIMEOUT, stream=True)
+                  if r.status_code != 200:
+                      print(f"    image HTTP {r.status_code}")
+                      return None
+                  ct = r.headers.get("Content-Type", "image/jpeg")
+                  ext = "png" if "png" in ct else "webp" if "webp" in ct else "gif" if "gif" in ct else "jpg"
+                  up = urlparse(img_url).path.lower()
+                  for e in ["png", "webp", "gif", "svg"]:
+                      if up.endswith(f".{e}"):
+                          ext = e; break
+                  fname = f"{cred_id}.{ext}"
+                  dest = save_dir / fname
+                  save_dir.mkdir(parents=True, exist_ok=True)
+                  with open(dest, "wb") as f:
+                      for chunk in r.iter_content(8192): f.write(chunk)
+                  kb = dest.stat().st_size / 1024
+                  print(f"    saved {fname} ({kb:.0f} KB)")
+                  return fname
+              except Exception as e:
+                  print(f"    download error: {e}")
+              return None
+
+          def process_file(path, frontend_dir, dry_run):
+              data  = json.loads(path.read_text(encoding="utf-8"))
+              creds = data.get("credentials", [])
+              auto  = frontend_dir / AUTO_DIR_REL
+              fetched = skipped = 0
+              changed = False
+              for idx, c in enumerate(creds):
+                  img   = c.get("image") or ""
+                  pdf   = c.get("pdf")   or ""
+                  url   = c.get("url")   or ""
+                  ctype = c.get("type",  "")
+                  has_img = bool(img) or (pdf and not pdf.endswith(".pdf"))
+                  if has_img or ctype == "credly" or not url:
+                      skipped += 1; continue
+                  print(f"[{c['id']}] {c.get('title','')[:60]}")
+                  print(f"  url: {url}")
+                  if dry_run:
+                      print("  (dry-run)"); continue
+                  og = fetch_og(url)
+                  time.sleep(DELAY_PAGE)
+                  if not og:
+                      print("  ✗ no og:image"); skipped += 1; continue
+                  print(f"  og: {og[:80]}")
+                  fname = download_image(og, auto, c["id"])
+                  time.sleep(DELAY_IMG)
+                  creds[idx]["image"] = f"/{AUTO_DIR_REL}/{fname}" if fname else og
+                  fetched += 1; changed = True
+              if changed and not dry_run:
+                  data["credentials"] = creds
+                  path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+                  print(f"Saved {path.name} (+{fetched})")
+              return fetched, skipped
+
+          parser = argparse.ArgumentParser()
+          parser.add_argument("--dir",  default=".")
+          parser.add_argument("--dry-run", action="store_true")
+          parser.add_argument("--file", type=int, choices=[1,2,3,4], default=None)
+          args = parser.parse_args()
+          frontend = Path(args.dir).expanduser().resolve()
+          nums = [args.file] if args.file else [1,2,3,4]
+          tf = ts = 0
+          for n in nums:
+              p = frontend / f"data_creds_{n}.json"
+              if not p.exists(): continue
+              print(f"\n=== data_creds_{n}.json ===")
+              f, s = process_file(p, frontend, args.dry_run)
+              tf += f; ts += s
+          print(f"\nDone. Downloaded={tf} Skipped={ts}")
+          # Write summary for GitHub Actions
+          import os
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a") as f:
+                  f.write(f"## Cert Image Fetch Results\n")
+                  f.write(f"- **Downloaded:** {tf}\n")
+                  f.write(f"- **Skipped / already have image:** {ts}\n")
+                  if tf > 0:
+                      f.write(f"\nImages saved to `frontend/certificates/auto/`\n")
+          PYEOF
+
+      # ── 4. Run the script ─────────────────────────────────────────────────
+      - name: Fetch missing cert images
+        run: |
+          ARGS="--dir frontend"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ -n "${{ inputs.file }}" ]; then
+            ARGS="$ARGS --file ${{ inputs.file }}"
+          fi
+          echo "Running: python fetch_cert_images.py $ARGS"
+          python fetch_cert_images.py $ARGS
+
+      # ── 5. Commit only if files changed ───────────────────────────────────
+      - name: Commit images and updated JSON
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add frontend/certificates/auto/ frontend/data_creds_*.json
+
+          # Only commit if there's actually something new
+          if git diff --cached --quiet; then
+            echo "No changes — all images already present."
+          else
+            COUNT=$(git diff --cached --name-only | grep -c "certificates/auto" || true)
+            git commit -m "feat: add ${COUNT} cert images via fetch workflow [skip ci]"
+            git push
+            echo "Pushed ${COUNT} new cert images."
+          fi
