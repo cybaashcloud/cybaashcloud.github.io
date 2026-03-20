@@ -533,7 +533,7 @@
         "Data"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro022_image.jpg",
       "title": "Data Science Professional Certificate by KNIME",
       "issuer": "KNIME",
       "courseId": "data-science-professional-certificate-by-knime",
