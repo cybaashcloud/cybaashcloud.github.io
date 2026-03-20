@@ -239,9 +239,9 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .cr-logo-top{width:100%;height:90px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
 
 /* ── Credential Card (cc-*) — unified Apple-style layout ── */
-.cc-card{cursor:pointer}
+.cc-card{cursor:pointer;display:flex;flex-direction:column}
 /* Top image area */
-.cc-top{width:100%;height:130px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.cc-top{width:100%;height:130px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;flex-shrink:0}
 .cc-banner{width:100%;height:100%;object-fit:cover;display:block}
 .cc-top-noimg{background:linear-gradient(135deg,rgba(0,212,255,.04),rgba(0,0,0,0))}
 /* Credly badge panel — slightly taller, subtle radial glow */
@@ -273,6 +273,8 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .cc-footer{display:flex;gap:8px}
 .cc-btn{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;font-size:11px;font-weight:500;letter-spacing:.2px;padding:5px 12px;border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.45);background:rgba(255,255,255,.04);text-decoration:none;transition:all .18s ease;display:inline-flex;align-items:center;gap:5px}
 .cc-btn:hover{border-color:rgba(0,212,255,.4);color:var(--blue);background:rgba(0,212,255,.06)}
+.cc-btn.cc-btn-pdf{border-color:rgba(0,255,136,.2);color:rgba(0,255,136,.6)}
+.cc-btn.cc-btn-pdf:hover{border-color:var(--green);color:var(--green);background:rgba(0,255,136,.06)}
 .cc-btn svg{width:9px;height:9px;opacity:.7}
 
 /* ── CERT CARD — project-card style ─────────────────────────── */
@@ -1817,18 +1819,36 @@ function credCard(c){
     ? `<div class="cc-tags">${(c.tags).map(t=>`<span class="cc-tag${HL.has(t)?' hl':''}">${x(t)}</span>`).join('')}</div>`
     : '';
 
-  const isPdf = c.pdf && c.pdf.endsWith('.pdf');
-  const href  = c.url || c.pdf || '#';
-  const btnLbl = isPdf ? 'View PDF' : isC ? 'View Badge' : 'View Cert';
+  const hasPdf    = c.pdf && c.pdf.endsWith('.pdf');
+  const badgeHref = c.url || '#';           // Credly / cert URL
+  const pdfHref   = hasPdf ? c.pdf : '';   // PDF link if present
+  // Primary click target on the card itself
+  const cardHref  = badgeHref !== '#' ? badgeHref : pdfHref || '#';
 
-  // Small logo in body row — credly shows tiny version, certs show LI badge
+  // Build buttons — always show primary action; add PDF button when both exist
+  const svgIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+  let buttonsHtml = '';
+  if(isC){
+    // Credly: "View Badge" always; add "PDF" if a PDF also exists
+    buttonsHtml += `<a class="cc-btn" href="${x(badgeHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}View Badge</a>`;
+    if(hasPdf) buttonsHtml += `<a class="cc-btn cc-btn-pdf" href="${x(pdfHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}PDF</a>`;
+  } else if(hasPdf){
+    // Cert with PDF: show "View PDF"
+    buttonsHtml = `<a class="cc-btn cc-btn-pdf" href="${x(pdfHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}View PDF</a>`;
+    if(badgeHref !== '#') buttonsHtml += `<a class="cc-btn" href="${x(badgeHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}Cert</a>`;
+  } else {
+    // LinkedIn cert with URL only
+    buttonsHtml = `<a class="cc-btn" href="${x(cardHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}View Cert</a>`;
+  }
+
+  // Small logo in body row
   let bodyLogoHtml = '';
   if(logoSrc){
     const extraClass = isC ? ' cc-logo-credly' : '';
     bodyLogoHtml = `<img class="cc-logo${extraClass}" src="${x(logoSrc)}" alt="${x(c.issuer||'')}" loading="lazy" onerror="this.style.display='none'">`;
   }
 
-  return `<div class="proj-card cc-card" onclick="window.open('${x(href)}','_blank')">
+  return `<div class="proj-card cc-card" onclick="window.open('${x(cardHref)}','_blank')">
     <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
     ${topHtml}
     <div class="cc-body">
@@ -1838,7 +1858,7 @@ function credCard(c){
       </div>
       <div class="cc-title">${x(c.title||'Untitled')}</div>
       ${tagsHtml}
-      <div class="cc-footer"><a class="cc-btn" href="${x(href)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${btnLbl}</a></div>
+      <div class="cc-footer">${buttonsHtml}</div>
     </div>
   </div>`;
 }
