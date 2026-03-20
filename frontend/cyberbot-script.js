@@ -35,14 +35,16 @@ async function loadGeminiConfig() {
       const r = await fetch(path + '?v=' + Date.now(), { cache: 'no-store' });
       if (!r.ok) continue;
       const c = await r.json();
-      if (c.gemini_api_key) {
-        CONFIG.geminiKey   = c.gemini_api_key;
-        CONFIG.geminiModel = c.gemini_model || CONFIG.geminiModel;
-        if (c.system_prompt) CONFIG.systemPrompt = c.system_prompt;
-        break;
-      }
+      // API key is NEVER stored in JSON — read from localStorage only
+      if (c.gemini_model)   CONFIG.geminiModel  = c.gemini_model;
+      if (c.system_prompt)  CONFIG.systemPrompt = c.system_prompt;
+      break;
     } catch { continue; }
   }
+  // Also check localStorage (shared with terminal gemini command and admin panel)
+  const lsKey = localStorage.getItem('cybaash_gemini_key') || '';
+  if (lsKey) CONFIG.geminiKey = lsKey;
+
   if (CONFIG.geminiKey) {
     state.online = true;
     if (dot)  dot.className    = 'status-dot online';
@@ -266,6 +268,7 @@ function showTool(type) {
 }
 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeTool()  { document.getElementById('modalOverlay').classList.remove('open'); }
 
 function renderPasswordTool() {
   return `<div class="tool-form"><label class="tool-label">Enter password to analyze</label><input type="password" class="tool-input" id="pwInput" placeholder="Enter password..." oninput="livePasswordCheck(this.value)"><div id="pwResult"></div><button class="tool-btn" onclick="checkPassword()">Analyze Password</button><p style="font-size:10px;color:var(--text3);text-align:center">🔒 Password never sent anywhere. Analysis is 100% local.</p></div>`;
@@ -417,3 +420,37 @@ function scrollToBottom(){const el=document.getElementById('messages');if(el)set
 function generateId(){return 'sess_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);}
 function escapeHtml(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+// ── ALIASES to match HTML onclick calls ──────────────────────────
+function sendQuick(message) {
+  const input = document.getElementById('messageInput');
+  input.value = message;
+  document.getElementById('chat').scrollIntoView({ behavior: 'smooth' });
+  sendMessage();
+}
+
+async function handleFileUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  appendMessage('user', `📁 Analyzing file: **${file.name}** (${(file.size/1024).toFixed(1)} KB)`);
+  showTyping();
+  setSendState(true);
+  try {
+    if (!CONFIG.geminiKey) {
+      hideTyping();
+      appendMessage('bot', '⚠️ Set a Gemini API key in Admin → Settings to enable file analysis.', [], null, false, true);
+      return;
+    }
+    const text = await file.text();
+    const prompt = `Security scan this file named "${file.name}". Find vulnerabilities, hardcoded secrets, dangerous patterns.\nList: SEVERITY | Line | Description | Fix. If clean say "✓ No issues found".\n${text.slice(0, 3000)}`;
+    const result = await callGeminiAnalyze(prompt);
+    hideTyping();
+    appendMessage('bot', `### File Scan: \`${file.name}\`\n\n${result || 'No response from AI.'}`);
+  } catch(err) {
+    hideTyping();
+    appendMessage('bot', `⚠️ File analysis failed: ${err.message}`, [], null, false, true);
+  } finally {
+    setSendState(false);
+    input.value = '';
+  }
+}
