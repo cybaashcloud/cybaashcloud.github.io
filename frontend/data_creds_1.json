@@ -591,7 +591,7 @@
         "LinkedIn Learning"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro025.jpg",
       "title": "Become a Full-Stack Web Developer",
       "issuer": "LinkedIn",
       "courseId": "become-a-full-stack-web-developer",
@@ -610,7 +610,7 @@
         "Security"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro026.jpg",
       "title": "Become an IT Security Specialist",
       "issuer": "LinkedIn",
       "courseId": "become-an-it-security-specialist",
@@ -629,7 +629,7 @@
         "Management"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro027.jpg",
       "title": "Becoming a Manager Professional Certificate by LinkedIn Learning",
       "issuer": "LinkedIn",
       "courseId": "becoming-a-manager-professional-certificate-by-linkedin-lear",
@@ -649,7 +649,7 @@
         "Security"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro028.jpg",
       "title": "Building AI Products: Security Essentials Professional Certificate by LinkedIn Learning",
       "issuer": "LinkedIn",
       "courseId": "building-ai-products-security-essentials-professional-certif",
@@ -670,7 +670,7 @@
         "Security"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro029.jpg",
       "title": "CISO Leadership: Managing a Cybersecurity Program",
       "issuer": "LinkedIn",
       "courseId": "ciso-leadership-managing-a-cybersecurity-program",
@@ -689,7 +689,7 @@
         "Cloud"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro030.jpg",
       "title": "Cloud Strategy Professional Certificate by LinkedIn Learning",
       "issuer": "LinkedIn",
       "courseId": "cloud-strategy-professional-certificate-by-linkedin-learning",
@@ -709,7 +709,7 @@
         "Security"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro031.jpg",
       "title": "Cybersecurity for Sales Professionals",
       "issuer": "LinkedIn",
       "courseId": "cybersecurity-for-sales-professionals",
@@ -730,7 +730,7 @@
         "Security"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro032.jpg",
       "title": "Develop Your AI Skills as a Cybersecurity Professional",
       "issuer": "LinkedIn",
       "courseId": "develop-your-ai-skills-as-a-cybersecurity-professional",
@@ -749,7 +749,7 @@
         "Communication"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro033.jpg",
       "title": "Essential Business Communication Skills Professional Certificate by LinkedIn Learning",
       "issuer": "LinkedIn",
       "courseId": "essential-business-communication-skills-professional-certifi",
@@ -768,7 +768,7 @@
         "Management"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro034.jpg",
       "title": "Human Skills for Managers Professional Certificate by LinkedIn Learning",
       "issuer": "LinkedIn",
       "courseId": "human-skills-for-managers-professional-certificate-by-linked",
@@ -788,7 +788,7 @@
         "Security"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro035.jpg",
       "title": "The IT Professional's Path to Cybersecurity",
       "issuer": "LinkedIn",
       "courseId": "the-it-professional-s-path-to-cybersecurity",
@@ -808,7 +808,7 @@
         "Security"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro036.jpg",
       "title": "Welcome to the \"Building AI Products: Security Essentials\" Professional Certificate",
       "issuer": "LinkedIn",
       "courseId": "welcome-to-the-building-ai-products-security-essentials-prof",
@@ -827,7 +827,7 @@
         "LinkedIn Learning"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro037.jpg",
       "title": "Career Essentials in Business Analysis by Microsoft and LinkedIn",
       "issuer": "Microsoft",
       "courseId": "career-essentials-in-business-analysis-by-microsoft-and-link",
@@ -848,7 +848,7 @@
         "Security"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro038.jpg",
       "title": "Career Essentials in Cybersecurity by Microsoft and LinkedIn",
       "issuer": "Microsoft",
       "courseId": "career-essentials-in-cybersecurity-by-microsoft-and-linkedin",
@@ -867,7 +867,7 @@
         "LinkedIn Learning"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro039.jpg",
       "title": "Career Essentials in Software Development by Microsoft and LinkedIn",
       "issuer": "Microsoft",
       "courseId": "career-essentials-in-software-development-by-microsoft-and-l",
@@ -888,7 +888,7 @@
         "AI/ML"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro040.jpg",
       "title": "Microsoft Azure AI Essentials Professional Certificate by Microsoft and LinkedIn",
       "issuer": "Microsoft",
       "courseId": "microsoft-azure-ai-essentials-professional-certificate-by-mi",
@@ -907,7 +907,7 @@
         "LinkedIn Learning"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro041.jpg",
       "title": "Microsoft Copilot for Productivity by Microsoft and LinkedIn",
       "issuer": "Microsoft",
       "courseId": "microsoft-copilot-for-productivity-by-microsoft-and-linkedin",
@@ -927,7 +927,7 @@
         "Security"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro042.jpg",
       "title": "Microsoft Security Essentials Professional Certificate by Microsoft and LinkedIn",
       "issuer": "Microsoft",
       "courseId": "microsoft-security-essentials-professional-certificate-by-mi",
@@ -946,7 +946,7 @@
         "LinkedIn Learning"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro043.jpg",
       "title": "Search Engine Optimization Professional Certificate by Moz",
       "issuer": "Moz",
       "courseId": "search-engine-optimization-professional-certificate-by-moz",
@@ -966,7 +966,7 @@
         "JavaScript"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro044.jpg",
       "title": "JavaScript Foundations Professional Certificate by Mozilla",
       "issuer": "Mozilla",
       "courseId": "javascript-foundations-professional-certificate-by-mozilla",
@@ -986,7 +986,7 @@
         "C++"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro045.jpg",
       "title": "C++ Programming Professional Certificate by OpenEDG C++ Institute",
       "issuer": "OpenEDG C++ Institute",
       "courseId": "c-programming-professional-certificate-by-openedg-c-institut",
@@ -1006,7 +1006,7 @@
         "Python"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro046.jpg",
       "title": "OpenEDG Python Institute: Programming with Python Professional Certificate",
       "issuer": "OpenEDG Python Institute",
       "courseId": "openedg-python-institute-programming-with-python-professiona",
@@ -1026,7 +1026,7 @@
         "DevOps"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro047.jpg",
       "title": "DevOps Professional Certificate by PagerDuty and LinkedIn",
       "issuer": "PagerDuty",
       "courseId": "devops-professional-certificate-by-pagerduty-and-linkedin",
@@ -1046,7 +1046,7 @@
         "Leadership"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro048.jpg",
       "title": "ServiceNow IT Leadership Professional Certificate",
       "issuer": "ServiceNow",
       "courseId": "servicenow-it-leadership-professional-certificate",
@@ -1067,7 +1067,7 @@
         "Data"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro049.jpg",
       "title": "Data Engineering Professional Certificate by Snowflake",
       "issuer": "Snowflake",
       "courseId": "data-engineering-professional-certificate-by-snowflake",
@@ -1088,7 +1088,7 @@
         "AI/ML"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro050.jpg",
       "title": "Generative AI Professional Certificate by Snowflake",
       "issuer": "Snowflake",
       "courseId": "generative-ai-professional-certificate-by-snowflake",
@@ -1108,7 +1108,7 @@
         "Communication"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro051.jpg",
       "title": "Public Speaking Skills Professional Certificate by Toastmasters International",
       "issuer": "Toastmasters International",
       "courseId": "public-speaking-skills-professional-certificate-by-toastmast",
@@ -1145,7 +1145,7 @@
         "LinkedIn Learning"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro053.jpg",
       "title": "Vector Databases Professional Certificate by Weaviate",
       "issuer": "Weaviate",
       "courseId": "vector-databases-professional-certificate-by-weaviate",
@@ -1165,7 +1165,7 @@
         "AI/ML"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro054.jpg",
       "title": "Machine Learning Statistical Foundations Professional Certificate by Wolfram Research",
       "issuer": "Wolfram Research",
       "courseId": "machine-learning-statistical-foundations-professional-certif",
@@ -1184,7 +1184,7 @@
         "LinkedIn Learning"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro055.jpg",
       "title": "Zendesk Customer Service Professional Certificate",
       "issuer": "Zendesk",
       "courseId": "zendesk-customer-service-professional-certificate",
@@ -1202,7 +1202,7 @@
         "LinkedIn Learning"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0001.jpg",
       "title": ".NET UI Big Picture: Desktop, ASP.NET and Cross-Platform",
       "issuer": "LinkedIn",
       "courseId": "net-ui-big-picture-desktop-asp-net-and-cross-platform",
@@ -1221,7 +1221,7 @@
         "Marketing"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0002.jpg",
       "title": "A Beginner's Guide to Email Marketing",
       "issuer": "LinkedIn",
       "courseId": "a-beginner-s-guide-to-email-marketing",
@@ -1241,7 +1241,7 @@
         "Data"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0003.jpg",
       "title": "Advanced Data Engineering with Snowflake",
       "issuer": "LinkedIn",
       "courseId": "advanced-data-engineering-with-snowflake",
@@ -1260,7 +1260,7 @@
         "AI/ML"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0004.jpg",
       "title": "Agentic AI for Business Analysis",
       "issuer": "LinkedIn",
       "courseId": "agentic-ai-for-business-analysis",
@@ -1278,7 +1278,7 @@
         "LinkedIn Learning"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0005.jpg",
       "title": "Agile Testing",
       "issuer": "LinkedIn",
       "courseId": "agile-testing",
@@ -1301,7 +1301,7 @@
         "Blue Team"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0006.jpg",
       "title": "AI in Cybersecurity: The Future of Red Teaming and Blue Teaming",
       "issuer": "LinkedIn",
       "courseId": "ai-in-cybersecurity-the-future-of-red-teaming-and-blue-teami",
@@ -1321,7 +1321,7 @@
         "GitHub"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0007.jpg",
       "title": "AI Pair Programming with GitHub Copilot",
       "issuer": "LinkedIn",
       "courseId": "ai-pair-programming-with-github-copilot",
@@ -1341,7 +1341,7 @@
         "Security"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0008.jpg",
       "title": "AI Product Security: Building Strong Data Governance and Protection",
       "issuer": "LinkedIn",
       "courseId": "ai-product-security-building-strong-data-governance-and-prot",
@@ -1361,7 +1361,7 @@
         "Security"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0009.jpg",
       "title": "AI Product Security: Incident Response",
       "issuer": "LinkedIn",
       "courseId": "ai-product-security-incident-response",
@@ -1381,7 +1381,7 @@
         "Security"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0010.jpg",
       "title": "AI Product Security: Secure Architecture, Deployment, and Infrastructure",
       "issuer": "LinkedIn",
       "courseId": "ai-product-security-secure-architecture-deployment-and-infra",
@@ -1401,7 +1401,7 @@
         "Security"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0011.jpg",
       "title": "AI Product Security: Testing, Validation, and Maintenance",
       "issuer": "LinkedIn",
       "courseId": "ai-product-security-testing-validation-and-maintenance",
@@ -1419,7 +1419,7 @@
         "LinkedIn Learning"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0012.jpg",
       "title": "Android Studio Essential Training",
       "issuer": "LinkedIn",
       "courseId": "android-studio-essential-training",
@@ -1439,7 +1439,7 @@
         "Security"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0013.jpg",
       "title": "Artificial Intelligence and Application Security",
       "issuer": "LinkedIn",
       "courseId": "artificial-intelligence-and-application-security",
@@ -1460,7 +1460,7 @@
         "Security"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0014.jpg",
       "title": "Artificial Intelligence for Cybersecurity",
       "issuer": "LinkedIn",
       "courseId": "artificial-intelligence-for-cybersecurity",
@@ -1479,7 +1479,7 @@
         "AI/ML"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0015.jpg",
       "title": "Artificial Intelligence Foundations: Machine Learning",
       "issuer": "LinkedIn",
       "courseId": "artificial-intelligence-foundations-machine-learning",
@@ -1498,7 +1498,7 @@
         "Management"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0016.jpg",
       "title": "Body Language for Leaders and Managers",
       "issuer": "LinkedIn",
       "courseId": "body-language-for-leaders-and-managers",
@@ -1518,7 +1518,7 @@
         "Security"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0017.jpg",
       "title": "Build Your Cybersecurity Awareness Skills",
       "issuer": "LinkedIn",
       "courseId": "build-your-cybersecurity-awareness-skills",
@@ -1538,7 +1538,7 @@
         "Security"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0018.jpg",
       "title": "Building a Cybersecurity Awareness Program",
       "issuer": "LinkedIn",
       "courseId": "building-a-cybersecurity-awareness-program",
@@ -1558,7 +1558,7 @@
         "Security"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0019.jpg",
       "title": "Building and Managing a Cybersecurity Program",
       "issuer": "LinkedIn",
       "courseId": "building-and-managing-a-cybersecurity-program",
@@ -1577,7 +1577,7 @@
         "AI/ML"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0020.jpg",
       "title": "Building Generative AI Apps to Talk to Your Data",
       "issuer": "LinkedIn",
       "courseId": "building-generative-ai-apps-to-talk-to-your-data",
@@ -1595,7 +1595,7 @@
         "LinkedIn Learning"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0021.jpg",
       "title": "Building Rapport with Customers (2022)",
       "issuer": "LinkedIn",
       "courseId": "building-rapport-with-customers-2022",
@@ -1613,7 +1613,7 @@
         "Management"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0022.jpg",
       "title": "Building the Reputation and Skills to Become a First-Time Manager",
       "issuer": "LinkedIn",
       "courseId": "building-the-reputation-and-skills-to-become-a-first-time-ma",
@@ -1633,7 +1633,7 @@
         "Security"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0023.jpg",
       "title": "Building Your Cybersecurity Talent Pipeline",
       "issuer": "LinkedIn",
       "courseId": "building-your-cybersecurity-talent-pipeline",
@@ -1650,7 +1650,7 @@
         "LinkedIn Learning"
       ],
       "type": "linkedin",
-      "image": "",
+      "image": "/certificates/auto/li0024.jpg",
       "title": "Building Your Innovation Skills",
       "issuer": "LinkedIn",
       "courseId": "building-your-innovation-skills",
