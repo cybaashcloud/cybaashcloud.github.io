@@ -1277,6 +1277,7 @@ input[placeholder*="search"] {
 <meta name="msapplication-TileColor" content="#030a0f">
 <link rel="stylesheet" href="mobile-clean.css">
 <link rel="stylesheet" href="mobile-fix.css">
+<link rel="stylesheet" href="mobile-redesign.css">
 </head>
 <body class="page-recruiter">
 
@@ -2398,7 +2399,8 @@ html,body{background:var(--bg);color:var(--ink);font-family:'Inter',-apple-syste
 </div>
 <sc` + `ript>
 if(document.fonts){document.fonts.ready.then(()=>setTimeout(()=>window.print(),400));}else{window.onload=()=>setTimeout(()=>window.print(),600);}
-<\/sc` + `ript></body></html>`;
+<\/sc` + `ript>
+</body></html>`;
 
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const url  = URL.createObjectURL(blob);
@@ -2735,5 +2737,6 @@ function exitHackMode() {
 })();
 </script>
 <script src="mobile-fix.js" defer></script>
+<script src="mobile-redesign.js" defer></script>
 </body>
 </html>
