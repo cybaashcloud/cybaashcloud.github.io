@@ -4,333 +4,663 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CyberBot — AI Cybersecurity Assistant</title>
-<meta name="description" content="AI-powered cybersecurity assistant. Learn about vulnerabilities, secure coding, penetration testing concepts, and system hardening.">
-<meta name="theme-color" content="#030a0f">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="AI-powered cybersecurity assistant by Mohamed Aasiq.">
+<meta name="theme-color" content="#0d0d0d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="../mobile-fix.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ── Overrides: remove hero congestion ─────────────────────── */
-
-/* Remove scanline/noise visual clutter */
-.scanline, .noise { display: none; }
-
-/* Sidebar: hide Quick Actions and Topics — redundant with chips */
-.sidebar-section { display: none; }
-
-/* Sidebar: only keep new session + session list, compact */
-.chat-sidebar {
-  width: 180px;
-  min-width: 180px;
-  padding: 12px 10px;
-  gap: 8px;
+/* ── TOKENS ─────────────────────────────────────────────────── */
+:root {
+  --bg:        #0d0d0d;
+  --bg2:       #161616;
+  --bg3:       #1e1e1e;
+  --border:    #2a2a2a;
+  --border2:   #333;
+  --text:      #e8e8e8;
+  --text2:     #a0a0a0;
+  --text3:     #606060;
+  --accent:    #c96442;
+  --accent2:   #e07a55;
+  --cyan:      #5cb8d0;
+  --green:     #4caf7d;
+  --red:       #e05656;
+  --yellow:    #d4a853;
+  --font:      'Inter', system-ui, sans-serif;
+  --mono:      'JetBrains Mono', 'Fira Code', monospace;
+  --radius:    10px;
+  --radius-sm: 6px;
+  --sidebar-w: 256px;
 }
-.new-chat-btn { padding: 7px 10px; font-size: 11px; }
-.session-list { gap: 4px; }
 
-/* Hide the hero entirely — chat starts immediately */
-.hero { display: none !important; }
+/* ── RESET ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.5; }
+a { color: var(--cyan); text-decoration: none; }
+button { cursor: pointer; border: none; background: none; color: inherit; font: inherit; }
+textarea, input, select { font: inherit; color: inherit; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
 
-/* Chips row moved to just above the input */
-.quick-chips {
+/* ── LAYOUT ─────────────────────────────────────────────────── */
+.app { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+
+/* ── SIDEBAR ────────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  height: 100%;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 16px 0;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width .2s ease, min-width .2s ease;
 }
-.quick-chips .chip {
-  font-size: 10px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--surface2);
+
+.sidebar-header {
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.logo-mark {
+  width: 30px; height: 30px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 16px; height: 16px; }
+.logo-name {
+  font-size: 14px; font-weight: 600; letter-spacing: -.3px;
+  color: var(--text);
+}
+.logo-name span { color: var(--accent2); }
+.logo-badge {
+  font-size: 9px; font-family: var(--mono); letter-spacing: 1px;
+  color: var(--text3); border: 1px solid var(--border2);
+  padding: 2px 5px; border-radius: 4px;
+}
+
+.new-chat {
+  margin: 10px 10px 6px;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
   color: var(--text2);
+  font-size: 12px;
+  display: flex; align-items: center; gap: 8px;
+  transition: background .15s, color .15s;
+  width: calc(100% - 20px);
+  text-align: left;
+}
+.new-chat:hover { background: var(--border); color: var(--text); }
+.new-chat svg { flex-shrink: 0; opacity: .6; }
+
+.sidebar-section-label {
+  padding: 14px 14px 4px;
+  font-size: 10px; font-weight: 600; letter-spacing: .8px;
+  text-transform: uppercase; color: var(--text3);
+  flex-shrink: 0;
+}
+
+/* Sessions */
+.session-list {
+  padding: 0 8px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.session-item {
+  padding: 8px 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: border-color .15s, color .15s;
+  display: flex; align-items: center; gap: 8px;
+  color: var(--text2);
+  font-size: 12px;
+  transition: background .12s;
+  margin-bottom: 1px;
+}
+.session-item:hover { background: var(--bg3); color: var(--text); }
+.session-item.active { background: var(--bg3); color: var(--text); }
+.session-item .s-icon { opacity: .5; flex-shrink: 0; }
+.session-item .s-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Tools section */
+.sidebar-tools { padding: 0 8px 8px; flex-shrink: 0; }
+.tool-item {
+  padding: 8px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  color: var(--text2);
+  font-size: 12px;
+  transition: background .12s;
+  margin-bottom: 1px;
+  width: 100%;
+  text-align: left;
+}
+.tool-item:hover { background: var(--bg3); color: var(--text); }
+.tool-item .t-icon {
+  width: 22px; height: 22px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; flex-shrink: 0;
+}
+
+/* Sidebar footer */
+.sidebar-footer {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.status-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--text3);
   font-family: var(--mono);
-  letter-spacing: .3px;
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--border2); flex-shrink: 0;
+  transition: background .3s;
+}
+.status-dot.online  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.offline { background: var(--text3); }
+#statusText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Back link */
+.back-link {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text3);
+  padding: 6px 0 0;
+  transition: color .15s;
+}
+.back-link:hover { color: var(--text2); }
+
+/* ── MAIN ────────────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── MESSAGES ────────────────────────────────────────────────── */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overscroll-behavior: contain;
+}
+
+.message {
+  padding: 12px 24px;
+  display: flex;
+  gap: 16px;
+  animation: msgIn .2s ease;
+  max-width: 100%;
+}
+@keyframes msgIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.message.user {
+  flex-direction: row-reverse;
+}
+.message.user .msg-content {
+  align-items: flex-end;
+}
+
+.msg-avatar {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 14px;
+}
+.message.bot  .msg-avatar { background: var(--accent); color: #fff; }
+.message.user .msg-avatar { background: var(--bg3); border: 1px solid var(--border2); }
+
+.msg-content {
+  display: flex; flex-direction: column; gap: 4px;
+  max-width: min(720px, calc(100% - 64px));
+}
+.msg-name {
+  font-size: 11px; font-weight: 600; letter-spacing: .3px;
+  color: var(--text3); margin-bottom: 2px;
+}
+.message.user .msg-name { text-align: right; }
+
+.msg-bubble {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text);
+}
+.message.user .msg-bubble {
+  background: var(--bg3);
+  border-color: var(--border2);
+}
+.msg-bubble.error-bubble { border-color: var(--red); background: rgba(224,86,86,.06); }
+
+/* Markdown inside bubble */
+.msg-bubble h2 { font-size: 15px; font-weight: 600; color: var(--text); margin: 12px 0 6px; }
+.msg-bubble h3 { font-size: 13px; font-weight: 600; color: var(--text2); margin: 10px 0 4px; }
+.msg-bubble h2:first-child, .msg-bubble h3:first-child { margin-top: 0; }
+.msg-bubble p  { margin: 0 0 8px; }
+.msg-bubble p:last-child { margin-bottom: 0; }
+.msg-bubble ul, .msg-bubble ol { padding-left: 20px; margin: 6px 0; }
+.msg-bubble li { margin-bottom: 3px; }
+.msg-bubble code {
+  background: var(--bg3); border: 1px solid var(--border2);
+  padding: 1px 5px; border-radius: 4px;
+  font-family: var(--mono); font-size: 12px; color: var(--cyan);
+}
+.msg-bubble pre {
+  background: #0a0a0a; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px;
+  overflow-x: auto; margin: 10px 0; position: relative;
+}
+.msg-bubble pre code {
+  background: none; border: none; padding: 0;
+  font-size: 12px; color: var(--text2); line-height: 1.6;
+}
+.msg-bubble blockquote {
+  border-left: 3px solid var(--accent); padding-left: 12px;
+  color: var(--text2); margin: 8px 0;
+}
+.msg-bubble strong { font-weight: 600; color: var(--text); }
+.msg-bubble a { color: var(--cyan); }
+
+.msg-time {
+  font-size: 10px; color: var(--text3); font-family: var(--mono);
+  display: flex; gap: 8px; align-items: center;
+}
+.message.user .msg-time { justify-content: flex-end; }
+.msg-flags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.msg-flag {
+  font-size: 10px; font-family: var(--mono);
+  background: rgba(212,168,83,.1); border: 1px solid rgba(212,168,83,.3);
+  color: var(--yellow); padding: 2px 7px; border-radius: 4px;
+}
+
+/* Typing */
+.typing-indicator { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+.typing-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text3);
+  animation: typingBounce 1.2s ease infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: .2s; }
+.typing-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes typingBounce {
+  0%,60%,100% { transform: translateY(0); opacity: .4; }
+  30%          { transform: translateY(-5px); opacity: 1; }
+}
+
+/* ── QUICK CHIPS ─────────────────────────────────────────────── */
+.quick-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 0 24px 14px;
+}
+.chip {
+  padding: 5px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  background: var(--bg2);
+  color: var(--text2);
+  font-size: 12px;
+  transition: border-color .15s, color .15s, background .15s;
   white-space: nowrap;
+  cursor: pointer;
 }
-.quick-chips .chip:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
+.chip:hover { border-color: var(--accent); color: var(--accent2); background: rgba(201,100,66,.06); }
+
+/* ── INPUT AREA ──────────────────────────────────────────────── */
+.input-area {
+  padding: 0 24px 20px;
+  flex-shrink: 0;
+}
+.input-box {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  display: flex; flex-direction: column;
+  transition: border-color .15s;
+  overflow: hidden;
+}
+.input-box:focus-within { border-color: var(--border2); box-shadow: 0 0 0 3px rgba(201,100,66,.08); }
+
+.input-flags { padding: 8px 12px 0; }
+.input-row { display: flex; align-items: flex-end; gap: 0; padding: 8px; }
+
+#messageInput {
+  flex: 1; background: none; border: none; outline: none; resize: none;
+  padding: 6px 8px; font-size: 13.5px; color: var(--text);
+  line-height: 1.5; min-height: 36px; max-height: 140px;
+  scrollbar-width: thin;
+}
+#messageInput::placeholder { color: var(--text3); }
+
+.input-actions { display: flex; align-items: center; gap: 4px; padding-bottom: 2px; }
+.attach-btn {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text3); cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.attach-btn:hover { color: var(--text2); background: var(--bg3); }
+
+.send-btn {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  transition: background .15s, opacity .15s;
+  flex-shrink: 0;
+}
+.send-btn:hover:not(:disabled) { background: var(--accent2); }
+.send-btn:disabled { opacity: .4; }
+
+.input-meta {
+  padding: 6px 12px 8px;
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--text3); font-family: var(--mono);
+  border-top: 1px solid var(--border);
 }
 
-/* input-meta: fix model label */
-.input-meta { font-size: 10px; color: var(--text3); }
+/* ── TOOL INLINE PANEL ───────────────────────────────────────── */
+.tool-panel {
+  margin: 0 24px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.tool-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px; font-family: var(--mono); font-weight: 600;
+  letter-spacing: .5px; color: var(--text2);
+}
+.tool-close {
+  color: var(--text3); font-size: 14px;
+  padding: 2px 6px; border-radius: 4px;
+  transition: color .15s, background .15s;
+}
+.tool-close:hover { color: var(--text); background: var(--bg3); }
 
-/* Chat section: remove top padding since hero is gone */
-.chat-section { padding-top: 0; }
+/* ── MODAL ───────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  width: 100%; max-width: 520px;
+  max-height: 85vh; overflow-y: auto;
+  margin: 16px;
+  transform: translateY(8px);
+  transition: transform .2s;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5);
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; font-family: var(--mono); font-weight: 600;
+  letter-spacing: .5px; color: var(--text2);
+  position: sticky; top: 0; background: var(--bg2); z-index: 1;
+}
+.modal-close {
+  color: var(--text3); font-size: 18px; line-height: 1;
+  padding: 2px 8px; border-radius: 4px;
+  transition: color .15s, background .15s;
+}
+.modal-close:hover { color: var(--text); background: var(--bg3); }
+.modal-body { padding: 16px 20px 20px; }
 
-/* Page shell starts from top of viewport */
-.page-shell { padding-top: 0; }
+/* Tool form styles */
+.tool-form { display: flex; flex-direction: column; gap: 12px; }
+.tool-label { font-size: 11px; font-weight: 600; color: var(--text2); letter-spacing: .3px; }
+.tool-input, .tool-textarea, .tool-select {
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px; font-size: 13px; color: var(--text);
+  transition: border-color .15s;
+  width: 100%;
+}
+.tool-input:focus, .tool-textarea:focus, .tool-select:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(201,100,66,.1);
+}
+.tool-textarea { resize: vertical; min-height: 120px; font-family: var(--mono); font-size: 12px; }
+.tool-btn {
+  padding: 9px 18px;
+  background: var(--accent); color: #fff;
+  border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+  transition: background .15s;
+}
+.tool-btn:hover { background: var(--accent2); }
+.result-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px;
+  font-size: 12px; color: var(--text2);
+}
+.pw-bars { display: flex; gap: 4px; margin: 8px 0; }
+.pw-bar  { flex: 1; height: 4px; border-radius: 2px; transition: background .3s; }
+.pw-checks { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.pw-check { font-size: 11px; font-family: var(--mono); }
+.pw-check.pass { color: var(--green); }
+.pw-check.fail { color: var(--text3); }
+.result-flag-item { font-size: 11px; color: var(--yellow); list-style: none; margin-bottom: 4px; }
 
-/* About: hide outdated backend tech items */
-.tech-item.dead { display: none; }
+/* ── MOBILE TOGGLE ───────────────────────────────────────────── */
+.sidebar-toggle {
+  display: none;
+  position: fixed; top: 12px; left: 12px; z-index: 50;
+  width: 36px; height: 36px;
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  align-items: center; justify-content: center;
+  color: var(--text2);
+}
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 30;
+}
 
-/* Tighter section spacing in tools/about */
-.tools-section,
-.about-section { padding: 24px 20px; }
-
-/* Stat cards: compact */
-.stats-grid { gap: 10px; }
-.stat-card { padding: 14px; }
-.stat-num { font-size: 22px; }
-
-/* Mobile: hide session sidebar entirely (already hidden on small screens) */
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .quick-chips { padding: 6px 12px 0; }
-  .quick-chips .chip { font-size: 9.5px; padding: 3px 9px; }
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 40;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    width: 280px; min-width: 280px;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay { display: block; }
+  .sidebar-toggle { display: flex; }
+  .main { width: 100%; }
+  .messages { padding: 56px 0 12px; }
+  .quick-chips { padding: 0 16px 10px; }
+  .input-area { padding: 0 12px 16px; }
+  .message { padding: 10px 16px; }
+  .quick-chips .chip { font-size: 11px; }
+  .tool-panel { margin: 0 12px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════
-     HEADER
-══════════════════════════════════════════════ -->
-<header class="header">
-  <div class="header-inner">
-    <a class="logo" href="#">
-      <div class="logo-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z" stroke="var(--cyan)" stroke-width="1.5" fill="none"/>
-          <circle cx="12" cy="12" r="3" fill="var(--cyan)" opacity="0.8"/>
-          <path d="M12 9v6M9 12h6" stroke="var(--bg)" stroke-width="1.5" stroke-linecap="round"/>
+<div class="app">
+
+  <!-- ══════════════════════════════════════════
+       SIDEBAR
+  ══════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-header">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z"
+                stroke="#fff" stroke-width="1.6" fill="none"/>
+          <circle cx="12" cy="12" r="3" fill="#fff" opacity=".9"/>
         </svg>
       </div>
-      <span class="logo-text">CYBER<span class="logo-accent">BOT</span></span>
+      <div>
+        <div class="logo-name">CYBER<span>BOT</span></div>
+      </div>
       <span class="logo-badge">AI</span>
-    </a>
-
-    <nav class="nav">
-      <a href="#" class="nav-link active" data-tab="chat">Chat</a>
-      <a href="#" class="nav-link"        data-tab="tools">Tools</a>
-      <a href="#" class="nav-link"        data-tab="about">About</a>
-    </nav>
-
-    <div class="header-status-mobile">
-      <span class="status-dot" id="statusDotMobile"></span>
-      <span id="statusTextMobile" style="font-family:var(--mono);font-size:10px;color:var(--text3)">Connecting…</span>
     </div>
 
-    <div class="header-status">
-      <span class="status-dot" id="statusDot"></span>
-      <span class="status-text" id="statusText">Connecting…</span>
+    <button class="new-chat" onclick="newSession()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      New conversation
+    </button>
+
+    <div class="sidebar-section-label">Conversations</div>
+    <div class="session-list" id="sessionList"></div>
+
+    <div class="sidebar-section-label">Security Tools</div>
+    <div class="sidebar-tools">
+      <button class="tool-item" onclick="openTool('password')">
+        <span class="t-icon">🔐</span>Password Strength
+      </button>
+      <button class="tool-item" onclick="openTool('url')">
+        <span class="t-icon">🔗</span>URL Safety
+      </button>
+      <button class="tool-item" onclick="openTool('code')">
+        <span class="t-icon">🔍</span>Code Scanner
+      </button>
+      <button class="tool-item" onclick="openTool('file')">
+        <span class="t-icon">📁</span>File Analysis
+      </button>
     </div>
-  </div>
-</header>
 
-<!-- ══════════════════════════════════════════════
-     BOTTOM TAB BAR (mobile only)
-══════════════════════════════════════════════ -->
-<nav class="tab-bar" id="tabBar">
-  <div class="tab-bar-inner">
-    <button class="tab-btn active" data-tab="chat" onclick="switchTab('chat',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      Chat
-    </button>
-    <button class="tab-btn" data-tab="tools" onclick="switchTab('tools',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-      </svg>
-      Tools
-    </button>
-    <button class="tab-btn" data-tab="about" onclick="switchTab('about',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      About
-    </button>
-  </div>
-</nav>
+    <div style="flex:1"></div>
 
-<!-- ══════════════════════════════════════════════
-     PAGE CONTENT
-══════════════════════════════════════════════ -->
-<div class="page-shell">
+    <div class="sidebar-footer">
+      <div class="status-row">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Connecting…</span>
+      </div>
+      <a class="back-link" href="https://cybaashcloud.github.io">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M7.5 2L3 6l4.5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Back to portfolio
+      </a>
+    </div>
 
-  <!-- ── CHAT TAB ───────────────────────────────── -->
-  <div class="section-panel active" id="panel-chat">
-    <section class="chat-section" id="chat">
-      <div class="chat-container">
+  </aside>
 
-        <!-- Sidebar (desktop only) — sessions only, no redundant links -->
-        <aside class="chat-sidebar">
-          <div class="sidebar-title">// Sessions</div>
-          <button class="new-chat-btn" onclick="newSession()">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            New Session
-          </button>
-          <div class="session-list" id="sessionList"></div>
-        </aside>
+  <!-- Overlay for mobile sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-        <!-- Main chat -->
-        <main class="chat-main">
-          <div class="chat-header">
-            <div class="chat-header-info">
-              <div class="bot-avatar">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 1L2 4.5v4C2 11.5 4.5 14.1 8 15c3.5-.9 6-3.5 6-6.5v-4L8 1z" stroke="var(--cyan)" stroke-width="1.2" fill="none"/>
-                  <circle cx="8" cy="8" r="2" fill="var(--cyan)"/>
-                </svg>
-              </div>
-              <div>
-                <div class="chat-bot-name">CyberBot</div>
-                <div class="chat-bot-sub" id="typingStatus">Ready — Ask me anything</div>
-              </div>
-            </div>
-            <button class="clear-btn" onclick="clearChat()" title="Clear conversation" aria-label="Clear chat">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+  <!-- Mobile toggle -->
+  <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <!-- ══════════════════════════════════════════
+       MAIN
+  ══════════════════════════════════════════ -->
+  <main class="main">
+
+    <div class="messages" id="messages"></div>
+
+    <!-- Inline tool panel -->
+    <div class="tool-panel" id="toolPanel" style="display:none">
+      <div class="tool-panel-header">
+        <span id="toolTitle">Tool</span>
+        <button onclick="closeTool()" class="tool-close" aria-label="Close">✕</button>
+      </div>
+      <div id="toolContent" style="padding:14px"></div>
+    </div>
+
+    <!-- Quick chips (hide after first send) -->
+    <div class="quick-chips" id="quickChips">
+      <button class="chip" onclick="sendQuick('Explain SQL injection with a Python code example')">SQL Injection</button>
+      <button class="chip" onclick="sendQuick('How does XSS work and how to prevent it?')">XSS</button>
+      <button class="chip" onclick="sendQuick('How do I securely store passwords?')">Password Security</button>
+      <button class="chip" onclick="sendQuick('What is the OWASP Top 10 for 2021?')">OWASP Top 10</button>
+      <button class="chip" onclick="sendQuick('Explain penetration testing methodology')">Pen Testing</button>
+      <button class="chip" onclick="sendQuick('How does a buffer overflow attack work?')">Buffer Overflow</button>
+      <button class="chip" onclick="sendQuick('What is zero trust architecture?')">Zero Trust</button>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-box">
+        <div class="input-flags" id="inputFlags"></div>
+        <div class="input-row">
+          <textarea
+            id="messageInput"
+            placeholder="Ask about vulnerabilities, secure coding, pentesting…"
+            rows="1"
+            maxlength="4000"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+          ></textarea>
+          <div class="input-actions">
+            <label class="attach-btn" title="Upload file" aria-label="Upload file">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 10V3M5 6l3-3 3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 13h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              <input type="file" id="fileInput" accept=".txt,.log,.py,.js,.php,.html,.sh,.json,.yaml" onchange="handleFileUpload(this)" hidden>
+            </label>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Send">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <path d="M1.5 7.5h12M8.5 2.5l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </button>
           </div>
-
-          <div class="messages" id="messages"></div>
-
-          <!-- Inline tool panel -->
-          <div class="tool-panel" id="toolPanel" style="display:none">
-            <div class="tool-panel-header">
-              <span id="toolTitle">Tool</span>
-              <button onclick="closeTool()" class="tool-close" aria-label="Close tool">✕</button>
-            </div>
-            <div id="toolContent"></div>
-          </div>
-
-          <!-- Quick chips — right above input, not in a giant hero -->
-          <div class="quick-chips" id="quickChips">
-            <button class="chip" onclick="sendQuick('Explain SQL injection with a code example')">SQLi</button>
-            <button class="chip" onclick="sendQuick('How does XSS work and how to prevent it?')">XSS</button>
-            <button class="chip" onclick="sendQuick('How do I securely store passwords?')">Passwords</button>
-            <button class="chip" onclick="sendQuick('Explain penetration testing methodology')">Pen Testing</button>
-            <button class="chip" onclick="sendQuick('What is the OWASP Top 10?')">OWASP</button>
-            <button class="chip" onclick="sendQuick('How does a buffer overflow work?')">Buffer Overflow</button>
-            <button class="chip" onclick="sendQuick('Explain JWT security best practices')">JWT</button>
-            <button class="chip" onclick="sendQuick('What is zero trust architecture?')">Zero Trust</button>
-          </div>
-
-          <!-- Input -->
-          <div class="chat-input-area">
-            <div class="input-flags" id="inputFlags"></div>
-            <div class="input-row">
-              <div class="input-wrapper">
-                <textarea
-                  id="messageInput"
-                  autocomplete="off"
-                  autocorrect="off"
-                  autocapitalize="off"
-                  spellcheck="false"
-                  placeholder="Ask about vulnerabilities, secure coding…"
-                  rows="1"
-                  maxlength="4000"
-                ></textarea>
-                <div class="input-actions">
-                  <label class="attach-btn" title="Upload file" aria-label="Attach file">
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M8 11V3M5 6l3-3 3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-                    <input type="file" id="fileInput" accept=".txt,.log,.py,.js,.php,.html,.sh,.json,.yaml" onchange="handleFileUpload(this)" hidden>
-                  </label>
-                </div>
-              </div>
-              <button class="send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Send message">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 9l14-7-7 14V9H2z" fill="currentColor"/></svg>
-              </button>
-            </div>
-            <div class="input-meta">
-              <span id="charCount">0 / 4000</span>
-              <span>Gemini 2.5 Flash Lite · Educational only</span>
-            </div>
-          </div>
-        </main>
-
-      </div>
-    </section>
-  </div><!-- /panel-chat -->
-
-
-  <!-- ── TOOLS TAB ──────────────────────────────── -->
-  <div class="section-panel" id="panel-tools">
-    <section class="tools-section" id="tools">
-      <div class="section-header">
-        <div class="section-eyebrow">Security Tools</div>
-        <h2 class="section-title">Analyze &amp; Detect</h2>
-        <p class="section-desc">Client-side checks — nothing sent externally.</p>
-      </div>
-      <div class="tools-grid">
-        <div class="tool-card" onclick="openToolModal('password')">
-          <div class="tool-card-icon">🔐</div>
-          <h3>Password Strength</h3>
-          <p>NIST SP 800-63B aligned entropy analysis with actionable feedback.</p>
-          <span class="tool-card-cta">Check Now →</span>
         </div>
-        <div class="tool-card" onclick="openToolModal('url')">
-          <div class="tool-card-icon">🔗</div>
-          <h3>URL Safety</h3>
-          <p>Detect phishing patterns, IP-based URLs, and domain spoofing.</p>
-          <span class="tool-card-cta">Analyze →</span>
-        </div>
-        <div class="tool-card" onclick="openToolModal('code')">
-          <div class="tool-card-icon">🔍</div>
-          <h3>Code Scanner</h3>
-          <p>Detect eval(), hardcoded secrets, and OWASP patterns in Python, JS, PHP.</p>
-          <span class="tool-card-cta">Scan Code →</span>
-        </div>
-        <div class="tool-card" onclick="openToolModal('file')">
-          <div class="tool-card-icon">📁</div>
-          <h3>File Analysis</h3>
-          <p>Upload .py, .js, .php, .txt, .log files for security scanning.</p>
-          <span class="tool-card-cta">Upload File →</span>
+        <div class="input-meta">
+          <span id="charCount">0 / 4000</span>
+          <span id="typingStatus">Gemini 2.5 Flash Lite · Educational only</span>
         </div>
       </div>
-    </section>
-  </div><!-- /panel-tools -->
+    </div>
 
+  </main>
 
-  <!-- ── ABOUT TAB ──────────────────────────────── -->
-  <div class="section-panel" id="panel-about">
-    <section class="about-section" id="about">
-      <div class="about-grid">
-        <div class="about-content">
-          <div class="section-eyebrow">About This Project</div>
-          <h2 class="section-title">AI-Powered Cyber Assistant</h2>
-          <p>CyberBot is a fully serverless AI cybersecurity assistant — no backend required. Runs entirely on GitHub Pages with Gemini AI called directly from the browser.</p>
-          <div class="tech-stack">
-            <div class="tech-item"><span class="tech-icon">🤖</span>Google Gemini 2.5</div>
-            <div class="tech-item"><span class="tech-icon">🛡️</span>OWASP Patterns</div>
-            <div class="tech-item"><span class="tech-icon">⚡</span>Zero Backend</div>
-            <div class="tech-item"><span class="tech-icon">🔒</span>Key in localStorage</div>
-            <div class="tech-item"><span class="tech-icon">📄</span>GitHub Pages</div>
-            <div class="tech-item"><span class="tech-icon">🌐</span>PWA Ready</div>
-          </div>
-        </div>
-        <div class="stats-grid">
-          <div class="stat-card"><div class="stat-num">343+</div><div class="stat-label">Certifications</div></div>
-          <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Security Tools</div></div>
-          <div class="stat-card"><div class="stat-num">Gemini</div><div class="stat-label">AI Model</div></div>
-          <div class="stat-card"><div class="stat-num">OWASP</div><div class="stat-label">Top 10 Coverage</div></div>
-        </div>
-      </div>
-    </section>
+</div><!-- /app -->
 
-    <footer class="footer">
-      <div class="footer-inner">
-        <div class="footer-logo">CYBER<span>BOT</span></div>
-        <p>Educational AI Cybersecurity Assistant · Built by Mohamed Aasiq · <a href="https://cybaashcloud.github.io">cybaashcloud.github.io</a></p>
-        <p class="footer-disclaimer">⚠️ For educational purposes only. Never use these techniques against systems you don't own or have explicit permission to test.</p>
-      </div>
-    </footer>
-  </div><!-- /panel-about -->
-
-</div><!-- /page-shell -->
-
-<!-- ══════════════════════════════════════════════
-     MODAL
-══════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════
+     MODAL (for tool overlays)
+══════════════════════════════════════════ -->
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
@@ -341,59 +671,81 @@
   </div>
 </div>
 
-<!-- termPreview: kept as hidden element so animateTerminalPreview() doesn't error -->
+<!-- termPreview: hidden, keeps animateTerminalPreview() from erroring -->
 <div id="termPreview" style="display:none"></div>
 
 <script src="cyberbot_script.js"></script>
-
 <script>
-/* ── TAB NAVIGATION ─────────────────────────────────────────── */
-var _activeTab = 'chat';
-
-function switchTab(tab, triggerEl) {
-  if (_activeTab === tab) return;
-  _activeTab = tab;
-  document.querySelectorAll('.section-panel').forEach(function(p) { p.classList.remove('active'); });
-  var panel = document.getElementById('panel-' + tab);
-  if (panel) panel.classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.tab === tab); });
-  document.querySelectorAll('.nav-link').forEach(function(a) { a.classList.toggle('active', a.dataset.tab === tab); });
-  if (tab !== 'chat') window.scrollTo({ top: 0, behavior: 'instant' });
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR (mobile)
+═══════════════════════════════════════════════════════════ */
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
 }
 
-document.querySelectorAll('.nav-link').forEach(function(a) {
-  a.addEventListener('click', function(e) { e.preventDefault(); switchTab(a.dataset.tab, a); });
+/* ═══════════════════════════════════════════════════════════
+   TOOL ROUTING
+   openTool() — called by sidebar buttons
+   Shows tool inline on desktop, modal on mobile
+═══════════════════════════════════════════════════════════ */
+function openTool(type) {
+  closeSidebar();
+  if (typeof showTool === 'function') {
+    showTool(type);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHIPS — hide after first message
+═══════════════════════════════════════════════════════════ */
+var chipsHidden = false;
+function hideChips() {
+  if (chipsHidden) return;
+  chipsHidden = true;
+  var el = document.getElementById('quickChips');
+  if (el) { el.style.transition = 'opacity .2s'; el.style.opacity = '0'; setTimeout(function(){ el.style.display = 'none'; }, 200); }
+}
+
+/* Wrap sendMessage to hide chips */
+document.addEventListener('DOMContentLoaded', function() {
+  var orig = window.sendMessage;
+  window.sendMessage = function() {
+    hideChips();
+    if (orig) orig.apply(this, arguments);
+  };
+
+  /* sendQuick is defined in cyberbot_script.js — wrap it */
+  var origQuick = window.sendQuick;
+  window.sendQuick = function(msg) {
+    hideChips();
+    if (origQuick) origQuick.call(this, msg);
+  };
+
+  /* Keep typingStatus updated without overriding existing logic */
+  var origShowTyping = window.showTyping;
+  if (origShowTyping) {
+    window.showTyping = function() {
+      var ts = document.getElementById('typingStatus');
+      if (ts) ts.textContent = 'Thinking…';
+      if (origShowTyping) origShowTyping.apply(this, arguments);
+    };
+  }
+  var origHideTyping = window.hideTyping;
+  if (origHideTyping) {
+    window.hideTyping = function() {
+      var ts = document.getElementById('typingStatus');
+      if (ts) ts.textContent = 'Gemini 2.5 Flash Lite · Educational only';
+      if (origHideTyping) origHideTyping.apply(this, arguments);
+    };
+  }
 });
 
-/* ── TOOL MODAL ─────────────────────────────────────────────── */
-function openToolModal(toolId) {
-  if (typeof showTool === 'function') showTool(toolId);
-}
-
-/* Hide quick chips once the user sends first message */
-function hideChips() {
-  var chips = document.getElementById('quickChips');
-  if (chips) chips.style.display = 'none';
-}
-
-/* Patch sendMessage and sendQuick to hide chips on first use */
-var _origSend = window.sendMessage;
-window.sendMessage = function() {
-  hideChips();
-  if (_origSend) _origSend.apply(this, arguments);
-};
-
-var _origQuick = window.sendQuick;
-window.sendQuick = function(msg) {
-  hideChips();
-  if (_origQuick) { _origQuick.apply(this, arguments); }
-  else {
-    var inp = document.getElementById('messageInput');
-    if (inp) { inp.value = msg; if (typeof sendMessage === 'function') sendMessage(); }
-  }
-};
-
-/* ── iOS KEYBOARD ───────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   iOS KEYBOARD
+═══════════════════════════════════════════════════════════ */
 (function() {
   var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -403,12 +755,12 @@ window.sendQuick = function(msg) {
       setTimeout(function() { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 350);
     }
   }, { passive: true });
-  document.addEventListener('focusout', function() {
-    setTimeout(function() { window.scrollTo({ top: window.scrollY, behavior: 'instant' }); }, 100);
-  }, { passive: true });
 })();
 
-/* ── MODAL swipe down to close ──────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   MODAL — Escape + swipe to close
+═══════════════════════════════════════════════════════════ */
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
 (function() {
   var startY = null;
   document.addEventListener('touchstart', function(e) {
@@ -416,29 +768,23 @@ window.sendQuick = function(msg) {
   }, { passive: true });
   document.addEventListener('touchend', function(e) {
     if (startY === null) return;
-    var dy = e.changedTouches[0].clientY - startY;
+    if (e.changedTouches[0].clientY - startY > 80) closeModal();
     startY = null;
-    if (dy > 90) closeModal();
   }, { passive: true });
 })();
 
-/* ── STATUS SYNC ────────────────────────────────────────────── */
-(function syncStatus() {
-  var src = document.getElementById('statusDot');
-  var srcT = document.getElementById('statusText');
-  var dst = document.getElementById('statusDotMobile');
-  var dstT = document.getElementById('statusTextMobile');
-  if (!src || !dst) return;
-  var obs = new MutationObserver(function() {
-    dst.className = src.className;
-    if (dstT && srcT) dstT.textContent = srcT.textContent;
-  });
-  obs.observe(src, { attributes: true, attributeFilter: ['class'] });
-  if (srcT) obs.observe(srcT, { childList: true, characterData: true, subtree: true });
-})();
-
+/* ═══════════════════════════════════════════════════════════
+   scroll contain
+═══════════════════════════════════════════════════════════ */
 var msgEl = document.getElementById('messages');
 if (msgEl) msgEl.style.overscrollBehavior = 'contain';
+
+/* switchSession is defined in cyberbot_script.js — alias for safety */
+if (typeof switchSession === 'undefined') {
+  window.switchSession = function(id) {
+    if (typeof window._switchSession === 'function') window._switchSession(id);
+  };
+}
 </script>
 
 </body>
