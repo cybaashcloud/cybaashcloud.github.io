@@ -155,7 +155,7 @@
         "Adobe"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro001.jpg",
       "title": "Essential Skills in Adobe Illustrator 2025 Professional Certificate",
       "issuer": "Adobe",
       "courseId": "essential-skills-in-adobe-illustrator-2025-professional-cert",
@@ -173,7 +173,7 @@
         "Adobe"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro002.jpg",
       "title": "Essential Skills in Adobe InDesign 2025 Professional Certificate",
       "issuer": "Adobe",
       "courseId": "essential-skills-in-adobe-indesign-2025-professional-certifi",
@@ -191,7 +191,7 @@
         "Adobe"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro003.jpg",
       "title": "Essential Skills in Adobe Premiere Pro 2025 Professional Certificate",
       "issuer": "Adobe",
       "courseId": "essential-skills-in-adobe-premiere-pro-2025-professional-cer",
@@ -210,7 +210,7 @@
         "AI/ML"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro004.jpg",
       "title": "Essential Skills in Generative AI for Creatives by Adobe",
       "issuer": "Adobe",
       "courseId": "essential-skills-in-generative-ai-for-creatives-by-adobe",
@@ -230,7 +230,7 @@
         "Product Management"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro005.jpg",
       "title": "Aha! Product Management Professional Certificate",
       "issuer": "Aha!",
       "courseId": "aha-product-management-professional-certificate",
@@ -249,7 +249,7 @@
         "AI/ML"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro006.jpg",
       "title": "Responsible AI Foundations Professional Certificate by All Tech Is Human",
       "issuer": "All Tech Is Human",
       "courseId": "responsible-ai-foundations-professional-certificate-by-all-t",
@@ -267,7 +267,7 @@
         "American Negotiation Institute"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro007.jpg",
       "title": "Negotiation Professional Certificate by American Negotiation Institute",
       "issuer": "American Negotiation Institute",
       "courseId": "negotiation-professional-certificate-by-american-negotiation",
@@ -287,7 +287,7 @@
         "Data"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro008.jpg",
       "title": "Anaconda Python for Data Science Professional Certificate",
       "issuer": "LinkedIn",
       "courseId": "anaconda-python-for-data-science-professional-certificate",
@@ -307,7 +307,7 @@
         "Anaconda"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro009.jpg",
       "title": "Machine Learning with Python Professional Certificate by Anaconda",
       "issuer": "Anaconda",
       "courseId": "machine-learning-with-python-professional-certificate-by-ana",
@@ -326,7 +326,7 @@
         "Linux"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro010.jpg",
       "title": "Ubuntu Linux Professional Certificate by Canonical",
       "issuer": "Canonical",
       "courseId": "ubuntu-linux-professional-certificate-by-canonical",
@@ -349,13 +349,14 @@
         "Switching"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "/certificates/auto/pro011.jpg",
       "title": "Getting Started with Cisco Packet Tracer",
       "issuer": "Cisco Networking Academy",
       "courseId": "getting-started-with-cisco-packet-tracer",
       "featured": false,
       "learningPathName": "",
-      "certNumber": "?issuanceId=b4d7314b-7b8a-4f68-a4bd-b86893e1a96c"
+      "certNumber": "?issuanceId=b4d7314b-7b8a-4f68-a4bd-b86893e1a96c",
+      "pdfUrl": "/certificates/cisco_packet_tracer.pdf"
     },
     {
       "id": "pro012",
@@ -1204,7 +1205,7 @@
       "date": "2026-02",
       "url": "https://skillbuilder.aws",
       "pdf": "https://cybaashcloud.github.io/certificates/aws/00574a53-30d0-47d8-8e14-52283b174bd3.pdf",
-      "image": "",
+      "image": "/certificates/auto/pro056.jpg",
       "logo": "",
       "featured": true,
       "tags": [
@@ -1214,7 +1215,8 @@
         "Amazon GuardDuty",
         "Security Monitoring",
         "AWS"
-      ]
+      ],
+      "pdfUrl": "/certificates/aws/00574a53-30d0-47d8-8e14-52283b174bd3.pdf"
     },
     {
       "id": "pro057",
