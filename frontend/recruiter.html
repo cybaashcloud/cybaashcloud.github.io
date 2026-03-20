@@ -236,6 +236,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .proj-img{width:100%;height:130px;object-fit:cover;display:block;border-bottom:1px solid var(--border)}
 .proj-noimg{width:100%;height:90px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
 .proj-noimg svg{width:28px;height:28px;opacity:.12}
+.cr-logo-top{width:100%;height:90px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
 
 /* ── CERT CARD — project-card style ─────────────────────────── */
 .cert-card{background:var(--panel);border:1px solid var(--border);position:relative;transition:border-color .2s;overflow:hidden;text-decoration:none;display:block;color:inherit}
@@ -1749,30 +1750,39 @@ function credCard(c){
   const typeLbl  = isC ? 'CREDLY' : isCert ? 'CERTIFICATE' : 'LINKEDIN';
   const typeClass= isC ? 'credly' : isCert ? 'cert' : 'linkedin';
 
-  // ── Resolve thumbnail image ──
-  // Priority: cert jpeg > credly badge image > linkedin logo > issuer placeholder
-  let imgSrc = '';
-  if(c.pdf && !c.pdf.endsWith('.pdf')){
-    imgSrc = c.pdf; // JPEG cert image stored in pdf field
-  } else if(isC){
-    imgSrc = c.credlyImageUrl
+  // ── Resolve images ──
+  // certJpeg = full-width banner (LinkedIn/cert JPEGs stored in pdf field)
+  // logoSrc  = small square icon shown centered (Credly badge, fallback logo)
+  const certJpeg = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : '';
+  let logoSrc = '';
+  if(isC){
+    logoSrc = c.credlyImageUrl
       || (c.credlyBadgeId ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png` : '');
   } else if(isLI){
-    imgSrc = LI_BADGE;
+    logoSrc = LI_BADGE;
   } else {
-    imgSrc = c.logo || c.image || '';
+    logoSrc = c.logo || c.image || '';
   }
 
-  // ── Top image / placeholder (identical sizing to proj-img) ──
-  const topHtml = imgSrc
-    ? `<img class="proj-img" src="${x(imgSrc)}" alt="${x(c.title||'')}" loading="lazy"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-       ><div class="proj-noimg" style="display:none">
-         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-       </div>`
-    : `<div class="proj-noimg">
-         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-       </div>`;
+  // ── Top section ──
+  // Cert cards  → full-width JPEG banner (proj-img)
+  // Credly/LI   → dark panel with small centered logo
+  let topHtml = '';
+  if(certJpeg){
+    // Full-width certificate image
+    topHtml = `<img class="proj-img" src="${x(certJpeg)}" alt="${x(c.title||'')}" loading="lazy"
+      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+    ><div class="proj-noimg" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+  } else if(logoSrc){
+    // Small centered logo on a dark background panel
+    topHtml = `<div class="cr-logo-top">
+      <img src="${x(logoSrc)}" alt="${x(c.title||'')}" loading="lazy"
+        onerror="this.style.display='none'"
+        style="max-width:80px;max-height:80px;width:auto;height:auto;object-fit:contain;border-radius:6px">
+    </div>`;
+  } else {
+    topHtml = `<div class="proj-noimg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+  }
 
   // ── Tags row (reuse tech-t style) ──
   const tagsHtml = (c.tags||[]).length
