@@ -1,24 +1,24 @@
-name: Fetch Missing Cert Images
+name: Sync Credential Skills
 
 on:
   workflow_dispatch:
     inputs:
+      dry_run:
+        description: 'Dry run (show changes without saving)'
+        required: false
+        default: false
+        type: boolean
       file:
-        description: 'Only process one file (leave blank for all)'
+        description: 'Only process one creds file (blank = all)'
         required: false
         default: ''
         type: choice
         options: ['', '1', '2', '3', '4']
-      dry_run:
-        description: 'Dry run — list creds without fetching'
-        required: false
-        default: false
-        type: boolean
   schedule:
-    - cron: '0 2 * * 0'
+    - cron: '30 3 * * 0'
 
 jobs:
-  fetch-images:
+  sync-skills:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -34,436 +34,413 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: Install dependencies
-        run: pip install requests beautifulsoup4 pymupdf pillow google-generativeai
-
-      - name: Write fetch script
         run: |
-          cat > fetch_cert_images.py << 'PYEOF'
+          sudo apt-get install -y tesseract-ocr --quiet
+          pip install requests pillow pytesseract
+
+      - name: Write sync script
+        run: |
+          cat > sync_skills.py << 'PYEOF'
           #!/usr/bin/env python3
           """
-          fetch_cert_images.py  v4
-          ════════════════════════
-          Routing by ISSUER NAME.  AWS and Cisco do not have scrapeable pages.
+          sync_skills.py  v10
+          ════════════════════
+          No Gemini. No API keys. Pure Tesseract OCR + Credly API.
 
-          ┌──────────────────────────────┬────────────────────────────────────────┐
-          │ Issuer contains              │ Strategy                               │
-          ├──────────────────────────────┼────────────────────────────────────────┤
-          │ "Amazon Web Services"        │ Render each PDF page → Gemini Vision   │
-          │                              │ reads course title → matched to cert   │
-          │                              │ entry by word overlap (title vs title) │
-          ├──────────────────────────────┼────────────────────────────────────────┤
-          │ "Cisco" (type=certificate)   │ Static CISCO_PDF_MAP                   │
-          │                              │ PDF filename → cert ID                 │
-          ├──────────────────────────────┼────────────────────────────────────────┤
-          │ Everything else              │ og:image scrape from URL               │
-          └──────────────────────────────┴────────────────────────────────────────┘
+          THE BUG THAT WAS FIXED (v8 → v10):
+            All LinkedIn Learning cert images are 1280×989 px.
+            "Top skills covered" header sits at row ~449 = 45.4% of height.
+            v8 tried OCR zone 1 starting at 50% → header not in crop → no pills.
+            v8 tried OCR zone 2 starting at 44% → header at pixel row 14 of crop
+              → after 3× upscale → row 42 → Tesseract sometimes missed it.
+            v10 uses a single zone starting at 42% → header is always well inside
+              the crop → Tesseract reliably finds "Top skills covered" every time.
 
-          Why Gemini for AWS?
-            AWS SkillBuilder PDFs have compressed text streams.  PyMuPDF can
-            decompress them, but all 9 PDFs share boilerplate ("AWS", "Security",
-            "Getting Started") that wrecks word-overlap title matching.
-            Gemini Vision reads the rendered page image directly and returns a
-            clean course title → reliable title-to-title comparison.
+          CREDLY
+            Fetches badge_template.skills from public profile.
+            Falls back to keeping existing tags if profile is unavailable.
+
+          RULE: NEVER add title, issuer, platform name, or invented text as tags.
+                Only real skill pills from OCR or real skills from Credly API.
           """
 
-          import argparse, base64, json, os, re, time
+          import argparse, json, os, re, time
           from pathlib import Path
-          from urllib.parse import urlparse
-
           import requests
-          from bs4 import BeautifulSoup
-          import fitz          # PyMuPDF
-          from PIL import Image
-          import google.generativeai as genai
+          from PIL import Image, ImageEnhance
+          import pytesseract
 
-          # ── Config ────────────────────────────────────────────────────────────────
+          CREDLY_USERNAME = 'mohamed-aasiq'
 
           HEADERS = {
-              "User-Agent": (
-                  "Mozilla/5.0 (X11; Linux x86_64) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/124.0.0.0 Safari/537.36"
-              ),
-              "Accept-Language": "en-US,en;q=0.9",
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-              "Referer": "https://www.linkedin.com/",
+              'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
+                            'Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'application/json, text/plain, */*',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Referer': 'https://www.credly.com/',
           }
-          IMG_HEADERS = {
-              "User-Agent": HEADERS["User-Agent"],
-              "Referer": "https://www.linkedin.com/",
-              "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+          TIMEOUT = 20
+          DELAY   = 1.2
+
+          JUNK = {
+              # Credly platform noise
+              'credly','credly badges','acclaim','open badges','digital badges',
+              'badges','web-enabled credentials','badge alliance',
+              'mozilla open badge standards','mozilla open badges',
+              'verified credentials','learning outcomes',
+              # LinkedIn cert boilerplate
+              'linkedin','linkedin learning','learning path',
+              'shea hanson','head of learning content strategy',
+              # Generic words that are not skills
+              'certificate','professional','certified',
           }
-          DELAY_PAGE, DELAY_IMG, TIMEOUT = 0.9, 0.4, 15
-          AUTO_DIR_REL = "certificates/auto"
 
-          # Cisco: PDF filename → cert ID  (add new lines when new Cisco PDFs arrive)
-          CISCO_PDF_MAP = {
-              "cisco_packet_tracer.pdf": "pro011",
-          }
-
-          # ── Issuer helpers ─────────────────────────────────────────────────────────
-
-          def is_aws(issuer: str) -> bool:
-              return "amazon web services" in issuer.lower()
-
-          def is_cisco_cert(issuer: str, ctype: str) -> bool:
-              return "cisco" in issuer.lower() and ctype != "credly"
-
-          # ── og:image scraper ───────────────────────────────────────────────────────
-
-          def fetch_og(page_url: str):
-              try:
-                  r = requests.get(page_url, headers=HEADERS, timeout=TIMEOUT,
-                                   allow_redirects=True)
-                  if r.status_code != 200:
-                      print(f"    page HTTP {r.status_code}")
-                      return None
-                  soup = BeautifulSoup(r.text, "html.parser")
-                  for prop in ["og:image", "og:image:secure_url"]:
-                      tag = soup.find("meta", property=prop)
-                      if tag and tag.get("content"):
-                          return tag["content"].strip()
-                  tag = soup.find("meta", attrs={"name": "twitter:image"})
-                  if tag and tag.get("content"):
-                      return tag["content"].strip()
-                  for img in soup.find_all("img"):
-                      src = img.get("src", "")
-                      alt = img.get("alt", "").lower()
-                      if ("certificate" in alt or "cert" in src.lower()) and src.startswith("http"):
-                          return src.strip()
-              except Exception as e:
-                  print(f"    fetch error: {e}")
-              return None
-
-          def download_image(img_url: str, save_dir: Path, cred_id: str):
-              try:
-                  r = requests.get(img_url, headers=IMG_HEADERS, timeout=TIMEOUT, stream=True)
-                  if r.status_code != 200:
-                      print(f"    image HTTP {r.status_code}")
-                      return None
-                  ct  = r.headers.get("Content-Type", "image/jpeg")
-                  ext = "png" if "png" in ct else "webp" if "webp" in ct else "jpg"
-                  up  = urlparse(img_url).path.lower()
-                  for e in ["png", "webp", "gif"]:
-                      if up.endswith(f".{e}"):
-                          ext = e; break
-                  fname = f"{cred_id}.{ext}"
-                  dest  = save_dir / fname
-                  save_dir.mkdir(parents=True, exist_ok=True)
-                  with open(dest, "wb") as fh:
-                      for chunk in r.iter_content(8192): fh.write(chunk)
-                  kb = dest.stat().st_size / 1024
-                  print(f"    saved {fname} ({kb:.0f} KB)")
-                  return fname
-              except Exception as e:
-                  print(f"    download error: {e}")
-              return None
-
-          # ── PDF → JPEG renderer ────────────────────────────────────────────────────
-
-          def pdf_to_jpeg(pdf_path: Path, out_path: Path, dpi: int = 150) -> bool:
-              try:
-                  doc  = fitz.open(str(pdf_path))
-                  page = doc[0]
-                  mat  = fitz.Matrix(dpi / 72, dpi / 72)
-                  pix  = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB)
-                  img  = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                  out_path.parent.mkdir(parents=True, exist_ok=True)
-                  img.save(str(out_path), "JPEG", quality=88, optimize=True)
-                  kb = out_path.stat().st_size / 1024
-                  print(f"    rendered {pdf_path.name} → {out_path.name} ({kb:.0f} KB)")
+          def is_junk(tag: str) -> bool:
+              if len(tag) < 3:
                   return True
-              except Exception as e:
-                  print(f"    PDF render error ({pdf_path.name}): {e}")
-                  return False
+              if not re.match(r'[A-Za-z.]', tag):
+                  return True
+              return tag.lower() in JUNK
 
-          # ── Gemini: read course title from rendered PDF JPEG ───────────────────────
+          def fix_ocr(text: str) -> str:
+              text = re.sub(r'\bAl\b', 'AI', text)
+              text = re.sub(r'\bMl\b', 'ML', text)
+              text = re.sub(r'\bNET\b', '.NET', text)
+              text = re.sub(r'\bloT\b', 'IoT', text)
+              text = re.sub(r'\blaC\b', 'IaC', text)
+              if '(' in text and ')' not in text:
+                  text = re.sub(r'\s*\([^)]*$', '', text)
+              text = text.strip(' ()[]|~*.,\'"')
+              return re.sub(r'\s+', ' ', text).strip()
 
-          _gemini_model = None
+          # ── Credly ────────────────────────────────────────────────────────────────
 
-          def get_gemini():
-              global _gemini_model
-              if _gemini_model is None:
-                  key = os.environ.get("GEMINI_API_KEY", "")
-                  if not key:
-                      raise RuntimeError("GEMINI_API_KEY secret is not set")
-                  genai.configure(api_key=key)
-                  _gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-              return _gemini_model
+          def fetch_credly() -> dict:
+              result = {}
+              page   = 1
+              print(f'\n  Fetching Credly: {CREDLY_USERNAME}')
 
-          TITLE_PROMPT = """\
-          This is an AWS SkillBuilder certificate of completion.
-          What is the exact course or training name printed on this certificate?
-          Return ONLY the course name as plain text — no quotes, no explanation, nothing else.
-          """
+              while True:
+                  url = (f'https://www.credly.com/users/{CREDLY_USERNAME}/badges.json'
+                         f'?page={page}&page_size=48')
+                  try:
+                      r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+                  except Exception as e:
+                      print(f'  ✗ Network error: {e}')
+                      break
 
-          def gemini_pdf_title(jpeg_path: Path) -> str:
-              """Ask Gemini to read the course title from a rendered AWS cert JPEG."""
+                  if r.status_code == 404:
+                      print(f'  ✗ 404 — profile not found or private')
+                      break
+                  if r.status_code != 200:
+                      print(f'  ✗ HTTP {r.status_code}')
+                      break
+
+                  try:
+                      payload = r.json()
+                  except Exception as e:
+                      print(f'  ✗ JSON error: {e}')
+                      break
+
+                  badges = payload.get('data', [])
+                  if not badges:
+                      break
+
+                  for b in badges:
+                      earner_id = b.get('id', '')
+                      tmpl      = b.get('badge_template', {})
+                      tmpl_id   = tmpl.get('id', '')
+                      skills    = [
+                          s['name'].strip()
+                          for s in tmpl.get('skills', [])
+                          if s.get('name', '').strip()
+                          and not is_junk(s['name'].strip())
+                      ]
+                      if earner_id: result[earner_id] = skills
+                      if tmpl_id:   result[tmpl_id]   = skills
+
+                  meta  = payload.get('metadata', {})
+                  total = meta.get('total_count', 0)
+                  per   = meta.get('per', 48)
+                  print(f'    page {page}: {len(badges)} badges  (total={total})')
+                  if page * per >= total:
+                      break
+                  page += 1
+                  time.sleep(DELAY)
+
+              n = len(result) // 2 if result else 0
+              print(f'  Done: {n} badges\n')
+              return result
+
+          # ── OCR pill extraction ────────────────────────────────────────────────────
+
+          # All LinkedIn Learning cert images are 1280×989 px.
+          # "Top skills covered" header: row ~449 = 45.4% of height.
+          # Pills: rows ~500–580 = 50–59%.
+          # Zone: 42%–70% reliably captures the header + all pill rows.
+          OCR_ZONE_TOP    = 0.42
+          OCR_ZONE_BOTTOM = 0.70
+          OCR_SCALE       = 3      # upscale factor for Tesseract
+          OCR_CONF_MIN    = 15     # minimum Tesseract word confidence
+          PILL_GAP        = 80     # px gap (at 3× scale) between pills vs within a pill
+
+          def ocr_pills(img_path: Path) -> list:
               try:
-                  with open(jpeg_path, "rb") as fh:
-                      b64 = base64.b64encode(fh.read()).decode()
-                  resp = get_gemini().generate_content([
-                      {"inline_data": {"mime_type": "image/jpeg", "data": b64}},
-                      TITLE_PROMPT,
-                  ])
-                  title = resp.text.strip().strip('"\'')
-                  print(f"    Gemini title: {title}")
-                  return title
+                  img = Image.open(img_path).convert('RGB')
               except Exception as e:
-                  print(f"    Gemini title error: {e}")
-                  return ""
+                  print(f'    cannot open image: {e}')
+                  return []
 
-          # ── Word-overlap similarity (used AFTER Gemini gives us a clean title) ─────
+              w, h = img.size
+              zone = (0, int(h * OCR_ZONE_TOP), w, int(h * OCR_ZONE_BOTTOM))
+              crop = img.crop(zone)
 
-          STOP = {"and","the","a","an","of","for","to","in","with","by","is","are",
-                  "on","at","from","or","its","this","that","includes","labs","getting",
-                  "started","plan","course"}
+              # Upscale + high contrast greyscale
+              crop = crop.resize(
+                  (crop.width * OCR_SCALE, crop.height * OCR_SCALE),
+                  Image.LANCZOS)
+              crop = ImageEnhance.Contrast(crop).enhance(2.5).convert('L')
 
-          def word_overlap(a: str, b: str) -> float:
-              wa = set(re.findall(r"[a-z0-9]+", a.lower())) - STOP
-              wb = set(re.findall(r"[a-z0-9]+", b.lower())) - STOP
-              if not wa or not wb:
-                  return 0.0
-              return len(wa & wb) / max(len(wa), len(wb))
+              data = pytesseract.image_to_data(
+                  crop,
+                  config='--psm 6',
+                  output_type=pytesseract.Output.DICT)
 
-          # ── AWS: render all PDFs → Gemini → match to cert entries ─────────────────
-
-          def match_aws_pdfs(pdf_dir: Path, aws_certs: list, tmp_dir: Path) -> dict:
-              """
-              1. Render each AWS PDF first page → tmp JPEG
-              2. Ask Gemini Vision for the course title
-              3. Match Gemini title against cert titles by word overlap
-              Returns {cert_id: pdf_path}.
-              """
-              pdfs = sorted(pdf_dir.glob("*.pdf"))
-              if not pdfs:
-                  print(f"  ⚠ No PDFs in {pdf_dir}")
-                  return {}
-
-              print(f"\n  Processing {len(pdfs)} AWS PDF(s) via Gemini Vision…")
-              tmp_dir.mkdir(parents=True, exist_ok=True)
-
-              # Step 1+2: render each PDF → JPEG, then ask Gemini for its title
-              pdf_titles = {}
-              for p in pdfs:
-                  tmp_jpg = tmp_dir / f"_tmp_{p.stem}.jpg"
-                  if not pdf_to_jpeg(p, tmp_jpg):
-                      print(f"    skip {p.name} (render failed)")
+              # Collect words with position + confidence
+              words = []
+              for i, word in enumerate(data['text']):
+                  if not word.strip():
                       continue
-                  title = gemini_pdf_title(tmp_jpg)
-                  pdf_titles[p] = title
-                  time.sleep(1.2)   # rate-limit Gemini
+                  if int(data['conf'][i]) < OCR_CONF_MIN:
+                      continue
+                  words.append({
+                      'word':  word,
+                      'left':  data['left'][i],
+                      'top':   data['top'][i],
+                      'right': data['left'][i] + data['width'][i],
+                  })
 
-              # Step 3: match each cert to the best-scoring PDF title
-              print(f"\n  Matching {len(pdf_titles)} PDF titles → {len(aws_certs)} certs…")
-              mapping   = {}
-              used_pdfs = set()
+              if not words:
+                  print('    ⚠ Tesseract returned no words')
+                  return []
 
-              for c in sorted(aws_certs, key=lambda x: x["id"]):
-                  cid    = c["id"]
-                  ctitle = c.get("title", "")
-                  best_score, best_pdf = 0.0, None
+              # Group words into lines by vertical proximity
+              LINE_TOL = 75
+              lines: dict = {}
+              for wp in words:
+                  key = round(wp['top'] / LINE_TOL) * LINE_TOL
+                  lines.setdefault(key, []).append(wp)
 
-                  for p, gtitle in pdf_titles.items():
-                      if p in used_pdfs or not gtitle:
-                          continue
-                      score = word_overlap(ctitle, gtitle)
-                      if score > best_score:
-                          best_score = score
-                          best_pdf   = p
+              found_header = False
+              all_pills    = []
 
-                  if best_pdf and best_score >= 0.3:
-                      mapping[cid] = best_pdf
-                      used_pdfs.add(best_pdf)
-                      print(f"    ✓ {cid}  score={best_score:.2f}")
-                      print(f"      cert:  {ctitle}")
-                      print(f"      gemini:{pdf_titles[best_pdf]}")
+              for key in sorted(lines):
+                  lw  = sorted(lines[key], key=lambda x: x['left'])
+                  ltx = ' '.join(w['word'] for w in lw)
+
+                  # Detect "Top skills covered" header
+                  if re.search(r'top\s+skills?\s+covered', ltx, re.IGNORECASE):
+                      found_header = True
+                      continue
+
+                  if not found_header:
+                      continue
+
+                  # Skip noise lines below the header
+                  ll = ltx.lower()
+                  if any(n in ll for n in [
+                      'shea hanson', 'certificate id', 'learning content',
+                      'completed by', 'utc', 'hours', 'minutes',
+                  ]):
+                      break   # we've gone past the pills into the footer
+
+                  if len(re.sub(r'[^a-zA-Z]', '', ltx)) < 3:
+                      continue
+
+                  # ── Split line into individual pills by horizontal gap ──────────
+                  # At 3× scale: within-pill word gap ≈ 20–40px → joins words
+                  #              between-pill gap    ≈ 100–150px → splits pills
+                  pill       = []
+                  prev_right = None
+
+                  for wp in lw:
+                      gap = (wp['left'] - prev_right) if prev_right is not None else 0
+                      if prev_right is not None and gap > PILL_GAP:
+                          if pill:
+                              all_pills.append(' '.join(pill))
+                              pill = []
+                      pill.append(wp['word'])
+                      prev_right = wp['right']
+                  if pill:
+                      all_pills.append(' '.join(pill))
+
+              if not all_pills:
+                  if found_header:
+                      print('    ⚠ header found but no pills extracted')
                   else:
-                      print(f"    ✗ {cid}  no match (best={best_score:.2f})  cert: {ctitle}")
+                      print('    ⚠ "Top skills covered" not found in OCR output')
+                  return []
 
-              return mapping
+              # Clean + deduplicate
+              seen    = set()
+              cleaned = []
+              for p in all_pills:
+                  p = fix_ocr(p)
+                  if is_junk(p):
+                      continue
+                  k = p.lower()
+                  if k not in seen:
+                      seen.add(k)
+                      cleaned.append(p)
 
-          # ── Per-file processor ─────────────────────────────────────────────────────
+              return cleaned
 
-          def process_file(path: Path, frontend_dir: Path, dry_run: bool):
-              data  = json.loads(path.read_text(encoding="utf-8"))
-              creds = data.get("credentials", [])
-              auto  = frontend_dir / AUTO_DIR_REL
+          # ── Per-file processing ────────────────────────────────────────────────────
 
-              aws_pending = [
-                  c for c in creds
-                  if not (c.get("image") or "")
-                  and c.get("type") != "credly"
-                  and is_aws(c.get("issuer", ""))
-              ]
-              aws_map = {}
-              if aws_pending:
-                  pdf_dir = frontend_dir / "certificates" / "aws"
-                  tmp_dir = frontend_dir / "certificates" / ".tmp_renders"
-                  aws_map = match_aws_pdfs(pdf_dir, aws_pending, tmp_dir)
-                  # Clean up temp renders
-                  import shutil
-                  if tmp_dir.exists():
-                      shutil.rmtree(tmp_dir)
-
-              fetched = skipped = 0
-              changed = False
+          def process_file(path, frontend_dir, credly_map, dry_run):
+              data    = json.loads(path.read_text(encoding='utf-8'))
+              creds   = data.get('credentials', [])
+              auto    = frontend_dir / 'certificates' / 'auto'
+              changed = 0
 
               for idx, c in enumerate(creds):
-                  img    = c.get("image") or ""
-                  url    = c.get("url")   or ""
-                  ctype  = c.get("type",  "")
-                  cid    = c["id"]
-                  issuer = c.get("issuer", "")
+                  cid      = c.get('id', '')
+                  ctype    = c.get('type', '')
+                  old_tags = list(c.get('tags') or [])
+                  new_tags = old_tags
 
-                  if img or ctype == "credly":
-                      skipped += 1
-                      continue
+                  # ── CREDLY ─────────────────────────────────────────────────────
+                  if ctype == 'credly':
+                      badge_id = c.get('credlyBadgeId', '') or ''
+                      print(f'  [credly] {cid} — {c.get("title","")[:55]}')
 
-                  print(f"\n[{cid}] {c.get('title','')[:65]}")
-                  print(f"  issuer: {issuer}")
-
-                  if dry_run:
-                      if is_aws(issuer):
-                          pdf = aws_map.get(cid)
-                          print(f"  → AWS PDF: {pdf.name if pdf else 'NO GEMINI MATCH'}")
-                      elif is_cisco_cert(issuer, ctype):
-                          mapped = next((f for f,i in CISCO_PDF_MAP.items() if i==cid), None)
-                          print(f"  → Cisco PDF: {mapped or 'NOT IN CISCO_PDF_MAP'}")
+                      if credly_map:
+                          skills = credly_map.get(badge_id, [])
+                          if skills:
+                              new_tags = skills
+                              print(f'    ✓ {len(new_tags)} skills from Credly')
+                          else:
+                              new_tags = [t for t in old_tags if not is_junk(t)]
+                              print(f'    ⚠ badge not in profile — keeping {len(new_tags)} existing')
                       else:
-                          print(f"  → og:image scrape: {url or '(no URL)'}")
-                      continue
+                          new_tags = [t for t in old_tags if not is_junk(t)]
+                          print(f'    ⚠ profile unavailable — keeping {len(new_tags)} existing')
 
-                  saved_fname  = None
-                  pdf_rel_path = None
-
-                  # ── AWS ──────────────────────────────────────────────────────────
-                  if is_aws(issuer):
-                      pdf_path = aws_map.get(cid)
-                      if not pdf_path:
-                          print(f"  ✗ Gemini could not match a PDF for {cid}")
-                          skipped += 1
-                          continue
-                      out_path = auto / f"{cid}.jpg"
-                      if pdf_to_jpeg(pdf_path, out_path):
-                          saved_fname  = f"{cid}.jpg"
-                          pdf_rel_path = f"/certificates/aws/{pdf_path.name}"
-                      else:
-                          skipped += 1
-                          continue
-
-                  # ── Cisco ────────────────────────────────────────────────────────
-                  elif is_cisco_cert(issuer, ctype):
-                      cisco_dir = frontend_dir / "certificates"
-                      pdf_fname = next((f for f,i in CISCO_PDF_MAP.items() if i==cid), None)
-                      if not pdf_fname:
-                          print(f"  ⚠ {cid} not in CISCO_PDF_MAP — add mapping and re-run")
-                          skipped += 1
-                          continue
-                      pdf_path = cisco_dir / pdf_fname
-                      if not pdf_path.exists():
-                          print(f"  ✗ PDF not found: {pdf_path}")
-                          skipped += 1
-                          continue
-                      out_path = auto / f"{cid}.jpg"
-                      if pdf_to_jpeg(pdf_path, out_path):
-                          saved_fname  = f"{cid}.jpg"
-                          pdf_rel_path = f"/certificates/{pdf_fname}"
-                      else:
-                          skipped += 1
-                          continue
-
-                  # ── All others: og:image scrape ───────────────────────────────────
+                  # ── CERT / LINKEDIN: Tesseract OCR ──────────────────────────────
                   else:
-                      if not url:
-                          print(f"  ✗ no URL — skipping")
-                          skipped += 1
-                          continue
-                      print(f"  url: {url}")
-                      og = fetch_og(url)
-                      time.sleep(DELAY_PAGE)
-                      if not og:
-                          print(f"  ✗ no og:image")
-                          skipped += 1
-                          continue
-                      print(f"  og: {og[:80]}")
-                      saved_fname = download_image(og, auto, cid)
-                      time.sleep(DELAY_IMG)
-                      if not saved_fname:
-                          skipped += 1
-                          continue
+                      # Resolve local image: check auto/ first, then cert_logos/
+                      img_file = None
+                      for ext in ['jpg', 'jpeg', 'png', 'webp']:
+                          cand = auto / f'{cid}.{ext}'
+                          if cand.exists():
+                              img_file = cand
+                              break
+                      if not img_file:
+                          for ext in ['jpg', 'jpeg', 'png']:
+                              cand = frontend_dir / 'cert_logos' / f'{cid}_image.{ext}'
+                              if cand.exists():
+                                  img_file = cand
+                                  break
 
-                  creds[idx]["image"] = f"/{AUTO_DIR_REL}/{saved_fname}"
-                  if pdf_rel_path:
-                      creds[idx]["pdfUrl"] = pdf_rel_path
-                      print(f"  ✓ pdfUrl → {pdf_rel_path}")
+                      print(f'  [cert]   {cid} — {c.get("title","")[:55]}')
 
-                  fetched += 1
-                  changed  = True
+                      if img_file:
+                          ocr = ocr_pills(img_file)
+                          if ocr:
+                              new_tags = ocr
+                              print(f'    ✓ OCR → {new_tags}')
+                          else:
+                              new_tags = [t for t in old_tags if not is_junk(t)]
+                              print(f'    ⚠ OCR empty — keeping {len(new_tags)} existing')
+                      else:
+                          new_tags = [t for t in old_tags if not is_junk(t)]
+                          print(f'    ⚠ no image — keeping {len(new_tags)} existing')
 
-              if changed and not dry_run:
-                  data["credentials"] = creds
+                  # Deduplicate preserving order
+                  seen    = set()
+                  deduped = []
+                  for t in new_tags:
+                      k = t.lower()
+                      if k not in seen:
+                          seen.add(k)
+                          deduped.append(t)
+                  new_tags = deduped
+
+                  if new_tags != old_tags:
+                      if not dry_run:
+                          creds[idx]['tags'] = new_tags
+                      changed += 1
+                      if dry_run:
+                          print(f'    [dry-run] would set: {new_tags}')
+
+              if changed > 0 and not dry_run:
+                  data['credentials'] = creds
                   path.write_text(
                       json.dumps(data, indent=2, ensure_ascii=False),
-                      encoding="utf-8")
-                  print(f"\nSaved {path.name} (+{fetched} images)")
+                      encoding='utf-8')
+                  print(f'\n  ✅  Saved {path.name} ({changed} updated)\n')
 
-              return fetched, skipped
+              return changed, len(creds)
 
           # ── Main ──────────────────────────────────────────────────────────────────
 
           parser = argparse.ArgumentParser()
-          parser.add_argument("--dir",     default=".")
-          parser.add_argument("--dry-run", action="store_true")
-          parser.add_argument("--file",    type=int, choices=[1,2,3,4], default=None)
+          parser.add_argument('--dir',     default='.')
+          parser.add_argument('--dry-run', action='store_true')
+          parser.add_argument('--file',    type=int, choices=[1,2,3,4], default=None)
           args = parser.parse_args()
 
           frontend = Path(args.dir).expanduser().resolve()
-          nums     = [args.file] if args.file else [1,2,3,4]
-          tf = ts  = 0
+          nums     = [args.file] if args.file else [1, 2, 3, 4]
+
+          credly_map = fetch_credly()
+
+          total_changed = total_creds = 0
           for n in nums:
-              p = frontend / f"data_creds_{n}.json"
-              if not p.exists(): continue
-              print(f"\n{'='*60}\n  data_creds_{n}.json\n{'='*60}")
-              f, s = process_file(p, frontend, args.dry_run)
-              tf += f; ts += s
+              p = frontend / f'data_creds_{n}.json'
+              if not p.exists():
+                  continue
+              print(f'\n{"="*60}\n  data_creds_{n}.json\n{"="*60}')
+              chg, cnt = process_file(p, frontend, credly_map, args.dry_run)
+              total_changed += chg
+              total_creds   += cnt
 
-          print(f"\n{'='*60}")
-          print(f"  Done.  Rendered/fetched={tf}  Skipped={ts}")
-          print(f"{'='*60}")
+          print(f'\n{"="*60}')
+          print(f'  Done.  Updated: {total_changed} / {total_creds}')
+          if args.dry_run:
+              print('  (dry-run — nothing written)')
+          print(f'{"="*60}')
 
-          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          summary = os.environ.get('GITHUB_STEP_SUMMARY')
           if summary:
-              with open(summary, "a") as fh:
-                  fh.write("## Cert Image Fetch v4 (Gemini Vision)\n")
-                  fh.write(f"- **Rendered / fetched:** {tf}\n")
-                  fh.write(f"- **Skipped:** {ts}\n")
+              with open(summary, 'a') as f:
+                  f.write('## Skill Sync v10\n')
+                  f.write(f'- Credly: `{CREDLY_USERNAME}`'
+                          f' — {len(credly_map)//2} badges\n')
+                  f.write(f'- Updated: {total_changed}/{total_creds}\n')
+                  if args.dry_run:
+                      f.write('- **DRY RUN — nothing written**\n')
           PYEOF
 
-      - name: Fetch missing cert images
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      - name: Sync skills
         run: |
           ARGS="--dir frontend"
           [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
           [ -n "${{ inputs.file }}"  ]          && ARGS="$ARGS --file ${{ inputs.file }}"
-          echo "Running: python fetch_cert_images.py $ARGS"
-          python fetch_cert_images.py $ARGS
+          echo "Running: python sync_skills.py $ARGS"
+          python sync_skills.py $ARGS
 
-      - name: Commit images and updated JSON
+      - name: Commit updated tags
         if: ${{ inputs.dry_run != true }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add frontend/certificates/auto/ frontend/data_creds_*.json
+          git add frontend/data_creds_*.json
           if git diff --cached --quiet; then
-            echo "No changes — all images already present."
+            echo "No changes to commit."
           else
-            COUNT=$(git diff --cached --name-only | grep -c "certificates/auto" || true)
-            git commit -m "feat: render ${COUNT} PDF cert images [skip ci]"
+            git commit -m "chore: sync credential skills [skip ci]"
             git push
-            echo "Pushed ${COUNT} new cert images."
           fi
