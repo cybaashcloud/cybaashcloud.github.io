@@ -1734,7 +1734,20 @@ function credCard(c){
     // LinkedIn Learning: always show the LinkedIn brand logo (no external img needed)
     logoHtml=`<div class="cr-logo-wrap li"><img src="${LI_BADGE}" alt="LinkedIn" loading="lazy"></div>`;
   }
-    return `<a class="cr" href="${x(c.url||'#')}" target="_blank" rel="noopener noreferrer">
+
+  // For certificate type: if we have a pdf/image file, show it as thumbnail
+  if(isCert && !logoHtml && (c.pdf||c.image||c.logo)){
+    const imgSrc = (c.pdf&&!c.pdf.endsWith('.pdf')) ? c.pdf : (c.image||c.logo||'');
+    if(imgSrc){
+      logoHtml=`<div class="cr-logo-wrap li-thumb"><img src="${x(imgSrc)}" alt="${x(c.issuer||'')}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`;
+    }
+  }
+
+  // Link priority: pdf (actual certificate file) > url (credly/linkedin page)
+  const href = c.pdf || c.url || '#';
+  const isPdf = href.endsWith('.pdf');
+
+    return `<a class="cr" href="${x(href)}" target="_blank" rel="noopener noreferrer">
     <div class="${logoHtml?'cr-has-logo':''}">
       ${logoHtml}
       <div style="flex:1;min-width:0">
@@ -1743,7 +1756,7 @@ function credCard(c){
           ${isC?'<span class="cr-v">CREDLY</span>':`<span class="cr-date">${x(c.date||'')}</span>`}
         </div>
         ${tags?`<div class="cr-tags">${tags}</div>`:''}
-        <div class="cr-bot"><span class="cr-iss">${x(c.issuer||'')}</span><span class="cr-arrow">↗</span></div>
+        <div class="cr-bot"><span class="cr-iss">${x(c.issuer||'')}</span><span class="cr-arrow">${isPdf?'↗ PDF':'↗'}</span></div>
       </div>
     </div>
   </a>`;

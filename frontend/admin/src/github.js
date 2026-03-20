@@ -260,22 +260,31 @@ async function _uploadCredImage(cfg, certId, field, dataUrl) {
 
 /**
  * Strip base64 blobs from credential logo/image fields before writing to GitHub.
- * By the time this runs, large images have already been uploaded to files by
- * CredentialsSection.commit() in App.jsx — so only credly base64 remains to clear.
+ * Rules:
+ *   - logoUpload: always deleted (transient staging field)
+ *   - credly type: logo/image base64 cleared (credlyImageUrl is the correct display field)
+ *   - certificate/other ≤50KB: kept inline — small logos render fine in portfolio
+ *   - certificate/other >50KB: cleared (commit() in App.jsx already uploaded these as files)
  */
 function _stripCredentialBlobs(cred) {
   const out = { ...cred }
   delete out.logoUpload
 
   const type = out.type || ''
+  const MAX  = 50_000
 
   for (const field of ['logo', 'image']) {
     const v = out[field]
     if (typeof v !== 'string' || !v.startsWith('data:')) continue
-    // Only credly should still have base64 here — clear it (credlyImageUrl is correct field)
-    // Any other base64 that slipped through gets cleared too as a safety net
-    out[field] = ''
-    console.warn(`[GitHub] _stripCredentialBlobs: cleared ${field} on cred[${cred.id}] (${(v.length/1024).toFixed(0)}KB, type=${type})`)
+
+    const isCredly = type === 'credly'
+    const tooBig   = v.length > MAX
+
+    if (isCredly || tooBig) {
+      out[field] = ''
+      if (tooBig) console.warn(`[GitHub] _stripCredentialBlobs: cleared ${field} on cred[${cred.id}] (${(v.length/1024).toFixed(0)}KB — should have been uploaded by commit())`)
+    }
+    // ≤50KB non-credly: keep inline — no action needed
   }
 
   return out

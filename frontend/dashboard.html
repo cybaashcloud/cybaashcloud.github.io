@@ -1860,13 +1860,16 @@ async function doLaunch() {
 }
 
 // ════════════════════════════════════════════════════════════
-// CERT UPLOAD — attach PDF/image to any credential card
-// Saves to cybaash-data/cert_pdfs.json (sidecar) — never
-// touches data_creds_*.json so no conflict with admin panel.
+// CERT UPLOAD — stores file in public site repo under
+// certificates/{original-filename}, keeps original format.
+// URL saved to cybaash-data/cert_pdfs.json sidecar.
 // ════════════════════════════════════════════════════════════
 
-const CERT_PDF_MAP_PATH = 'cert_pdfs.json'; // in cybaash-data repo
-let _certPdfMap = null; // { certId: rawUrl, … }
+const CERT_PDF_MAP_PATH = 'cert_pdfs.json';
+const SITE_REPO = 'cybaashcloud.github.io';   // public repo where certs are served from
+const SITE_OWNER = 'cybaashcloud';             // repo owner
+
+let _certPdfMap = null;
 
 async function _loadCertPdfMap() {
   if (_certPdfMap) return _certPdfMap;
@@ -1879,7 +1882,6 @@ async function _loadCertPdfMap() {
 }
 
 async function _saveCertPdfMap(map) {
-  // Read current SHA (file may or may not exist yet)
   const existing = await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${CERT_PDF_MAP_PATH}`).catch(()=>null);
   const enc = btoa(unescape(encodeURIComponent(JSON.stringify(map, null, 2))));
   await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${CERT_PDF_MAP_PATH}`, {
@@ -1892,7 +1894,6 @@ async function _saveCertPdfMap(map) {
   });
 }
 
-// Called once after login to patch ALL_CERTS with any saved PDFs
 async function applyCertPdfMap() {
   if (!TOKEN || !USER || !ALL_CERTS.length) return;
   const map = await _loadCertPdfMap();
@@ -1916,14 +1917,13 @@ async function uploadCertFile(certId, btn) {
     document.body.removeChild(inp);
     if (!file) return;
 
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5MB.'); return; }
+    if (file.size > 10 * 1024 * 1024) { alert('File too large. Max 10MB.'); return; }
 
     btn.classList.add('uploading');
     btn.textContent = '⟳ UPLOADING…';
 
     try {
-      // 1. Read as base64
+      // 1. Read as base64 (keep original format — no conversion)
       const b64 = await new Promise((res, rej) => {
         const r = new FileReader();
         r.onload = e => res(e.target.result.split(',')[1]);
@@ -1931,30 +1931,36 @@ async function uploadCertFile(certId, btn) {
         r.readAsDataURL(file);
       });
 
-      // 2. Upload binary to cybaash-data/certs/{id}.ext
-      const ghPath = `certs/${certId}.${ext}`;
-      const existing = await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${ghPath}`).catch(()=>null);
-      await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${ghPath}`, {
+      // 2. Upload to public site repo: certificates/{original-filename}
+      //    Original filename preserved, folder is certificates/
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const ghPath   = `frontend/certificates/${safeName}`;
+
+      // Check if file already exists (need SHA to update)
+      const existing = await gh(`/repos/${SITE_OWNER}/${SITE_REPO}/contents/${ghPath}`).catch(()=>null);
+
+      const uploadRes = await gh(`/repos/${SITE_OWNER}/${SITE_REPO}/contents/${ghPath}`, {
         method: 'PUT',
         body: JSON.stringify({
-          message: `cert: upload ${certId}.${ext}`,
+          message: `cert: upload ${safeName}`,
           content: b64,
           ...(existing?.sha ? { sha: existing.sha } : {}),
         }),
       });
 
-      const rawUrl = `https://raw.githubusercontent.com/${USER.login}/${DATA_REPO}/main/${ghPath}`;
+      // 3. Public GitHub Pages URL (served directly from the site)
+      const pageUrl = `https://${SITE_OWNER}.github.io/certificates/${safeName}`;
 
-      // 3. Update sidecar cert_pdfs.json — NEVER touches data_creds_*.json
+      // 4. Save URL to sidecar cert_pdfs.json in cybaash-data (private)
       const map = await _loadCertPdfMap();
-      map[certId] = rawUrl;
+      map[certId] = pageUrl;
       await _saveCertPdfMap(map);
 
-      // 4. Update in-memory cert
+      // 5. Update in-memory cert
       const mem = ALL_CERTS.findIndex(c => c.id === certId);
-      if (mem >= 0) ALL_CERTS[mem].pdf = rawUrl;
+      if (mem >= 0) ALL_CERTS[mem].pdf = pageUrl;
 
-      // 5. Update card UI
+      // 6. Update card UI
       btn.classList.remove('uploading');
       btn.classList.add('done');
       btn.textContent = '✓ UPLOADED';
@@ -1964,9 +1970,10 @@ async function uploadCertFile(certId, btn) {
       if (old) old.remove();
       const link = document.createElement('a');
       link.className = 'cert-pdf-link';
-      link.href = rawUrl;
+      link.href = pageUrl;
       link.target = '_blank';
       link.rel = 'noopener';
+      const ext = safeName.split('.').pop().toLowerCase();
       link.textContent = ext === 'pdf' ? '↗ PDF' : '↗ IMAGE';
       row.appendChild(link);
 
@@ -1978,7 +1985,8 @@ async function uploadCertFile(certId, btn) {
           thumb.className = 'cert-img-thumb';
           card.appendChild(thumb);
         }
-        thumb.src = rawUrl;
+        // Use raw URL for immediate preview (Pages may take a minute to deploy)
+        thumb.src = uploadRes?.content?.download_url || pageUrl;
         thumb.alt = 'Certificate';
       }
 
