@@ -432,7 +432,7 @@
         "Communication"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro017_image.jpg",
       "title": "Business Writing Professional Certificate by Grammarly",
       "issuer": "Grammarly",
       "courseId": "business-writing-professional-certificate-by-grammarly",
