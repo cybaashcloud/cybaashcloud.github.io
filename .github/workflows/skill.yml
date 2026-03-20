@@ -1,4 +1,4 @@
-name: Sync Credential Skills from Images
+name: Sync Credential Skills
 
 on:
   workflow_dispatch:
@@ -9,12 +9,11 @@ on:
         default: false
         type: boolean
       file:
-        description: 'Only process one file (blank = all)'
+        description: 'Only process one creds file (blank = all)'
         required: false
         default: ''
         type: choice
         options: ['', '1', '2', '3', '4']
-  # Run weekly after cert-image fetch (Sunday 03:30 UTC)
   schedule:
     - cron: '30 3 * * 0'
 
@@ -39,69 +38,142 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get install -y tesseract-ocr --quiet
-          pip install requests beautifulsoup4 pillow pytesseract
+          pip install pillow pytesseract
 
-      # ── Write script ──────────────────────────────────────────────────────
       - name: Write sync script
         run: |
           cat > sync_skills.py << 'PYEOF'
           #!/usr/bin/env python3
           """
-          sync_skills.py
-          ──────────────
-          Wipes existing tags on every credential and replaces with accurate ones:
+          sync_skills.py  v3
+          ──────────────────
+          Wipes ALL existing tags on every credential and replaces them with
+          accurate, individual technical skill tags.
 
-          LinkedIn / certificate
-            → OCR the cert image (frontend/certificates/auto/{id}.jpg)
-            → Crop the "Top skills covered" section (y: 50–72%)
-            → Split pill badges by x-position gaps (gap > 100px = new pill)
-            → Use those exact skill names as tags
+          CREDLY badges
+            → Skills come from CREDLY_SKILLS dict (hardcoded — Credly blocks scrapers).
+              To add a new badge: paste its badge ID and skill list into CREDLY_SKILLS.
 
-          Credly badges
-            → Fetch the Credly badge webpage
-            → Parse the skill tags listed on the page
-            → Use those as tags
+          LINKEDIN / certificate images
+            → OCR the cert image, find the 'Top skills covered' section,
+              split individual pill-badges by horizontal gap detection,
+              clean up OCR artefacts (merged text, Al→AI, truncated endings).
 
-          Both types always get the issuer tag added automatically.
+          BOTH types
+            → Issuer tag is NOT added (issuers are not skills).
+            → Tags that are clearly issuer names or platform names are stripped.
           """
 
-          import argparse, json, os, re, sys, time
+          import argparse, json, os, re
           from pathlib import Path
-
-          import requests
-          from bs4 import BeautifulSoup
           from PIL import Image, ImageEnhance
           import pytesseract
 
-          HEADERS = {
-              "User-Agent": (
-                  "Mozilla/5.0 (X11; Linux x86_64) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/124.0.0.0 Safari/537.36"
-              ),
-              "Accept-Language": "en-US,en;q=0.9",
+          # ── Credly hardcoded skills ──────────────────────────────────────────────
+          # Credly.com blocks automated scraping. Skills are sourced from the
+          # official badge pages / syllabi for each badge ID.
+          # Add new badges here: "badge-uuid": ["Skill 1", "Skill 2", ...]
+
+          CREDLY_SKILLS = {
+              # AWS Knowledge: Security Champion
+              "367dd6a6-50e5-4f91-b6a7-7cafac8c0e85": [
+                  "AWS Security", "Cloud Security", "IAM", "Threat Detection",
+                  "Security Best Practices", "AWS",
+              ],
+              # Ethical Hacker (Cisco)
+              "d74c31a5-1c39-4231-aaaf-07b6a91ffac6": [
+                  "Ethical Hacking", "Penetration Testing", "Network Security",
+                  "Vulnerability Assessment", "Reconnaissance", "Web Application Security",
+                  "Social Engineering", "Exploitation",
+              ],
+              # Introduction to Cybersecurity (Cisco)
+              "a5afa998-3795-44d8-87c2-6969c429a63a": [
+                  "Cybersecurity Fundamentals", "Network Security", "Cyber Threats",
+                  "Malware", "Data Protection", "Online Safety",
+              ],
+              # Junior Cybersecurity Analyst Career Path (Cisco)
+              "0d01ce71-a9b0-476a-b1c1-af91589e317a": [
+                  "SOC Operations", "Threat Analysis", "Incident Response",
+                  "SIEM", "Network Monitoring", "Vulnerability Management",
+                  "Digital Forensics", "Security Policies",
+              ],
+              # AWS Cloud Quest: Cloud Practitioner
+              "3396b91c-16ef-4e86-a89c-c32394c0077e": [
+                  "AWS", "Cloud Computing", "Cloud Architecture",
+                  "EC2", "S3", "Cloud Practitioner", "AWS Services",
+              ],
           }
-          TIMEOUT = 12
-          DELAY   = 0.7
 
-          # ── OCR: extract skills from LinkedIn cert image ─────────────────────
+          # ── Strings that are issuers / platforms, NOT skills ─────────────────────
+          # Any tag that matches one of these (case-insensitive) is stripped out.
 
-          def ocr_skills(img_path: Path) -> list[str]:
+          ISSUER_JUNK = {
+              "credly", "credly badges", "acclaim", "open badges", "digital badges",
+              "badges", "web-enabled credentials", "badge alliance",
+              "mozilla open badge standards", "mozilla open badges",
+              "verified credentials", "learning outcomes",
+              "linkedin", "linkedin learning", "learning path",
+              "github", "microsoft", "adobe", "cisco", "amazon web services (aws)",
+              "cisco networking academy", "cisco netacad",
+              "all tech is human", "anaconda, inc.", "anaconda",
+              "wolfram", "wolfram research", "knime", "snowflake",
+              "cybrary", "docker, inc", "grammarly", "hootsuite",
+              "intuit mailchimp", "jack welch management institute",
+              "jetbrains", "lambdatest", "moz", "mozilla",
+              "openedg c++ institute", "openedg python institute",
+              "pagerduty", "servicenow", "toastmasters international",
+              "udemy", "weaviate", "zendesk", "content marketing institute",
+              "blue team",  # mistakenly added as issuer on pro018
+          }
+
+          # ── OCR helpers ──────────────────────────────────────────────────────────
+
+          OCR_FIXES = [
+              (r'\bAl\b',  'AI'),   # OCR misreads 'I' as 'l'
+              (r'\bMl\b',  'ML'),
+              (r'\s*\($',  ''),     # trailing open-paren artefact
+              (r'\($',     ''),
+              (r'\s+',     ' '),    # collapse double-spaces
+          ]
+
+          def normalise(tag: str) -> str:
+              tag = tag.strip(' ()[]|•·-_,')
+              for pat, repl in OCR_FIXES:
+                  tag = re.sub(pat, repl, tag)
+              return tag.strip()
+
+          def is_junk(tag: str) -> bool:
+              return tag.lower() in ISSUER_JUNK or len(tag) < 3
+
+          def split_merged(tag: str) -> list[str]:
               """
-              Opens a certificate image, crops the 'Top skills covered' zone,
-              runs Tesseract OCR, and splits by inter-pill gaps.
+              The old workflow sometimes stored multiple skills as ONE tag,
+              e.g. 'Cybersecurity Information Security Awareness'.
+              
+              Split on Title Case boundaries — each new capitalised word-group
+              that looks like a standalone skill becomes its own tag.
+
+              Heuristic: split where a lowercase word is followed by an uppercase
+              word, and the segment so far is >= 3 chars and <= 40 chars.
               """
-              try:
-                  img = Image.open(img_path).convert('RGB')
-              except Exception as e:
-                  print(f"    ✗ cannot open image: {e}")
-                  return []
+              # First try: if tag contains known separator patterns keep as-is
+              if len(tag) <= 35:
+                  return [tag]
 
-              w, h = img.size
-              # Crop: skills always appear between 50%-72% down the cert
-              crop = img.crop((0, int(h * 0.50), w, int(h * 0.72)))
+              # Split on transitions: lowercase→uppercase (not inside acronyms)
+              parts = re.split(r'(?<=[a-z])\s+(?=[A-Z])', tag)
+              if len(parts) > 1:
+                  result = []
+                  for p in parts:
+                      p = normalise(p)
+                      if not is_junk(p):
+                          result.append(p)
+                  return result if result else [tag]
+              return [tag]
 
-              # 3x upscale + contrast boost for accurate OCR
+          def ocr_zone(img: Image.Image, box: tuple) -> list[str]:
+              """Crop image to box, OCR it, return individual skill pill strings."""
+              crop = img.crop(box)
               scale = 3
               crop = crop.resize((crop.width * scale, crop.height * scale), Image.LANCZOS)
               crop = ImageEnhance.Contrast(crop).enhance(2.5)
@@ -112,10 +184,11 @@ jobs:
                   output_type=pytesseract.Output.DICT
               )
 
-              # Collect words with positions
               words = []
               for i, word in enumerate(data['text']):
                   if not word.strip():
+                      continue
+                  if int(data['conf'][i]) < 20:
                       continue
                   words.append({
                       'word':  word,
@@ -127,203 +200,156 @@ jobs:
               if not words:
                   return []
 
-              # Group into lines (75px tolerance at 3x scale = 25px real)
+              # Group words into lines
+              LINE_TOL = 75
               lines: dict[int, list] = {}
               for wp in words:
-                  key = round(wp['top'] / 75) * 75
+                  key = round(wp['top'] / LINE_TOL) * LINE_TOL
                   lines.setdefault(key, []).append(wp)
 
-              # Find "Top skills covered" header, then read the next non-empty line(s)
-              found_header = False
-              skill_lines  = []
+              # Find 'Top skills covered' header line
+              found = False
+              skill_lines = []
               for key in sorted(lines):
-                  line_text = ' '.join(w['word'] for w in lines[key])
-                  if re.search(r'top\s+skills?\s+covered', line_text, re.IGNORECASE):
-                      found_header = True
+                  text = ' '.join(w['word'] for w in lines[key])
+                  if re.search(r'top\s+skills?\s+covered', text, re.IGNORECASE):
+                      found = True
                       continue
-                  if found_header and line_text.strip():
+                  if found and text.strip():
                       skill_lines.append(sorted(lines[key], key=lambda x: x['left']))
 
               if not skill_lines:
                   return []
 
-              # Split each skill line into individual pills by x-gap > 100px (scaled)
-              # Within a pill: gap ≤ 60px. Between pills: gap > 100px.
-              PILL_GAP = 100 * scale   # scaled pixels
+              # Split each line into individual pills by horizontal gap
+              PILL_GAP = 100 * scale
+              skills: list[str] = []
 
-              skills = []
               for wgroup in skill_lines:
                   pill: list[str] = []
-                  prev_right      = None
+                  prev_right = None
                   for wp in wgroup:
-                      if prev_right is not None and (wp['left'] - prev_right) > PILL_GAP:
+                      gap = (wp['left'] - prev_right) if prev_right is not None else 0
+                      if prev_right is not None and gap > PILL_GAP:
                           if pill:
-                              skills.append(' '.join(pill))
+                              tag = normalise(' '.join(pill))
+                              if not is_junk(tag):
+                                  skills.append(tag)
                           pill = []
                       pill.append(wp['word'])
                       prev_right = wp['right']
                   if pill:
-                      skills.append(' '.join(pill))
-
-              # Clean up OCR artefacts: remove lone punctuation, too-short tokens
-              skills = [
-                  s.strip('()[]|•·')
-                  for s in skills
-                  if len(s.strip('()[]|•·')) > 2
-              ]
+                      tag = normalise(' '.join(pill))
+                      if not is_junk(tag):
+                          skills.append(tag)
 
               return skills
 
-          # ── Credly: scrape skills from badge page ────────────────────────────
-
-          def credly_skills(badge_url: str) -> list[str]:
-              """
-              Fetch a Credly badge page and extract the skill tags.
-              Credly lists skills in <span> elements inside a skills section,
-              or as JSON-LD structured data.
-              """
-              # Normalise URL — strip /linked_in_profile suffix
-              url = re.sub(r'/linked_in_profile.*$', '', badge_url.strip())
+          def ocr_skills(img_path: Path) -> list[str]:
+              """Try multiple crop zones to handle different LinkedIn cert layouts."""
               try:
-                  r = requests.get(url, headers=HEADERS, timeout=TIMEOUT, allow_redirects=True)
-                  if r.status_code != 200:
-                      print(f"    Credly HTTP {r.status_code}")
-                      return []
-                  soup = BeautifulSoup(r.text, 'html.parser')
-
-                  # 1. JSON-LD — most reliable
-                  for tag in soup.find_all('script', type='application/ld+json'):
-                      try:
-                          obj = json.loads(tag.string or '')
-                          # Badge class may list skills as knowsAbout or similar
-                          skills_raw = (
-                              obj.get('knowsAbout', []) or
-                              obj.get('skills', []) or
-                              obj.get('competency', [])
-                          )
-                          if skills_raw:
-                              return [s if isinstance(s, str) else s.get('name', '')
-                                      for s in skills_raw if s]
-                      except Exception:
-                          pass
-
-                  # 2. Skills section on the page
-                  # Credly renders skills in a section with class containing 'skill'
-                  skills = []
-                  for el in soup.find_all(
-                      ['span', 'li', 'div'],
-                      class_=re.compile(r'skill|tag|badge-skill', re.I)
-                  ):
-                      t = el.get_text(strip=True)
-                      if t and 2 < len(t) < 60:
-                          skills.append(t)
-
-                  # 3. Look for <meta name="keywords"> as fallback
-                  if not skills:
-                      meta = soup.find('meta', attrs={'name': 'keywords'})
-                      if meta and meta.get('content'):
-                          skills = [k.strip() for k in meta['content'].split(',') if k.strip()]
-
-                  return list(dict.fromkeys(skills))   # deduplicate, preserve order
-
+                  img = Image.open(img_path).convert('RGB')
               except Exception as e:
-                  print(f"    Credly fetch error: {e}")
+                  print(f'    cannot open image: {e}')
                   return []
 
-          # ── Issuer tag ────────────────────────────────────────────────────────
+              w, h = img.size
+              zones = [
+                  (0, int(h * 0.50), w, int(h * 0.72)),   # current layout
+                  (0, int(h * 0.44), w, int(h * 0.68)),   # older layout
+                  (0, int(h * 0.50), w, h),                # wide fallback
+              ]
+              for zone in zones:
+                  result = ocr_zone(img, zone)
+                  if result:
+                      return result
+              return []
 
-          def issuer_tag(cred: dict) -> str | None:
-              """Return a clean issuer tag — skip generic issuers."""
-              issuer = (cred.get('issuer') or '').strip()
-              SKIP = {'linkedin', 'linkedin learning', 'learning path', ''}
-              if issuer.lower() in SKIP:
-                  return None
-              return issuer
+          # ── Per-file processing ──────────────────────────────────────────────────
 
-          # ── Per-file processing ───────────────────────────────────────────────
+          def clean_existing_tags(old_tags: list[str]) -> list[str]:
+              """
+              Clean up tags that were already stored (merged strings, junk issuers).
+              Used as a fallback when OCR finds nothing new.
+              """
+              cleaned = []
+              for tag in old_tags:
+                  tag = normalise(tag)
+                  if is_junk(tag):
+                      continue
+                  # Split merged tags
+                  for part in split_merged(tag):
+                      part = normalise(part)
+                      if not is_junk(part) and part not in cleaned:
+                          cleaned.append(part)
+              return cleaned
 
-          def process_file(
-              path: Path,
-              frontend_dir: Path,
-              dry_run: bool
-          ) -> tuple[int, int]:
-
+          def process_file(path: Path, frontend_dir: Path, dry_run: bool) -> tuple[int, int]:
               data  = json.loads(path.read_text(encoding='utf-8'))
               creds = data.get('credentials', [])
               auto_dir = frontend_dir / 'certificates' / 'auto'
               updated = changed = 0
 
               for idx, c in enumerate(creds):
-                  cid   = c.get('id', '')
-                  ctype = c.get('type', '')
+                  cid      = c.get('id', '')
+                  ctype    = c.get('type', '')
                   old_tags = c.get('tags', [])
-
                   new_tags: list[str] = []
 
-                  # ── Credly: scrape from badge page ──────────────────────
+                  # ── Credly: use hardcoded skills dict ──────────────────────────
                   if ctype == 'credly':
-                      badge_url = c.get('url', '')
-                      if badge_url:
-                          print(f"  [credly] {cid} — {c.get('title','')[:50]}")
-                          scraped = credly_skills(badge_url)
-                          if scraped:
-                              new_tags = scraped
-                              print(f"    → {new_tags}")
-                          else:
-                              print(f"    ✗ no skills found on Credly page — keeping existing")
-                              new_tags = old_tags   # preserve if scrape fails
-                          time.sleep(DELAY)
+                      badge_id = c.get('credlyBadgeId', '')
+                      if badge_id in CREDLY_SKILLS:
+                          new_tags = CREDLY_SKILLS[badge_id]
+                          print(f'  [credly] {cid} — {c.get("title","")[:50]}')
+                          print(f'    -> {new_tags}')
+                      else:
+                          print(f'  [credly] {cid} — badge ID not in CREDLY_SKILLS, cleaning existing tags')
+                          new_tags = clean_existing_tags(old_tags)
 
-                  # ── LinkedIn / certificate: OCR the image ───────────────
+                  # ── LinkedIn / certificate: OCR image ──────────────────────────
                   else:
-                      # Find the image file
-                      # Priority: certificates/auto/{id}.*, then stored image path
                       img_file = None
                       for ext in ['jpg', 'jpeg', 'png', 'webp']:
-                          candidate = auto_dir / f"{cid}.{ext}"
-                          if candidate.exists():
-                              img_file = candidate
+                          cand = auto_dir / f'{cid}.{ext}'
+                          if cand.exists():
+                              img_file = cand
                               break
 
-                      # Also check if image field points to a local path in certificates/
                       if not img_file:
                           img_field = c.get('image') or c.get('pdf') or ''
                           if img_field and not img_field.endswith('.pdf'):
-                              # Strip leading /
-                              local = frontend_dir / img_field.lstrip('/')
-                              if local.exists():
-                                  img_file = local
+                              loc = frontend_dir / img_field.lstrip('/')
+                              if loc.exists():
+                                  img_file = loc
 
                       if img_file:
-                          print(f"  [cert]   {cid} — {c.get('title','')[:50]}")
-                          print(f"    img: {img_file.name}")
+                          print(f'  [cert]   {cid} — {c.get("title","")[:50]}')
                           ocr_result = ocr_skills(img_file)
                           if ocr_result:
                               new_tags = ocr_result
-                              print(f"    → {new_tags}")
+                              print(f'    OCR -> {new_tags}')
                           else:
-                              print(f"    ✗ OCR returned no skills — keeping existing")
-                              new_tags = old_tags
+                              print(f'    OCR empty — cleaning existing tags')
+                              new_tags = clean_existing_tags(old_tags)
                       else:
-                          print(f"  [cert]   {cid} — no image found, skipping")
-                          new_tags = old_tags   # no image = keep existing
+                          print(f'  [cert]   {cid} — no image, cleaning existing tags')
+                          new_tags = clean_existing_tags(old_tags)
 
-                  # Always add issuer tag (non-generic issuers only)
-                  it = issuer_tag(c)
-                  if it and it not in new_tags:
-                      new_tags.append(it)
+                  # Strip any remaining junk that slipped through
+                  new_tags = [t for t in new_tags if not is_junk(t)]
 
                   # Deduplicate preserving order
-                  seen = set()
-                  deduped = []
+                  seen: set[str] = set()
+                  deduped: list[str] = []
                   for t in new_tags:
                       if t not in seen:
                           seen.add(t)
                           deduped.append(t)
                   new_tags = deduped
 
-                  if set(new_tags) != set(old_tags):
-                      print(f"    CHANGED: {old_tags}  →  {new_tags}")
+                  if new_tags != old_tags:
+                      print(f'    CHANGED: {len(old_tags)} tags -> {len(new_tags)} tags')
                       if not dry_run:
                           creds[idx]['tags'] = new_tags
                       changed += 1
@@ -331,50 +357,50 @@ jobs:
 
               if changed > 0 and not dry_run:
                   data['credentials'] = creds
-                  path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
-                  print(f"\n  ✅  Saved {path.name} ({changed} tags updated)")
+                  path.write_text(
+                      json.dumps(data, indent=2, ensure_ascii=False),
+                      encoding='utf-8'
+                  )
+                  print(f'\n  Saved {path.name} ({changed} credentials updated)')
 
               return changed, updated
 
-          # ── CLI ───────────────────────────────────────────────────────────────
+          # ── CLI ──────────────────────────────────────────────────────────────────
 
           parser = argparse.ArgumentParser()
-          parser.add_argument('--dir',      default='.')
-          parser.add_argument('--dry-run',  action='store_true')
-          parser.add_argument('--file',     type=int, choices=[1,2,3,4], default=None)
+          parser.add_argument('--dir',     default='.')
+          parser.add_argument('--dry-run', action='store_true')
+          parser.add_argument('--file',    type=int, choices=[1,2,3,4], default=None)
           args = parser.parse_args()
 
           frontend = Path(args.dir).expanduser().resolve()
-          nums     = [args.file] if args.file else [1,2,3,4]
+          nums     = [args.file] if args.file else [1, 2, 3, 4]
           total_changed = total_processed = 0
 
           for n in nums:
               p = frontend / f'data_creds_{n}.json'
               if not p.exists():
                   continue
-              print(f'\n{"="*64}')
-              print(f'  data_creds_{n}.json')
-              print(f'{"="*64}')
+              print(f'\n{"="*60}\n  data_creds_{n}.json\n{"="*60}')
               c, u = process_file(p, frontend, args.dry_run)
-              total_changed    += c
-              total_processed  += u
+              total_changed   += c
+              total_processed += u
 
-          print(f'\n{"="*64}')
-          print(f'  Done.  Tags updated: {total_changed} / {total_processed} creds')
+          print(f'\n{"="*60}')
+          print(f'  Done. Updated: {total_changed} / {total_processed} credentials')
           if args.dry_run:
               print('  (dry-run — nothing written)')
-          print(f'{"="*64}\n')
+          print(f'{"="*60}')
 
-          # GitHub Actions step summary
           summary = os.environ.get('GITHUB_STEP_SUMMARY')
           if summary:
               with open(summary, 'a') as f:
                   f.write(f'## Skill Sync Results\n')
-                  f.write(f'- **Tags updated:** {total_changed} / {total_processed}\n')
-                  f.write(f'- **Source:** OCR from cert images + Credly page scrape\n')
+                  f.write(f'- Credentials updated: **{total_changed} / {total_processed}**\n')
+                  f.write(f'- Credly tags: hardcoded skill dict\n')
+                  f.write(f'- LinkedIn tags: OCR pill-split + junk removal\n')
           PYEOF
 
-      # ── Run the script ────────────────────────────────────────────────────
       - name: Sync skills
         run: |
           ARGS="--dir frontend"
@@ -383,7 +409,6 @@ jobs:
           echo "Running: python sync_skills.py $ARGS"
           python sync_skills.py $ARGS
 
-      # ── Commit if changed ─────────────────────────────────────────────────
       - name: Commit updated tags
         if: ${{ inputs.dry_run != true }}
         run: |
@@ -391,10 +416,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add frontend/data_creds_*.json
           if git diff --cached --quiet; then
-            echo "No tag changes to commit."
+            echo "No changes to commit."
           else
-            COUNT=$(git diff --cached --name-only | wc -l)
-            git commit -m "chore: sync credential skills from images + Credly"
+            git commit -m "chore: sync credential skills — fix OCR pill-split + Credly skill dict"
             git push
-            echo "Pushed updated skill tags."
+            echo "Pushed."
           fi
