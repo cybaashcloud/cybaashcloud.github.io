@@ -393,7 +393,7 @@
         "LinkedIn Learning"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro015_image.jpg",
       "title": "Career Essentials in GitHub Copilot Professional Certificate",
       "issuer": "GitHub",
       "courseId": "career-essentials-in-github-copilot-professional-certificate",
