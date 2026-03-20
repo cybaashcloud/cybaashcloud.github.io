@@ -1743,31 +1743,47 @@ function credCard(c){
   const isLI = !isC && !isCert;
   const tags = (c.tags||[]).map(t=>`<span class="ct${HL.has(t)?' hl':''}">${x(t)}</span>`).join('');
 
-  // ── Issuer logo (original logic unchanged) ──
+  // ── Certificate image (JPEG from pdf field) ──
+  const certImg = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : '';
+
+  // ── Issuer logo — shown in body UNLESS cert image is already on top ──
   let logoHtml = '';
-  if(isC){
-    const credSrc = c.credlyImageUrl||(c.credlyBadgeId?`https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png`:'');
-    if(credSrc){
-      logoHtml = `<div class="cr-logo-wrap credly"><img src="${x(credSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('credly',c.issuer))}" onerror="_imgFallback(this)"></div>`;
+  if(!certImg){
+    // Only show logo when no cert image — avoids duplicating the image
+    if(isC){
+      const credSrc = c.credlyImageUrl||(c.credlyBadgeId?`https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png`:'');
+      logoHtml = credSrc
+        ? `<div class="cr-logo-wrap credly"><img src="${x(credSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('credly',c.issuer))}" onerror="_imgFallback(this)"></div>`
+        : _makePlaceholder('credly', c.issuer);
+    } else if(isLI){
+      logoHtml = `<div class="cr-logo-wrap li"><img src="${LI_BADGE}" alt="LinkedIn" loading="lazy"></div>`;
     } else {
-      logoHtml = _makePlaceholder('credly', c.issuer);
+      const lSrc = c.logo||c.image||'';
+      logoHtml = lSrc
+        ? `<div class="cr-logo-wrap"><img src="${x(lSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('cert',c.issuer))}" onerror="_imgFallback(this)"></div>`
+        : _makePlaceholder('cert', c.issuer);
     }
-  } else if(isLI){
-    logoHtml = `<div class="cr-logo-wrap li"><img src="${LI_BADGE}" alt="LinkedIn" loading="lazy"></div>`;
   } else {
-    const lSrc = c.logo||c.image||'';
-    if(lSrc){
-      logoHtml = `<div class="cr-logo-wrap"><img src="${x(lSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('cert',c.issuer))}" onerror="_imgFallback(this)"></div>`;
-    } else {
-      logoHtml = _makePlaceholder('cert', c.issuer);
-    }
+    // Has cert image on top — show small logo overlay in bottom-left of image instead
+    let lSrc = '';
+    if(isC) lSrc = c.credlyImageUrl||(c.credlyBadgeId?`https://images.credly.com/size/80x80/images/${c.credlyBadgeId}/image.png`:'');
+    else if(isLI) lSrc = LI_BADGE;
+    else lSrc = c.logo||'';
+    if(lSrc) logoHtml = lSrc; // just store src, used in overlay below
   }
 
-  // ── Certificate image on top (only if jpeg cert exists) ──
-  const certImg = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : '';
-  const topImg  = certImg
-    ? `<img class="proj-img" src="${x(certImg)}" alt="${x(c.title||'')}" loading="lazy" style="height:120px" onerror="this.style.display='none'">`
+  // ── Top section ──
+  const topHtml = certImg
+    ? `<div style="position:relative;border-bottom:1px solid var(--border)">
+        <img class="proj-img" src="${x(certImg)}" alt="${x(c.title||'')}" loading="lazy" style="height:120px;margin-bottom:0">
+        ${logoHtml?`<div style="position:absolute;bottom:6px;left:8px;width:26px;height:26px;background:rgba(3,10,15,.8);border:1px solid rgba(255,255,255,.12);border-radius:3px;overflow:hidden;display:flex;align-items:center;justify-content:center">
+          <img src="${x(logoHtml)}" style="width:20px;height:20px;object-fit:contain" loading="lazy" onerror="this.parentElement.style.display='none'">
+        </div>`:''}
+      </div>`
     : '';
+
+  // Reset logoHtml to actual HTML for cards without certImg
+  if(certImg) logoHtml = ''; // already handled in overlay
 
   // ── PDF / cert link ──
   const isPdf = c.pdf && c.pdf.endsWith('.pdf');
@@ -1778,7 +1794,7 @@ function credCard(c){
   const href = c.url || c.pdf || '#';
 
   return `<a class="cr" href="${x(href)}" target="_blank" rel="noopener noreferrer" style="padding:0;overflow:hidden">
-    ${topImg}
+    ${topHtml}
     <div style="padding:12px 14px">
       <div class="${logoHtml?'cr-has-logo':''}">
         ${logoHtml}
