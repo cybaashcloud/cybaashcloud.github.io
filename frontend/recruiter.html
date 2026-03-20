@@ -1738,62 +1738,62 @@ function setCF(v){CF=v;CS=30;rCreds()}
 function filteredCreds(){return CF==='all'?D.creds:D.creds.filter(c=>(c.tags||[]).includes(CF))}
 
 function credCard(c){
-  const isC    = c.type==='credly';
+  const isC  = c.type==='credly';
   const isCert = c.type==='certificate';
-  const isLI   = !isC && !isCert;
-  const tags   = (c.tags||[]).slice(0,4).map(t=>`<span class="cert-tag${HL.has(t)?' hl':''}">${x(t)}</span>`).join('');
+  const isLI = !isC && !isCert;
+  const tags = (c.tags||[]).map(t=>`<span class="ct${HL.has(t)?' hl':''}">${x(t)}</span>`).join('');
 
-  // ── Top image: certificate jpeg or placeholder ──
-  const certImg = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : (c.image||'');
-  const topHtml = certImg
-    ? `<img class="cert-img-top" src="${x(certImg)}" alt="${x(c.title||'')}" loading="lazy" onerror="this.outerHTML='<div class=cert-noimg><svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1\' width=\'22\' height=\'22\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><polyline points=\'3 9 21 9\'/></svg></div>'">`
-    : `<div class="cert-noimg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 9 21 9"/></svg></div>`;
-
-  // ── Issuer logo (small, corner) ──
+  // ── Issuer logo (original logic unchanged) ──
   let logoHtml = '';
   if(isC){
-    const credSrc = c.credlyImageUrl||(c.credlyBadgeId?`https://images.credly.com/size/80x80/images/${c.credlyBadgeId}/image.png`:'');
-    logoHtml = credSrc
-      ? `<img class="cert-logo-sm" src="${x(credSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('credly',c.issuer))}" onerror="_imgFallback(this)">`
-      : `<div class="cert-logo-placeholder credly">C</div>`;
+    const credSrc = c.credlyImageUrl||(c.credlyBadgeId?`https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png`:'');
+    if(credSrc){
+      logoHtml = `<div class="cr-logo-wrap credly"><img src="${x(credSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('credly',c.issuer))}" onerror="_imgFallback(this)"></div>`;
+    } else {
+      logoHtml = _makePlaceholder('credly', c.issuer);
+    }
   } else if(isLI){
-    logoHtml = `<img class="cert-logo-sm" src="${LI_BADGE}" alt="LinkedIn" loading="lazy" style="border-radius:50%">`;
+    logoHtml = `<div class="cr-logo-wrap li"><img src="${LI_BADGE}" alt="LinkedIn" loading="lazy"></div>`;
   } else {
-    const lSrc = c.logo||'';
-    logoHtml = lSrc
-      ? `<img class="cert-logo-sm" src="${x(lSrc)}" alt="${x(c.issuer||'')}" loading="lazy" onerror="this.style.display='none'">`
-      : `<div class="cert-logo-placeholder cert">${x((c.issuer||'?')[0].toUpperCase())}</div>`;
+    const lSrc = c.logo||c.image||'';
+    if(lSrc){
+      logoHtml = `<div class="cr-logo-wrap"><img src="${x(lSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('cert',c.issuer))}" onerror="_imgFallback(this)"></div>`;
+    } else {
+      logoHtml = _makePlaceholder('cert', c.issuer);
+    }
   }
 
-  // ── Type badge ──
-  const typeBadge = isC ? `<span class="cert-type-badge credly">CREDLY</span>` : '';
+  // ── Certificate image on top (only if jpeg cert exists) ──
+  const certImg = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : '';
+  const topImg  = certImg
+    ? `<img class="proj-img" src="${x(certImg)}" alt="${x(c.title||'')}" loading="lazy" style="height:120px" onerror="this.style.display='none'">`
+    : '';
 
-  // ── Action links ──
-  const links = [];
-  if(c.pdf){
-    const isPdf = c.pdf.endsWith('.pdf');
-    links.push(`<a class="cert-link-btn pdf" href="${x(c.pdf)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${isPdf?'↗ PDF':'↗ CERT'}</a>`);
-  }
-  if(c.url){
-    links.push(`<a class="cert-link-btn" href="${x(c.url)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">↗ VERIFY</a>`);
-  }
+  // ── PDF / cert link ──
+  const isPdf = c.pdf && c.pdf.endsWith('.pdf');
+  const certBadge = c.pdf
+    ? `<a class="cr-cert-badge" href="${x(c.pdf)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${isPdf?'↗ PDF':'↗ CERT'}</a>`
+    : '';
 
-  const href = c.pdf || c.url || '#';
+  const href = c.url || c.pdf || '#';
 
-  return `<a class="cert-card" href="${x(href)}" target="_blank" rel="noopener noreferrer">
-    <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
-    ${topHtml}
-    <div class="cert-body">
-      <div class="cert-hdr">
+  return `<a class="cr" href="${x(href)}" target="_blank" rel="noopener noreferrer" style="padding:0;overflow:hidden">
+    ${topImg}
+    <div style="padding:12px 14px">
+      <div class="${logoHtml?'cr-has-logo':''}">
         ${logoHtml}
-        <div style="flex:1;min-width:0;padding-left:8px">
-          <div class="cert-title">${x(c.title||'Untitled')}</div>
+        <div style="flex:1;min-width:0">
+          <div class="cr-top">
+            <div class="cr-name">${x(c.title||'')}</div>
+            ${isC?'<span class="cr-v">CREDLY</span>':`<span class="cr-date">${x(c.date||'')}</span>`}
+          </div>
+          ${tags?`<div class="cr-tags">${tags}</div>`:''}
+          <div class="cr-bot">
+            <span class="cr-iss">${x(c.issuer||'')}</span>
+            <span style="display:flex;align-items:center;gap:5px">${certBadge}<span class="cr-arrow">↗</span></span>
+          </div>
         </div>
-        ${isC ? typeBadge : `<span class="cert-date-badge">${x(c.date||'')}</span>`}
       </div>
-      ${tags?`<div class="cert-tags-row">${tags}</div>`:''}
-      <div class="cert-issuer">${x(c.issuer||'')}</div>
-      ${links.length?`<div class="cert-links">${links.join('')}</div>`:''}
     </div>
   </a>`;
 }
