@@ -23,6 +23,24 @@
 
 
 // ══════════════════════════════════════════════════════════════════════════════
+// SECTION 0 — WRITE QUEUE (prevents 409 SHA conflicts on concurrent saves)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// A simple promise-chain mutex: all writes are serialised through this queue.
+// If two saves fire at the same time, the second waits for the first to finish
+// before it fetches SHAs — so it always gets a fresh SHA.
+let _writeQueue = Promise.resolve()
+
+function enqueue(fn) {
+  // Chain onto the existing queue. Each task only starts after the previous one
+  // resolves or rejects, guaranteeing serial execution.
+  const task = _writeQueue.then(fn, fn)  // second `fn` ensures queue never stalls on error
+  _writeQueue = task.catch(() => {})     // swallow so queue keeps running
+  return task                            // caller still gets the real promise (with errors)
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
 // SECTION 1 — CONFIG & AUTH  (unchanged from v3)
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -754,6 +772,12 @@ export async function loadAll(defaults) {
 }
 
 export async function saveSection(section, value) {
+  // All saves go through the serial write queue — no two saves ever run in
+  // parallel, eliminating 409 SHA conflicts entirely.
+  return enqueue(() => _saveSection(section, value))
+}
+
+async function _saveSection(section, value) {
   const cfg = getGithubConfig()
   if (!cfg?.token) throw new Error('GitHub not configured')
 
@@ -770,14 +794,18 @@ export async function saveSection(section, value) {
 
     } else if (section === 'credentials') {
       // Strip base64 blobs from every credential before writing to GitHub.
-      // This prevents logo uploads from bloating the JSON files and causing
-      // GitHub API timeouts (the root cause of the data-not-syncing bug).
       const cleanCreds = value.map(_stripCredentialBlobs)
       const chunks = splitCredentials(cleanCreds)
-      const shas   = await Promise.all(CRED_FILES.map(f => fetchSha(cfg, f)))
-      await Promise.all(CRED_FILES.map((f, i) =>
-        writeFile(cfg, f, { credentials: chunks[i] || [] }, shas[i])
-      ))
+
+      // Write files SEQUENTIALLY — not in parallel — so each write fetches
+      // a fresh SHA after the previous write completes. This prevents 409
+      // conflicts when multiple cred files need updating in the same save.
+      for (let i = 0; i < CRED_FILES.length; i++) {
+        const f = CRED_FILES[i]
+        const sha = await fetchSha(cfg, f)
+        await writeFile(cfg, f, { credentials: chunks[i] || [] }, sha)
+      }
+
       // Invalidate both caches — intel pipeline gets fresh data on next call
       _invalidateAll()
 
