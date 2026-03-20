@@ -37,39 +37,39 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install requests beautifulsoup4 pymupdf pillow google-generativeai
+        run: pip install requests beautifulsoup4 pymupdf pillow
 
       - name: Write fetch script
         run: |
           cat > fetch_cert_images.py << 'PYEOF'
           #!/usr/bin/env python3
           """
-          fetch_cert_images.py  v4
+          fetch_cert_images.py  v5
           ════════════════════════
-          Routing by ISSUER NAME.  AWS and Cisco do not have scrapeable pages.
+          No Gemini, no API keys needed.
 
-          ┌──────────────────────────────┬────────────────────────────────────────┐
-          │ Issuer contains              │ Strategy                               │
-          ├──────────────────────────────┼────────────────────────────────────────┤
-          │ "Amazon Web Services"        │ Render each PDF page → Gemini Vision   │
-          │                              │ reads course title → matched to cert   │
-          │                              │ entry by word overlap (title vs title) │
-          ├──────────────────────────────┼────────────────────────────────────────┤
-          │ "Cisco" (type=certificate)   │ Static CISCO_PDF_MAP                   │
-          │                              │ PDF filename → cert ID                 │
-          ├──────────────────────────────┼────────────────────────────────────────┤
-          │ Everything else              │ og:image scrape from URL               │
-          └──────────────────────────────┴────────────────────────────────────────┘
+          ┌──────────────────────────────┬─────────────────────────────────────────┐
+          │ Issuer contains              │ Strategy                                │
+          ├──────────────────────────────┼─────────────────────────────────────────┤
+          │ "Amazon Web Services"        │ PyMuPDF extracts PDF text →             │
+          │                              │ unique-word match against cert titles   │
+          ├──────────────────────────────┼─────────────────────────────────────────┤
+          │ "Cisco" (type=certificate)   │ Static CISCO_PDF_MAP (filename→id)      │
+          ├──────────────────────────────┼─────────────────────────────────────────┤
+          │ Everything else              │ og:image scrape from URL                │
+          └──────────────────────────────┴─────────────────────────────────────────┘
 
-          Why Gemini for AWS?
-            AWS SkillBuilder PDFs have compressed text streams.  PyMuPDF can
-            decompress them, but all 9 PDFs share boilerplate ("AWS", "Security",
-            "Getting Started") that wrecks word-overlap title matching.
-            Gemini Vision reads the rendered page image directly and returns a
-            clean course title → reliable title-to-title comparison.
+          Why unique-word matching works for AWS:
+            Every cert title has at least one word that appears in none of the
+            other cert titles: "cloudtrail", "guardduty", "cspm", "lake", "quest",
+            "practitioner", "alerting", "builders", "workshop", "detection" etc.
+            PyMuPDF (fitz) decompresses the PDF text streams and returns all of
+            them.  We simply check which of a cert's unique words appear in the
+            extracted PDF text — the correct PDF will always score 1+, wrong ones 0.
           """
 
-          import argparse, base64, json, os, re, time
+          import argparse, json, os, re, time
+          from collections import Counter
           from pathlib import Path
           from urllib.parse import urlparse
 
@@ -77,7 +77,6 @@ jobs:
           from bs4 import BeautifulSoup
           import fitz          # PyMuPDF
           from PIL import Image
-          import google.generativeai as genai
 
           # ── Config ────────────────────────────────────────────────────────────────
 
@@ -104,6 +103,13 @@ jobs:
               "cisco_packet_tracer.pdf": "pro011",
           }
 
+          # Common words shared across many cert titles — excluded from unique-word logic
+          STOP = {
+              "and","the","a","an","of","for","to","in","with","by","is","are",
+              "on","at","from","or","its","this","that","includes","labs",
+              "getting","started","plan","aws","amazon","security","cloud","best",
+          }
+
           # ── Issuer helpers ─────────────────────────────────────────────────────────
 
           def is_aws(issuer: str) -> bool:
@@ -112,7 +118,7 @@ jobs:
           def is_cisco_cert(issuer: str, ctype: str) -> bool:
               return "cisco" in issuer.lower() and ctype != "credly"
 
-          # ── og:image scraper ───────────────────────────────────────────────────────
+          # ── og:image scraper (LinkedIn Learning, etc.) ─────────────────────────────
 
           def fetch_og(page_url: str):
               try:
@@ -180,62 +186,41 @@ jobs:
                   print(f"    PDF render error ({pdf_path.name}): {e}")
                   return False
 
-          # ── Gemini: read course title from rendered PDF JPEG ───────────────────────
+          # ── AWS: unique-word matching ──────────────────────────────────────────────
 
-          _gemini_model = None
-
-          def get_gemini():
-              global _gemini_model
-              if _gemini_model is None:
-                  key = os.environ.get("GEMINI_API_KEY", "")
-                  if not key:
-                      raise RuntimeError("GEMINI_API_KEY secret is not set")
-                  genai.configure(api_key=key)
-                  _gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-              return _gemini_model
-
-          TITLE_PROMPT = """\
-          This is an AWS SkillBuilder certificate of completion.
-          What is the exact course or training name printed on this certificate?
-          Return ONLY the course name as plain text — no quotes, no explanation, nothing else.
-          """
-
-          def gemini_pdf_title(jpeg_path: Path) -> str:
-              """Ask Gemini to read the course title from a rendered AWS cert JPEG."""
+          def pdf_words(pdf_path: Path) -> set:
+              """Extract all words from all pages of a PDF via PyMuPDF."""
               try:
-                  with open(jpeg_path, "rb") as fh:
-                      b64 = base64.b64encode(fh.read()).decode()
-                  resp = get_gemini().generate_content([
-                      {"inline_data": {"mime_type": "image/jpeg", "data": b64}},
-                      TITLE_PROMPT,
-                  ])
-                  title = resp.text.strip().strip('"\'')
-                  print(f"    Gemini title: {title}")
-                  return title
+                  doc = fitz.open(str(pdf_path))
+                  text = " ".join(page.get_text("text") for page in doc)
+                  return set(re.findall(r"[a-z0-9]+", text.lower()))
               except Exception as e:
-                  print(f"    Gemini title error: {e}")
-                  return ""
+                  print(f"    fitz error ({pdf_path.name}): {e}")
+                  return set()
 
-          # ── Word-overlap similarity (used AFTER Gemini gives us a clean title) ─────
+          def title_words(title: str) -> set:
+              """Tokenise a cert title, strip stop words."""
+              return set(re.findall(r"[a-z0-9]+", title.lower())) - STOP
 
-          STOP = {"and","the","a","an","of","for","to","in","with","by","is","are",
-                  "on","at","from","or","its","this","that","includes","labs","getting",
-                  "started","plan","course"}
-
-          def word_overlap(a: str, b: str) -> float:
-              wa = set(re.findall(r"[a-z0-9]+", a.lower())) - STOP
-              wb = set(re.findall(r"[a-z0-9]+", b.lower())) - STOP
-              if not wa or not wb:
-                  return 0.0
-              return len(wa & wb) / max(len(wa), len(wb))
-
-          # ── AWS: render all PDFs → Gemini → match to cert entries ─────────────────
-
-          def match_aws_pdfs(pdf_dir: Path, aws_certs: list, tmp_dir: Path) -> dict:
+          def build_unique_word_index(certs: list) -> dict:
               """
-              1. Render each AWS PDF first page → tmp JPEG
-              2. Ask Gemini Vision for the course title
-              3. Match Gemini title against cert titles by word overlap
+              For each cert, find words in its title that appear in NO other cert
+              title.  These are the fingerprint words used for PDF matching.
+              Returns {cert_id: set_of_unique_words}.
+              """
+              # Count how many cert titles each word appears in
+              freq = Counter()
+              for c in certs:
+                  freq.update(title_words(c.get("title", "")))
+              # Keep only words that are unique to exactly one cert
+              return {
+                  c["id"]: {w for w in title_words(c.get("title", "")) if freq[w] == 1}
+                  for c in certs
+              }
+
+          def match_aws_pdfs(pdf_dir: Path, aws_certs: list) -> dict:
+              """
+              Match each PDF in pdf_dir to a cert by unique-word fingerprint.
               Returns {cert_id: pdf_path}.
               """
               pdfs = sorted(pdf_dir.glob("*.pdf"))
@@ -243,46 +228,45 @@ jobs:
                   print(f"  ⚠ No PDFs in {pdf_dir}")
                   return {}
 
-              print(f"\n  Processing {len(pdfs)} AWS PDF(s) via Gemini Vision…")
-              tmp_dir.mkdir(parents=True, exist_ok=True)
+              print(f"\n  Matching {len(pdfs)} AWS PDF(s) → {len(aws_certs)} cert(s)")
 
-              # Step 1+2: render each PDF → JPEG, then ask Gemini for its title
-              pdf_titles = {}
-              for p in pdfs:
-                  tmp_jpg = tmp_dir / f"_tmp_{p.stem}.jpg"
-                  if not pdf_to_jpeg(p, tmp_jpg):
-                      print(f"    skip {p.name} (render failed)")
-                      continue
-                  title = gemini_pdf_title(tmp_jpg)
-                  pdf_titles[p] = title
-                  time.sleep(1.2)   # rate-limit Gemini
+              # Build word sets for each PDF (fitz decompresses the streams)
+              pdf_word_sets = {p: pdf_words(p) for p in pdfs}
 
-              # Step 3: match each cert to the best-scoring PDF title
-              print(f"\n  Matching {len(pdf_titles)} PDF titles → {len(aws_certs)} certs…")
+              # Build unique-word fingerprints for each cert
+              unique_index = build_unique_word_index(aws_certs)
+
               mapping   = {}
               used_pdfs = set()
 
               for c in sorted(aws_certs, key=lambda x: x["id"]):
-                  cid    = c["id"]
-                  ctitle = c.get("title", "")
-                  best_score, best_pdf = 0.0, None
+                  cid       = c["id"]
+                  ctitle    = c.get("title", "")
+                  fingerprint = unique_index.get(cid, set())
 
-                  for p, gtitle in pdf_titles.items():
-                      if p in used_pdfs or not gtitle:
+                  if not fingerprint:
+                      print(f"    ✗ {cid} — no unique words in title: '{ctitle}'")
+                      continue
+
+                  # Score = number of fingerprint words found in the PDF text
+                  best_score, best_pdf = 0, None
+                  for p in pdfs:
+                      if p in used_pdfs:
                           continue
-                      score = word_overlap(ctitle, gtitle)
+                      score = len(fingerprint & pdf_word_sets[p])
                       if score > best_score:
                           best_score = score
                           best_pdf   = p
 
-                  if best_pdf and best_score >= 0.3:
+                  if best_pdf and best_score > 0:
                       mapping[cid] = best_pdf
                       used_pdfs.add(best_pdf)
-                      print(f"    ✓ {cid}  score={best_score:.2f}")
-                      print(f"      cert:  {ctitle}")
-                      print(f"      gemini:{pdf_titles[best_pdf]}")
+                      print(f"    ✓ {cid} ← {best_pdf.name}")
+                      print(f"      title: '{ctitle}'")
+                      print(f"      fingerprint hits: {fingerprint & pdf_word_sets[best_pdf]}")
                   else:
-                      print(f"    ✗ {cid}  no match (best={best_score:.2f})  cert: {ctitle}")
+                      print(f"    ✗ {cid} — no fingerprint words found in any PDF")
+                      print(f"      fingerprint: {fingerprint}")
 
               return mapping
 
@@ -301,13 +285,10 @@ jobs:
               ]
               aws_map = {}
               if aws_pending:
-                  pdf_dir = frontend_dir / "certificates" / "aws"
-                  tmp_dir = frontend_dir / "certificates" / ".tmp_renders"
-                  aws_map = match_aws_pdfs(pdf_dir, aws_pending, tmp_dir)
-                  # Clean up temp renders
-                  import shutil
-                  if tmp_dir.exists():
-                      shutil.rmtree(tmp_dir)
+                  aws_map = match_aws_pdfs(
+                      frontend_dir / "certificates" / "aws",
+                      aws_pending,
+                  )
 
               fetched = skipped = 0
               changed = False
@@ -329,7 +310,7 @@ jobs:
                   if dry_run:
                       if is_aws(issuer):
                           pdf = aws_map.get(cid)
-                          print(f"  → AWS PDF: {pdf.name if pdf else 'NO GEMINI MATCH'}")
+                          print(f"  → AWS PDF: {pdf.name if pdf else 'NO MATCH'}")
                       elif is_cisco_cert(issuer, ctype):
                           mapped = next((f for f,i in CISCO_PDF_MAP.items() if i==cid), None)
                           print(f"  → Cisco PDF: {mapped or 'NOT IN CISCO_PDF_MAP'}")
@@ -344,7 +325,7 @@ jobs:
                   if is_aws(issuer):
                       pdf_path = aws_map.get(cid)
                       if not pdf_path:
-                          print(f"  ✗ Gemini could not match a PDF for {cid}")
+                          print(f"  ✗ no PDF match for {cid} — skipping")
                           skipped += 1
                           continue
                       out_path = auto / f"{cid}.jpg"
@@ -438,14 +419,12 @@ jobs:
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
           if summary:
               with open(summary, "a") as fh:
-                  fh.write("## Cert Image Fetch v4 (Gemini Vision)\n")
+                  fh.write("## Cert Image Fetch v5\n")
                   fh.write(f"- **Rendered / fetched:** {tf}\n")
                   fh.write(f"- **Skipped:** {ts}\n")
           PYEOF
 
       - name: Fetch missing cert images
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           ARGS="--dir frontend"
           [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
