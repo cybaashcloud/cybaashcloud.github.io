@@ -35,13 +35,15 @@ async function loadGeminiConfig() {
       const r = await fetch(path + '?v=' + Date.now(), { cache: 'no-store' });
       if (!r.ok) continue;
       const c = await r.json();
-      // API key is NEVER stored in JSON — read from localStorage only
+      // Read API key from config file
+      if (c.gemini_api_key) CONFIG.geminiKey    = c.gemini_api_key;
+      if (c.apiKey)         CONFIG.geminiKey    = c.apiKey;
       if (c.gemini_model)   CONFIG.geminiModel  = c.gemini_model;
       if (c.system_prompt)  CONFIG.systemPrompt = c.system_prompt;
       break;
     } catch { continue; }
   }
-  // Also check localStorage (shared with terminal gemini command and admin panel)
+  // localStorage overrides config (admin panel takes priority)
   const lsKey = localStorage.getItem('cybaash_gemini_key') || '';
   if (lsKey) CONFIG.geminiKey = lsKey;
 
