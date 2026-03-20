@@ -573,7 +573,7 @@
         "Security"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro024_image.jpg",
       "title": "Become a Cybersecurity Professional",
       "issuer": "LinkedIn",
       "courseId": "become-a-cybersecurity-professional",
