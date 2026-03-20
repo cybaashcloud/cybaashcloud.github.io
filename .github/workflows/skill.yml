@@ -37,39 +37,37 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install -y tesseract-ocr --quiet
-          pip install requests pillow pytesseract
+          pip install requests pillow google-generativeai
 
       - name: Write sync script
         run: |
           cat > sync_skills.py << 'PYEOF'
           #!/usr/bin/env python3
           """
-          sync_skills.py  v8
+          sync_skills.py  v9
           ══════════════════
           CREDLY
             URL: https://www.credly.com/users/mohamed-aasiq/badges.json
-            Stores both earner_id and tmpl_id as keys so either matches.
-            Tags = badge_template.skills only (no names, no titles).
+            Tags = badge_template.skills only (no names, no titles, no issuer).
             If profile 404 or private → keep existing tags unchanged.
 
-          LINKEDIN / CERTIFICATE images
-            OCR zone detection → pill gap split (PILL_GAP=80, not 100*scale).
-            OCR found   → use OCR pills only.
-            OCR empty   → keep existing tags unchanged (no fallback invented).
-            No image    → keep existing tags unchanged.
+          LINKEDIN / CERTIFICATE images  ← GEMINI VISION (replaces Tesseract OCR)
+            Sends the local cert image to Gemini 1.5 Flash.
+            Prompt asks ONLY for the pills shown in the "Top skills covered" section.
+            No issuer name, no cert title, no person name — only technical skill tags.
+            If Gemini returns nothing or the image is missing → keep existing tags.
 
           RULE: NEVER add title, issuer, platform, or any invented text as tags.
-                Only real skill pills from OCR or real skills from Credly API.
+                Only real skill pills from Gemini vision or real skills from Credly API.
           """
 
-          import argparse, json, os, re, time
+          import argparse, base64, json, os, re, time
           from pathlib import Path
           import requests
-          from PIL import Image, ImageEnhance
-          import pytesseract
 
-          CREDLY_USERNAME = 'mohamed-aasiq'   # ← FIXED (was mohamedaasiq07 — wrong, caused 404)
+          import google.generativeai as genai
+
+          CREDLY_USERNAME = 'mohamed-aasiq'
 
           HEADERS = {
               'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
@@ -81,7 +79,7 @@ jobs:
           TIMEOUT = 20
           DELAY   = 1.2
 
-          # Words/phrases that must never appear as skill tags
+          # Words/phrases that must NEVER appear as skill tags
           JUNK = {
               'credly', 'credly badges', 'acclaim', 'open badges', 'digital badges',
               'badges', 'web-enabled credentials', 'badge alliance',
@@ -98,27 +96,9 @@ jobs:
                   return True
               return tag.lower() in JUNK
 
-          def fix_ocr(text: str) -> str:
-              """Fix common OCR misreads."""
-              text = re.sub(r'\bAl\b', 'AI', text)
-              text = re.sub(r'\bMl\b', 'ML', text)
-              text = re.sub(r'\bNET\b', '.NET', text)
-              text = re.sub(r'\bloT\b', 'IoT', text)
-              text = re.sub(r'\blaC\b', 'IaC', text)
-              # Strip incomplete trailing open-paren e.g. "Python (Programming Language"
-              if '(' in text and ')' not in text:
-                  text = re.sub(r'\s*\([^)]*$', '', text)
-              text = text.strip(' ()[]|~*.,\'"')
-              return re.sub(r'\s+', ' ', text).strip()
-
           # ── Credly live fetch ──────────────────────────────────────────────────────
 
           def fetch_credly() -> dict:
-              """
-              Fetch all badges from public profile.
-              Returns {id: [skill, ...]} keyed by BOTH earner_id AND tmpl_id.
-              Empty dict if profile is private or unreachable.
-              """
               result = {}
               page   = 1
               print(f'\n  Fetching Credly: {CREDLY_USERNAME}')
@@ -134,9 +114,7 @@ jobs:
 
                   if r.status_code == 404:
                       print(f'  ✗ 404 — profile not found or private')
-                      print(f'    → Ensure credly.com Settings → Privacy → Public')
                       break
-
                   if r.status_code != 200:
                       print(f'  ✗ HTTP {r.status_code}')
                       break
@@ -177,117 +155,84 @@ jobs:
               print(f'  Done: {n} badges\n')
               return result
 
-          # ── OCR pill extraction ────────────────────────────────────────────────────
+          # ── Gemini Vision: extract "Top skills covered" pills ──────────────────────
 
-          def ocr_pills(img_path: Path) -> list:
+          _gemini_model = None
+
+          def get_gemini_model():
+              global _gemini_model
+              if _gemini_model is None:
+                  api_key = os.environ.get('GEMINI_API_KEY', '')
+                  if not api_key:
+                      raise RuntimeError('GEMINI_API_KEY secret is not set')
+                  genai.configure(api_key=api_key)
+                  _gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+              return _gemini_model
+
+          SKILL_PROMPT = """\
+          Look at this LinkedIn Learning certificate image carefully.
+          Find the section labelled "Top skills covered".
+          Return ONLY a JSON array of the skill pill labels shown in that section — exactly as they are written in the image.
+
+          Rules:
+          - Do NOT include: the course title, issuer/platform name, person's name, dates, hours, or the header "Top skills covered" itself.
+          - Do NOT invent any skills. Only return what is literally printed as pills/tags.
+          - If the section is not visible or has no pills, return an empty array: []
+
+          Reply with ONLY the raw JSON array, nothing else.
+          Example: ["Python", "Machine Learning", "Data Analysis"]
+          """
+
+          def gemini_skills(img_path: Path) -> list:
+              """
+              Send img_path to Gemini Vision and return the list of technical
+              skill pills from the "Top skills covered" section.
+              Returns [] on any error or if the section is absent.
+              """
               try:
-                  img = Image.open(img_path).convert('RGB')
+                  model = get_gemini_model()
+
+                  with open(img_path, 'rb') as fh:
+                      raw = fh.read()
+                  b64 = base64.b64encode(raw).decode()
+
+                  ext  = img_path.suffix.lower().lstrip('.')
+                  mime = {
+                      'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+                      'png': 'image/png',  'webp': 'image/webp',
+                  }.get(ext, 'image/jpeg')
+
+                  response = model.generate_content([
+                      {'inline_data': {'mime_type': mime, 'data': b64}},
+                      SKILL_PROMPT,
+                  ])
+
+                  text = response.text.strip()
+                  # Strip markdown code fences if Gemini wraps in ```json … ```
+                  text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text, flags=re.MULTILINE).strip()
+
+                  skills = json.loads(text)
+                  if not isinstance(skills, list):
+                      return []
+
+                  cleaned = []
+                  seen    = set()
+                  for s in skills:
+                      s = str(s).strip()
+                      if not s or is_junk(s):
+                          continue
+                      k = s.lower()
+                      if k not in seen:
+                          seen.add(k)
+                          cleaned.append(s)
+                  return cleaned
+
+              except json.JSONDecodeError as e:
+                  print(f'    ⚠ Gemini returned non-JSON: {e}')
+                  return []
               except Exception as e:
-                  print(f'    cannot open image: {e}')
+                  print(f'    ⚠ Gemini error: {e}')
                   return []
-
-              w, h = img.size
-              # Try two zones for 'Top skills covered' section
-              for zone in [
-                  (0, int(h * .50), w, int(h * .72)),
-                  (0, int(h * .44), w, int(h * .68)),
-              ]:
-                  pills = _ocr_zone(img, zone)
-                  if pills:
-                      return pills
-              return []
-
-          def _ocr_zone(img, box):
-              crop  = img.crop(box)
-              scale = 3
-              crop  = crop.resize(
-                  (crop.width * scale, crop.height * scale), Image.LANCZOS)
-              crop  = ImageEnhance.Contrast(crop).enhance(2.5).convert('L')
-
-              data  = pytesseract.image_to_data(
-                  crop, config='--psm 6',
-                  output_type=pytesseract.Output.DICT)
-
-              words = []
-              for i, word in enumerate(data['text']):
-                  if not word.strip() or int(data['conf'][i]) < 20:
-                      continue
-                  words.append({
-                      'word':  word,
-                      'left':  data['left'][i],
-                      'top':   data['top'][i],
-                      'right': data['left'][i] + data['width'][i],
-                  })
-              if not words:
-                  return []
-
-              # Group into lines by vertical proximity
-              LINE_TOL = 75
-              lines = {}
-              for wp in words:
-                  key = round(wp['top'] / LINE_TOL) * LINE_TOL
-                  lines.setdefault(key, []).append(wp)
-
-              found_header = False
-              all_pills    = []
-
-              for key in sorted(lines):
-                  lw  = sorted(lines[key], key=lambda x: x['left'])
-                  ltx = ' '.join(w['word'] for w in lw)
-
-                  # Find 'Top skills covered' header
-                  if re.search(r'top\s+skills?\s+covered', ltx, re.IGNORECASE):
-                      found_header = True
-                      continue
-                  if not found_header:
-                      continue
-
-                  # Skip noise lines
-                  ll = ltx.lower()
-                  if any(n in ll for n in [
-                      'shea hanson', 'certificate id', 'learning content',
-                      'completed by', 'utc +', 'utc -', 'utc «',
-                      'oours', "et'", 'hte,',
-                  ]):
-                      continue
-                  if len(re.sub(r'[^a-zA-Z]', '', ltx)) < 3:
-                      continue
-
-                  # ── PILL_GAP = 80 ──────────────────────────────────────────────
-                  # At 3× scale: between-pill gap ≈152px > 80 → splits  ✓
-                  #              within-pill gap  ≈16-25px < 80 → joins  ✓
-                  # (old bug: PILL_GAP = 100 * scale = 300 → never split)
-                  PILL_GAP   = 80
-                  pill       = []
-                  prev_right = None
-
-                  for wp in lw:
-                      gap = (wp['left'] - prev_right) if prev_right is not None else 0
-                      if prev_right is not None and gap > PILL_GAP:
-                          if pill:
-                              all_pills.append(' '.join(pill))
-                              pill = []
-                      pill.append(wp['word'])
-                      prev_right = wp['right']
-                  if pill:
-                      all_pills.append(' '.join(pill))
-
-              if not all_pills:
-                  return []
-
-              # Clean + deduplicate
-              seen    = set()
-              cleaned = []
-              for p in all_pills:
-                  p = fix_ocr(p)
-                  if is_junk(p):
-                      continue
-                  k = p.lower()
-                  if k not in seen:
-                      seen.add(k)
-                      cleaned.append(p)
-
-              return cleaned
 
           # ── Per-file processing ────────────────────────────────────────────────────
 
@@ -301,7 +246,7 @@ jobs:
                   cid      = c.get('id', '')
                   ctype    = c.get('type', '')
                   old_tags = list(c.get('tags') or [])
-                  new_tags = old_tags  # default: unchanged
+                  new_tags = old_tags  # default: keep unchanged
 
                   # ── CREDLY ─────────────────────────────────────────────────────
                   if ctype == 'credly':
@@ -314,17 +259,15 @@ jobs:
                               new_tags = skills
                               print(f'    ✓ {len(new_tags)} skills from Credly live')
                           else:
-                              # badge_id not returned in profile — keep existing
                               new_tags = [t for t in old_tags if not is_junk(t)]
                               print(f'    ⚠ badge not in profile — keeping {len(new_tags)} existing')
                       else:
-                          # Profile 404 / private — keep existing
                           new_tags = [t for t in old_tags if not is_junk(t)]
                           print(f'    ⚠ profile unavailable — keeping {len(new_tags)} existing')
 
-                  # ── CERT / LINKEDIN: OCR only ───────────────────────────────────
+                  # ── CERT / LINKEDIN / CERTIFICATE: Gemini Vision ────────────────
                   else:
-                      # Resolve local image path
+                      # Resolve local image path — check auto/ first, then cert_logos/
                       img_file = None
                       for ext in ['jpg', 'jpeg', 'png', 'webp']:
                           cand = auto / f'{cid}.{ext}'
@@ -332,7 +275,6 @@ jobs:
                               img_file = cand
                               break
 
-                      # cert_logos folder for pro0xx
                       if not img_file:
                           logos = frontend_dir / 'cert_logos'
                           for ext in ['jpg', 'jpeg', 'png']:
@@ -344,22 +286,25 @@ jobs:
                       print(f'  [cert]   {cid} — {c.get("title","")[:55]}')
 
                       if img_file:
-                          ocr = ocr_pills(img_file)
-                          if ocr:
-                              new_tags = ocr
-                              print(f'    ✓ OCR → {new_tags}')
+                          print(f'    image: {img_file.name}  → asking Gemini…')
+                          skills = gemini_skills(img_file)
+                          if skills:
+                              new_tags = skills
+                              print(f'    ✓ Gemini → {new_tags}')
                           else:
-                              # OCR found nothing → keep existing, strip junk
+                              # Gemini found nothing → keep existing, strip obvious junk
                               new_tags = [t for t in old_tags if not is_junk(t)]
-                              print(f'    ⚠ OCR empty — keeping {len(new_tags)} existing')
+                              print(f'    ⚠ Gemini returned empty — keeping {len(new_tags)} existing')
+                          # Small delay to avoid hammering the API
+                          time.sleep(1.0)
                       else:
-                          # No local image → keep existing, strip junk
+                          # No local image at all — keep existing tags
                           new_tags = [t for t in old_tags if not is_junk(t)]
-                          print(f'    ⚠ no image — keeping {len(new_tags)} existing')
+                          print(f'    ⚠ no local image — keeping {len(new_tags)} existing')
 
                   # Deduplicate preserving order
-                  seen     = set()
-                  deduped  = []
+                  seen    = set()
+                  deduped = []
                   for t in new_tags:
                       k = t.lower()
                       if k not in seen:
@@ -371,6 +316,8 @@ jobs:
                       if not dry_run:
                           creds[idx]['tags'] = new_tags
                       changed += 1
+                      if dry_run:
+                          print(f'    [dry-run] would update: {new_tags}')
 
               if changed > 0 and not dry_run:
                   data['credentials'] = creds
@@ -413,7 +360,7 @@ jobs:
           summary = os.environ.get('GITHUB_STEP_SUMMARY')
           if summary:
               with open(summary, 'a') as f:
-                  f.write('## Skill Sync v8\n')
+                  f.write('## Skill Sync v9 (Gemini Vision)\n')
                   f.write(f'- Credly: `{CREDLY_USERNAME}`'
                           f' — {len(credly_map)//2} badges\n')
                   f.write(f'- Updated: {total_changed}/{total_creds}\n')
@@ -422,6 +369,8 @@ jobs:
           PYEOF
 
       - name: Sync skills
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           ARGS="--dir frontend"
           [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
@@ -438,6 +387,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "chore: sync credential skills [skip ci]"
+            git commit -m "chore: sync credential skills via Gemini Vision [skip ci]"
             git push
           fi
