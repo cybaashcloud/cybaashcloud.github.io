@@ -82,6 +82,14 @@ jobs:
 
           [ -f frontend/cybaash_chatbot.js ] && cp frontend/cybaash_chatbot.js _site/cybaash_chatbot.js && echo "OK cybaash_chatbot.js" || echo "SKIP cybaash_chatbot.js"
 
+          if [ -d frontend/certificates ]; then
+            mkdir -p _site/certificates
+            cp -r frontend/certificates/. _site/certificates/
+            echo "OK certificates/ ($(find frontend/certificates -type f | wc -l) files)"
+          else
+            echo "SKIP certificates/"
+          fi
+
           cp frontend/manifest.json _site/manifest.json
           cp frontend/sw.js         _site/sw.js
           cp frontend/_headers      _site/_headers
