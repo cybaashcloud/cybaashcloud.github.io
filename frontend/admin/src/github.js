@@ -235,27 +235,17 @@ async function _uploadCredImage(cfg, certId, field, dataUrl) {
   const b64    = match[2]
   const fname  = `cert_logos/${certId}_${field}.${ext}`
   const path   = `frontend/${fname}`
-  const sha    = await fetchSha(cfg, path)
-  const r = await fetch(contentsUrl(cfg, path), {
-    method:  'PUT',
-    headers: apiHeaders(cfg),
-    body:    JSON.stringify({
-      message: `cert: upload logo ${certId} — ${new Date().toISOString()}`,
-      content: b64,
-      ...(sha ? { sha } : {}),
-    }),
-  })
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({}))
-    console.warn(`[GitHub] _uploadCredImage: upload failed for ${certId} (${err.message || r.status}) — keeping inline`)
+
+  // Re-use uploadImage which already handles 422/409 retries and in-flight dedup
+  try {
+    const resultPath = await uploadImage(fname, b64)
+    const rawUrl = `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/main/${resultPath}`
+    console.info(`[GitHub] _uploadCredImage: saved ${fname} → ${rawUrl}`)
+    return rawUrl
+  } catch (err) {
+    console.warn(`[GitHub] _uploadCredImage: upload failed for ${certId} (${err.message}) — keeping inline`)
     return dataUrl   // fallback: keep inline if upload fails
   }
-  const res = await r.json()
-  // Return the raw URL so it works as an <img src>
-  const rawUrl = res.content?.download_url ||
-    `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/main/${path}`
-  console.info(`[GitHub] _uploadCredImage: saved ${fname} → ${rawUrl}`)
-  return rawUrl
 }
 
 /**
@@ -296,27 +286,86 @@ function _stripCredentialBlobs(cred) {
  * @param {string} filename  e.g. "avatar.png"
  * @param {string} base64    raw base64 string (no data: prefix)
  */
-export async function uploadImage(filename, base64) {
+// In-flight upload registry — prevents two simultaneous uploads to the same path
+// from both racing ahead with a null SHA and colliding on the second PUT.
+const _uploadInFlight = new Map()
+
+export async function uploadImage(filename, base64, _retries = 2) {
   const cfg = getGithubConfig()
   if (!cfg?.token) throw new Error('GitHub not configured')
   const path = `frontend/${filename}`
-  const sha  = await fetchSha(cfg, path)
-  const body = {
-    message: `chore: upload image ${filename} — ${new Date().toISOString()}`,
-    content: base64,
-    ...(sha ? { sha } : {}),
+
+  // If an upload to this exact path is already in progress, wait for it and
+  // return its result rather than launching a duplicate request.
+  if (_uploadInFlight.has(path)) {
+    console.info(`[GitHub] uploadImage: waiting for in-flight upload of ${path}`)
+    return _uploadInFlight.get(path)
   }
-  const r = await fetch(contentsUrl(cfg, path), {
-    method:  'PUT',
-    headers: apiHeaders(cfg),
-    body:    JSON.stringify(body),
-  })
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({}))
-    throw new Error(`Image upload failed (${filename}): ${err.message || r.status}`)
-  }
-  console.info(`[GitHub] Uploaded image: ${path}`)
-  return path
+
+  const promise = (async () => {
+    try {
+      const sha = await fetchSha(cfg, path)
+      const body = {
+        message: `chore: upload image ${filename} — ${new Date().toISOString()}`,
+        content: base64,
+        ...(sha ? { sha } : {}),
+      }
+      const r = await fetch(contentsUrl(cfg, path), {
+        method:  'PUT',
+        headers: apiHeaders(cfg),
+        body:    JSON.stringify(body),
+      })
+
+      // 422 "sha wasn't supplied" — file was just created by a concurrent call;
+      // fetch the real SHA and retry once.
+      if (r.status === 422 && _retries > 0) {
+        console.warn(`[GitHub] uploadImage: 422 on ${path} — re-fetching SHA and retrying (${_retries} left)`)
+        const freshSha = await fetchSha(cfg, path)
+        if (!freshSha) throw new Error(`Image upload failed (${filename}): 422 but SHA still null`)
+        const r2 = await fetch(contentsUrl(cfg, path), {
+          method:  'PUT',
+          headers: apiHeaders(cfg),
+          body:    JSON.stringify({ ...body, sha: freshSha }),
+        })
+        if (!r2.ok) {
+          const err2 = await r2.json().catch(() => ({}))
+          throw new Error(`Image upload failed (${filename}): ${err2.message || r2.status}`)
+        }
+        console.info(`[GitHub] Uploaded image (after 422 retry): ${path}`)
+        return path
+      }
+
+      // 409 conflict — also re-fetch SHA and retry
+      if (r.status === 409 && _retries > 0) {
+        console.warn(`[GitHub] uploadImage: 409 on ${path} — re-fetching SHA and retrying (${_retries} left)`)
+        const freshSha = await fetchSha(cfg, path)
+        const r2 = await fetch(contentsUrl(cfg, path), {
+          method:  'PUT',
+          headers: apiHeaders(cfg),
+          body:    JSON.stringify({ ...body, sha: freshSha }),
+        })
+        if (!r2.ok) {
+          const err2 = await r2.json().catch(() => ({}))
+          throw new Error(`Image upload failed (${filename}): ${err2.message || r2.status}`)
+        }
+        console.info(`[GitHub] Uploaded image (after 409 retry): ${path}`)
+        return path
+      }
+
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}))
+        throw new Error(`Image upload failed (${filename}): ${err.message || r.status}`)
+      }
+
+      console.info(`[GitHub] Uploaded image: ${path}`)
+      return path
+    } finally {
+      _uploadInFlight.delete(path)
+    }
+  })()
+
+  _uploadInFlight.set(path, promise)
+  return promise
 }
 
 
