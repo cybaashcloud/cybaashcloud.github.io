@@ -12,11 +12,82 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="../mobile-fix.css">
+<style>
+/* ── Overrides: remove hero congestion ─────────────────────── */
+
+/* Remove scanline/noise visual clutter */
+.scanline, .noise { display: none; }
+
+/* Sidebar: hide Quick Actions and Topics — redundant with chips */
+.sidebar-section { display: none; }
+
+/* Sidebar: only keep new session + session list, compact */
+.chat-sidebar {
+  width: 180px;
+  min-width: 180px;
+  padding: 12px 10px;
+  gap: 8px;
+}
+.new-chat-btn { padding: 7px 10px; font-size: 11px; }
+.session-list { gap: 4px; }
+
+/* Hide the hero entirely — chat starts immediately */
+.hero { display: none !important; }
+
+/* Chips row moved to just above the input */
+.quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px 0;
+}
+.quick-chips .chip {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+  font-family: var(--mono);
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+.quick-chips .chip:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+/* input-meta: fix model label */
+.input-meta { font-size: 10px; color: var(--text3); }
+
+/* Chat section: remove top padding since hero is gone */
+.chat-section { padding-top: 0; }
+
+/* Page shell starts from top of viewport */
+.page-shell { padding-top: 0; }
+
+/* About: hide outdated backend tech items */
+.tech-item.dead { display: none; }
+
+/* Tighter section spacing in tools/about */
+.tools-section,
+.about-section { padding: 24px 20px; }
+
+/* Stat cards: compact */
+.stats-grid { gap: 10px; }
+.stat-card { padding: 14px; }
+.stat-num { font-size: 22px; }
+
+/* Mobile: hide session sidebar entirely (already hidden on small screens) */
+@media (max-width: 768px) {
+  .quick-chips { padding: 6px 12px 0; }
+  .quick-chips .chip { font-size: 9.5px; padding: 3px 9px; }
+}
+</style>
 </head>
 <body>
-
-<div class="scanline"></div>
-<div class="noise"></div>
 
 <!-- ══════════════════════════════════════════════
      HEADER
@@ -35,20 +106,17 @@
       <span class="logo-badge">AI</span>
     </a>
 
-    <!-- Desktop nav -->
     <nav class="nav">
-      <a href="#chat"  class="nav-link active" data-tab="chat">Chat</a>
-      <a href="#tools" class="nav-link"         data-tab="tools">Tools</a>
-      <a href="#about" class="nav-link"         data-tab="about">About</a>
+      <a href="#" class="nav-link active" data-tab="chat">Chat</a>
+      <a href="#" class="nav-link"        data-tab="tools">Tools</a>
+      <a href="#" class="nav-link"        data-tab="about">About</a>
     </nav>
 
-    <!-- Mobile: connection status badge -->
     <div class="header-status-mobile">
       <span class="status-dot" id="statusDotMobile"></span>
       <span id="statusTextMobile" style="font-family:var(--mono);font-size:10px;color:var(--text3)">Connecting…</span>
     </div>
 
-    <!-- Desktop: full status -->
     <div class="header-status">
       <span class="status-dot" id="statusDot"></span>
       <span class="status-text" id="statusText">Connecting…</span>
@@ -61,21 +129,18 @@
 ══════════════════════════════════════════════ -->
 <nav class="tab-bar" id="tabBar">
   <div class="tab-bar-inner">
-
     <button class="tab-btn active" data-tab="chat" onclick="switchTab('chat',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
       </svg>
       Chat
     </button>
-
     <button class="tab-btn" data-tab="tools" onclick="switchTab('tools',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
       </svg>
       Tools
     </button>
-
     <button class="tab-btn" data-tab="about" onclick="switchTab('about',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"/>
@@ -84,7 +149,6 @@
       </svg>
       About
     </button>
-
   </div>
 </nav>
 
@@ -95,49 +159,10 @@
 
   <!-- ── CHAT TAB ───────────────────────────────── -->
   <div class="section-panel active" id="panel-chat">
-
-    <!-- Hero / Intro strip (visible above chat on mobile) -->
-    <section class="hero" id="hero">
-      <div class="hero-grid">
-        <div class="hero-content">
-          <div class="hero-eyebrow">
-            <span class="eyebrow-dot"></span>
-            Ethical AI · Educational Only
-          </div>
-          <h1 class="hero-title">
-            Your AI <span class="title-accent">Cybersecurity</span> Assistant
-          </h1>
-          <p class="hero-desc">
-            Ask about vulnerabilities, secure coding, pen testing, cryptography, and system hardening. Powered by Gemini AI.
-          </p>
-          <div class="hero-chips">
-            <button class="chip" onclick="sendQuick('Explain SQL injection with a code example')">SQLi</button>
-            <button class="chip" onclick="sendQuick('How does XSS work and how to prevent it?')">XSS</button>
-            <button class="chip" onclick="sendQuick('How do I securely store passwords?')">Passwords</button>
-            <button class="chip" onclick="sendQuick('Explain penetration testing methodology')">Pen Testing</button>
-            <button class="chip" onclick="sendQuick('What is the OWASP Top 10?')">OWASP Top 10</button>
-            <button class="chip" onclick="sendQuick('How does a buffer overflow work?')">Buffer Overflow</button>
-          </div>
-        </div>
-        <div class="hero-visual">
-          <div class="terminal-preview">
-            <div class="tp-header">
-              <span class="tp-dot red"></span>
-              <span class="tp-dot yellow"></span>
-              <span class="tp-dot green"></span>
-              <span class="tp-title">cyberbot — bash</span>
-            </div>
-            <div class="tp-body" id="termPreview"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Chat UI -->
     <section class="chat-section" id="chat">
       <div class="chat-container">
 
-        <!-- Sidebar (desktop only) -->
+        <!-- Sidebar (desktop only) — sessions only, no redundant links -->
         <aside class="chat-sidebar">
           <div class="sidebar-title">// Sessions</div>
           <button class="new-chat-btn" onclick="newSession()">
@@ -145,25 +170,6 @@
             New Session
           </button>
           <div class="session-list" id="sessionList"></div>
-
-          <div class="sidebar-section">
-            <div class="sidebar-title">// Quick Actions</div>
-            <button class="qa-btn" onclick="showTool('password')">🔐 Password Check</button>
-            <button class="qa-btn" onclick="showTool('url')">🔗 URL Analyzer</button>
-            <button class="qa-btn" onclick="showTool('code')">🔍 Code Scanner</button>
-            <button class="qa-btn" onclick="showTool('file')">📁 File Upload</button>
-          </div>
-
-          <div class="sidebar-section">
-            <div class="sidebar-title">// Topics</div>
-            <button class="topic-btn" onclick="sendQuick('Explain SQL injection in detail with Python examples')">SQL Injection</button>
-            <button class="topic-btn" onclick="sendQuick('Explain Cross-Site Scripting (XSS) attack types')">XSS Attacks</button>
-            <button class="topic-btn" onclick="sendQuick('How does CSRF work and what are defenses?')">CSRF</button>
-            <button class="topic-btn" onclick="sendQuick('Explain buffer overflow attacks')">Buffer Overflow</button>
-            <button class="topic-btn" onclick="sendQuick('What is OWASP Top 10?')">OWASP Top 10</button>
-            <button class="topic-btn" onclick="sendQuick('Explain JWT security best practices')">JWT Security</button>
-            <button class="topic-btn" onclick="sendQuick('What is zero trust architecture?')">Zero Trust</button>
-          </div>
         </aside>
 
         <!-- Main chat -->
@@ -197,6 +203,18 @@
             <div id="toolContent"></div>
           </div>
 
+          <!-- Quick chips — right above input, not in a giant hero -->
+          <div class="quick-chips" id="quickChips">
+            <button class="chip" onclick="sendQuick('Explain SQL injection with a code example')">SQLi</button>
+            <button class="chip" onclick="sendQuick('How does XSS work and how to prevent it?')">XSS</button>
+            <button class="chip" onclick="sendQuick('How do I securely store passwords?')">Passwords</button>
+            <button class="chip" onclick="sendQuick('Explain penetration testing methodology')">Pen Testing</button>
+            <button class="chip" onclick="sendQuick('What is the OWASP Top 10?')">OWASP</button>
+            <button class="chip" onclick="sendQuick('How does a buffer overflow work?')">Buffer Overflow</button>
+            <button class="chip" onclick="sendQuick('Explain JWT security best practices')">JWT</button>
+            <button class="chip" onclick="sendQuick('What is zero trust architecture?')">Zero Trust</button>
+          </div>
+
           <!-- Input -->
           <div class="chat-input-area">
             <div class="input-flags" id="inputFlags"></div>
@@ -225,7 +243,7 @@
             </div>
             <div class="input-meta">
               <span id="charCount">0 / 4000</span>
-              <span>Gemini 2.0 Flash · Educational only</span>
+              <span>Gemini 2.5 Flash Lite · Educational only</span>
             </div>
           </div>
         </main>
@@ -241,31 +259,31 @@
       <div class="section-header">
         <div class="section-eyebrow">Security Tools</div>
         <h2 class="section-title">Analyze &amp; Detect</h2>
-        <p class="section-desc">Run security checks locally — no data sent to AI.</p>
+        <p class="section-desc">Client-side checks — nothing sent externally.</p>
       </div>
       <div class="tools-grid">
         <div class="tool-card" onclick="openToolModal('password')">
           <div class="tool-card-icon">🔐</div>
           <h3>Password Strength</h3>
-          <p>NIST SP 800-63B aligned analysis with entropy calculation and actionable feedback.</p>
+          <p>NIST SP 800-63B aligned entropy analysis with actionable feedback.</p>
           <span class="tool-card-cta">Check Now →</span>
         </div>
         <div class="tool-card" onclick="openToolModal('url')">
           <div class="tool-card-icon">🔗</div>
           <h3>URL Safety</h3>
-          <p>Detect phishing patterns, suspicious TLDs, IP-based URLs, and domain spoofing indicators.</p>
+          <p>Detect phishing patterns, IP-based URLs, and domain spoofing.</p>
           <span class="tool-card-cta">Analyze →</span>
         </div>
         <div class="tool-card" onclick="openToolModal('code')">
           <div class="tool-card-icon">🔍</div>
           <h3>Code Scanner</h3>
-          <p>Detect eval(), hardcoded secrets, insecure functions, and OWASP patterns in Python, JS, PHP.</p>
+          <p>Detect eval(), hardcoded secrets, and OWASP patterns in Python, JS, PHP.</p>
           <span class="tool-card-cta">Scan Code →</span>
         </div>
         <div class="tool-card" onclick="openToolModal('file')">
           <div class="tool-card-icon">📁</div>
           <h3>File Analysis</h3>
-          <p>Upload .py, .js, .php, .txt, .log files for comprehensive security scanning.</p>
+          <p>Upload .py, .js, .php, .txt, .log files for security scanning.</p>
           <span class="tool-card-cta">Upload File →</span>
         </div>
       </div>
@@ -279,20 +297,20 @@
       <div class="about-grid">
         <div class="about-content">
           <div class="section-eyebrow">About This Project</div>
-          <h2 class="section-title">Built for Security Professionals</h2>
-          <p>CyberBot is a production-ready AI assistant demonstrating the intersection of Python, FastAPI, and LLM engineering applied to cybersecurity education.</p>
+          <h2 class="section-title">AI-Powered Cyber Assistant</h2>
+          <p>CyberBot is a fully serverless AI cybersecurity assistant — no backend required. Runs entirely on GitHub Pages with Gemini AI called directly from the browser.</p>
           <div class="tech-stack">
-            <div class="tech-item"><span class="tech-icon">🐍</span>Python + FastAPI</div>
-            <div class="tech-item"><span class="tech-icon">🤖</span>Google Gemini 1.5</div>
-            <div class="tech-item"><span class="tech-icon">🗄️</span>SQLite Analytics</div>
+            <div class="tech-item"><span class="tech-icon">🤖</span>Google Gemini 2.5</div>
             <div class="tech-item"><span class="tech-icon">🛡️</span>OWASP Patterns</div>
-            <div class="tech-item"><span class="tech-icon">⚡</span>Rate Limiting</div>
-            <div class="tech-item"><span class="tech-icon">📊</span>Query Analytics</div>
+            <div class="tech-item"><span class="tech-icon">⚡</span>Zero Backend</div>
+            <div class="tech-item"><span class="tech-icon">🔒</span>Key in localStorage</div>
+            <div class="tech-item"><span class="tech-icon">📄</span>GitHub Pages</div>
+            <div class="tech-item"><span class="tech-icon">🌐</span>PWA Ready</div>
           </div>
         </div>
         <div class="stats-grid">
-          <div class="stat-card"><div class="stat-num">334+</div><div class="stat-label">Security Patterns</div></div>
-          <div class="stat-card"><div class="stat-num">5</div><div class="stat-label">Analysis Modules</div></div>
+          <div class="stat-card"><div class="stat-num">343+</div><div class="stat-label">Certifications</div></div>
+          <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Security Tools</div></div>
           <div class="stat-card"><div class="stat-num">Gemini</div><div class="stat-label">AI Model</div></div>
           <div class="stat-card"><div class="stat-num">OWASP</div><div class="stat-label">Top 10 Coverage</div></div>
         </div>
@@ -302,7 +320,7 @@
     <footer class="footer">
       <div class="footer-inner">
         <div class="footer-logo">CYBER<span>BOT</span></div>
-        <p>Educational AI Cybersecurity Assistant · Built by Mohamed Aasiq · <a href="https://cybaash.github.io">cybaash.github.io</a></p>
+        <p>Educational AI Cybersecurity Assistant · Built by Mohamed Aasiq · <a href="https://cybaashcloud.github.io">cybaashcloud.github.io</a></p>
         <p class="footer-disclaimer">⚠️ For educational purposes only. Never use these techniques against systems you don't own or have explicit permission to test.</p>
       </div>
     </footer>
@@ -323,97 +341,79 @@
   </div>
 </div>
 
+<!-- termPreview: kept as hidden element so animateTerminalPreview() doesn't error -->
+<div id="termPreview" style="display:none"></div>
+
 <script src="cyberbot_script.js"></script>
 
 <script>
-/* ════════════════════════════════════════════════
-   TAB NAVIGATION — mobile bottom bar + desktop nav
-   ════════════════════════════════════════════════ */
+/* ── TAB NAVIGATION ─────────────────────────────────────────── */
 var _activeTab = 'chat';
 
 function switchTab(tab, triggerEl) {
   if (_activeTab === tab) return;
   _activeTab = tab;
-
-  // Hide all panels
-  document.querySelectorAll('.section-panel').forEach(function(p) {
-    p.classList.remove('active');
-  });
-  // Show target panel
+  document.querySelectorAll('.section-panel').forEach(function(p) { p.classList.remove('active'); });
   var panel = document.getElementById('panel-' + tab);
   if (panel) panel.classList.add('active');
-
-  // Update bottom tab bar buttons
-  document.querySelectorAll('.tab-btn').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.tab === tab);
-  });
-
-  // Update desktop nav links
-  document.querySelectorAll('.nav-link').forEach(function(a) {
-    a.classList.toggle('active', a.dataset.tab === tab);
-  });
-
-  // Chat panel is position:fixed on mobile — others scroll normally
-  // Reset scroll for Tools/About panels
-  if (tab !== 'chat') {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.tab === tab); });
+  document.querySelectorAll('.nav-link').forEach(function(a) { a.classList.toggle('active', a.dataset.tab === tab); });
+  if (tab !== 'chat') window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
-/* Desktop nav link clicks */
 document.querySelectorAll('.nav-link').forEach(function(a) {
-  a.addEventListener('click', function(e) {
-    e.preventDefault();
-    switchTab(a.dataset.tab, a);
-  });
+  a.addEventListener('click', function(e) { e.preventDefault(); switchTab(a.dataset.tab, a); });
 });
 
-/* ════════════════════════════════════════════════
-   openToolModal — opens a tool in the modal
-   (used by the Tools tab cards on mobile)
-   ════════════════════════════════════════════════ */
+/* ── TOOL MODAL ─────────────────────────────────────────────── */
 function openToolModal(toolId) {
-  /* If showTool is defined by cyberbot_script.js, call it */
-  if (typeof showTool === 'function') {
-    showTool(toolId);
-  }
+  if (typeof showTool === 'function') showTool(toolId);
 }
 
-/* ════════════════════════════════════════════════
-   iOS KEYBOARD — scroll input into view on focus
-   ════════════════════════════════════════════════ */
+/* Hide quick chips once the user sends first message */
+function hideChips() {
+  var chips = document.getElementById('quickChips');
+  if (chips) chips.style.display = 'none';
+}
+
+/* Patch sendMessage and sendQuick to hide chips on first use */
+var _origSend = window.sendMessage;
+window.sendMessage = function() {
+  hideChips();
+  if (_origSend) _origSend.apply(this, arguments);
+};
+
+var _origQuick = window.sendQuick;
+window.sendQuick = function(msg) {
+  hideChips();
+  if (_origQuick) { _origQuick.apply(this, arguments); }
+  else {
+    var inp = document.getElementById('messageInput');
+    if (inp) { inp.value = msg; if (typeof sendMessage === 'function') sendMessage(); }
+  }
+};
+
+/* ── iOS KEYBOARD ───────────────────────────────────────────── */
 (function() {
   var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
   if (!isIOS) return;
-
   document.addEventListener('focusin', function(e) {
     if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
-      setTimeout(function() {
-        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 350);
+      setTimeout(function() { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 350);
     }
   }, { passive: true });
-
   document.addEventListener('focusout', function() {
-    setTimeout(function() {
-      window.scrollTo({ top: window.scrollY, behavior: 'instant' });
-    }, 100);
+    setTimeout(function() { window.scrollTo({ top: window.scrollY, behavior: 'instant' }); }, 100);
   }, { passive: true });
 })();
 
-/* ════════════════════════════════════════════════
-   MODAL — swipe down to close
-   ════════════════════════════════════════════════ */
+/* ── MODAL swipe down to close ──────────────────────────────── */
 (function() {
   var startY = null;
-  var modal  = document.querySelector('.modal');
-
   document.addEventListener('touchstart', function(e) {
     if (e.target.closest('.modal')) startY = e.touches[0].clientY;
   }, { passive: true });
-
   document.addEventListener('touchend', function(e) {
     if (startY === null) return;
     var dy = e.changedTouches[0].clientY - startY;
@@ -422,16 +422,13 @@ function openToolModal(toolId) {
   }, { passive: true });
 })();
 
-/* ════════════════════════════════════════════════
-   STATUS SYNC — keep mobile badge in sync
-   ════════════════════════════════════════════════ */
+/* ── STATUS SYNC ────────────────────────────────────────────── */
 (function syncStatus() {
-  var src  = document.getElementById('statusDot');
+  var src = document.getElementById('statusDot');
   var srcT = document.getElementById('statusText');
-  var dst  = document.getElementById('statusDotMobile');
+  var dst = document.getElementById('statusDotMobile');
   var dstT = document.getElementById('statusTextMobile');
   if (!src || !dst) return;
-
   var obs = new MutationObserver(function() {
     dst.className = src.className;
     if (dstT && srcT) dstT.textContent = srcT.textContent;
@@ -440,9 +437,6 @@ function openToolModal(toolId) {
   if (srcT) obs.observe(srcT, { childList: true, characterData: true, subtree: true });
 })();
 
-/* ════════════════════════════════════════════════
-   MESSAGES scroll contain
-   ════════════════════════════════════════════════ */
 var msgEl = document.getElementById('messages');
 if (msgEl) msgEl.style.overscrollBehavior = 'contain';
 </script>
