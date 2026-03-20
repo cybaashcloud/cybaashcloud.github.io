@@ -1,5 +1,5 @@
 /**
- * CYBAASH AI — Chatbot  v3
+ * CYBAASH AI — Chatbot  v3.1
  * ════════════════════════
  * Fully serverless — Gemini + GitHub only, zero backend.
  *
@@ -28,9 +28,10 @@
   /* ── CONFIG ──────────────────────────────────────────────── */
   var cfg = {
     key:    '',
-    model:  'gemini-2.0-flash',
+    model:  'gemini-2.5-flash-lite-preview-06-17',
     tokens: 800,
     temp:   0.4,
+    rpm:    12,   // client-side cap — 3 under the 15 RPM free tier limit
     prompt: [
       'You are CyberBot — an expert cybersecurity assistant embedded in',
       'Mohamed Aasiq\'s portfolio at cybaashcloud.github.io.',
@@ -70,14 +71,42 @@
   var sessionCache = {};       // dedup: normalised_msg → answer (this session only)
   var currentAbort = null;     // AbortController for in-flight request
 
+  // Client-side token bucket rate limiter
+  // Prevents firing faster than cfg.rpm requests/min before the request even leaves the browser.
+  // Tokens refill at cfg.rpm/60 per second; bucket holds cfg.rpm tokens max.
+  var rlTokens     = 0;   // starts empty; filled on first DOMContentLoaded tick
+  var rlLastFill   = 0;   // timestamp of last refill
+
   /* ── INIT ────────────────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', function () {
     loadConfig();
     loadCache();
+    rlTokens   = cfg.rpm;   // start with a full bucket
+    rlLastFill = Date.now();
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeCybaashAI();
     });
   });
+
+  /**
+   * Token bucket rate limiter.
+   * Returns true and consumes a token if a request is allowed right now.
+   * Returns false if the bucket is empty (caller should wait).
+   */
+  function rlConsume() {
+    var now     = Date.now();
+    var elapsed = (now - rlLastFill) / 1000;          // seconds since last refill
+    var refill  = elapsed * (cfg.rpm / 60);            // tokens earned since last check
+    rlTokens    = Math.min(cfg.rpm, rlTokens + refill);
+    rlLastFill  = now;
+    if (rlTokens >= 1) { rlTokens -= 1; return true; }
+    return false;
+  }
+
+  /** Returns ms to wait until one token is available. */
+  function rlWaitMs() {
+    return Math.ceil((1 - rlTokens) / (cfg.rpm / 60) * 1000);
+  }
 
   /* ── CONFIG LOADING ──────────────────────────────────────── */
   function loadConfig() {
@@ -104,6 +133,7 @@
           if (c.max_tokens)                 cfg.tokens = Math.min(parseInt(c.max_tokens) || 800, 1024);
           if (c.temperature)                cfg.temp   = parseFloat(c.temperature) || 0.4;
           if (c.system_prompt)              cfg.prompt = c.system_prompt;
+          if (c.rpm_limit)                  cfg.rpm    = Math.min(parseInt(c.rpm_limit) || 12, 14);
           if (done) done();
         })
         .catch(function () { tryNext(idx + 1); });
@@ -220,8 +250,16 @@
       return;
     }
 
-    // 3. Live Gemini call — streaming if key present
+    // 3. Live Gemini call — check client-side rate limit first
     if (cfg.key) {
+      if (!rlConsume()) {
+        var waitMs = rlWaitMs();
+        showTyping(false);
+        appendMsg('bot',
+          '⏳ Sending too fast — please wait **' + Math.ceil(waitMs / 1000) + 's** before the next message.', []);
+        _reset();
+        return;
+      }
       callGeminiStream(msg)
         .then(function (fullReply) {
           sessionCache[norm] = fullReply;
