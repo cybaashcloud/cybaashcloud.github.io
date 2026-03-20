@@ -5,28 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CyberBot — AI Cybersecurity Assistant</title>
 <meta name="description" content="AI-powered cybersecurity assistant by Mohamed Aasiq.">
-<meta name="theme-color" content="#0d0d0d">
+<meta name="theme-color" content="#030a0f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────── */
 :root {
-  --bg:        #0d0d0d;
-  --bg2:       #161616;
-  --bg3:       #1e1e1e;
-  --border:    #2a2a2a;
-  --border2:   #333;
-  --text:      #e8e8e8;
-  --text2:     #a0a0a0;
-  --text3:     #606060;
-  --accent:    #c96442;
-  --accent2:   #e07a55;
-  --cyan:      #5cb8d0;
-  --green:     #4caf7d;
-  --red:       #e05656;
-  --yellow:    #d4a853;
-  --font:      'Inter', system-ui, sans-serif;
-  --mono:      'JetBrains Mono', 'Fira Code', monospace;
+  --bg:        #030a0f;
+  --bg2:       #060f18;
+  --bg3:       #0a1520;
+  --border:    #1a3a5c;
+  --border2:   #1e4060;
+  --text:      #c8e0f4;
+  --text2:     #7a9ab8;
+  --text3:     #3a5a7a;
+  --accent:    #00d4ff;
+  --accent2:   #00aacc;
+  --cyan:      #00d4ff;
+  --green:     #00ff88;
+  --red:       #ff2244;
+  --yellow:    #ffd700;
+  --font:      'Share Tech Mono', 'Courier New', Courier, monospace;
+  --mono:      'Share Tech Mono', 'JetBrains Mono', 'Fira Code', monospace;
   --radius:    10px;
   --radius-sm: 6px;
   --sidebar-w: 256px;
@@ -268,7 +268,7 @@ textarea, input, select { font: inherit; color: inherit; }
   font-family: var(--mono); font-size: 12px; color: var(--cyan);
 }
 .msg-bubble pre {
-  background: #0a0a0a; border: 1px solid var(--border);
+  background: #020810; border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 14px;
   overflow-x: auto; margin: 10px 0; position: relative;
 }
@@ -325,7 +325,7 @@ textarea, input, select { font: inherit; color: inherit; }
   white-space: nowrap;
   cursor: pointer;
 }
-.chip:hover { border-color: var(--accent); color: var(--accent2); background: rgba(201,100,66,.06); }
+.chip:hover { border-color: var(--accent); color: var(--accent2); background: rgba(0,212,255,.06); }
 
 /* ── INPUT AREA ──────────────────────────────────────────────── */
 .input-area {
@@ -340,7 +340,7 @@ textarea, input, select { font: inherit; color: inherit; }
   transition: border-color .15s;
   overflow: hidden;
 }
-.input-box:focus-within { border-color: var(--border2); box-shadow: 0 0 0 3px rgba(201,100,66,.08); }
+.input-box:focus-within { border-color: var(--border2); box-shadow: 0 0 0 3px rgba(0,212,255,.08); }
 
 .input-flags { padding: 8px 12px 0; }
 .input-row { display: flex; align-items: flex-end; gap: 0; padding: 8px; }
@@ -453,7 +453,7 @@ textarea, input, select { font: inherit; color: inherit; }
 }
 .tool-input:focus, .tool-textarea:focus, .tool-select:focus {
   outline: none; border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(201,100,66,.1);
+  box-shadow: 0 0 0 3px rgba(0,212,255,.1);
 }
 .tool-textarea { resize: vertical; min-height: 120px; font-family: var(--mono); font-size: 12px; }
 .tool-btn {
