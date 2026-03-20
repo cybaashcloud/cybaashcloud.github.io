@@ -71,7 +71,9 @@ jobs:
           [ -f frontend/mobile-clean.css   ] && cp frontend/mobile-clean.css   _site/mobile-clean.css   || true
           [ -f frontend/mobile-runtime.js ] && cp frontend/mobile-runtime.js _site/mobile-runtime.js || true
           [ -f frontend/mobile-fix.css    ] && cp frontend/mobile-fix.css    _site/mobile-fix.css    || true
-          [ -f frontend/mobile-fix.js     ] && cp frontend/mobile-fix.js     _site/mobile-fix.js     || true
+          [ -f frontend/mobile-fix.js       ] && cp frontend/mobile-fix.js       _site/mobile-fix.js       || true
+          [ -f frontend/mobile-redesign.css  ] && cp frontend/mobile-redesign.css  _site/mobile-redesign.css  || true
+          [ -f frontend/mobile-redesign.js   ] && cp frontend/mobile-redesign.js   _site/mobile-redesign.js   || true
           [ -f frontend/cyberbot-script.js ] && cp frontend/cyberbot-script.js _site/cyberbot-script.js || true
           [ -f frontend/cybaash_chatbot.js ] && cp frontend/cybaash_chatbot.js _site/cybaash_chatbot.js || true
 
