@@ -374,7 +374,7 @@
         "Docker"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro014_image.jpg",
       "title": "Docker Foundations Professional Certificate",
       "issuer": "Docker",
       "courseId": "docker-foundations-professional-certificate",
