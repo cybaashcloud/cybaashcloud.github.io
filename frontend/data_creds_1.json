@@ -453,7 +453,7 @@
         "Blue Team"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro018_image.jpg",
       "title": "Social Media Marketing Professional Certificate by Hootsuite",
       "issuer": "Hootsuite",
       "courseId": "social-media-marketing-professional-certificate-by-hootsuite",
