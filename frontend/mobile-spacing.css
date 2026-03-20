@@ -1,0 +1,843 @@
+/* ╔══════════════════════════════════════════════════════════════════════════════╗
+   ║  CYBAASH — MOBILE SPACING & BREATHING ROOM                                 ║
+   ║  File: mobile-spacing.css                                                  ║
+   ║  Load order: AFTER mobile-godmode.css                                      ║
+   ║                                                                             ║
+   ║  Philosophy: space IS the design. Every breathing room decision            ║
+   ║  is intentional. Premium feel = generous whitespace + clear hierarchy.     ║
+   ║                                                                             ║
+   ║  RULE: 100% inside max-width: 768px — zero desktop impact.                 ║
+   ╚══════════════════════════════════════════════════════════════════════════════╝ */
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SPACING TOKENS — single source of truth for all mobile spacing
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  :root {
+    --sp-xs:   8px;    /* tight gaps — between label/value pairs           */
+    --sp-sm:  12px;    /* internal card padding (compact)                  */
+    --sp-md:  16px;    /* standard component gap                           */
+    --sp-lg:  24px;    /* between major blocks within a section            */
+    --sp-xl:  36px;    /* section top/bottom padding                       */
+    --sp-2xl: 52px;    /* between major page sections                      */
+
+    --lh-tight:  1.45; /* monospace / UI labels                            */
+    --lh-body:   1.75; /* body paragraphs                                  */
+    --lh-loose:  1.9;  /* small-print / secondary text                     */
+
+    --card-pad:    20px;   /* internal card breathing room                 */
+    --card-radius:  8px;   /* softened corners on mobile                   */
+    --card-gap:    12px;   /* between stacked cards                        */
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --sp-xl:  28px;
+    --sp-2xl: 40px;
+    --card-pad: 16px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   1. VERTICAL RHYTHM — consistent section spacing
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Every top-level section breathes */
+  .section {
+    padding-top: var(--sp-2xl) !important;
+    padding-bottom: var(--sp-2xl) !important;
+  }
+
+  /* Alt sections (dark bg) get a visual lift via extra padding */
+  .section-alt {
+    padding-top: calc(var(--sp-2xl) + 4px) !important;
+    padding-bottom: calc(var(--sp-2xl) + 4px) !important;
+  }
+
+  /* Section inner: generous horizontal breathing room */
+  .section-inner {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  /* Section header: clear space before content starts */
+  .section-header {
+    margin-bottom: var(--sp-lg) !important;
+    padding-bottom: var(--sp-sm) !important;
+  }
+
+  /* Decorative line next to section title — subtle, not bold */
+  .section-line {
+    opacity: 0.4 !important;
+  }
+
+  /* Space between sections inside the cyber range panels */
+  .panel-title {
+    padding: 10px 16px 8px !important;
+    margin-bottom: 0 !important;
+    letter-spacing: 2px !important;
+  }
+
+  /* Vertical gap between panel blocks */
+  .panel > * + * {
+    border-top: 1px solid rgba(26, 58, 92, 0.25) !important;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   2. TYPOGRAPHY RHYTHM — generous line-height, measured margins
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Hero ────────────────────────────────────────────────────────────────── */
+  .hero-eyebrow {
+    margin-bottom: 16px !important;
+    letter-spacing: 3px !important;
+    opacity: 0.85 !important;
+  }
+
+  .hero-name {
+    line-height: 1.08 !important;
+    margin-bottom: 10px !important;
+    letter-spacing: 1px !important;
+  }
+
+  .hero-tagline {
+    margin-bottom: 18px !important;
+    line-height: var(--lh-tight) !important;
+    opacity: 0.7 !important;
+  }
+
+  .hero-bio {
+    line-height: var(--lh-body) !important;
+    margin-bottom: 24px !important;
+    opacity: 0.85 !important;
+  }
+
+  .hero-stats {
+    margin-bottom: 28px !important;
+  }
+
+  /* Gap between hero left and right (avatar) */
+  .hero-content {
+    gap: 32px !important;
+  }
+
+  /* ── Section headings ────────────────────────────────────────────────────── */
+  .section-title {
+    line-height: 1.2 !important;
+    letter-spacing: 2.5px !important;
+  }
+
+  /* ── About ───────────────────────────────────────────────────────────────── */
+  .about-text p {
+    line-height: var(--lh-body) !important;
+    margin-bottom: 20px !important;
+  }
+
+  .about-text p:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .meta-item {
+    padding: 10px 0 !important;
+    gap: 10px !important;
+    border-bottom: 1px solid rgba(26, 58, 92, 0.2) !important;
+  }
+
+  .meta-item:last-child {
+    border-bottom: none !important;
+  }
+
+  .meta-label {
+    line-height: var(--lh-tight) !important;
+    opacity: 0.6 !important;
+  }
+
+  /* ── Experience ──────────────────────────────────────────────────────────── */
+  .exp-role {
+    line-height: 1.3 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .exp-company {
+    margin-bottom: 4px !important;
+    line-height: 1.4 !important;
+  }
+
+  .exp-type {
+    margin-bottom: 10px !important;
+    opacity: 0.6 !important;
+  }
+
+  .exp-desc {
+    line-height: var(--lh-body) !important;
+    margin-bottom: 16px !important;
+  }
+
+  .exp-achievements {
+    gap: 8px !important;
+  }
+
+  .exp-achievements li {
+    line-height: 1.65 !important;
+    padding-left: 18px !important;
+  }
+
+  /* ── Contact ─────────────────────────────────────────────────────────────── */
+  .contact-text h3 {
+    line-height: 1.3 !important;
+    margin-bottom: 12px !important;
+  }
+
+  .contact-text p {
+    line-height: var(--lh-body) !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* ── AI section ──────────────────────────────────────────────────────────── */
+  .ai-headline {
+    line-height: 1.25 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .ai-subtext {
+    line-height: var(--lh-body) !important;
+    margin-bottom: 20px !important;
+  }
+
+  .ai-feat {
+    line-height: var(--lh-tight) !important;
+    padding: 4px 0 !important;
+  }
+
+  /* ── Chat messages ───────────────────────────────────────────────────────── */
+  .msg-text {
+    line-height: var(--lh-body) !important;
+  }
+
+  .msg-bubble {
+    padding: 12px 14px !important;
+  }
+
+  .msg-header {
+    margin-bottom: 8px !important;
+    opacity: 0.6 !important;
+  }
+
+  /* ── Event log ───────────────────────────────────────────────────────────── */
+  .event-item {
+    padding: 8px 14px !important;
+    line-height: var(--lh-tight) !important;
+    gap: 8px !important;
+  }
+
+  /* ── Mini metrics in panels ──────────────────────────────────────────────── */
+  .mini-metric {
+    padding: 8px 16px !important;
+    gap: 10px !important;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   3. CARD LAYOUT — internal padding, clear borders, readable content
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Info card (about section) ───────────────────────────────────────────── */
+  .info-card {
+    padding: var(--card-pad) !important;
+    border-radius: var(--card-radius) !important;
+    /* Soften border — less harsh */
+    border-color: rgba(26, 58, 92, 0.5) !important;
+  }
+
+  .info-card-title {
+    margin-bottom: 14px !important;
+    letter-spacing: 1.5px !important;
+    opacity: 0.8 !important;
+  }
+
+  .info-row {
+    padding: 11px 0 !important;
+    gap: 10px !important;
+    font-size: 0.88rem !important;
+    /* Soften divider lines */
+    border-bottom-color: rgba(26, 58, 92, 0.2) !important;
+  }
+
+  /* ── Timeline / Experience cards ─────────────────────────────────────────── */
+  .timeline-item {
+    padding: var(--card-pad) !important;
+    border-radius: var(--card-radius) !important;
+    margin-bottom: var(--sp-md) !important;
+    /* Soften card border */
+    border-color: rgba(26, 58, 92, 0.45) !important;
+    /* Reduce glow dot visual noise */
+    box-shadow: none !important;
+  }
+
+  .timeline-item::before {
+    box-shadow: none !important;
+  }
+
+  /* ── Project cards ───────────────────────────────────────────────────────── */
+  .projects-grid {
+    gap: var(--card-gap) !important;
+  }
+
+  .project-card {
+    border-radius: var(--card-radius) !important;
+    border-color: rgba(26, 58, 92, 0.45) !important;
+    /* Kill hover shadow on mobile — it fires on tap */
+    box-shadow: none !important;
+  }
+
+  .project-body {
+    padding: var(--card-pad) !important;
+  }
+
+  .project-title {
+    margin-bottom: 8px !important;
+    line-height: 1.3 !important;
+  }
+
+  .project-desc {
+    margin-bottom: 16px !important;
+    line-height: var(--lh-body) !important;
+  }
+
+  .project-status {
+    margin-bottom: 16px !important;
+  }
+
+  .project-links {
+    gap: 8px !important;
+  }
+
+  /* ── Skill items ─────────────────────────────────────────────────────────── */
+  .skills-grid {
+    gap: 6px !important;
+  }
+
+  .skill-item {
+    padding: 12px 14px !important;
+    border-radius: 6px !important;
+    border-color: rgba(26, 58, 92, 0.4) !important;
+    /* No hover transform on mobile */
+    box-shadow: none !important;
+  }
+
+  /* ── Stat cards in hero ──────────────────────────────────────────────────── */
+  .hero-stats {
+    gap: 8px !important;
+  }
+
+  .stat-card {
+    padding: 14px 10px !important;
+    border-radius: 6px !important;
+    border-color: rgba(26, 58, 92, 0.45) !important;
+    /* Kill top gradient line on mobile — too small to see */
+    background-clip: padding-box !important;
+  }
+
+  .stat-card::before {
+    opacity: 0.4 !important;
+  }
+
+  .stat-val {
+    margin-bottom: 4px !important;
+  }
+
+  /* ── Chat container ──────────────────────────────────────────────────────── */
+  .chat-container {
+    border-radius: var(--card-radius) !important;
+    border-color: rgba(26, 58, 92, 0.5) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .chat-header {
+    padding: 12px 16px !important;
+    border-bottom-color: rgba(26, 58, 92, 0.3) !important;
+  }
+
+  .chat-messages {
+    padding: 16px !important;
+    gap: 16px !important;
+  }
+
+  .chat-input-area {
+    padding: 12px 16px !important;
+    border-top-color: rgba(26, 58, 92, 0.3) !important;
+  }
+
+  /* ── AI suggestion buttons ───────────────────────────────────────────────── */
+  .ai-suggestion-grid {
+    gap: 8px !important;
+  }
+
+  .suggest-btn {
+    padding: 14px 16px !important;
+    border-radius: 6px !important;
+    border-color: rgba(26, 58, 92, 0.4) !important;
+    line-height: var(--lh-tight) !important;
+  }
+
+  /* ── Score grid cards ────────────────────────────────────────────────────── */
+  .score-card,
+  .score-cell {
+    padding: 12px 10px !important;
+    border-radius: 6px !important;
+    border-color: rgba(26, 58, 92, 0.4) !important;
+  }
+
+  .score-grid {
+    gap: 8px !important;
+    padding: 12px 16px !important;
+  }
+
+  /* ── Recruiter cards ─────────────────────────────────────────────────────── */
+  .recruiter-card {
+    padding: var(--card-pad) !important;
+    border-radius: var(--card-radius) !important;
+    border-color: rgba(26, 58, 92, 0.45) !important;
+  }
+
+  .recruiter-grid {
+    gap: var(--card-gap) !important;
+  }
+
+  .recruiter-header {
+    margin-bottom: var(--sp-lg) !important;
+    padding-bottom: var(--sp-md) !important;
+    border-bottom: 1px solid rgba(26, 58, 92, 0.2) !important;
+  }
+
+  /* ── CVE cards ───────────────────────────────────────────────────────────── */
+  .cve-item {
+    padding: 12px 14px !important;
+    border-radius: 6px !important;
+    margin-bottom: var(--sp-xs) !important;
+    border-color: rgba(26, 58, 92, 0.4) !important;
+  }
+
+  #cvePanel {
+    padding: var(--sp-md) !important;
+  }
+
+  .cve-header {
+    margin-bottom: var(--sp-md) !important;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   4. BUTTON SPACING — clear breathing room, full-width where appropriate
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Hero CTAs ───────────────────────────────────────────────────────────── */
+  .hero-cta {
+    gap: 10px !important;
+    margin-top: 4px !important;
+  }
+
+  .btn-primary,
+  .btn-ghost {
+    padding: 14px 24px !important;
+    border-radius: 6px !important;
+    letter-spacing: 0.5px !important;
+    /* Soften hero button shadows */
+    box-shadow: none !important;
+  }
+
+  /* ── Filter buttons (skills) ─────────────────────────────────────────────── */
+  .skills-filter {
+    gap: 8px !important;
+    margin-bottom: 20px !important;
+    row-gap: 8px !important;
+  }
+
+  .filter-btn {
+    padding: 9px 14px !important;
+    border-radius: 20px !important;
+    line-height: 1 !important;
+    border-color: rgba(26, 58, 92, 0.5) !important;
+  }
+
+  /* ── Contact buttons ─────────────────────────────────────────────────────── */
+  .contact-links {
+    gap: 8px !important;
+    flex-direction: column !important;
+  }
+
+  .contact-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 14px 20px !important;
+    border-radius: 6px !important;
+    border-color: rgba(26, 58, 92, 0.5) !important;
+  }
+
+  /* ── Project link buttons ────────────────────────────────────────────────── */
+  .project-links {
+    flex-direction: row !important;
+    gap: 8px !important;
+  }
+
+  .project-link {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 10px 12px !important;
+    border-radius: 5px !important;
+    border-color: rgba(26, 58, 92, 0.5) !important;
+    text-align: center !important;
+  }
+
+  /* ── Scenario / decision buttons ─────────────────────────────────────────── */
+  .controls {
+    gap: 8px !important;
+    padding: 12px 16px !important;
+  }
+
+  .ctrl-row {
+    gap: 8px !important;
+    padding: 8px 16px !important;
+  }
+
+  /* General .btn in panels — consistent height and breathing */
+  .btn {
+    padding: 0 12px !important;
+    min-height: 38px !important;
+    border-radius: 4px !important;
+    letter-spacing: 0.8px !important;
+  }
+
+  /* ── FAB — less dominating ───────────────────────────────────────────────── */
+  .fab-chat {
+    padding: 11px 16px !important;
+    border-radius: 50px !important;
+    /* Softer shadow */
+    box-shadow: 0 4px 16px rgba(0, 255, 136, 0.25) !important;
+    gap: 6px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Full-width CTAs on tiny screens */
+  .hero-cta {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .btn-primary,
+  .btn-ghost {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .contact-links {
+    gap: 8px !important;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   5. VISUAL CLUTTER REDUCTION — soften effects that crowd mobile
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Kill heavy glow text-shadows ────────────────────────────────────────── */
+  .hero-name,
+  .big-number,
+  .recruiter-name,
+  .stat-big,
+  .rank-name,
+  .report-kpi-val,
+  .cve-score {
+    text-shadow: none !important;
+  }
+
+  /* ── Soften box-shadow depth ─────────────────────────────────────────────── */
+  .project-card,
+  .timeline-item,
+  .skill-item,
+  .info-card,
+  .chat-container,
+  .recruiter-card,
+  .cve-item {
+    box-shadow: none !important;
+  }
+
+  /* Light lift shadow only on actively focused card */
+  .project-card:active,
+  .suggest-btn:active {
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.08) !important;
+  }
+
+  /* ── Reduce scanline intensity further ───────────────────────────────────── */
+  .scanline {
+    opacity: 0.15 !important;
+  }
+
+  /* ── Mute hero grid bg pattern ───────────────────────────────────────────── */
+  .hero-grid-bg {
+    opacity: 0.4 !important;
+  }
+
+  /* ── Dim the glow dot on timeline ────────────────────────────────────────── */
+  .timeline::before {
+    opacity: 0.3 !important;
+  }
+
+  /* ── Simplify border on section dividers ─────────────────────────────────── */
+  .section-header {
+    border-bottom: 1px solid rgba(26, 58, 92, 0.2) !important;
+  }
+
+  /* ── Tone down status pulse dot (less seizure-y) ─────────────────────────── */
+  .pulse,
+  .status-dot {
+    animation-duration: 2.5s !important;
+    opacity: 0.8 !important;
+  }
+
+  /* ── Mute badge borders — keep them but quieter ──────────────────────────── */
+  .badge {
+    border-color: rgba(26, 58, 92, 0.4) !important;
+    padding: 5px 11px !important;
+  }
+
+  /* ── Current-badge — just enough contrast ────────────────────────────────── */
+  .current-badge {
+    padding: 4px 8px !important;
+    font-size: 0.58rem !important;
+  }
+
+  /* ── Skill level tags — subtle ───────────────────────────────────────────── */
+  .level-expert,
+  .level-advanced,
+  .level-intermediate {
+    border-width: 1px !important;
+    font-size: 0.58rem !important;
+    padding: 3px 8px !important;
+    border-radius: 10px !important;
+  }
+
+  /* ── Terminal window in contact: less chrome ─────────────────────────────── */
+  .terminal-window {
+    border-color: rgba(26, 58, 92, 0.4) !important;
+    border-radius: var(--card-radius) !important;
+  }
+
+  .terminal-bar {
+    padding: 10px 14px !important;
+    border-bottom-color: rgba(26, 58, 92, 0.3) !important;
+  }
+
+  .t-dot {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  /* ── Cyber Range header — quieter stat pills ─────────────────────────────── */
+  .stat-pill {
+    font-size: 8px !important;
+    padding: 3px 8px !important;
+    border-radius: 3px !important;
+    border-color: rgba(26, 58, 92, 0.4) !important;
+  }
+
+  /* ── Attacker badge: less intense ────────────────────────────────────────── */
+  #attackerBadge {
+    opacity: 0.85 !important;
+  }
+
+  /* ── Mute phase bar borders ──────────────────────────────────────────────── */
+  .phase-cell {
+    border-color: rgba(26, 58, 92, 0.4) !important;
+    font-size: 7.5px !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  /* ── Footer: cleaner divider ─────────────────────────────────────────────── */
+  .footer {
+    border-top-color: rgba(26, 58, 92, 0.3) !important;
+  }
+
+  .footer-inner {
+    gap: 10px !important;
+    padding: 0 20px !important;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   6. ABOUT GRID — breathing room fix
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  .about-grid {
+    gap: var(--sp-lg) !important;
+  }
+
+  .about-meta {
+    gap: 0 !important;   /* gap handled by meta-item padding + border */
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   7. EXPERIENCE / TIMELINE — breathing room
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  .timeline {
+    padding-left: 20px !important;
+  }
+
+  .timeline-item {
+    margin-bottom: var(--sp-md) !important;
+  }
+
+  .exp-header {
+    margin-bottom: 8px !important;
+  }
+
+  .exp-tags {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin-top: 12px !important;
+  }
+
+  .exp-tag {
+    padding: 4px 10px !important;
+    border-radius: 4px !important;
+    font-size: 0.6rem !important;
+    border-color: rgba(26, 58, 92, 0.4) !important;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   8. CYBER RANGE PANEL INNER SPACING
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Left/right panel sections — internal padding  */
+  .panel > div:not(.panel-title):not(.phase-bar):not(.threat-bar) {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Give each panel section a clear top divider */
+  .threat-bar {
+    padding: 8px 16px 12px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .threat-label {
+    font-size: 8px !important;
+    margin-bottom: 6px !important;
+    opacity: 0.7 !important;
+    letter-spacing: 1px !important;
+  }
+
+  /* Skill influence rows */
+  #skillInfluence {
+    padding: 8px 0 4px !important;
+  }
+
+  .skill-bar-row {
+    padding: 6px 16px !important;
+    gap: 8px !important;
+  }
+
+  /* Event log — more air between entries */
+  .event-item {
+    padding: 8px 14px !important;
+    border-bottom-color: rgba(26, 58, 92, 0.2) !important;
+  }
+
+  /* Center panel header row */
+  #viewRange > div:first-child {
+    margin-bottom: 10px !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid rgba(26, 58, 92, 0.15) !important;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   9. SMALL PHONE (≤ 480px) — tighter tokens, same proportions
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+
+  .section-inner {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .hero-content {
+    gap: 24px !important;
+    padding: 14px !important;
+  }
+
+  .hero-stats {
+    gap: 6px !important;
+  }
+
+  .stat-card {
+    padding: 12px 8px !important;
+  }
+
+  .timeline-item {
+    padding: 14px !important;
+  }
+
+  .project-body {
+    padding: 14px !important;
+  }
+
+  .info-card {
+    padding: 14px !important;
+  }
+
+  .recruiter-card {
+    padding: 14px !important;
+  }
+
+  .chat-messages {
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+
+  .chat-input-area {
+    padding: 10px 12px !important;
+  }
+
+  .controls {
+    padding: 10px 14px !important;
+  }
+
+  .skill-bar-row {
+    padding: 5px 14px !important;
+  }
+
+  .mini-metric {
+    padding: 7px 14px !important;
+  }
+
+  .footer-inner {
+    padding: 0 14px !important;
+    gap: 8px !important;
+  }
+}
