@@ -473,7 +473,7 @@
         "Marketing"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro019_image.jpg",
       "title": "Email Marketing Professional Certificate by Intuit Mailchimp",
       "issuer": "Intuit Mailchimp",
       "courseId": "email-marketing-professional-certificate-by-intuit-mailchimp",
