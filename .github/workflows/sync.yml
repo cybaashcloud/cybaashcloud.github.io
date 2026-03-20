@@ -61,6 +61,7 @@ jobs:
           cp frontend/cybaash-ai.js     _site/cybaash-ai.js
           cp frontend/cybaash-ai.css    _site/cybaash-ai.css
           [ -f frontend/style.css ] && cp frontend/style.css _site/style.css || true
+          [ -f frontend/mobile-fix.css ] && cp frontend/mobile-fix.css _site/mobile-fix.css && echo "OK mobile-fix.css" || echo "SKIP mobile-fix.css"
           cp frontend/script.js         _site/script.js
           cp frontend/github.js         _site/github.js
           [ -f frontend/cyberbot-script.js ] && cp frontend/cyberbot-script.js _site/cyberbot-script.js || true
