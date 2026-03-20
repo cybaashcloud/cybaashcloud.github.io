@@ -51,38 +51,49 @@ jobs:
           set -euo pipefail
           mkdir -p _site/portfolio _site/admin _site/icons _site/cyberbot
 
+          # ── Core HTML pages ───────────────────────────────────────────
           cp frontend/index.html        _site/index.html
           cp frontend/recruiter.html    _site/recruiter.html
           cp frontend/dashboard.html    _site/dashboard.html
           cp frontend/offline.html      _site/offline.html
 
+          # ── Cyberbot ──────────────────────────────────────────────────
           cp -r frontend/cyberbot/. _site/cyberbot/
 
-          cp frontend/cybaash-ai.js     _site/cybaash-ai.js
-          cp frontend/cybaash-ai.css    _site/cybaash-ai.css
-          [ -f frontend/style.css ] && cp frontend/style.css _site/style.css || true
-          [ -f frontend/mobile-fix.css ] && cp frontend/mobile-fix.css _site/mobile-fix.css && echo "OK mobile-fix.css" || echo "SKIP mobile-fix.css"
-          cp frontend/script.js         _site/script.js
-          cp frontend/github.js         _site/github.js
-          [ -f frontend/cyberbot-script.js ] && cp frontend/cyberbot-script.js _site/cyberbot-script.js || true
+          # ── JS / CSS ──────────────────────────────────────────────────
+          cp frontend/cybaash-ai.js      _site/cybaash-ai.js
+          cp frontend/cybaash-ai.css     _site/cybaash-ai.css
+          cp frontend/script.js          _site/script.js
+          cp frontend/github.js          _site/github.js
           cp frontend/saas-integration.js _site/saas-integration.js
+          [ -f frontend/style.css          ] && cp frontend/style.css          _site/style.css          || true
+          [ -f frontend/mobile-fix.css     ] && cp frontend/mobile-fix.css     _site/mobile-fix.css     || true
+          [ -f frontend/cyberbot-script.js ] && cp frontend/cyberbot-script.js _site/cyberbot-script.js || true
+          [ -f frontend/cybaash_chatbot.js ] && cp frontend/cybaash_chatbot.js _site/cybaash_chatbot.js || true
 
+          # ── Portfolio images ──────────────────────────────────────────
           [ -f frontend/avatar.png           ] && cp frontend/avatar.png           _site/portfolio/avatar.png           || true
           [ -f frontend/li-logo.jpg          ] && cp frontend/li-logo.jpg          _site/portfolio/li-logo.jpg          || true
           [ -f frontend/project_eatpqa2f.png ] && cp frontend/project_eatpqa2f.png _site/portfolio/project_eatpqa2f.png || true
 
+          # ── Data files → portfolio/ AND root (both paths used by app) ─
           for f in data_main.json data_creds_1.json data_creds_2.json data_creds_3.json data_creds_4.json data_creds_5.json; do
-            [ -f "frontend/$f" ] && cp "frontend/$f" "_site/portfolio/$f" && echo "OK $f" || echo "SKIP $f"
+            if [ -f "frontend/$f" ]; then
+              cp "frontend/$f" "_site/portfolio/$f"
+              cp "frontend/$f" "_site/$f"
+              echo "OK $f"
+            else
+              echo "SKIP $f"
+            fi
           done
 
-          [ -f frontend/data_main.json ] && cp frontend/data_main.json _site/data_main.json || true
-
+          # ── Admin panel ───────────────────────────────────────────────
           cp -r frontend/admin/dist/. _site/admin/
 
+          # ── AI config ─────────────────────────────────────────────────
           [ -f frontend/data_ai_config.json ] && cp frontend/data_ai_config.json _site/data_ai_config.json || true
 
-          [ -f frontend/cybaash_chatbot.js ] && cp frontend/cybaash_chatbot.js _site/cybaash_chatbot.js && echo "OK cybaash_chatbot.js" || echo "SKIP cybaash_chatbot.js"
-
+          # ── Certificates (all types: LinkedIn, Cisco, AWS, etc.) ──────
           if [ -d frontend/certificates ]; then
             mkdir -p _site/certificates
             cp -r frontend/certificates/. _site/certificates/
@@ -91,16 +102,28 @@ jobs:
             echo "SKIP certificates/"
           fi
 
+          # ── Cert logos (pro012–pro024 thumbnail images) ───────────────
+          if [ -d frontend/cert_logos ]; then
+            mkdir -p _site/cert_logos
+            cp -r frontend/cert_logos/. _site/cert_logos/
+            echo "OK cert_logos/ ($(find frontend/cert_logos -type f | wc -l) files)"
+          else
+            echo "SKIP cert_logos/"
+          fi
+
+          # ── PWA manifest + service worker ────────────────────────────
           cp frontend/manifest.json _site/manifest.json
           cp frontend/sw.js         _site/sw.js
           cp frontend/_headers      _site/_headers
 
+          # ── Icons ─────────────────────────────────────────────────────
           find frontend/icons \( -name '*.png' -o -name '*.ico' \) | while read -r icon; do
             cp "$icon" "_site/icons/$(basename "$icon")"
           done
 
           touch _site/.nojekyll
 
+          # ── Validate critical files ───────────────────────────────────
           echo "=== Validating _site ==="
           test -f _site/index.html               || { echo "MISSING: index.html";               exit 1; }
           test -f _site/admin/index.html         || { echo "MISSING: admin/index.html";         exit 1; }
@@ -108,7 +131,7 @@ jobs:
           test -f _site/data_main.json           || { echo "MISSING: root data_main.json";      exit 1; }
           test -f _site/cybaash-ai.js            || { echo "MISSING: cybaash-ai.js";            exit 1; }
           echo "All critical files present."
-          find _site -type f | sort
+          echo "Total files: $(find _site -type f | wc -l)"
 
       - name: Sanitize AI config
         run: python3 scripts/deploy_ai_config.py
