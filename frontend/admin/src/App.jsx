@@ -1603,13 +1603,15 @@ function CredentialsSection({ data, onSave }) {
   const commit = async (u, prev) => {
     setSaving(true)
     try {
-      // Pre-upload any large base64 images so they become URLs before saving.
-      // This means subsequent saves never see base64 and never re-upload.
+      // Pre-upload any base64 images so they become raw GitHub URLs before saving.
       const cfg = getGithubConfig()
       const MAX = 50_000
+      const toRaw = (url) => url.startsWith('http') ? url : `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/main/${url}`
       const cleaned = await Promise.all(u.map(async c => {
         if (!cfg?.token) return c
         const out = { ...c }
+
+        // Upload c.image (CERTIFICATE IMAGE field) and c.logo if large base64
         for (const field of ['logo', 'image']) {
           const v = out[field]
           if (typeof v === 'string' && v.startsWith('data:') && v.length > MAX && c.type !== 'credly') {
@@ -1618,17 +1620,28 @@ function CredentialsSection({ data, onSave }) {
               if (match) {
                 const ext = match[1].split('/')[1].replace('jpeg','jpg').replace('svg+xml','svg')
                 const fname = `cert_logos/${c.id}_${field}.${ext}`
-                const url = await uploadImage(fname, match[2])
-                // uploadImage returns a path like "frontend/cert_logos/..." — convert to raw URL
-                out[field] = url.startsWith('http')
-                  ? url
-                  : `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/main/${url}`
+                out[field] = toRaw(await uploadImage(fname, match[2]))
               }
             } catch(e) {
               console.warn(`[CredentialsSection] pre-upload failed for ${c.id}.${field}:`, e.message)
             }
           }
         }
+
+        // Also upload c.pdf if it's a base64 IMAGE (user used "Upload PDF" with a JPEG cert)
+        const pdfVal = out['pdf']
+        if (typeof pdfVal === 'string' && pdfVal.startsWith('data:image/') && pdfVal.length > MAX) {
+          try {
+            const match = pdfVal.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/)
+            if (match) {
+              const ext = match[1].split('/')[1].replace('jpeg','jpg').replace('svg+xml','svg')
+              out['pdf'] = toRaw(await uploadImage(`cert_logos/${c.id}_pdf.${ext}`, match[2]))
+            }
+          } catch(e) {
+            console.warn(`[CredentialsSection] pre-upload failed for ${c.id}.pdf:`, e.message)
+          }
+        }
+
         delete out.logoUpload
         return out
       }))
