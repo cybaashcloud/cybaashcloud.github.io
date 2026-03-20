@@ -1773,7 +1773,7 @@ body.attacker-mode #attackerBadge { display: block; }
 /* ═══════════════════════════════════════════════════════════════════
    CYBAASH · MOBILE PATCH FOR CYBER RANGE (index.html)
    Targets the inline CSS in the Autonomous Cyber Range interface
-   Add <link rel="stylesheet" href="mobile-patch.css"> in index.html
+   Add  in index.html
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── iOS/Android Safe Area Support ─────────────────────────────── */
@@ -2190,7 +2190,7 @@ body.attacker-mode #attackerBadge { display: block; }
 /* ═══════════════════════════════════════════════════════════════════
    CYBAASH · MOBILE FEATURES CSS
    Styles for UI elements injected by mobile-features.js
-   Add to ALL pages: <link rel="stylesheet" href="mobile-features.css">
+   Add to ALL pages: 
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -2635,9 +2635,7 @@ body.attacker-mode #attackerBadge { display: block; }
 <meta name="msapplication-TileImage" content="/icons/icon-144x144.png">
 <meta name="msapplication-TileColor" content="#030a0f">
 <link rel="stylesheet" href="cybaash-ai.css">
-<link rel="stylesheet" href="mobile-clean.css">
-<link rel="stylesheet" href="mobile-fix.css">
-<link rel="stylesheet" href="mobile-redesign.css">
+<link rel="stylesheet" href="mobile.css">
 </head>
 <body class="page-index">
 
@@ -8133,7 +8131,8 @@ function printReport() {
     '<style>' + reportCSS + '</style>',
     '</head><body>\n\n<!-- Attacker mode badge -->\n<div id=\"attackerBadge\">⚠ ATTACKER MODE — RED TEAM ACTIVE ⚠</div>\n',
     '<div id="reportBody">' + bodyHTML + '</div>',
-    '<scr'+'ipt>\nfunction setAttackerTheme(on){if(on)document.body.classList.add("attacker-mode");else document.body.classList.remove("attacker-mode");}\n<\/sc'+'ript>\n</body></html>',
+    '<scr'+'ipt>\nfunction setAttackerTheme(on){if(on)document.body.classList.add("attacker-mode");else document.body.classList.remove("attacker-mode");}\n<\/sc'+'ript>\n<script src="mobile-runtime.js" defer></script>
+</body></html>',
   ];
 
   const blob = new Blob([parts.join('\n')], { type: 'text/html;charset=utf-8' });
@@ -9709,8 +9708,5 @@ Drop file or click to upload<br>
 })();
 
 </script>
-<script src="mobile-runtime.js" defer></script>
-<script src="mobile-fix.js" defer></script>
-<script src="mobile-redesign.js" defer></script>
 </body>
 </html>
