@@ -493,7 +493,7 @@
         "Management"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro020_image.jpg",
       "title": "Operations Management Professional Certificate by Jack Welch Management Institute",
       "issuer": "Jack Welch Management Institute",
       "courseId": "operations-management-professional-certificate-by-jack-welch",
