@@ -1773,7 +1773,7 @@ body.attacker-mode #attackerBadge { display: block; }
 /* ═══════════════════════════════════════════════════════════════════
    CYBAASH · MOBILE PATCH FOR CYBER RANGE (index.html)
    Targets the inline CSS in the Autonomous Cyber Range interface
-   Add  in index.html
+   Add in index.html
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── iOS/Android Safe Area Support ─────────────────────────────── */
@@ -2190,7 +2190,7 @@ body.attacker-mode #attackerBadge { display: block; }
 /* ═══════════════════════════════════════════════════════════════════
    CYBAASH · MOBILE FEATURES CSS
    Styles for UI elements injected by mobile-features.js
-   Add to ALL pages: 
+   Add to ALL pages:
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -8131,8 +8131,7 @@ function printReport() {
     '<style>' + reportCSS + '</style>',
     '</head><body>\n\n<!-- Attacker mode badge -->\n<div id=\"attackerBadge\">⚠ ATTACKER MODE — RED TEAM ACTIVE ⚠</div>\n',
     '<div id="reportBody">' + bodyHTML + '</div>',
-    '<scr'+'ipt>\nfunction setAttackerTheme(on){if(on)document.body.classList.add("attacker-mode");else document.body.classList.remove("attacker-mode");}\n<\/sc'+'ript>\n<script src="mobile-runtime.js" defer></script>
-</body></html>',
+    '<scr'+'ipt>\nfunction setAttackerTheme(on){if(on)document.body.classList.add("attacker-mode");else document.body.classList.remove("attacker-mode");}\n<\/sc'+'ript>\n</body></html>',
   ];
 
   const blob = new Blob([parts.join('\n')], { type: 'text/html;charset=utf-8' });
@@ -9708,5 +9707,6 @@ Drop file or click to upload<br>
 })();
 
 </script>
+<script src="mobile.js" defer></script>
 </body>
 </html>
