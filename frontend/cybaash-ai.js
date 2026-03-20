@@ -128,6 +128,7 @@
         .then(function (c) {
           if (!c) { tryNext(idx + 1); return; }
           if (c.gemini_api_key && !cfg.key) cfg.key   = c.gemini_api_key;
+          if (c.apiKey         && !cfg.key) cfg.key   = c.apiKey;
           if (c.gemini_model)               cfg.model  = c.gemini_model;
           // v2 had Math.min(..., 512) which ignored config — removed in v3
           if (c.max_tokens)                 cfg.tokens = Math.min(parseInt(c.max_tokens) || 800, 1024);

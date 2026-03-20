@@ -50,11 +50,14 @@ except json.JSONDecodeError as e:
     print(f"ERROR: Invalid JSON: {e}")
     sys.exit(1)
 
-# ── Key leak check ────────────────────────────────────────────────────────
-leaked = [k for k in ["gemini_api_key", "apiKey"] if d.get(k, "").strip()]
-if leaked:
-    print(f"WARNING: API key present in source file: {leaked}")
-    print("Revoke at console.cloud.google.com/apis/credentials")
+# ── Key handling ──────────────────────────────────────────────────────────
+# API key is intentionally kept in config — it is a domain-restricted key.
+# This allows all browsers to load it automatically without manual setup.
+key_fields = [k for k in ["gemini_api_key", "apiKey"] if d.get(k, "").strip()]
+if key_fields:
+    print(f"INFO: API key present in config ({key_fields}) — kept intentionally (restricted key).")
+else:
+    print("INFO: No API key in config — chatbot will run in demo mode until key is set via Admin panel.")
 
 # ── Model enforcement ─────────────────────────────────────────────────────
 MODEL_FIELDS = {

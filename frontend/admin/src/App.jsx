@@ -2446,7 +2446,7 @@ function GeminiConfigCard({ ghCfg }) {
     if (ghCfg?.token) {
       try {
         const { saveSection } = await import('./github.js')
-        await saveSection('_ai_config', { ...form, gemini_api_key: '', apiKey: '' })
+        await saveSection('_ai_config', { ...form, gemini_api_key: key, apiKey: key })
         setStatus({ok:true, txt: key ? '✓ Key saved. Settings synced to GitHub.' : '✓ Settings saved.'})
       } catch (e) {
         const isAuth = /401|403|bad credentials|token/i.test(e.message)
