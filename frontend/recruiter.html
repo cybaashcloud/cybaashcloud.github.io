@@ -1725,24 +1725,16 @@ function credCard(c){
       logoHtml=_makePlaceholder('credly',c.issuer);
     }
   } else if(isCert){
-    // Certificate: use logo (base64) or image URL → fallback placeholder
-    const logoSrc=c.logo||c.image||'';
-    if(logoSrc){
-      logoHtml=`<div class="cr-logo-wrap"><img src="${x(logoSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('cert',c.issuer))}" onerror="_imgFallback(this)"></div>`;
+    // Certificate: prefer pdf jpeg as thumbnail, then logo/image, then placeholder
+    const imgSrc = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : (c.logo||c.image||'');
+    if(imgSrc){
+      logoHtml=`<div class="cr-logo-wrap li-thumb"><img src="${x(imgSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('cert',c.issuer))}" onerror="_imgFallback(this)"></div>`;
     } else {
       logoHtml=_makePlaceholder('cert',c.issuer);
     }
   } else {
     // LinkedIn Learning: always show the LinkedIn brand logo (no external img needed)
     logoHtml=`<div class="cr-logo-wrap li"><img src="${LI_BADGE}" alt="LinkedIn" loading="lazy"></div>`;
-  }
-
-  // For certificate type: if we have a pdf/image file, show it as thumbnail
-  if(isCert && !logoHtml && (c.pdf||c.image||c.logo)){
-    const imgSrc = (c.pdf&&!c.pdf.endsWith('.pdf')) ? c.pdf : (c.image||c.logo||'');
-    if(imgSrc){
-      logoHtml=`<div class="cr-logo-wrap li-thumb"><img src="${x(imgSrc)}" alt="${x(c.issuer||'')}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`;
-    }
   }
 
   // Card clicks to credential page (LinkedIn/Credly); cert badge links to actual file
