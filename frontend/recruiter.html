@@ -194,6 +194,8 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .cr-v{font-family:'Orbitron',monospace;font-size:7px;color:var(--green);text-shadow:var(--glow-g);border:1px solid rgba(0,255,136,.18);padding:1px 5px;white-space:nowrap;flex-shrink:0;margin-top:1px}
 .cr-date{font-family:'Orbitron',monospace;font-size:8px;color:var(--dim);white-space:nowrap;flex-shrink:0}
 .cr-bot{display:flex;justify-content:space-between;align-items:center}
+.cr-cert-badge{font-size:8px;letter-spacing:.5px;color:var(--green);border:1px solid rgba(0,255,136,.3);padding:2px 6px;border-radius:2px;text-decoration:none;white-space:nowrap;transition:border-color .15s,color .15s}
+.cr-cert-badge:hover{border-color:var(--green);color:#fff}
 .cr-iss{font-size:9px;color:var(--dim);letter-spacing:1px}
 .cr-arrow{font-size:10px;color:var(--blue);opacity:0;transition:opacity .2s}
 .cr:hover .cr-arrow{opacity:1}
@@ -1743,9 +1745,12 @@ function credCard(c){
     }
   }
 
-  // Link priority: pdf (actual certificate file) > url (credly/linkedin page)
-  const href = c.pdf || c.url || '#';
-  const isPdf = href.endsWith('.pdf');
+  // Card clicks to credential page (LinkedIn/Credly); cert badge links to actual file
+  const href = c.url || '#';
+  const isPdf = c.pdf && c.pdf.endsWith('.pdf');
+  const certBadge = c.pdf
+    ? `<a class="cr-cert-badge" href="${x(c.pdf)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${isPdf?'↗ PDF':'↗ CERT'}</a>`
+    : '';
 
     return `<a class="cr" href="${x(href)}" target="_blank" rel="noopener noreferrer">
     <div class="${logoHtml?'cr-has-logo':''}">
@@ -1756,7 +1761,10 @@ function credCard(c){
           ${isC?'<span class="cr-v">CREDLY</span>':`<span class="cr-date">${x(c.date||'')}</span>`}
         </div>
         ${tags?`<div class="cr-tags">${tags}</div>`:''}
-        <div class="cr-bot"><span class="cr-iss">${x(c.issuer||'')}</span><span class="cr-arrow">${isPdf?'↗ PDF':'↗'}</span></div>
+        <div class="cr-bot">
+          <span class="cr-iss">${x(c.issuer||'')}</span>
+          <span style="display:flex;align-items:center;gap:5px">${certBadge}<span class="cr-arrow">↗</span></span>
+        </div>
       </div>
     </div>
   </a>`;
