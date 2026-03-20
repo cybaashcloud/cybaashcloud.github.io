@@ -236,6 +236,33 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .proj-img{width:100%;height:130px;object-fit:cover;display:block;border-bottom:1px solid var(--border)}
 .proj-noimg{width:100%;height:90px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
 .proj-noimg svg{width:28px;height:28px;opacity:.12}
+
+/* ── CERT CARD — project-card style ─────────────────────────── */
+.cert-card{background:var(--panel);border:1px solid var(--border);position:relative;transition:border-color .2s;overflow:hidden;text-decoration:none;display:block;color:inherit}
+.cert-card:hover{border-color:rgba(0,212,255,.28)}
+.cert-img-top{width:100%;height:120px;object-fit:cover;display:block;border-bottom:1px solid var(--border)}
+.cert-noimg{width:100%;height:70px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+.cert-body{padding:12px}
+.cert-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+.cert-logo-sm{width:28px;height:28px;object-fit:contain;flex-shrink:0;border-radius:3px}
+.cert-logo-placeholder{width:28px;height:28px;flex-shrink:0;border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:#fff}
+.cert-logo-placeholder.credly{background:linear-gradient(135deg,#f7931e,#e85d17)}
+.cert-logo-placeholder.li{background:linear-gradient(135deg,#0a66c2,#0052a0);border-radius:50%}
+.cert-logo-placeholder.cert{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--blue)}
+.cert-date-badge{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:.5px;color:var(--dim);white-space:nowrap}
+.cert-title{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cert-issuer{font-size:9px;color:var(--dim);letter-spacing:.5px;margin-bottom:7px}
+.cert-tags-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px}
+.cert-tag{font-size:8px;letter-spacing:.3px;padding:1px 6px;border:1px solid rgba(0,212,255,.15);color:rgba(0,212,255,.6);font-family:'Share Tech Mono',monospace}
+.cert-links{display:flex;gap:5px;flex-wrap:wrap}
+.cert-link-btn{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;padding:4px 10px;border:1px solid var(--border);color:var(--dim);text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:3px;text-transform:uppercase}
+.cert-link-btn:hover{border-color:var(--blue);color:var(--blue)}
+.cert-link-btn.pdf{border-color:rgba(0,255,136,.3);color:var(--green)}
+.cert-link-btn.pdf:hover{border-color:var(--green);background:rgba(0,255,136,.06)}
+.cert-type-badge{font-family:'Orbitron',monospace;font-size:6px;letter-spacing:1px;padding:2px 5px;border:1px solid;white-space:nowrap}
+.cert-type-badge.credly{border-color:rgba(247,147,30,.4);color:#f7931e}
+.cert-type-badge.certificate{border-color:rgba(0,212,255,.3);color:var(--blue)}
+.cert-type-badge.linkedin{border-color:rgba(10,102,194,.3);color:#0a66c2}
 .proj-body{padding:14px}
 .proj-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
 .proj-title{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--text);letter-spacing:2px}
@@ -1711,53 +1738,62 @@ function setCF(v){CF=v;CS=30;rCreds()}
 function filteredCreds(){return CF==='all'?D.creds:D.creds.filter(c=>(c.tags||[]).includes(CF))}
 
 function credCard(c){
-  const isC=c.type==='credly';
-  const isCert=c.type==='certificate';
-  const tags=(c.tags||[]).map(t=>`<span class="ct${HL.has(t)?' hl':''}">${t}</span>`).join('');
-  let logoHtml='';
+  const isC    = c.type==='credly';
+  const isCert = c.type==='certificate';
+  const isLI   = !isC && !isCert;
+  const tags   = (c.tags||[]).slice(0,4).map(t=>`<span class="cert-tag${HL.has(t)?' hl':''}">${x(t)}</span>`).join('');
+
+  // ── Top image: certificate jpeg or placeholder ──
+  const certImg = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : (c.image||'');
+  const topHtml = certImg
+    ? `<img class="cert-img-top" src="${x(certImg)}" alt="${x(c.title||'')}" loading="lazy" onerror="this.outerHTML='<div class=cert-noimg><svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1\' width=\'22\' height=\'22\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><polyline points=\'3 9 21 9\'/></svg></div>'">`
+    : `<div class="cert-noimg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 9 21 9"/></svg></div>`;
+
+  // ── Issuer logo (small, corner) ──
+  let logoHtml = '';
   if(isC){
-    // Credly: use credlyImageUrl or build from credlyBadgeId → fallback placeholder
-    const credSrc=c.credlyImageUrl||(c.credlyBadgeId?`https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png`:'');
-    if(credSrc){
-      // Store placeholder as base64 in data-ph so the onerror attribute never contains quotes
-      logoHtml=`<div class="cr-logo-wrap credly"><img src="${x(credSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('credly',c.issuer))}" onerror="_imgFallback(this)"></div>`;
-    } else {
-      logoHtml=_makePlaceholder('credly',c.issuer);
-    }
-  } else if(isCert){
-    // Certificate: prefer pdf jpeg as thumbnail, then logo/image, then placeholder
-    const imgSrc = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : (c.logo||c.image||'');
-    if(imgSrc){
-      logoHtml=`<div class="cr-logo-wrap li-thumb"><img src="${x(imgSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('cert',c.issuer))}" onerror="_imgFallback(this)"></div>`;
-    } else {
-      logoHtml=_makePlaceholder('cert',c.issuer);
-    }
+    const credSrc = c.credlyImageUrl||(c.credlyBadgeId?`https://images.credly.com/size/80x80/images/${c.credlyBadgeId}/image.png`:'');
+    logoHtml = credSrc
+      ? `<img class="cert-logo-sm" src="${x(credSrc)}" alt="${x(c.issuer||'')}" loading="lazy" data-ph="${x(_makePlaceholderB64('credly',c.issuer))}" onerror="_imgFallback(this)">`
+      : `<div class="cert-logo-placeholder credly">C</div>`;
+  } else if(isLI){
+    logoHtml = `<img class="cert-logo-sm" src="${LI_BADGE}" alt="LinkedIn" loading="lazy" style="border-radius:50%">`;
   } else {
-    // LinkedIn Learning: always show the LinkedIn brand logo (no external img needed)
-    logoHtml=`<div class="cr-logo-wrap li"><img src="${LI_BADGE}" alt="LinkedIn" loading="lazy"></div>`;
+    const lSrc = c.logo||'';
+    logoHtml = lSrc
+      ? `<img class="cert-logo-sm" src="${x(lSrc)}" alt="${x(c.issuer||'')}" loading="lazy" onerror="this.style.display='none'">`
+      : `<div class="cert-logo-placeholder cert">${x((c.issuer||'?')[0].toUpperCase())}</div>`;
   }
 
-  // Card clicks to credential page (LinkedIn/Credly); cert badge links to actual file
-  const href = c.url || '#';
-  const isPdf = c.pdf && c.pdf.endsWith('.pdf');
-  const certBadge = c.pdf
-    ? `<a class="cr-cert-badge" href="${x(c.pdf)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${isPdf?'↗ PDF':'↗ CERT'}</a>`
-    : '';
+  // ── Type badge ──
+  const typeBadge = isC ? `<span class="cert-type-badge credly">CREDLY</span>` : '';
 
-    return `<a class="cr" href="${x(href)}" target="_blank" rel="noopener noreferrer">
-    <div class="${logoHtml?'cr-has-logo':''}">
-      ${logoHtml}
-      <div style="flex:1;min-width:0">
-        <div class="cr-top">
-          <div class="cr-name">${x(c.title||'')}</div>
-          ${isC?'<span class="cr-v">CREDLY</span>':`<span class="cr-date">${x(c.date||'')}</span>`}
+  // ── Action links ──
+  const links = [];
+  if(c.pdf){
+    const isPdf = c.pdf.endsWith('.pdf');
+    links.push(`<a class="cert-link-btn pdf" href="${x(c.pdf)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${isPdf?'↗ PDF':'↗ CERT'}</a>`);
+  }
+  if(c.url){
+    links.push(`<a class="cert-link-btn" href="${x(c.url)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">↗ VERIFY</a>`);
+  }
+
+  const href = c.pdf || c.url || '#';
+
+  return `<a class="cert-card" href="${x(href)}" target="_blank" rel="noopener noreferrer">
+    <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
+    ${topHtml}
+    <div class="cert-body">
+      <div class="cert-hdr">
+        ${logoHtml}
+        <div style="flex:1;min-width:0;padding-left:8px">
+          <div class="cert-title">${x(c.title||'Untitled')}</div>
         </div>
-        ${tags?`<div class="cr-tags">${tags}</div>`:''}
-        <div class="cr-bot">
-          <span class="cr-iss">${x(c.issuer||'')}</span>
-          <span style="display:flex;align-items:center;gap:5px">${certBadge}<span class="cr-arrow">↗</span></span>
-        </div>
+        ${isC ? typeBadge : `<span class="cert-date-badge">${x(c.date||'')}</span>`}
       </div>
+      ${tags?`<div class="cert-tags-row">${tags}</div>`:''}
+      <div class="cert-issuer">${x(c.issuer||'')}</div>
+      ${links.length?`<div class="cert-links">${links.join('')}</div>`:''}
     </div>
   </a>`;
 }
