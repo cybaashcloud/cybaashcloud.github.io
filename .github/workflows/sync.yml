@@ -67,7 +67,8 @@ jobs:
           cp frontend/github.js          _site/github.js
           cp frontend/saas-integration.js _site/saas-integration.js
           [ -f frontend/style.css          ] && cp frontend/style.css          _site/style.css          || true
-          [ -f frontend/mobile-fix.css     ] && cp frontend/mobile-fix.css     _site/mobile-fix.css     || true
+          # Mobile CSS — single file only
+          [ -f frontend/mobile-clean.css ] && cp frontend/mobile-clean.css _site/mobile-clean.css || true
           [ -f frontend/cyberbot-script.js ] && cp frontend/cyberbot-script.js _site/cyberbot-script.js || true
           [ -f frontend/cybaash_chatbot.js ] && cp frontend/cybaash_chatbot.js _site/cybaash_chatbot.js || true
 
