@@ -354,7 +354,7 @@
         "Penetration Testing"
       ],
       "type": "certificate",
-      "image": "",
+      "image": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/cert_logos/pro013_image.jpg",
       "title": "Penetration Testing Professional Certificate by Cybrary",
       "issuer": "Cybrary",
       "courseId": "penetration-testing-professional-certificate-by-cybrary",
