@@ -318,9 +318,7 @@
       "url": "https://www.linkedin.com/learning/certificates/42514c2a16514c77996063eba3c2192eea6a657fa80b6131c87aa1ed3175aff0",
       "date": "2026-02",
       "logo": "",
-      "tags": [
-        "Top skills covered"
-      ],
+      "tags": [],
       "type": "linkedin",
       "image": "/certificates/auto/li0033.jpg",
       "title": "C++ Development: Advanced Concepts, Lambda Expressions, and Best Practices",
@@ -791,7 +789,6 @@
       "date": "2026-03",
       "logo": "",
       "tags": [
-        "Top skills covered",
         "Cybersecurity Incident Response"
       ],
       "type": "linkedin",
@@ -1209,7 +1206,6 @@
       "date": "2026-03",
       "logo": "",
       "tags": [
-        "Top skills covered",
         "Deployment Planning",
         "Cloud Strategy",
         "Cloud Infrastructure"
