@@ -1788,17 +1788,21 @@ function credCard(c){
   const typeLbl  = isC ? 'CREDLY' : isCert ? 'CERTIFICATE' : 'LINKEDIN';
   const typeClass= isC ? 'credly' : isCert ? 'cert' : 'linkedin';
 
-  // certJpeg → full-width top banner (LinkedIn/cert JPEG stored in pdf field)
-  // logoSrc  → small issuer icon in the body row
-  const certJpeg = (c.pdf && !c.pdf.endsWith('.pdf')) ? c.pdf : '';
-  let logoSrc = '';
+  // ── Images ──
+  // certJpeg → full-width top banner
+  //   Priority: c.image (CERTIFICATE IMAGE field in admin) → c.pdf if it's an image (not a .pdf)
+  // logoSrc  → small issuer icon shown in the card body header row
+  //   Priority: c.logo → LI_BADGE for linkedin type → credly badge image
+  const pdfIsImage = c.pdf && !c.pdf.endsWith('.pdf')
+  const certJpeg = c.image || (pdfIsImage ? c.pdf : '')
+  let logoSrc = ''
   if(isC){
     logoSrc = c.credlyImageUrl
-      || (c.credlyBadgeId ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png` : '');
+      || (c.credlyBadgeId ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png` : '')
   } else if(isLI){
-    logoSrc = LI_BADGE;
+    logoSrc = c.logo || LI_BADGE
   } else {
-    logoSrc = c.logo || c.image || '';
+    logoSrc = c.logo || ''
   }
 
   // ── Top image area ──
