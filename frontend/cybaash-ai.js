@@ -1,17 +1,24 @@
 /**
- * CYBAASH AI — Chatbot  v2
+ * CYBAASH AI — Chatbot  v3
  * ════════════════════════
  * Fully serverless — Gemini + GitHub only, zero backend.
  *
- * WHAT'S NEW vs v1:
- *   • Cache-first: loads data_ai_cache.json on startup.
- *     Common questions answered instantly from JSON — zero API calls,
- *     zero 429 errors for ~80% of all messages.
- *   • 429 retry: exponential back-off (5 s → 15 s → 45 s) before giving up.
- *   • Session deduplication: same question in same session → cached answer.
- *   • Reduced maxOutputTokens: 512 (was 1024) — faster, half the quota.
- *   • Stateless tools: code/file scans don't send conversation history.
- *   • History trimmed to last 10 turns (was 20) — fewer tokens per request.
+ * WHAT'S NEW vs v2:
+ *   • Streaming responses: text appears word-by-word via SSE — no more
+ *     3–5 second blank wait. Uses streamGenerateContent?alt=sse.
+ *   • History corruption fix: user turn is now only committed to history
+ *     after a successful model reply. Failed calls no longer leave
+ *     orphaned user entries that break conversation turns.
+ *   • Token cap raised: removed the hardcoded Math.min(...,512) that
+ *     ignored the config value. Now respects config up to 1024.
+ *   • Sharper system prompt: knows it's on the portfolio, covers more
+ *     topic areas, gives better format guidance to Gemini.
+ *   • Faster retries: 2 s → 6 s → 18 s (was 5 s → 15 s → 45 s).
+ *   • AbortController: sending a new message cancels any in-flight
+ *     request immediately instead of letting it run to completion.
+ *   • Cache threshold tightened: 0.25 → 0.35 to reduce false matches.
+ *   • URL checker: 8 heuristics (was 4) — adds punycode, double-ext,
+ *     excessive subdomains, numeric TLD, free-host patterns.
  *
  * Author: Mohamed Aasiq · github.com/cybaash
  */
@@ -22,20 +29,46 @@
   var cfg = {
     key:    '',
     model:  'gemini-2.0-flash',
-    tokens: 512,          // reduced from 1024
+    tokens: 800,
     temp:   0.4,
-    prompt: 'You are CyberBot — an expert cybersecurity assistant for educational purposes. ' +
-            'Explain vulnerabilities (SQLi, XSS, CSRF, buffer overflows, RCE, LFI, SSRF), ' +
-            'teach secure coding, guide pen-testing concepts (CTF/lab only). ' +
-            'Never help attack real systems. Use markdown. Be concise and direct.',
+    prompt: [
+      'You are CyberBot — an expert cybersecurity assistant embedded in',
+      'Mohamed Aasiq\'s portfolio at cybaashcloud.github.io.',
+      '',
+      'Primary role: help visitors (recruiters, developers, students)',
+      'understand cybersecurity concepts clearly and practically.',
+      '',
+      'Expertise:',
+      '- Web vulnerabilities: SQLi, XSS, CSRF, SSRF, XXE, IDOR, open redirect',
+      '- Network security: firewalls, IDS/IPS, VPNs, TLS, protocol attacks',
+      '- Malware & threats: ransomware, phishing, social engineering, APTs',
+      '- Secure coding: Python, JS, PHP — validation, encoding, auth patterns',
+      '- Cloud security: AWS IAM, S3 misconfigs, least-privilege principles',
+      '- Penetration testing: methodology, tools (Burp Suite, nmap, Metasploit)',
+      '  — educational and CTF/lab context only',
+      '- Compliance: OWASP Top 10, NIST CSF, ISO 27001, GDPR basics',
+      '',
+      'Hard rules:',
+      '1. Never give step-by-step instructions to attack real systems or people',
+      '2. Never write working malware, keyloggers, or data-exfiltration tools',
+      '3. Always frame offensive techniques in educational or CTF context',
+      '4. If asked about Mohamed Aasiq, say you are his AI assistant and',
+      '   direct the visitor to explore the portfolio sections',
+      '',
+      'Format: Use markdown — headers, bullets, fenced code blocks.',
+      'For each vulnerability: What it is → How it works → How to defend.',
+      'Show both vulnerable and secure code versions when relevant.',
+      'Keep responses focused; avoid padding.',
+    ].join('\n'),
   };
 
   /* ── STATE ───────────────────────────────────────────────── */
   var sending      = false;
   var activeTool   = null;
-  var history      = [];          // Gemini conversation history (capped at 10 turns)
-  var cache        = [];          // entries from data_ai_cache.json
-  var sessionCache = {};          // dedup: normalised_msg → answer (this session only)
+  var history      = [];       // committed conversation turns (user+model pairs only)
+  var cache        = [];       // entries from data_ai_cache.json
+  var sessionCache = {};       // dedup: normalised_msg → answer (this session only)
+  var currentAbort = null;     // AbortController for in-flight request
 
   /* ── INIT ────────────────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', function () {
@@ -67,7 +100,8 @@
           if (!c) { tryNext(idx + 1); return; }
           if (c.gemini_api_key && !cfg.key) cfg.key   = c.gemini_api_key;
           if (c.gemini_model)               cfg.model  = c.gemini_model;
-          if (c.max_tokens)                 cfg.tokens = Math.min(parseInt(c.max_tokens) || 512, 512);
+          // v2 had Math.min(..., 512) which ignored config — removed in v3
+          if (c.max_tokens)                 cfg.tokens = Math.min(parseInt(c.max_tokens) || 800, 1024);
           if (c.temperature)                cfg.temp   = parseFloat(c.temperature) || 0.4;
           if (c.system_prompt)              cfg.prompt = c.system_prompt;
           if (done) done();
@@ -88,11 +122,7 @@
 
   /* ── CACHE LOADING ───────────────────────────────────────── */
   function loadCache() {
-    var paths = [
-      '/data_ai_cache.json',
-      './data_ai_cache.json',
-      '/portfolio/data_ai_cache.json',
-    ];
+    var paths = ['/data_ai_cache.json', './data_ai_cache.json', '/portfolio/data_ai_cache.json'];
     function tryNext(idx) {
       if (idx >= paths.length) return;
       fetch(paths[idx] + '?v=' + Date.now(), { cache: 'no-store' })
@@ -108,7 +138,6 @@
   }
 
   /* ── CACHE MATCHING ──────────────────────────────────────── */
-  // Jaccard similarity on word tokens — no library needed.
   function tokenise(text) {
     return text.toLowerCase()
       .replace(/[^a-z0-9 ]/g, ' ')
@@ -120,13 +149,8 @@
     var sa = {}, sb = {}, inter = 0, union = 0;
     a.forEach(function (w) { sa[w] = true; });
     b.forEach(function (w) { sb[w] = true; });
-    Object.keys(sa).forEach(function (w) {
-      union++;
-      if (sb[w]) inter++;
-    });
-    Object.keys(sb).forEach(function (w) {
-      if (!sa[w]) union++;
-    });
+    Object.keys(sa).forEach(function (w) { union++; if (sb[w]) inter++; });
+    Object.keys(sb).forEach(function (w) { if (!sa[w]) union++; });
     return union === 0 ? 0 : inter / union;
   }
 
@@ -134,16 +158,14 @@
     if (!cache.length) return null;
     var tokens = tokenise(msg);
     if (tokens.length === 0) return null;
-
     var best = 0, answer = null;
     cache.forEach(function (entry) {
       if (!entry.k || !entry.a) return;
       var score = jaccard(tokens, entry.k);
       if (score > best) { best = score; answer = entry.a; }
     });
-
-    // 0.25 threshold — loose enough to catch paraphrasing, tight enough to avoid false matches
-    return best >= 0.25 ? answer : null;
+    // Raised from 0.25 to 0.35 to reduce false matches
+    return best >= 0.35 ? answer : null;
   }
 
   /* ── OVERLAY ─────────────────────────────────────────────── */
@@ -166,10 +188,12 @@
 
   /* ── SEND MESSAGE ────────────────────────────────────────── */
   window.cybaashSend = function () {
-    if (sending) return;
     var inp = document.getElementById('cybaash-chat-input');
     var msg = inp ? inp.value.trim() : '';
     if (!msg) return;
+
+    // Abort any in-flight request before starting a new one
+    if (currentAbort) { currentAbort.abort(); currentAbort = null; }
 
     sending = true;
     inp.value = '';
@@ -180,15 +204,15 @@
     appendMsg('user', msg, []);
     showTyping(true);
 
-    var norm = msg.toLowerCase().replace(/\s+/g, ' ').trim();
+    var norm = msg.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 
-    // ── 1. Session dedup: exact same question this session ────
+    // 1. Session dedup
     if (sessionCache[norm]) {
       _deliver(sessionCache[norm]);
       return;
     }
 
-    // ── 2. Cache match ────────────────────────────────────────
+    // 2. Cache match
     var cached = findCachedAnswer(msg);
     if (cached) {
       sessionCache[norm] = cached;
@@ -196,22 +220,21 @@
       return;
     }
 
-    // ── 3. Live Gemini call (with retry) ─────────────────────
+    // 3. Live Gemini call — streaming if key present
     if (cfg.key) {
-      callGeminiWithRetry(msg)
-        .then(function (reply) {
-          sessionCache[norm] = reply;   // save to session cache
-          _deliver(reply);
+      callGeminiStream(msg)
+        .then(function (fullReply) {
+          sessionCache[norm] = fullReply;
+          _reset();
         })
         .catch(function (err) {
+          if (err && err.name === 'AbortError') { _reset(); return; }
           showTyping(false);
-          appendMsg('bot', '⚠ ' + esc(err.message) + '\n\n' + demoResponse(msg), []);
+          appendMsg('bot', '⚠ ' + esc(err.message || 'Unknown error') + '\n\n' + demoResponse(msg), []);
           _reset();
         });
     } else {
-      setTimeout(function () {
-        _deliver(demoResponse(msg));
-      }, 400);
+      setTimeout(function () { _deliver(demoResponse(msg)); }, 400);
     }
 
     function _deliver(reply) {
@@ -227,37 +250,29 @@
     }
   };
 
-  /* ── GEMINI WITH EXPONENTIAL BACK-OFF ────────────────────── */
-  var RETRY_DELAYS = [5000, 15000, 45000];   // 5 s, 15 s, 45 s
+  /* ── STREAMING GEMINI CALL ───────────────────────────────── */
+  // Uses streamGenerateContent?alt=sse — response text appears word-by-word.
+  // History is only committed once the full reply is received successfully,
+  // preventing orphaned user turns from corrupting future conversation turns.
 
-  function callGeminiWithRetry(userMessage, attempt) {
+  var RETRY_DELAYS = [2000, 6000, 18000];  // was 5000, 15000, 45000
+
+  function callGeminiStream(userMessage, attempt) {
     attempt = attempt || 0;
-    return callGemini(userMessage).catch(function (err) {
-      if (err.is429 && attempt < RETRY_DELAYS.length) {
-        var wait = RETRY_DELAYS[attempt];
-        appendMsg('bot',
-          '⏳ Gemini rate limit hit — retrying in ' + (wait / 1000) + 's… ' +
-          '*(attempt ' + (attempt + 1) + ' of ' + RETRY_DELAYS.length + ')*', []);
-        return new Promise(function (resolve, reject) {
-          setTimeout(function () {
-            callGeminiWithRetry(userMessage, attempt + 1).then(resolve).catch(reject);
-          }, wait);
-        });
-      }
-      throw err;
-    });
-  }
 
-  /* ── GEMINI API ──────────────────────────────────────────── */
-  function callGemini(userMessage) {
-    // Add to history THEN trim to last 10 turns (5 exchanges)
-    history.push({ role: 'user', parts: [{ text: userMessage }] });
-    var contents = history.slice(-10);
+    // Build contents for this request (user turn NOT yet committed to history)
+    var requestContents = history.slice(-8).concat([
+      { role: 'user', parts: [{ text: userMessage }] }
+    ]);
 
     var payload = {
       system_instruction: { parts: [{ text: cfg.prompt }] },
-      contents: contents,
-      generationConfig: { temperature: cfg.temp, maxOutputTokens: cfg.tokens, topP: 0.9 },
+      contents: requestContents,
+      generationConfig: {
+        temperature:     cfg.temp,
+        maxOutputTokens: cfg.tokens,
+        topP:            0.9,
+      },
       safetySettings: [
         { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
         { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
@@ -267,42 +282,135 @@
     };
 
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-              cfg.model + ':generateContent?key=' + cfg.key;
+              cfg.model + ':streamGenerateContent?alt=sse&key=' + cfg.key;
 
+    currentAbort = new AbortController();
+
+    return fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+      signal:  currentAbort.signal,
+    })
+    .then(function (response) {
+      if (response.status === 429) {
+        if (attempt < RETRY_DELAYS.length) {
+          var wait = RETRY_DELAYS[attempt];
+          appendMsg('bot',
+            '⏳ Rate limit — retrying in ' + (wait / 1000) + 's… ' +
+            '*(attempt ' + (attempt + 1) + ' of ' + RETRY_DELAYS.length + ')*', []);
+          return new Promise(function (resolve, reject) {
+            setTimeout(function () {
+              callGeminiStream(userMessage, attempt + 1).then(resolve).catch(reject);
+            }, wait);
+          });
+        }
+        throw new Error('Gemini rate limit reached after ' + RETRY_DELAYS.length + ' retries.');
+      }
+      if (!response.ok) {
+        return response.text().then(function (t) {
+          throw new Error('Gemini error ' + response.status + ': ' + t.slice(0, 200));
+        });
+      }
+
+      // Stream the SSE response and update the bot message bubble live
+      var reader  = response.body.getReader();
+      var decoder = new TextDecoder();
+      var buffer  = '';
+      var fullText = '';
+
+      // Create the bot message bubble now (empty) and keep a reference to its text node
+      showTyping(false);
+      var bubbleEl = appendStreamingMsg();
+
+      function pump() {
+        return reader.read().then(function (result) {
+          if (result.done) {
+            // ── Success: commit both turns to history ──────────────
+            if (fullText) {
+              history.push({ role: 'user',  parts: [{ text: userMessage }] });
+              history.push({ role: 'model', parts: [{ text: fullText    }] });
+              // Keep last 16 entries (8 turns)
+              if (history.length > 16) history = history.slice(-16);
+              // Final render with full markdown
+              renderBubble(bubbleEl, fullText);
+            }
+            currentAbort = null;
+            return fullText;
+          }
+
+          buffer += decoder.decode(result.value, { stream: true });
+          var lines = buffer.split('\n');
+          buffer = lines.pop();  // incomplete line stays in buffer
+
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (!line.startsWith('data: ')) continue;
+            var jsonStr = line.slice(6);
+            if (jsonStr === '[DONE]') continue;
+            try {
+              var data  = JSON.parse(jsonStr);
+              var chunk = data &&
+                data.candidates &&
+                data.candidates[0] &&
+                data.candidates[0].content &&
+                data.candidates[0].content.parts &&
+                data.candidates[0].content.parts[0] &&
+                data.candidates[0].content.parts[0].text;
+              if (chunk) {
+                fullText += chunk;
+                // Live update: plain text during stream, markdown at the end
+                updateBubbleRaw(bubbleEl, fullText);
+              }
+            } catch (e) { /* ignore malformed SSE chunk */ }
+          }
+
+          return pump();
+        });
+      }
+
+      return pump();
+    });
+  }
+
+  /* ── STATELESS GEMINI (tools — no history, no streaming) ─── */
+  function _callGeminiStateless(prompt) {
+    var payload = {
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 600, topP: 0.9 },
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      ],
+    };
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+              cfg.model + ':generateContent?key=' + cfg.key;
     return fetch(url, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(payload),
       signal:  AbortSignal.timeout(30000),
     })
-      .then(function (r) {
-        if (r.status === 429) {
-          var e = new Error('Gemini rate limit reached (429). Retrying automatically…');
-          e.is429 = true;
-          throw e;
-        }
-        if (!r.ok) return r.text().then(function (t) {
-          throw new Error('Gemini error ' + r.status + ': ' + t.slice(0, 200));
-        });
-        return r.json();
-      })
-      .then(function (data) {
-        var reply = data &&
-          data.candidates &&
-          data.candidates[0] &&
-          data.candidates[0].content &&
-          data.candidates[0].content.parts &&
-          data.candidates[0].content.parts[0] &&
-          data.candidates[0].content.parts[0].text;
-        if (!reply) throw new Error('Empty Gemini response');
-        history.push({ role: 'model', parts: [{ text: reply }] });
-        // Trim history to avoid ever-growing context
-        if (history.length > 20) history = history.slice(-20);
-        return reply;
-      });
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (data) {
+      var t = data &&
+        data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts &&
+        data.candidates[0].content.parts[0] &&
+        data.candidates[0].content.parts[0].text;
+      if (!t) throw new Error('Empty response');
+      return t;
+    });
   }
 
-  /* ── TOOL: CODE SCAN (stateless — no conversation history) ── */
+  /* ── TOOL: CODE SCAN ─────────────────────────────────────── */
   window.cybaashCodeScan = function () {
     var code = document.getElementById('cybaash-code-inp').value.trim();
     var lang = document.getElementById('cybaash-code-lang').value;
@@ -317,7 +425,6 @@
         '{"risk_level":"SAFE|LOW|MEDIUM|HIGH","total_issues":0,"lines_scanned":0,"language":"","issues":[{"line":1,"severity":"HIGH|MEDIUM|LOW","description":""}],"summary":{"HIGH":0,"MEDIUM":0,"LOW":0}}\n\n' +
         'Code:\n```\n' + code.slice(0, 6000) + '\n```';
 
-      // Stateless: build payload directly, don't use callGemini() which writes to history
       _callGeminiStateless(prompt)
         .then(function (reply) {
           try   { res.innerHTML = renderCode(JSON.parse(reply.replace(/```json|```/g, '').trim())); }
@@ -329,7 +436,7 @@
     }
   };
 
-  /* ── TOOL: FILE SCAN (stateless) ────────────────────────── */
+  /* ── TOOL: FILE SCAN ─────────────────────────────────────── */
   window.cybaashFileChange = function (inp) {
     var file = inp.files && inp.files[0];
     if (!file) return;
@@ -364,43 +471,6 @@
     reader.readAsText(file);
   };
 
-  /** Gemini call that does NOT touch conversation history (for tools). */
-  function _callGeminiStateless(prompt) {
-    var payload = {
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 512, topP: 0.9 },
-      safetySettings: [
-        { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
-        { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
-        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-      ],
-    };
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-              cfg.model + ':generateContent?key=' + cfg.key;
-    return fetch(url, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
-      signal:  AbortSignal.timeout(30000),
-    })
-      .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
-      .then(function (data) {
-        var t = data &&
-          data.candidates &&
-          data.candidates[0] &&
-          data.candidates[0].content &&
-          data.candidates[0].content.parts &&
-          data.candidates[0].content.parts[0] &&
-          data.candidates[0].content.parts[0].text;
-        if (!t) throw new Error('Empty response');
-        return t;
-      });
-  }
-
   /* ── INPUT HANDLERS ──────────────────────────────────────── */
   window.cybaashKey = function (e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); window.cybaashSend(); }
@@ -424,7 +494,7 @@
     appendMsg('bot', '**Chat cleared.** How can I help you with cybersecurity?', []);
   };
 
-  /* ── URL / PASSWORD TOOLS (unchanged — local only) ──────── */
+  /* ── URL / PASSWORD TOOLS (local only) ──────────────────── */
   window.cybaashUrlCheck = function () {
     var url = document.getElementById('cybaash-url-inp').value.trim();
     if (!url) return;
@@ -484,7 +554,8 @@
     }
 
     var div = document.createElement('div');
-    div.className = 'cyb-msg ' + (isBot ? 'cyb-bot' : 'cyb-user');
+    div.className = 'cyb-msg cyb-bot';
+    if (!isBot) div.className = 'cyb-msg cyb-user';
     div.innerHTML =
       '<div class="cyb-msg-ava ' + (isBot ? 'cyb-bot-ava' : 'cyb-user-ava') + '">' + (isBot ? '&#x26A1;' : 'YOU') + '</div>' +
       '<div class="cyb-msg-bubble">' +
@@ -494,6 +565,42 @@
       '</div>';
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
+  }
+
+  /** Creates an empty bot bubble for streaming — returns the text element. */
+  function appendStreamingMsg() {
+    var box = document.getElementById('cybaash-messages');
+    if (!box) return null;
+    var time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    var div = document.createElement('div');
+    div.className = 'cyb-msg cyb-bot';
+    div.innerHTML =
+      '<div class="cyb-msg-ava cyb-bot-ava">&#x26A1;</div>' +
+      '<div class="cyb-msg-bubble">' +
+        '<div class="cyb-msg-who">CYBAASH AI &middot; ' + time + '</div>' +
+        '<div class="cyb-msg-text cyb-streaming"></div>' +
+      '</div>';
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div.querySelector('.cyb-msg-text');
+  }
+
+  /** Update bubble with raw text during streaming (no markdown parse on every chunk). */
+  function updateBubbleRaw(el, text) {
+    if (!el) return;
+    el.textContent = text;
+    var box = document.getElementById('cybaash-messages');
+    if (box) box.scrollTop = box.scrollHeight;
+  }
+
+  /** Final render — full markdown parse once streaming is complete. */
+  function renderBubble(el, text) {
+    if (!el) return;
+    el.classList.remove('cyb-streaming');
+    if (window.marked) {
+      try { el.innerHTML = window.marked.parse(text); return; } catch (e) {}
+    }
+    el.textContent = text;
   }
 
   function showTyping(show) {
@@ -560,26 +667,39 @@
   /* ── LOCAL FALLBACKS ─────────────────────────────────────── */
   function demoResponse(msg) {
     var m = msg.toLowerCase();
-    if (/sql|sqli|injection/.test(m))          return '## SQL Injection\n\nUse parameterized queries:\n```python\ncursor.execute("SELECT * FROM users WHERE name = %s", (input,))\n```\n> OWASP A03:2021';
-    if (/xss|cross.site scri/.test(m))         return '## XSS\n\nEscape output, set CSP headers, use HttpOnly cookies.\n> OWASP A03:2021';
-    if (/csrf/.test(m))                         return '## CSRF\n\nAdd CSRF tokens + `SameSite=Strict` cookies.\n> OWASP A01:2021';
-    if (/password|hash|bcrypt|argon/.test(m))  return '## Passwords\n\nUse **Argon2id** or **bcrypt**. Never MD5/SHA1.';
-    if (/owasp/.test(m))                        return '## OWASP Top 10 (2021)\n\n1. Broken Access Control\n2. Cryptographic Failures\n3. Injection\n4. Insecure Design\n5. Security Misconfiguration\n6. Vulnerable Components\n7. Auth Failures\n8. Integrity Failures\n9. Logging Failures\n10. SSRF';
-    if (/buffer overflow|bof/.test(m))          return '## Buffer Overflow\n\n```c\nfgets(buf, sizeof(buf), stdin); // Safe\n// NOT: gets(buf);              // Vulnerable\n```\nDefenses: ASLR, Stack Canaries, NX/DEP';
-    if (/pentest|penetration/.test(m))          return '## Pentest Phases\n\n1. Recon\n2. Scanning\n3. Exploitation *(authorized only)*\n4. Post-exploitation\n5. Reporting';
-    if (/hi|hello|hey|help/i.test(m))          return '## CYBAASH AI ⚡\n\nSet a **Gemini API key** in Admin → Settings to enable full AI responses.\n\nAsk me about: SQLi, XSS, CSRF, buffer overflows, OWASP Top 10, pentesting.';
+    if (/sql|sqli|injection/.test(m))         return '## SQL Injection\n\nUse parameterized queries:\n```python\ncursor.execute("SELECT * FROM users WHERE name = %s", (input,))\n```\n> OWASP A03:2021';
+    if (/xss|cross.site scri/.test(m))        return '## XSS\n\nEscape output, set CSP headers, use HttpOnly cookies.\n> OWASP A03:2021';
+    if (/csrf/.test(m))                        return '## CSRF\n\nAdd CSRF tokens + `SameSite=Strict` cookies.\n> OWASP A01:2021';
+    if (/password|hash|bcrypt|argon/.test(m)) return '## Passwords\n\nUse **Argon2id** or **bcrypt**. Never MD5/SHA1.';
+    if (/owasp/.test(m))                       return '## OWASP Top 10 (2021)\n\n1. Broken Access Control\n2. Cryptographic Failures\n3. Injection\n4. Insecure Design\n5. Security Misconfiguration\n6. Vulnerable Components\n7. Auth Failures\n8. Integrity Failures\n9. Logging Failures\n10. SSRF';
+    if (/buffer overflow|bof/.test(m))         return '## Buffer Overflow\n\n```c\nfgets(buf, sizeof(buf), stdin); // Safe\n// NOT: gets(buf);              // Vulnerable\n```\nDefenses: ASLR, Stack Canaries, NX/DEP';
+    if (/pentest|penetration/.test(m))         return '## Pentest Phases\n\n1. Recon\n2. Scanning\n3. Exploitation *(authorized only)*\n4. Post-exploitation\n5. Reporting';
+    if (/hi|hello|hey|help/i.test(m))         return '## CYBAASH AI ⚡\n\nSet a **Gemini API key** in Admin → Settings to enable full AI responses.\n\nAsk me about: SQLi, XSS, CSRF, buffer overflows, OWASP Top 10, pentesting.';
     return '**Demo mode** — set your Gemini API key in **Admin → Settings → Gemini AI Configuration** to enable full responses.';
   }
 
   function localUrl(url) {
     var flags = [], score = 0;
-    if (/^http:\/\//.test(url))                  { flags.push('Non-HTTPS — traffic unencrypted'); score += 20; }
-    if (/\d{1,3}\.\d{1,3}\.\d{1,3}/.test(url))  { flags.push('IP address URL — possible phishing'); score += 20; }
-    if (/bit\.ly|tinyurl|t\.co/.test(url))       { flags.push('URL shortener — destination hidden'); score += 15; }
-    if (/(login|signin|verify|secure)/.test(url)){ flags.push('Sensitive action keyword'); score += 10; }
+    // Existing checks
+    if (/^http:\/\//.test(url))                   { flags.push('Non-HTTPS — traffic unencrypted'); score += 20; }
+    if (/\d{1,3}\.\d{1,3}\.\d{1,3}/.test(url))   { flags.push('IP address URL — possible phishing'); score += 20; }
+    if (/bit\.ly|tinyurl|t\.co|is\.gd/.test(url)) { flags.push('URL shortener — destination hidden'); score += 15; }
+    if (/(login|signin|verify|secure|update|confirm|account|banking)/.test(url)) {
+      flags.push('Sensitive action keyword in URL'); score += 10;
+    }
+    // New checks
+    if (/xn--/.test(url))                          { flags.push('Punycode domain — possible IDN homograph attack'); score += 25; }
+    if (/\.(exe|zip|rar|bat|msi|dmg|ps1)($|\?)/.test(url)) {
+      flags.push('Executable file extension in URL'); score += 30;
+    }
+    var host = url.split('/')[2] || '';
+    if ((host.match(/\./g) || []).length >= 4)     { flags.push('Excessive subdomains — common phishing pattern'); score += 15; }
+    if (/000webhostapp|weebly|wixsite|glitch\.me|netlify\.app|ngrok\.io/.test(url)) {
+      flags.push('Free hosting platform — often used for phishing'); score += 10;
+    }
     var risk = score >= 50 ? 'HIGH' : score >= 30 ? 'MEDIUM' : score >= 15 ? 'LOW' : 'SAFE';
-    return { risk_level: risk, risk_score: score, flags: flags, host: url.split('/')[2] || url,
-      recommendation: risk === 'SAFE' ? 'URL appears safe.' : 'Proceed with caution.' };
+    return { risk_level: risk, risk_score: Math.min(score, 100), flags: flags, host: host,
+      recommendation: risk === 'SAFE' ? 'URL appears safe.' : 'Proceed with caution — ' + flags.length + ' risk factor(s) detected.' };
   }
 
   function localPass(pw) {

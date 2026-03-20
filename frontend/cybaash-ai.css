@@ -670,3 +670,17 @@ body.attacker-mode #cybaash-ai-overlay .cyb-chat-ava {
 body.attacker-mode #cybaash-messages::-webkit-scrollbar-thumb {
   background: rgba(255,58,92,0.22) !important;
 }
+/* ── Streaming cursor (v3) ───────────────────────────────────────────── */
+#cybaash-ai-overlay .cyb-msg-text.cyb-streaming::after {
+  content: '▋';
+  display: inline-block;
+  color: var(--cyb-accent);
+  animation: cyb-blink 0.7s step-end infinite;
+  margin-left: 2px;
+  font-size: 13px;
+  vertical-align: baseline;
+}
+@keyframes cyb-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
