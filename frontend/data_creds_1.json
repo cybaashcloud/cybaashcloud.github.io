@@ -1240,7 +1240,7 @@
       "date": "2026-02",
       "url": "https://skillbuilder.aws",
       "pdf": "https://cybaashcloud.github.io/certificates/aws/30bc8ae4-d388-4b2e-8116-9c377a1f9975.pdf",
-      "image": "",
+      "image": "/certificates/auto/pro057.jpg",
       "logo": "",
       "featured": true,
       "tags": [
@@ -1249,7 +1249,8 @@
         "Security Architecture",
         "STRIDE",
         "AWS"
-      ]
+      ],
+      "pdfUrl": "/certificates/aws/30bc8ae4-d388-4b2e-8116-9c377a1f9975.pdf"
     },
     {
       "id": "pro058",
@@ -1259,7 +1260,7 @@
       "date": "2026-02",
       "url": "https://skillbuilder.aws",
       "pdf": "https://cybaashcloud.github.io/certificates/aws/4750cacd-fe35-4978-9be0-c620a35b2f5b.pdf",
-      "image": "",
+      "image": "/certificates/auto/pro058.jpg",
       "logo": "",
       "featured": true,
       "tags": [
@@ -1269,7 +1270,8 @@
         "AWS Security",
         "Compliance",
         "AWS"
-      ]
+      ],
+      "pdfUrl": "/certificates/aws/4750cacd-fe35-4978-9be0-c620a35b2f5b.pdf"
     },
     {
       "id": "pro059",
@@ -1279,7 +1281,7 @@
       "date": "2026-03",
       "url": "https://skillbuilder.aws",
       "pdf": "https://cybaashcloud.github.io/certificates/aws/6a093802-71c6-4d32-9c3c-27764f126da9.pdf",
-      "image": "",
+      "image": "/certificates/auto/pro059.jpg",
       "logo": "",
       "featured": true,
       "tags": [
@@ -1289,7 +1291,8 @@
         "Cloud Security",
         "AWS Best Practices",
         "AWS"
-      ]
+      ],
+      "pdfUrl": "/certificates/aws/6a093802-71c6-4d32-9c3c-27764f126da9.pdf"
     },
     {
       "id": "pro060",
@@ -1299,7 +1302,7 @@
       "date": "2026-02",
       "url": "https://skillbuilder.aws",
       "pdf": "https://cybaashcloud.github.io/certificates/aws/dfb92807-60c7-41f1-88a5-55c937a59671.pdf",
-      "image": "",
+      "image": "/certificates/auto/pro060.jpg",
       "logo": "",
       "featured": true,
       "tags": [
@@ -1309,7 +1312,8 @@
         "Security Alerting",
         "AWS Best Practices",
         "AWS"
-      ]
+      ],
+      "pdfUrl": "/certificates/aws/dfb92807-60c7-41f1-88a5-55c937a59671.pdf"
     },
     {
       "id": "pro061",
@@ -1319,7 +1323,7 @@
       "date": "2026-02",
       "url": "https://skillbuilder.aws",
       "pdf": "https://cybaashcloud.github.io/certificates/aws/1916f81c-efe3-4160-b906-044c748fa723.pdf",
-      "image": "",
+      "image": "/certificates/auto/pro061.jpg",
       "logo": "",
       "featured": false,
       "tags": [
@@ -1329,7 +1333,8 @@
         "Activity Monitoring",
         "Compliance",
         "AWS"
-      ]
+      ],
+      "pdfUrl": "/certificates/aws/1916f81c-efe3-4160-b906-044c748fa723.pdf"
     },
     {
       "id": "pro062",
@@ -1339,7 +1344,7 @@
       "date": "2026-03",
       "url": "https://skillbuilder.aws",
       "pdf": "https://cybaashcloud.github.io/certificates/aws/24ddc7ba-31fb-4c8b-a5f4-ce00b2835af4.pdf",
-      "image": "",
+      "image": "/certificates/auto/pro062.jpg",
       "logo": "",
       "featured": true,
       "tags": [
@@ -1349,7 +1354,8 @@
         "Cloud Computing",
         "AWS Services",
         "AWS"
-      ]
+      ],
+      "pdfUrl": "/certificates/aws/24ddc7ba-31fb-4c8b-a5f4-ce00b2835af4.pdf"
     },
     {
       "id": "pro063",
@@ -1359,7 +1365,7 @@
       "date": "2026-02",
       "url": "https://skillbuilder.aws",
       "pdf": "https://cybaashcloud.github.io/certificates/aws/f854d6e8-a474-4c6d-83e3-649ea25ad651.pdf",
-      "image": "",
+      "image": "/certificates/auto/pro063.jpg",
       "logo": "",
       "featured": false,
       "tags": [
@@ -1369,7 +1375,8 @@
         "AWS Security",
         "Log Analytics",
         "AWS"
-      ]
+      ],
+      "pdfUrl": "/certificates/aws/f854d6e8-a474-4c6d-83e3-649ea25ad651.pdf"
     },
     {
       "id": "pro064",
@@ -1379,7 +1386,7 @@
       "date": "2026-02",
       "url": "https://skillbuilder.aws",
       "pdf": "https://cybaashcloud.github.io/certificates/aws/e36766ae-56bb-4bb1-b5cd-d0a58f0523bc.pdf",
-      "image": "",
+      "image": "/certificates/auto/pro064.jpg",
       "logo": "",
       "featured": true,
       "tags": [
@@ -1389,7 +1396,8 @@
         "Malware Protection",
         "DNS Security",
         "AWS"
-      ]
+      ],
+      "pdfUrl": "/certificates/aws/e36766ae-56bb-4bb1-b5cd-d0a58f0523bc.pdf"
     },
     {
       "id": "li0001",
