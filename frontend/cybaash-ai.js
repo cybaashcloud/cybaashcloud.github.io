@@ -1,5 +1,5 @@
 /**
- * CYBAASH AI — Chatbot  v3.1
+ * CYBAASH AI — Chatbot  v3
  * ════════════════════════
  * Fully serverless — Gemini + GitHub only, zero backend.
  *
