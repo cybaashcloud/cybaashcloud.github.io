@@ -15,7 +15,7 @@ from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-DB_PATH = os.getenv("DB_PATH", "cyberbot.db")
+DB_PATH = os.getenv("DB_PATH", "ai.db")
 
 _settings_cache: dict = {}
 _cache_ts: float = 0

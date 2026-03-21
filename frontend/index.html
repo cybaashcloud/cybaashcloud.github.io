@@ -2768,7 +2768,7 @@ body.attacker-mode #attackerBadge { display: block; }
     <div class="stat-pill">SCORE <span class="val yellow" id="scoreH">—</span></div>
     <button class="btn btn-red" onclick="window.open('recruiter.html','_blank','noopener,noreferrer')">RECRUITER VIEW</button>
     <button class="btn btn-green" id="termToggleBtn" onclick="termToggle()" style="letter-spacing:2px">⌨ TERMINAL</button>
-    <button id="cybaash-nav-btn" onclick="window.open('cyberbot/','_blank','noopener,noreferrer')">CYBAASH AI</button>
+    <button id="cybaash-nav-btn" onclick="window.open('ai/','_blank','noopener,noreferrer')">CYBAASH AI</button>
   </div>
 </div>
 
@@ -5962,7 +5962,7 @@ const GEMINI_AI = {
       'contact|email|phone|hire|reach': `Contact Mohamed Aasiq:\nEmail: mohamedaasiq07@gmail.com\nPhone: +91 95665 96077\nGitHub: github.com/cybaash\nLinkedIn: linkedin.com/in/mohamedaasiq07\nTryHackMe: tryhackme.com/p/AasiqSec\nWebsite: cybaash.github.io`,
       'skill|certification|cert|expertise': `273+ certifications across 8 domains:\nCybersecurity (73): Ethical Hacking, CEH, Penetration Testing, OWASP Top 10, AI Security...\nAI/ML (51): Machine Learning, Generative AI, LLMs, Azure AI...\nCloud/DevOps (31): AWS, Docker, CI/CD, Infrastructure as Code...\nProgramming (29): Python, JavaScript, Java, C++, SQL...\nManagement (28): CISO Leadership, Product Management, Operations...\nCommunication (40): Business Writing, Public Speaking, SEO, Marketing...\nNetworking/Linux (12): Ubuntu, Kali Purple, Red Hat, Network Security...\nData Science (9): KNIME, Snowflake, Python Data Analysis...`,
       'experience|work history|job|career': `Work Experience:\n● Managing Director & Founder — Detoxy Hijama (Aug 2020–Present)\n  Pune, Maharashtra | Founded wellness enterprise, cybersecurity protection, team of 8\n● Operations Executive — Haneez Enterprises Pvt. Ltd. (May 2019–Jul 2020)\n  Managed 50+ Amazon SKUs, automated Excel reporting, Star seller rating\n● Storekeeper — SKB Multy Shop (Jun 2018–May 2019)\n  99% inventory accuracy, 10+ vendors, barcode tracking system`,
-      'website|portfolio|cybaash|pages': `CYBAASH // Autonomous Cyber Range\nURL: https://cybaash.github.io\nPages:\n  / .............. Autonomous cyber range simulation\n  /recruiter.html  Clean CV view for recruiters\n  /dashboard.html  Operator dashboard (GitHub storage)\n  /cyberbot/ ..... AI-powered cybersecurity assistant\n  /admin/ ........ Admin panel (React)\nTech: HTML/CSS/JS, React, Gemini AI, GitHub Pages, PWA`,
+      'website|portfolio|cybaash|pages': `CYBAASH // Autonomous Cyber Range\nURL: https://cybaash.github.io\nPages:\n  / .............. Autonomous cyber range simulation\n  /recruiter.html  Clean CV view for recruiters\n  /dashboard.html  Operator dashboard (GitHub storage)\n  /ai/ ..... AI-powered cybersecurity assistant\n  /admin/ ........ Admin panel (React)\nTech: HTML/CSS/JS, React, Gemini AI, GitHub Pages, PWA`,
       // Cybersecurity topics
       'sql injection|sqli|sql inject': `SQL Injection (SQLi) — OWASP A03\nInjects malicious SQL to manipulate database queries.\nTypes: Classic, Blind, UNION-based, Time-based, Error-based\nExample: ' OR '1'='1\nImpact: Data theft, auth bypass, data deletion, RCE\nFix: cursor.execute("SELECT * FROM users WHERE id=%s",(id,))\nNEVER concatenate user input directly into SQL queries.`,
       'xss|cross.site scripting|script inject': `Cross-Site Scripting (XSS) — OWASP A03\nInjects scripts into web pages viewed by other users.\nTypes: Stored (persistent), Reflected, DOM-based\nImpact: Session hijacking, credential theft, defacement\nFix: Use textContent not innerHTML\nFix: Content-Security-Policy headers\nFix: Escape all user-supplied output\nFix: Use DOMPurify for HTML content`,
@@ -6035,7 +6035,7 @@ Linux/Networking: Ubuntu, Red Hat, Kali Purple, Linux CLI, Network Security, TLS
 
 === WEBSITE (CYBAASH) ===
 URL: https://cybaash.github.io
-Pages: / (Cyber range simulation) | /recruiter.html (CV view) | /dashboard.html (Operator dashboard) | /cyberbot/ (CYBAASH AI) | /admin/ (Admin panel)
+Pages: / (Cyber range simulation) | /recruiter.html (CV view) | /dashboard.html (Operator dashboard) | /ai/ (CYBAASH AI) | /admin/ (Admin panel)
 Tech: HTML/CSS/JS 7000+ lines, React, Gemini AI, GitHub Pages, PWA
 Features: Live cyber range sim, kill chain simulation, AI terminal, decision engine, knowledge graph, what-if engine, time-travel replay, PWA
 
@@ -6297,7 +6297,7 @@ defCmd('website', () => {
     { t:'t-out',    v:'  / ................ Autonomous cyber range simulation' },
     { t:'t-out',    v:'  /recruiter.html .. Clean CV view for recruiters' },
     { t:'t-out',    v:'  /dashboard.html .. Operator dashboard (GitHub storage)' },
-    { t:'t-out',    v:'  /cyberbot/ ....... CYBAASH AI cybersecurity assistant' },
+    { t:'t-out',    v:'  /ai/ ....... CYBAASH AI cybersecurity assistant' },
     { t:'t-out',    v:'  /admin/ .......... Admin panel (React)' },
     { t:'t-sep',    v:'──────────────────────────────────────────────────────' },
     { t:'t-dim',    v:'  Stack: HTML/CSS/JS · React · Gemini AI · GitHub Pages · PWA' },

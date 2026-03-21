@@ -62,7 +62,7 @@
 
       '<div class="cyb-drawer-section">PAGES</div>' +
 
-      '<a class="cyb-drawer-btn" href="cyberbot/" target="_blank" rel="noopener">' +
+      '<a class="cyb-drawer-btn" href="ai/" target="_blank" rel="noopener">' +
         '<span class="icon">&#x2B21;</span>CYBAASH AI' +
       '</a>' +
 

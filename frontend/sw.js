@@ -26,7 +26,7 @@ const SHELL_FILES = [
   '/icons/icon-maskable-192x192.png',
   '/offline.html',
   '/style.css',
-  '/cyberbot/index.html',
+  '/ai/index.html',
 ];
 
 // ── Install: precache shell ──────────────────────────────────────────────────
