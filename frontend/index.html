@@ -4169,28 +4169,32 @@ function defCmd(name, fn) { TERM_COMMANDS[name] = fn; }
 // ── SYSTEM COMMANDS ──────────────────────────────────────────────
 
 // ═══════════════════════════════════════════════════════════════════════
-// REAL AI ASSISTANT — Powered by Gemini via Cloudflare Worker
-// No API keys in this file — all secrets stored in Cloudflare Worker
-// Worker URL: https://cybaash.mohamedaasiq07.workers.dev
+// REAL AI ASSISTANT — Powered by Claude (Anthropic API)
+// Injected context: simulation state, cert profile, node status
+// Falls back to AI_KB if API unavailable
 // ═══════════════════════════════════════════════════════════════════════
 
 const CYBAASH_AI = {
-  workerUrl: 'https://cybaash.mohamedaasiq07.workers.dev',
-  model:     'gemini-2.5-flash-lite',
-  loading:   false,
+  // ── FREE AI: Groq API ──────────────────────────────────────────────────
+  // Free tier: 14,400 req/day, no credit card required
+  // Get key at: console.groq.com (30 seconds, completely free)
+  // Supported models: llama-3.3-70b-versatile, mixtral-8x7b-32768
+  endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+  model: 'llama-3.3-70b-versatile',
+  loading: false,
 
   // Build system prompt with live simulation context
   buildContext() {
-    const certCount  = CERT_DATA?.total || 0;
-    const topCats    = (CERT_DATA?.categories || []).slice(0,4).map(c=>c.name).join(', ');
-    const nodeStates = NODES.map(n=>`${n.id}:${n.status}`).join(', ');
-    const phase      = ['idle','recon','exploit','lateral','escalate'][state.phase] || 'idle';
-    const score      = state.scores?.total || 0;
-    const atk        = state.scores?.attackSuccess || 0;
-    const def        = state.scores?.detectionEfficiency || 0;
-    const scenario   = state.currentScenario || 'none';
-    const running    = state.running;
-    const certDNA    = (CERT_DATA?.categories || []).map(c=>`${c.name}:${c.count}`).join(', ');
+    const certCount   = CERT_DATA?.total || 0;
+    const topCats     = (CERT_DATA?.categories || []).slice(0,4).map(c=>c.name).join(', ');
+    const nodeStates  = NODES.map(n=>`${n.id}:${n.status}`).join(', ');
+    const phase       = ['idle','recon','exploit','lateral','escalate'][state.phase] || 'idle';
+    const score       = state.scores?.total || 0;
+    const atk         = state.scores?.attackSuccess || 0;
+    const def         = state.scores?.detectionEfficiency || 0;
+    const scenario    = state.currentScenario || 'none';
+    const running     = state.running;
+    const certDNA     = (CERT_DATA?.categories || []).map(c=>`${c.name}:${c.count}`).join(', ');
 
     return `You are CYBAASH — an embedded AI security mentor inside an autonomous cyber range simulation platform. You are concise, technical, and cybersecurity-focused.
 
@@ -4221,36 +4225,56 @@ RULES:
       return;
     }
 
+    // Check if API key is configured
+    const apiKey = localStorage.getItem('cybaash_groq_key') || '';
+    if (!apiKey) {
+      termPrint([
+        { t:'t-warn', v:'[AI] No API key configured.' },
+        { t:'t-out',  v:'  Run: assistant key YOUR_GROQ_API_KEY' },
+        { t:'t-dim',  v:'  Free at: console.groq.com (no credit card)' },
+        { t:'t-dim',  v:'  Key stored locally, never sent anywhere else.' },
+      ]);
+      return;
+    }
+
     this.loading = true;
     const typingId = 'ai-typing-' + Date.now();
     termPrint({ t:'t-sys', v:'[AI] ▋ Thinking…', id: typingId });
 
     try {
-      const resp = await fetch(this.workerUrl, {
+      const resp = await fetch(this.endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey,
+        },
         body: JSON.stringify({
-          model:   this.model,
-          payload: {
-            contents: [
-              { role: 'user', parts: [{ text: this.buildContext() + '\n\nUser: ' + userMessage }] }
-            ],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
-          }
+          model: this.model,
+          max_tokens: 300,
+          messages: [
+            { role: 'system', content: this.buildContext() },
+            { role: 'user',   content: userMessage }
+          ],
+          temperature: 0.7,
         }),
       });
 
+      // Remove typing indicator
       document.getElementById(typingId)?.remove();
 
       if (!resp.ok) {
+        const err = await resp.json().catch(()=>({}));
+        if (resp.status === 401) throw new Error('Invalid Groq API key — run: assistant key YOUR_KEY (get free at console.groq.com)');
         if (resp.status === 429) throw new Error('Rate limited — try again in a moment');
-        throw new Error('Worker error: HTTP ' + resp.status);
+        throw new Error(err.error?.message || `HTTP ${resp.status}`);
       }
 
       const data = await resp.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+      // Groq/OpenAI format: data.choices[0].message.content
+      const text = data.choices?.[0]?.message?.content || data.content?.[0]?.text || 'No response';
 
       termPrint({ t:'t-sys', v:'[CYBAASH AI] ──────────────────────────────' });
+      // Split response into lines for better terminal rendering
       text.split('\n').filter(l=>l.trim()).forEach(line => {
         termPrint({ t:'t-out', v:'  ' + line });
       });
@@ -4258,25 +4282,47 @@ RULES:
 
     } catch(err) {
       document.getElementById(typingId)?.remove();
-      termPrint({ t:'t-err', v:'[AI] Error: ' + err.message });
+      termPrint({ t:'t-err', v:`[AI] Error: ${err.message}` });
     } finally {
       this.loading = false;
     }
   }
 };
 
-// ── Override the static assistant command with Gemini AI ───────────────────
+// ── Override the static assistant command with real AI ─────────────────────
+// Re-register 'assistant' to use Claude API
+const _originalCmds = window.__TERM_CMDS__ || {};
 if (typeof TERM_COMMANDS !== 'undefined') {
   const orig = TERM_COMMANDS.get?.('assistant');
   TERM_COMMANDS.set?.('assistant', (args) => {
     const sub = args[0];
 
+    // Key management
+    if (sub === 'key') {
+      const key = args[1];
+      if (!key) {
+        const stored = localStorage.getItem('cybaash_groq_key');
+        termPrint({ t:'t-out', v: stored ? '[AI] API key: configured ✓' : '[AI] No key set. Run: assistant key YOUR_KEY' });
+        return;
+      }
+      localStorage.setItem('cybaash_groq_key', key);
+      termPrint({ t:'t-sys', v:'[AI] Groq API key saved. Free AI enabled (14,400 req/day).' });
+      return;
+    }
+
+    if (sub === 'clear-key') {
+      localStorage.removeItem('cybaash_groq_key');
+      termPrint({ t:'t-sys', v:'[AI] API key cleared.' });
+      return;
+    }
+
     if (sub === 'on' || sub === 'off' || sub === 'mode' || sub === 'status') {
+      // Let original handler run for mode switching
       if (orig) orig(args);
       return;
     }
 
-    // Everything else → Gemini AI via Worker
+    // Everything else → real AI
     const question = args.join(' ') || 'What should I do next in this simulation?';
     CYBAASH_AI.ask(question);
   });
@@ -8652,7 +8698,8 @@ Drop file or click to upload<br>
     if (!mob) {
       closeDrawer('left');
       closeDrawer('right');
-      mobCloseHeader();
+      // Guard: mobCloseHeader is defined later in the script
+      if (typeof mobCloseHeader === 'function') mobCloseHeader();
     }
   }
 
@@ -8764,7 +8811,7 @@ Drop file or click to upload<br>
     if (!headerOpen) return;
     var d = document.getElementById('mobHeaderDrawer');
     var b = document.getElementById('mobMenuBtn');
-    if (d && !d.contains(e.target) && b && !b.contains(e.target)) mobCloseHeader();
+    if (d && !d.contains(e.target) && b && !b.contains(e.target) && typeof mobCloseHeader === 'function') mobCloseHeader();
   });
 
   // Overlay tap closes drawers
@@ -8775,7 +8822,7 @@ Drop file or click to upload<br>
 
   // Escape closes everything
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { mobCloseAll(); mobCloseHeader(); }
+    if (e.key === 'Escape') { mobCloseAll(); if (typeof mobCloseHeader === 'function') mobCloseHeader(); }
   });
 
   // ── SYNC header stats to drawer mirror ─────────────────────────────
@@ -8806,7 +8853,14 @@ Drop file or click to upload<br>
 })();
 </script>
 
-  <!-- ── CYBAASH SOC TRACKER — config loaded from Cloudflare Worker ── -->
+  <!-- ── CYBAASH SOC TRACKER ────────────────────────────────────────── -->
+  <script>
+    window.SOC_CONFIG = {
+      endpoint: "REPLACE_WITH_YOUR_APPS_SCRIPT_EXEC_URL",
+      apiKey:   "REPLACE_WITH_YOUR_SOC_API_KEY",
+      debug:    false
+    };
+  </script>
   <script src="/soc-tracker-v2.js"></script>
   <!-- ───────────────────────────────────────────────────────────────── -->
 </body>
