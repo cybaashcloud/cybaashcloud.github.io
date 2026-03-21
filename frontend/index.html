@@ -4175,27 +4175,21 @@ function defCmd(name, fn) { TERM_COMMANDS[name] = fn; }
 // ═══════════════════════════════════════════════════════════════════════
 
 const CYBAASH_AI = {
-  // ── FREE AI: Groq API ──────────────────────────────────────────────────
-  // Free tier: 14,400 req/day, no credit card required
-  // Get key at: console.groq.com (30 seconds, completely free)
-  // Supported models: llama-3.3-70b-versatile, mixtral-8x7b-32768
-  endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-  model: 'llama-3.3-70b-versatile',
-  loading: false,
+  workerUrl: 'https://cybaash.mohamedaasiq07.workers.dev',
+  model:     'gemini-2.5-flash-lite',
+  loading:   false,
 
-  // Build system prompt with live simulation context
   buildContext() {
-    const certCount   = CERT_DATA?.total || 0;
-    const topCats     = (CERT_DATA?.categories || []).slice(0,4).map(c=>c.name).join(', ');
-    const nodeStates  = NODES.map(n=>`${n.id}:${n.status}`).join(', ');
-    const phase       = ['idle','recon','exploit','lateral','escalate'][state.phase] || 'idle';
-    const score       = state.scores?.total || 0;
-    const atk         = state.scores?.attackSuccess || 0;
-    const def         = state.scores?.detectionEfficiency || 0;
-    const scenario    = state.currentScenario || 'none';
-    const running     = state.running;
-    const certDNA     = (CERT_DATA?.categories || []).map(c=>`${c.name}:${c.count}`).join(', ');
-
+    const certCount  = CERT_DATA?.total || 0;
+    const topCats    = (CERT_DATA?.categories || []).slice(0,4).map(c=>c.name).join(', ');
+    const nodeStates = NODES.map(n=>`${n.id}:${n.status}`).join(', ');
+    const phase      = ['idle','recon','exploit','lateral','escalate'][state.phase] || 'idle';
+    const score      = state.scores?.total || 0;
+    const atk        = state.scores?.attackSuccess || 0;
+    const def        = state.scores?.detectionEfficiency || 0;
+    const scenario   = state.currentScenario || 'none';
+    const running    = state.running;
+    const certDNA    = (CERT_DATA?.categories || []).map(c=>`${c.name}:${c.count}`).join(', ');
     return `You are CYBAASH — an embedded AI security mentor inside an autonomous cyber range simulation platform. You are concise, technical, and cybersecurity-focused.
 
 CURRENT SIMULATION STATE:
@@ -4224,213 +4218,52 @@ RULES:
       termPrint({ t:'t-warn', v:'[AI] Already processing — please wait…' });
       return;
     }
-
-    // Check if API key is configured
-    const apiKey = localStorage.getItem('cybaash_groq_key') || '';
-    if (!apiKey) {
-      termPrint([
-        { t:'t-warn', v:'[AI] No API key configured.' },
-        { t:'t-out',  v:'  Run: assistant key YOUR_GROQ_API_KEY' },
-        { t:'t-dim',  v:'  Free at: console.groq.com (no credit card)' },
-        { t:'t-dim',  v:'  Key stored locally, never sent anywhere else.' },
-      ]);
-      return;
-    }
-
     this.loading = true;
     const typingId = 'ai-typing-' + Date.now();
     termPrint({ t:'t-sys', v:'[AI] ▋ Thinking…', id: typingId });
-
     try {
-      const resp = await fetch(this.endpoint, {
+      const resp = await fetch(this.workerUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: this.model,
-          max_tokens: 300,
-          messages: [
-            { role: 'system', content: this.buildContext() },
-            { role: 'user',   content: userMessage }
-          ],
-          temperature: 0.7,
+          model:   this.model,
+          payload: {
+            contents: [{ role: 'user', parts: [{ text: this.buildContext() + '\n\nUser: ' + userMessage }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
+          }
         }),
       });
-
-      // Remove typing indicator
       document.getElementById(typingId)?.remove();
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(()=>({}));
-        if (resp.status === 401) throw new Error('Invalid Groq API key — run: assistant key YOUR_KEY (get free at console.groq.com)');
-        if (resp.status === 429) throw new Error('Rate limited — try again in a moment');
-        throw new Error(err.error?.message || `HTTP ${resp.status}`);
-      }
-
+      if (!resp.ok) throw new Error('Worker error: HTTP ' + resp.status);
       const data = await resp.json();
-      // Groq/OpenAI format: data.choices[0].message.content
-      const text = data.choices?.[0]?.message?.content || data.content?.[0]?.text || 'No response';
-
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
       termPrint({ t:'t-sys', v:'[CYBAASH AI] ──────────────────────────────' });
-      // Split response into lines for better terminal rendering
       text.split('\n').filter(l=>l.trim()).forEach(line => {
         termPrint({ t:'t-out', v:'  ' + line });
       });
       termPrint({ t:'t-dim', v:'────────────────────────────────────────────' });
-
     } catch(err) {
       document.getElementById(typingId)?.remove();
-      termPrint({ t:'t-err', v:`[AI] Error: ${err.message}` });
+      termPrint({ t:'t-err', v:'[AI] Error: ' + err.message });
     } finally {
       this.loading = false;
     }
   }
 };
 
-// ── Override the static assistant command with real AI ─────────────────────
-// Re-register 'assistant' to use Claude API
-const _originalCmds = window.__TERM_CMDS__ || {};
+// ── Override the static assistant command with Gemini AI ───────────────────
 if (typeof TERM_COMMANDS !== 'undefined') {
-  const orig = TERM_COMMANDS.get?.('assistant');
-  TERM_COMMANDS.set?.('assistant', (args) => {
+  const orig = TERM_COMMANDS['assistant'];
+  TERM_COMMANDS['assistant'] = (args) => {
     const sub = args[0];
-
-    // Key management
-    if (sub === 'key') {
-      const key = args[1];
-      if (!key) {
-        const stored = localStorage.getItem('cybaash_groq_key');
-        termPrint({ t:'t-out', v: stored ? '[AI] API key: configured ✓' : '[AI] No key set. Run: assistant key YOUR_KEY' });
-        return;
-      }
-      localStorage.setItem('cybaash_groq_key', key);
-      termPrint({ t:'t-sys', v:'[AI] Groq API key saved. Free AI enabled (14,400 req/day).' });
-      return;
-    }
-
-    if (sub === 'clear-key') {
-      localStorage.removeItem('cybaash_groq_key');
-      termPrint({ t:'t-sys', v:'[AI] API key cleared.' });
-      return;
-    }
-
     if (sub === 'on' || sub === 'off' || sub === 'mode' || sub === 'status') {
-      // Let original handler run for mode switching
       if (orig) orig(args);
       return;
     }
-
-    // Everything else → real AI
     const question = args.join(' ') || 'What should I do next in this simulation?';
     CYBAASH_AI.ask(question);
-  });
-}
-
-defCmd('help', (args) => {
-  const section = args[0];
-  if (section === 'attack' || section === 'red') {
-    termPrint([
-      { t:'t-sep',  v:'─── RED TEAM ──────────────────────────────────────────' },
-      { t:'t-atk',  v:'  scan [target]          Recon scan on node' },
-      { t:'t-atk',  v:'  exploit [target] [cve]  Exploit vulnerability' },
-      { t:'t-atk',  v:'  lateral [src] [dst]     Lateral movement' },
-      { t:'t-atk',  v:'  escalate [node]         Privilege escalation' },
-      { t:'t-atk',  v:'  phish [target]          Spear-phishing sim' },
-      { t:'t-atk',  v:'  launch                  Start full simulation' },
-      { t:'t-atk',  v:'  scenario                Generate new scenario' },
-      { t:'t-sep',  v:'───────────────────────────────────────────────────────' },
-    ]);
-    return;
-  }
-  if (section === 'defense' || section === 'blue') {
-    termPrint([
-      { t:'t-sep',  v:'─── BLUE TEAM ─────────────────────────────────────────' },
-      { t:'t-def',  v:'  isolate [node]          Isolate compromised node' },
-      { t:'t-def',  v:'  block [ip/node]         Firewall block' },
-      { t:'t-def',  v:'  patch [node] [cve]      Patch vulnerability' },
-      { t:'t-def',  v:'  rotate [node]           Rotate credentials' },
-      { t:'t-def',  v:'  honeypot [node]         Deploy honeypot' },
-      { t:'t-def',  v:'  respond [action]        Manual defense action' },
-      { t:'t-sep',  v:'───────────────────────────────────────────────────────' },
-    ]);
-    return;
-  }
-  termPrint([
-    { t:'t-sep',    v:'╔══════════════════════════════════════════════════════╗' },
-    { t:'t-header', v:'  CYBAASH TERMINAL — COMMAND REFERENCE' },
-    { t:'t-sep',    v:'╠══════════════════════════════════════════════════════╣' },
-    { t:'t-dim',    v:'  SYSTEM' },
-    { t:'t-out',    v:'  help [attack|defense|certs|replay|debug]' },
-    { t:'t-out',    v:'  clear / cls             Clear terminal' },
-    { t:'t-out',    v:'  whoami                  Current operator info' },
-    { t:'t-out',    v:'  status                  Full system status' },
-    { t:'t-out',    v:'  user [attacker_1|defender_1|root]  Switch context' },
-    { t:'t-out',    v:'  history [n]             Last n commands' },
-    { t:'t-out',    v:'  version                 Platform version info' },
-    { t:'t-out',    v:'  ping [target]           Network connectivity test' },
-    { t:'t-dim',    v:'  SIMULATION' },
-    { t:'t-out',    v:'  launch                  Start simulation' },
-    { t:'t-out',    v:'  pause                   Pause/resume' },
-    { t:'t-out',    v:'  stop                    End simulation' },
-    { t:'t-out',    v:'  scenario                New attack scenario' },
-    { t:'t-out',    v:'  nodes                   List network nodes' },
-    { t:'t-out',    v:'  map                     ASCII network map' },
-    { t:'t-out',    v:'  threat                  Current threat level' },
-    { t:'t-out',    v:'  whatif                  Open what-if engine' },
-    { t:'t-out',    v:'  score                   Full score report' },
-    { t:'t-out',    v:'  export [timeline|score] Download as JSON' },
-    { t:'t-dim',    v:'  ATTACK  (help attack for details)' },
-    { t:'t-out',    v:'  scan  exploit  lateral  escalate  phish' },
-    { t:'t-dim',    v:'  DEFENSE  (help defense for details)' },
-    { t:'t-out',    v:'  isolate  block  patch  rotate  honeypot' },
-    { t:'t-dim',    v:'  CERTS' },
-    { t:'t-out',    v:'  certs                   Summary' },
-    { t:'t-out',    v:'  certs --analyze         Category breakdown' },
-    { t:'t-out',    v:'  certs --top [n]         Top N certs' },
-    { t:'t-dim',    v:'  DEBUG' },
-    { t:'t-out',    v:'  debug on/off            Toggle debug logging' },
-    { t:'t-out',    v:'  debug state             Dump system state' },
-    { t:'t-out',    v:'  debug logs              Last 10 events' },
-    { t:'t-dim',    v:'  REPLAY' },
-    { t:'t-out',    v:'  replay start/pause/exit' },
-    { t:'t-out',    v:'  replay step [n]         Step forward n events' },
-    { t:'t-out',    v:'  replay back [n]         Step backward n events' },
-    { t:'t-out',    v:'  replay jump [n]         Jump to event n' },
-    { t:'t-out',    v:'  replay info             Timeline stats' },
-    { t:'t-out',    v:'  replay export           Download timeline JSON' },
-    { t:'t-dim',    v:'  AI ASSISTANT' },
-    { t:'t-out',    v:'  assistant on/off        Toggle AI mentor' },
-    { t:'t-out',    v:'  assistant mode guide    Beginner mode (detailed)' },
-    { t:'t-out',    v:'  assistant mode expert   Expert mode (brief hints)' },
-    { t:'t-out',    v:'  assistant mode silent   No output' },
-    { t:'t-out',    v:'  assistant explain [cmd] Deep explanation' },
-    { t:'t-sep',    v:'╚══════════════════════════════════════════════════════╝' },
-  ]);
-});
-
-defCmd('clear', () => termClear());
-defCmd('cls',   () => termClear());
-
-defCmd('whoami', () => {
-  const roleMap = {
-    'attacker_1': { role:'Red Team Operator', access:'ALL ATTACK VECTORS', ctx:'red' },
-    'defender_1': { role:'Blue Team Analyst', access:'DEFENSE CONTROLS',   ctx:'blue' },
-    'root':       { role:'System Admin',      access:'FULL SYSTEM',        ctx:'red' },
   };
-  const r = roleMap[TERM.user] || roleMap['root'];
-  termPrint([
-    { t:'t-sep',    v:'──────────────────────────────────' },
-    { t:'t-out',    v:`  USER     : <span style="color:var(--blue)">${TERM.user}</span>` },
-    { t:'t-out',    v:`  ROLE     : ${r.role}` },
-    { t:'t-out',    v:`  CONTEXT  : <span style="color:${TERM.ctx==='red'?'var(--red)':'var(--blue)'}">${TERM.ctx.toUpperCase()}-TEAM</span>` },
-    { t:'t-out',    v:`  ACCESS   : ${r.access}` },
-    { t:'t-out',    v:`  HOST     : ${TERM.host}` },
-    { t:'t-out',    v:`  SESSION  : ${new Date().toISOString()}` },
-    { t:'t-sep',    v:'──────────────────────────────────' },
-  ]);
-});
+}
 
 defCmd('status', () => {
   const s = state;
@@ -8853,14 +8686,7 @@ Drop file or click to upload<br>
 })();
 </script>
 
-  <!-- ── CYBAASH SOC TRACKER ────────────────────────────────────────── -->
-  <script>
-    window.SOC_CONFIG = {
-      endpoint: "REPLACE_WITH_YOUR_APPS_SCRIPT_EXEC_URL",
-      apiKey:   "REPLACE_WITH_YOUR_SOC_API_KEY",
-      debug:    false
-    };
-  </script>
+  <!-- ── CYBAASH SOC TRACKER — config fetched from Cloudflare Worker ── -->
   <script src="/soc-tracker-v2.js"></script>
   <!-- ───────────────────────────────────────────────────────────────── -->
 </body>
