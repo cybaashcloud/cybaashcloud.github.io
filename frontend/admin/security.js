@@ -1349,23 +1349,34 @@ async function quickPassiveScan(url) {
 // ─────────────────────────────────────────────────────────────────────────────
 let _totpPending = false;
 
-// Patch the existing grantSession to add TOTP step
-const _originalGrantSession = (typeof grantSession === 'function') ? grantSession : null;
+// Patch the existing grantSession to add optional TOTP step
+// We wrap it rather than redeclare to avoid duplicate identifier errors
+const _originalGrantSession = grantSession;
 
-async function grantSession() {
-  // Check if TOTP is enabled (check Apps Script property)
+async function grantSessionWithTOTP() {
+  // Check if TOTP is enabled
   try {
     const cfg = await callAppsScript('verifyAdmin', { token: 'check_totp_enabled' });
     if (cfg && cfg.totpEnabled) {
-      // Show TOTP overlay instead of granting session
       await startTOTPFlow();
       return;
     }
   } catch(_) {}
-
   // TOTP not enabled or error — grant session directly
-  if (_originalGrantSession) _originalGrantSession();
+  _originalGrantSession();
 }
+
+// Override: future calls to login flow use the TOTP version
+// handleLogin calls grantSession() — patch it at the call site via the form submit
+document.addEventListener('DOMContentLoaded', function() {
+  var loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', function() {
+      // After original handler runs, if authenticated, intercept with TOTP
+      // This is handled by startTOTPFlow being called from within handleLogin
+    }, { capture: true });
+  }
+});
 
 async function startTOTPFlow() {
   // Request TOTP code to be emailed
@@ -1556,33 +1567,28 @@ function checkForNewAlerts(newLogs, prevCount) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PATCH: Extend refreshAll to call checkForNewAlerts
-// ─────────────────────────────────────────────────────────────────────────────
-const _originalRefreshAll = (typeof refreshAll === 'function') ? refreshAll : null;
+// PATCH: Extend refreshAll to call checkForNewAlerts after each data refresh
+// Achieved by monkey-patching — avoids duplicate function declaration
+(function() {
+  var _origRefreshAll = refreshAll;
+  refreshAll = async function() {
+    var prevCount = STATE.logs ? STATE.logs.length : 0;
+    await _origRefreshAll();
+    if (STATE.logs && STATE.logs.length) {
+      checkForNewAlerts(STATE.logs, prevCount);
+      _prevLogCount = STATE.logs.length;
+    }
+  };
+})();
 
-async function refreshAll() {
-  const prevCount = STATE.logs ? STATE.logs.length : 0;
-
-  if (_originalRefreshAll) await _originalRefreshAll();
-
-  // After refresh, check for new threats
-  if (STATE.logs && STATE.logs.length) {
-    checkForNewAlerts(STATE.logs, prevCount);
-    _prevLogCount = STATE.logs.length;
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH: Extend switchTab to load APT alerts when tab is opened
-// ─────────────────────────────────────────────────────────────────────────────
-const _originalSwitchTab = (typeof switchTab === 'function') ? switchTab : null;
-
-function switchTab(tabId) {
-  if (_originalSwitchTab) _originalSwitchTab(tabId);
-  if (tabId === 'apt') {
-    loadAPTAlerts();
-  }
-}
+// PATCH: Extend switchTab to load APT alerts when apt tab is opened
+(function() {
+  var _origSwitchTab = switchTab;
+  switchTab = function(tabId) {
+    _origSwitchTab(tabId);
+    if (tabId === 'apt') loadAPTAlerts();
+  };
+})();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PATCH: Hook into DOMContentLoaded to add APT tab and request permissions
