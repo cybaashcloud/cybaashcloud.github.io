@@ -116,11 +116,14 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase
           git add frontend/data_creds_*.json
           if git diff --cached --quiet; then
             echo "No skill changes."
           else
+            git stash
+            git pull --rebase
+            git stash pop
+            git add frontend/data_creds_*.json
             git commit -m "chore: sync credential skills [skip ci]"
             git push
           fi
@@ -238,11 +241,14 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase
           git add frontend/data_main.json frontend/data_meta.json
           if git diff --cached --quiet; then
             echo "No count changes."
           else
+            git stash
+            git pull --rebase
+            git stash pop
+            git add frontend/data_main.json frontend/data_meta.json
             git commit -m "chore: auto-sync cert counts [skip ci]"
             git push
           fi

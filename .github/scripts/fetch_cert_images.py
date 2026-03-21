@@ -59,17 +59,36 @@ def fetch_og_image(url: str, session) -> Optional[bytes]:
         return None
 
 
-def render_pdf_page(url: str, session) -> Optional[bytes]:
-    """Download a PDF and render its first page to JPEG bytes, or None."""
+def render_pdf_page(url: str, session, base_dir: Path = None) -> Optional[bytes]:
+    """Render the first page of a PDF to JPEG bytes, or None.
+
+    If `url` is a relative path (no scheme), it is resolved against
+    `base_dir` and read from disk. Otherwise it is fetched over HTTP.
+    """
     try:
         import fitz  # PyMuPDF
         from io import BytesIO
 
-        import requests
-        r = session.get(url, headers=_headers(), timeout=30)
-        if r.status_code != 200 or "pdf" not in r.headers.get("content-type", ""):
-            return None
-        doc  = fitz.open(stream=BytesIO(r.content), filetype="pdf")
+        # ── Local file path (relative, no scheme) ────────────────────────
+        if not url.startswith(("http://", "https://")):
+            if base_dir is None:
+                print(f"    [pdf] skipping relative URL (no base_dir): {url}")
+                return None
+            # Strip leading slash so it's relative to base_dir
+            pdf_path = (base_dir / url.lstrip("/")).resolve()
+            if not pdf_path.exists():
+                print(f"    [pdf] local file not found: {pdf_path}")
+                return None
+            pdf_bytes = pdf_path.read_bytes()
+        else:
+            # ── Remote URL ────────────────────────────────────────────────
+            import requests
+            r = session.get(url, headers=_headers(), timeout=30)
+            if r.status_code != 200 or "pdf" not in r.headers.get("content-type", ""):
+                return None
+            pdf_bytes = r.content
+
+        doc  = fitz.open(stream=BytesIO(pdf_bytes), filetype="pdf")
         page = doc[0]
         pix  = page.get_pixmap(dpi=120)
         doc.close()
@@ -154,7 +173,7 @@ def main():
             if badge_url:
                 raw = fetch_og_image(badge_url, session)
             if raw is None and pdf_url:
-                raw = render_pdf_page(pdf_url, session)
+                raw = render_pdf_page(pdf_url, session, base_dir=frontend)
 
             if raw:
                 try:
