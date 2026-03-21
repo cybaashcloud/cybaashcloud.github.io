@@ -4,8 +4,11 @@
  * Password analysis runs 100% client-side.
  */
 
+// Route all Gemini calls through Cloudflare Worker — key never in browser
+const PROXY_URL = 'https://cybaash-gemini.workers.dev';
+
 const CONFIG = {
-  geminiKey:   '',
+  geminiKey:   '',  // unused when PROXY_URL is set
   geminiModel: 'gemini-2.5-flash-lite',
   maxHistory:  10,
   systemPrompt: `You are CyberBot — an expert cybersecurity assistant for educational and ethical purposes.
@@ -47,14 +50,14 @@ async function loadGeminiConfig() {
   const lsKey = localStorage.getItem('cybaash_gemini_key') || '';
   if (lsKey) CONFIG.geminiKey = lsKey;
 
-  if (CONFIG.geminiKey) {
+  if (PROXY_URL || CONFIG.geminiKey) {
     state.online = true;
     if (dot)  dot.className    = 'status-dot online';
     if (text) text.textContent = 'Online';
   } else {
     state.online = false;
     if (dot)  dot.className    = 'status-dot offline';
-    if (text) text.textContent = 'Demo Mode — Set Gemini key in Admin';
+    if (text) text.textContent = 'Demo Mode';
   }
 }
 
@@ -68,7 +71,7 @@ function initSession() {
 }
 
 async function callGemini(userMessage) {
-  if (!CONFIG.geminiKey) return localFallback(userMessage);
+  if (!PROXY_URL && !CONFIG.geminiKey) return localFallback(userMessage);
   chatHistory.push({ role: 'user', parts: [{ text: userMessage }] });
   if (chatHistory.length > CONFIG.maxHistory * 2) chatHistory = chatHistory.slice(-CONFIG.maxHistory * 2);
   const payload = {
@@ -82,8 +85,11 @@ async function callGemini(userMessage) {
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
     ],
   };
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.geminiKey}`;
-  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(30000) });
+  const url = PROXY_URL || `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.geminiKey}`;
+  const body = PROXY_URL
+    ? JSON.stringify({ model: CONFIG.geminiModel, stream: false, payload })
+    : JSON.stringify(payload);
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(30000) });
   if (r.status === 429) throw new Error('Rate limited — Gemini free tier quota reached. Wait 60 seconds and try again.');
   if (r.status === 400) throw new Error('Invalid Gemini API key. Set a valid key in Admin → Settings.');
   if (!r.ok) throw new Error(`Gemini error ${r.status}`);
@@ -95,9 +101,13 @@ async function callGemini(userMessage) {
 }
 
 async function callGeminiAnalyze(prompt) {
-  if (!CONFIG.geminiKey) return null;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.geminiKey}`;
-  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 512 } }), signal: AbortSignal.timeout(20000) });
+  if (!PROXY_URL && !CONFIG.geminiKey) return null;
+  const analyzePayload = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 512 } };
+  const url = PROXY_URL || `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.geminiModel}:generateContent?key=${CONFIG.geminiKey}`;
+  const body = PROXY_URL
+    ? JSON.stringify({ model: CONFIG.geminiModel, stream: false, payload: analyzePayload })
+    : JSON.stringify(analyzePayload);
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(20000) });
   if (!r.ok) return null;
   const data = await r.json();
   return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;

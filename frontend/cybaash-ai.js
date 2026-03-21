@@ -26,8 +26,14 @@
   'use strict';
 
   /* ── CONFIG ──────────────────────────────────────────────── */
+  /* ── PROXY: all Gemini calls go through Cloudflare Worker ──────
+     The Worker holds the real API key — browser never sees it.
+     Set PROXY_URL to your Worker URL once deployed.
+     Leave as '' to fall back to direct calls (key required).     */
+  var PROXY_URL = 'https://cybaash-gemini.workers.dev';
+
   var cfg = {
-    key:    '',
+    key:    '',   // only used if PROXY_URL is empty
     model:  'gemini-2.5-flash-lite',
     tokens: 800,
     temp:   0.4,
@@ -116,7 +122,10 @@
       _loadJsonSettings(function () { setStatus(true); });
       return;
     }
-    _loadJsonSettings(function () { setStatus(!!cfg.key); });
+    _loadJsonSettings(function () {
+      var proxySet = typeof PROXY_URL !== 'undefined' && PROXY_URL;
+      setStatus(proxySet || !!cfg.key);
+    });
   }
 
   function _loadJsonSettings(done) {
@@ -252,7 +261,8 @@
     }
 
     // 3. Live Gemini call — check client-side rate limit first
-    if (cfg.key) {
+    var proxyReady = typeof PROXY_URL !== 'undefined' && PROXY_URL;
+    if (proxyReady || cfg.key) {
       if (!rlConsume()) {
         var waitMs = rlWaitMs();
         showTyping(false);
@@ -320,15 +330,23 @@
       ],
     };
 
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-              cfg.model + ':streamGenerateContent?alt=sse&key=' + cfg.key;
+    // Route through proxy (hides key) or direct if no proxy configured
+    var useProxy = typeof PROXY_URL !== 'undefined' && PROXY_URL;
+    var url = useProxy
+      ? PROXY_URL
+      : 'https://generativelanguage.googleapis.com/v1beta/models/' +
+        cfg.model + ':streamGenerateContent?alt=sse&key=' + cfg.key;
+
+    var fetchBody = useProxy
+      ? JSON.stringify({ model: cfg.model, stream: true, payload: payload })
+      : JSON.stringify(payload);
 
     currentAbort = new AbortController();
 
     return fetch(url, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
+      body:    fetchBody,
       signal:  currentAbort.signal,
     })
     .then(function (response) {
@@ -424,12 +442,18 @@
         { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
       ],
     };
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-              cfg.model + ':generateContent?key=' + cfg.key;
+    var useProxy2 = typeof PROXY_URL !== 'undefined' && PROXY_URL;
+    var url = useProxy2
+      ? PROXY_URL
+      : 'https://generativelanguage.googleapis.com/v1beta/models/' +
+        cfg.model + ':generateContent?key=' + cfg.key;
+    var fetchBody2 = useProxy2
+      ? JSON.stringify({ model: cfg.model, stream: false, payload: payload })
+      : JSON.stringify(payload);
     return fetch(url, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
+      body:    fetchBody2,
       signal:  AbortSignal.timeout(30000),
     })
     .then(function (r) {
