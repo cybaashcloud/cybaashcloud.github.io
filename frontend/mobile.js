@@ -110,11 +110,32 @@
     var t = document.getElementById('drw-terminal');
     if (t) t.addEventListener('click', function () {
       closeDrawer();
+      // Wait for drawer animation (300ms) + buffer (100ms) before opening terminal
       setTimeout(function () {
-        // Ensure scroll is not locked after drawer closes
         document.body.style.overflow = '';
-        if (typeof termToggle === 'function') termToggle();
-      }, 250);
+        if (typeof termToggle !== 'function') return;
+        
+        // Open terminal WITHOUT triggering keyboard focus
+        // We call the raw toggle, then prevent the focus() call
+        var el = document.getElementById('termOverlay');
+        var btn = document.getElementById('termToggleBtn');
+        if (!el) return;
+        
+        // Check if terminal is already open
+        if (el.classList.contains('term-open')) {
+          // Just close it
+          termToggle();
+          return;
+        }
+        
+        // Open terminal manually without focus (avoids keyboard popup)
+        if (window.TERM) window.TERM.isOpen = true;
+        el.classList.add('term-open');
+        if (btn) btn.classList.add('term-active');
+        
+        // Show send button but DON'T focus input (no keyboard)
+        // User can tap the input themselves when ready
+      }, 400);
     });
 
     var la = document.getElementById('drw-launch');

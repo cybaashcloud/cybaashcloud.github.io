@@ -4010,7 +4010,13 @@ function termToggle() {
   el.classList.toggle('term-open', TERM.isOpen);
   btn.classList.toggle('term-active', TERM.isOpen);
   if (TERM.isOpen) {
-    setTimeout(() => document.getElementById('termInput').focus(), 260);
+    // On mobile: DON'T auto-focus termInput — it pops the keyboard immediately
+    // User can tap the input when they want to type
+    const isMobile = window.innerWidth <= 768 || ('ontouchstart' in window);
+    if (!isMobile) {
+      // Drawer-opened terminal: no auto focus on mobile
+if (!(window.innerWidth<=768||'ontouchstart' in window)) { setTimeout(() => document.getElementById('termInput').focus(), 260); }
+    }
     // Fire AI welcome on first ever open
     if (!TERM._aiWelcomed && typeof aiShow === 'function' && AI.enabled) {
       TERM._aiWelcomed = true;
@@ -6975,7 +6981,7 @@ document.addEventListener('keydown', e => {
   if (!typing && !paletteOpen && e.key === '/') {
     e.preventDefault();
     termToggle(true);
-    setTimeout(() => document.getElementById('termInput')?.focus(), 200);
+    const _tm2=document.getElementById('termInput'); if(_tm2 && !(window.innerWidth<=768||'ontouchstart' in window)) setTimeout(()=>_tm2.focus(),200);
   }
 });
 
