@@ -9,7 +9,7 @@
 //   • Offline fallback           → type-appropriate empty responses (no ERR_FAILED)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const VERSION     = 'cybaash-v4.4';
+const VERSION     = 'cybaash-v4.5';
 const SHELL_CACHE = `${VERSION}-shell`;
 const DATA_CACHE  = `${VERSION}-data`;
 const IMAGE_CACHE = `${VERSION}-images`;
@@ -38,11 +38,12 @@ const SHELL_FILES = [
   '/ai/index.html',
   '/ai/style.css',
   '/ai/cybaash-ai_script.js',
+  '/soc-tracker-v2.js',
 ];
 
 // ── Install: precache shell ──────────────────────────────────────────────────
 self.addEventListener('install', event => {
-  console.log('[SW] Installing CYBAASH v4.4…');
+  console.log('[SW] Installing CYBAASH v4.5…');
   event.waitUntil(
     caches.open(SHELL_CACHE).then(cache =>
       Promise.allSettled(
@@ -197,17 +198,18 @@ async function fontCacheFirst(request) {
   const cached = await cache.match(request);
   if (cached) return cached;
   try {
-    // fetch with no-cors for font files, cors for CSS
-    const isCss = request.url.includes('fonts.googleapis.com');
-    const res   = await fetch(request, isCss ? {} : { mode: 'no-cors' });
-    // Only cache valid responses (opaque responses from no-cors have status 0)
-    if (res && (res.status === 200 || res.type === 'opaque')) {
+    // Always use cors mode — Google Fonts supports CORS for both CSS and woff2
+    // no-cors creates opaque responses (status 0) that browsers reject as fonts
+    const res = await fetch(request, { mode: 'cors' });
+    // Only cache successful responses — never cache opaque (no-cors) responses
+    if (res && res.status === 200 && res.type === 'basic' || res.type === 'cors') {
       cache.put(request, res.clone());
     }
     return res;
   } catch {
-    // Return empty CSS so the page still loads without ERR_FAILED
-    return emptyFallback('css');
+    // Font failed — return empty fallback so page loads without ERR_FAILED
+    const isFont = request.url.includes('.woff');
+    return isFont ? new Response('', { status: 200 }) : emptyFallback('css');
   }
 }
 
