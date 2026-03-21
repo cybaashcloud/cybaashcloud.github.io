@@ -1288,13 +1288,8 @@ function Login({ onAuth }) {
 // DASHBOARD
 // ══════════════════════════════════════════════════════════════════════════
 function Dashboard({ data, lastSync, ghCfg }) {
-  const creds = data.credentials || []
   const counts = {
     skills:       data.skills?.reduce((a,c)=>a+(c.items?.length||0),0)||0,
-    credentials:  creds.length,
-    credly:       creds.filter(c => c.type==='credly' || c.type==='badge').length,
-    professional: creds.filter(c => c.type==='certificate' || c.type==='exam').length,
-    linkedin:     creds.filter(c => c.type==='linkedin' || c.type==='learning-path' || c.type==='other').length,
     projects:     data.projects?.length||0,
     experience:   data.experience?.length||0,
   }
@@ -1302,10 +1297,9 @@ function Dashboard({ data, lastSync, ghCfg }) {
     <div>
       <div className="stat-grid">
         {[
-          {label:'Skills',      value:counts.skills,       sub:'tracked'},
-          {label:'Credentials', value:counts.credentials,  sub:`${counts.credly} badges · ${counts.professional} certs · ${counts.linkedin} LinkedIn`},
-          {label:'Projects',    value:counts.projects,     sub:'portfolio'},
-          {label:'Experience',  value:counts.experience,   sub:'positions'},
+          {label:'Skills',    value:counts.skills,    sub:'tracked'},
+          {label:'Projects',  value:counts.projects,  sub:'portfolio'},
+          {label:'Experience',value:counts.experience,sub:'positions'},
         ].map(s=>(
           <div className="stat-card" key={s.label}>
             <div className="stat-label">{s.label}</div>
@@ -1320,10 +1314,10 @@ function Dashboard({ data, lastSync, ghCfg }) {
           <div className="card-corner bl"/><div className="card-corner br"/>
           <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:11,color:'var(--g)',letterSpacing:2,marginBottom:16}}>RECENT ACTIVITY</div>
           {[
-            {color:'var(--g)',    text:'Admin panel connected',                                              time:now()},
-            {color:'var(--blue)',text:'GitHub storage active',                                               time:now()},
-            {color:'var(--amber)',text:`${counts.credly} Credly · ${counts.professional} certs · ${counts.linkedin} LinkedIn`, time:now()},
-            {color:'var(--g)',   text:`Last sync: ${lastSync||'—'}`,                                        time:''},
+            {color:'var(--g)',    text:'Admin panel connected',     time:now()},
+            {color:'var(--blue)',text:'GitHub storage active',       time:now()},
+            {color:'var(--g)',   text:`Skills tracked: ${counts.skills}`, time:now()},
+            {color:'var(--g)',   text:`Last sync: ${lastSync||'—'}`, time:''},
           ].map((a,i)=>(
             <div className="activity-item" key={i}>
               <div className="activity-dot" style={{background:a.color,boxShadow:`0 0 6px ${a.color}`}}/>
@@ -1588,6 +1582,36 @@ const CRED_CSS = `
   .cred-section-banner-credly{border-color:var(--amber);color:var(--amber)}
   .cred-section-banner-professional{border-color:var(--g);color:var(--g)}
   .cred-section-banner-linkedin{border-color:var(--blue);color:var(--blue)}
+  /* ── CERT CARD GRID (matches recruiter.html) ── */
+  .cred-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:4px}
+  .cred-card{background:var(--panel);border:1px solid var(--border);display:flex;flex-direction:column;
+    transition:border-color .2s;overflow:hidden;position:relative}
+  .cred-card:hover{border-color:rgba(0,212,255,.28)}
+  .cc-top{width:100%;height:110px;display:flex;align-items:center;justify-content:center;
+    background:var(--bg2);border-bottom:1px solid var(--border);overflow:hidden;flex-shrink:0}
+  .cc-top-noimg{background:var(--bg2)}
+  .cc-top-badge{background:radial-gradient(ellipse at 50% 60%,rgba(247,147,30,.07) 0%,transparent 70%),var(--bg2)}
+  .cc-banner{width:100%;height:100%;object-fit:cover}
+  .cc-badge-img{width:80px;height:80px;object-fit:contain;border-radius:6px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+  .cc-body{padding:10px;display:flex;flex-direction:column;gap:6px;flex:1}
+  .cc-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+  .cc-meta-row{display:flex;align-items:center;gap:5px;min-width:0;flex:1}
+  .cc-logo{width:18px;height:18px;object-fit:contain;border-radius:2px;flex-shrink:0}
+  .cc-meta{display:flex;align-items:center;gap:4px;min-width:0;flex:1;overflow:hidden}
+  .cc-issuer{font-size:9px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.3px}
+  .cc-dot{font-size:9px;color:var(--tx3);flex-shrink:0}
+  .cc-date{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--tx3);flex-shrink:0}
+  .cc-title{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;color:var(--tx);
+    line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .cc-tags{display:flex;flex-wrap:wrap;gap:3px}
+  .cc-tag{font-size:8px;letter-spacing:.3px;padding:1px 5px;border:1px solid rgba(0,212,255,.15);
+    color:rgba(0,212,255,.6);font-family:'Share Tech Mono',monospace}
+  .cc-footer{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto;padding-top:6px;
+    border-top:1px solid rgba(26,58,92,.3)}
+  .cc-btn{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:600;letter-spacing:.8px;
+    padding:3px 8px;border:1px solid var(--border);color:var(--tx3);text-decoration:none;
+    transition:all .15s;display:inline-flex;align-items:center;gap:3px;text-transform:uppercase}
+  .cc-btn:hover{border-color:var(--blue);color:var(--blue)}
 `
 
 function CredentialsSection({ data, onSave }) {
@@ -1760,68 +1784,131 @@ function CredentialsSection({ data, onSave }) {
               </div>
             </div>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>
-                    {credTab === 'credly' ? 'Badge' : credTab === 'professional' ? 'Certificate' : 'Course'}
-                  </th>
-                  <th>Issuer</th>
-                  <th>Date</th>
-                  {credTab === 'credly' && <th>Badge ID</th>}
-                  {credTab === 'professional' && <th>Cert #</th>}
-                  {credTab === 'linkedin' && <th>Course ID</th>}
-                  <th>Tags</th>
-                  <th style={{ width: 100 }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(c => (
-                  <tr key={c.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        {(c.logo || (c.issuer === 'LinkedIn Learning' || c.issuer === 'LinkedIn')) && (
-                          <img
-                            src={c.logo || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjEyIiBmaWxsPSIjMGE2NmMyIi8+CiAgPGNpcmNsZSBjeD0iMzAiIGN5PSIzNSIgcj0iOCIgZmlsbD0id2hpdGUiLz4KICA8cmVjdCB4PSIyMiIgeT0iNDgiIHdpZHRoPSIxNiIgaGVpZ2h0PSIzNiIgcng9IjIiIGZpbGw9IndoaXRlIi8+CiAgPHJlY3QgeD0iNDQiIHk9IjQ4IiB3aWR0aD0iMTYiIGhlaWdodD0iMzYiIHJ4PSIyIiBmaWxsPSJ3aGl0ZSIvPgogIDxwYXRoIGQ9Ik02MCA2MCBRNjAgNDggNzIgNDggUTg0IDQ4IDg0IDYwIEw4NCA4NCBMNjggODQgTDY4IDYyIFE2OCA1OCA2NCA1OCBRNjAgNTggNjAgNjIgWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+'}
-                            alt=""
-                            style={{ width: 28, height: 28, objectFit: 'contain', border: '1px solid var(--bd)', background: 'var(--bg2)', padding: 2 }}
-                            onError={e => e.target.style.display = 'none'}
-                          />
-                        )}
-                        <div>
-                          <div style={{ fontWeight: 700 }}>{c.title}</div>
-                          {c.featured && <span className="badge badge-amber" style={{ fontSize: 9, marginTop: 2, display: 'inline-block' }}>★ FEATURED</span>}
+            <div className="cred-card-grid">
+              {filtered.map(c => {
+                const isC    = c.type === 'credly' || c.type === 'badge'
+                const isCert = c.type === 'certificate' || c.type === 'exam'
+                const typeLbl   = isC ? 'CREDLY' : isCert ? 'CERTIFICATE' : 'LINKEDIN'
+                const typeColor = isC ? 'var(--amber)' : isCert ? 'var(--g)' : 'var(--blue)'
+                const typeBorder= isC ? 'rgba(255,170,0,.4)' : isCert ? 'rgba(0,255,136,.3)' : 'rgba(0,212,255,.3)'
+
+                // Image logic matching recruiter.html
+                const pdfIsImage = c.pdf && !c.pdf.endsWith('.pdf')
+                const topImg = c.image || (pdfIsImage ? c.pdf : '')
+
+                let logoSrc = ''
+                if (isC) {
+                  logoSrc = c.credlyImageUrl
+                    || (c.credlyBadgeId ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png` : '')
+                } else {
+                  const iss = (c.issuer || '').toLowerCase()
+                  if (iss.includes('amazon') || iss.includes('aws'))
+                    logoSrc = 'https://images.credly.com/size/340x340/images/aws-logo.png'
+                  else if (iss.includes('cisco'))
+                    logoSrc = 'https://images.credly.com/size/340x340/images/cisco-logo.png'
+                  else
+                    logoSrc = c.logo || ''
+                }
+
+                const hasPdf = c.pdf && c.pdf.endsWith('.pdf')
+                const href   = c.url || (hasPdf ? c.pdf : '#')
+
+                return (
+                  <div key={c.id} className="cred-card">
+                    {/* ── Top image area ── */}
+                    {topImg ? (
+                      <div className="cc-top">
+                        <img className="cc-banner" src={topImg} alt={c.title || ''} loading="lazy"
+                          onError={e => { e.target.style.display='none'; e.target.parentElement.classList.add('cc-top-noimg') }}/>
+                      </div>
+                    ) : isC && logoSrc ? (
+                      <div className="cc-top cc-top-badge">
+                        <img className="cc-badge-img" src={logoSrc} alt={c.title || ''} loading="lazy"
+                          onError={e => e.target.style.display='none'}/>
+                      </div>
+                    ) : (
+                      <div className="cc-top cc-top-noimg">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"
+                          style={{width:28,height:28,opacity:.12}}>
+                          <rect x="3" y="3" width="18" height="18" rx="2"/>
+                          <circle cx="8.5" cy="8.5" r="1.5"/>
+                          <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* ── Card body ── */}
+                    <div className="cc-body">
+                      {/* Header row: logo + issuer + date + type badge */}
+                      <div className="cc-hdr">
+                        <div className="cc-meta-row">
+                          {logoSrc && !isC && (
+                            <img className="cc-logo" src={logoSrc} alt={c.issuer || ''} loading="lazy"
+                              onError={e => e.target.style.display='none'}/>
+                          )}
+                          <div className="cc-meta">
+                            <span className="cc-issuer">{c.issuer || ''}</span>
+                            {c.date && <><span className="cc-dot">·</span><span className="cc-date">{c.date}</span></>}
+                          </div>
+                        </div>
+                        <span style={{
+                          fontFamily:"'Orbitron',monospace", fontSize:7, letterSpacing:1,
+                          padding:'2px 6px', border:'1px solid', borderColor:typeBorder,
+                          color:typeColor, whiteSpace:'nowrap', flexShrink:0
+                        }}>{typeLbl}</span>
+                      </div>
+
+                      {/* Title */}
+                      <div className="cc-title">
+                        {c.featured && <span style={{color:'var(--amber)',marginRight:5}}>★</span>}
+                        {c.title || 'Untitled'}
+                      </div>
+
+                      {/* Tags */}
+                      {c.tags?.length > 0 && (
+                        <div className="cc-tags">
+                          {c.tags.slice(0, 4).map(t => (
+                            <span key={t} className="cc-tag">{t}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Footer: view link + edit/delete */}
+                      <div className="cc-footer" style={{justifyContent:'space-between', alignItems:'center'}}>
+                        <div style={{display:'flex',gap:6}}>
+                          {href && href !== '#' && (
+                            <a className="cc-btn" href={href} target="_blank" rel="noopener noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              style={{fontSize:9,padding:'4px 8px'}}>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="9" height="9">
+                                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                              </svg>
+                              {isC ? 'Badge' : hasPdf ? 'PDF' : 'View'}
+                            </a>
+                          )}
+                          {hasPdf && c.url && c.url !== '#' && (
+                            <a className="cc-btn" href={c.pdf} target="_blank" rel="noopener noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              style={{fontSize:9,padding:'4px 8px',borderColor:'rgba(0,255,136,.3)',color:'var(--g)'}}>
+                              PDF
+                            </a>
+                          )}
+                        </div>
+                        <div style={{display:'flex',gap:6,flexShrink:0}}>
+                          <button className="btn btn-amber btn-sm btn-icon"
+                            style={{minHeight:28,minWidth:28,padding:'4px 8px',fontSize:10}}
+                            onClick={() => open(c.id)}>✎</button>
+                          <button className="btn btn-red btn-sm btn-icon"
+                            style={{minHeight:28,minWidth:28,padding:'4px 8px',fontSize:10}}
+                            onClick={() => setConfirm(c.id)}>✕</button>
                         </div>
                       </div>
-                    </td>
-                    <td style={{ color: 'var(--tx2)' }}>{c.issuer}</td>
-                    <td style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: 11, color: 'var(--tx3)' }}>{c.date}</td>
-                    {credTab === 'credly' && (
-                      <td style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: 10, color: 'var(--tx3)' }}>
-                        {c.credlyBadgeId ? <span className="badge badge-amber" style={{ fontSize: 9 }}>{c.credlyBadgeId.slice(0, 12)}…</span> : '—'}
-                      </td>
-                    )}
-                    {credTab === 'professional' && (
-                      <td style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: 10, color: 'var(--tx3)' }}>
-                        {c.certNumber || <span style={{ opacity: .4 }}>—</span>}
-                      </td>
-                    )}
-                    {credTab === 'linkedin' && (
-                      <td style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: 10, color: 'var(--tx3)' }}>
-                        {c.courseId || <span style={{ opacity: .4 }}>—</span>}
-                      </td>
-                    )}
-                    <td>{c.tags?.slice(0, 3).map(t => <span className="badge badge-blue" key={t} style={{ fontSize: 9, marginRight: 3 }}>{t}</span>)}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button className="btn btn-amber btn-sm btn-icon" onClick={() => open(c.id)}>✎</button>
-                        <button className="btn btn-red btn-sm btn-icon" onClick={() => setConfirm(c.id)}>✕</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )
         }
       </div>
@@ -2384,209 +2471,6 @@ function ContactSection({ data, onSave }) {
 
 // ══════════════════════════════════════════════════════════════════════════
 // SETTINGS
-// ══════════════════════════════════════════════════════════════════════════
-// ── AI Config sub-component ────────────────────────────────────────────────
-// ── AI config stored in GitHub repo as frontend/data_ai_config.json ──────────
-const AI_CONFIG_FILE = 'frontend/data_ai_config.json'
-
-const AI_CONFIG_DEFAULTS = {
-  gemini_api_key:       '',
-  gemini_model:         'gemini-2.5-flash-lite',
-  gemini_model_premium: 'gemini-2.5-flash-lite',
-  max_tokens:           '1024',
-  max_tokens_premium:   '1024',
-  temperature:          '0.4',
-  bot_name:             'CYBAASH AI',
-  system_prompt:
-    'You are CYBAASH AI — an expert cybersecurity assistant for educational and ethical purposes.\n' +
-    'Explain vulnerabilities (SQLi, XSS, CSRF, buffer overflows, RCE, LFI, SSRF), teach secure coding,\n' +
-    'guide penetration testing concepts (CTF/lab only), and advise on system hardening.\n' +
-    'Rules: Never help attack real systems. Always use educational context. Use markdown formatting.\n' +
-    'Tone: Professional, direct — like a senior security engineer mentoring a junior.',
-}
-
-function GeminiConfigCard({ ghCfg }) {
-  const [form,    setForm]    = useState(AI_CONFIG_DEFAULTS)
-  const [status,  setStatus]  = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [testing, setTesting] = useState(false)
-  const [showKey, setShowKey] = useState(false)
-  const [loaded,  setLoaded]  = useState(false)
-
-  // Load config from GitHub on mount
-  useEffect(() => { loadConfig() }, [ghCfg])
-
-  const loadConfig = async () => {
-    setLoading(true)
-    // Restore key from localStorage first (key is domain-restricted, safe in localStorage)
-    const lsKey = localStorage.getItem('cybaash_gemini_key') || ''
-    if (lsKey) setForm(f => ({ ...f, gemini_api_key: lsKey }))
-    // Load non-secret settings from GitHub
-    if (ghCfg?.token) {
-      try {
-        const { loadSection } = await import('./github.js')
-        const saved = await loadSection('_ai_config', null)
-        if (saved) setForm(f => ({ ...f, ...saved, gemini_api_key: lsKey || f.gemini_api_key }))
-      } catch (e) { /* silent - GitHub optional */ }
-    }
-    setLoaded(true)
-    setLoading(false)
-  }
-
-  const saveConfig = async () => {
-    setLoading(true); setStatus(null)
-    const key = form.gemini_api_key?.trim() || ''
-    // Save key to localStorage (domain-restricted key is safe here)
-    if (key) localStorage.setItem('cybaash_gemini_key', key)
-    else localStorage.removeItem('cybaash_gemini_key')
-    // Show success immediately
-    setStatus({ok:true, txt: key ? '✓ API key saved. Chatbot is now active.' : '✓ Key cleared.'})
-    setLoading(false)
-    // Sync non-secret settings to GitHub in background
-    if (ghCfg?.token) {
-      try {
-        const { saveSection } = await import('./github.js')
-        await saveSection('_ai_config', { ...form, gemini_api_key: key, apiKey: key })
-        setStatus({ok:true, txt: key ? '✓ Key saved. Settings synced to GitHub.' : '✓ Settings saved.'})
-      } catch (e) {
-        const isAuth = /401|403|bad credentials|token/i.test(e.message)
-        setStatus({ok:true, txt: key
-          ? `✓ Key saved to browser. ${isAuth ? 'GitHub sync skipped (token expired).' : 'GitHub sync failed.'}`
-          : '✓ Key cleared.'
-        })
-      }
-    }
-  }
-
-  const testKey = async () => {
-    const key = form.gemini_api_key?.trim()
-    if (!key) { setStatus({ok:false, txt:'Enter an API key first'}); return }
-    setTesting(true); setStatus(null)
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-          contents:[{role:'user',parts:[{text:'Reply with only: OK'}]}],
-          generationConfig:{maxOutputTokens:5}
-        })
-      })
-      if (r.ok)              setStatus({ok:true,  txt:'✓ API key is valid and working'})
-      else if (r.status===400) setStatus({ok:false, txt:'⚠ Bad request — check key format'})
-      else if (r.status===403) setStatus({ok:false, txt:'✗ Key rejected — invalid or expired'})
-      else                     setStatus({ok:false, txt:`✗ Gemini returned HTTP ${r.status}`})
-    } catch (e) {
-      setStatus({ok:false, txt:`✗ Network error: ${e.message}`})
-    }
-    setTesting(false)
-  }
-
-  const F = (label, field, type='text', opts={}) => (
-    <div className="form-group">
-      <label className="form-label">{label}</label>
-      {opts.textarea
-        ? <textarea className="form-textarea" rows={opts.rows||4} value={form[field]||''}
-            onChange={e=>setForm(f=>({...f,[field]:e.target.value}))}
-            style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10}}/>
-        : opts.select
-        ? <select className="form-select" value={form[field]||''} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))}>
-            {opts.options.map(o=><option key={o} value={o}>{o}</option>)}
-          </select>
-        : <input className="form-input" type={type} value={form[field]||''}
-            onChange={e=>setForm(f=>({...f,[field]:e.target.value}))}/>
-      }
-    </div>
-  )
-
-  if (!ghCfg?.token) return (
-    <div className="card" style={{marginBottom:20}}>
-      <div className="card-corner tl"/><div className="card-corner tr"/>
-      <div className="card-corner bl"/><div className="card-corner br"/>
-      <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--blue)',letterSpacing:2,marginBottom:10}}>
-        ⚡ GEMINI AI CONFIGURATION
-      </div>
-      <p style={{fontSize:12,color:'var(--tx3)'}}>Connect to GitHub first to manage AI settings.</p>
-    </div>
-  )
-
-  return (
-    <div className="card" style={{marginBottom:20}}>
-      <div className="card-corner tl"/><div className="card-corner tr"/>
-      <div className="card-corner bl"/><div className="card-corner br"/>
-
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-        <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--blue)',letterSpacing:2}}>
-          ⚡ GEMINI AI CONFIGURATION
-        </div>
-        <span style={{fontSize:9,color:form.gemini_api_key?'var(--g)':'var(--red)',letterSpacing:1}}>
-          {form.gemini_api_key ? '● KEY SET' : '● NO KEY'}
-        </span>
-      </div>
-
-      {status && (
-        <div style={{padding:'10px 14px',border:`1px solid ${status.ok?'var(--g)':'var(--red)'}`,
-          color:status.ok?'var(--g)':'var(--red)',fontSize:11,marginBottom:16,
-          fontFamily:"'Share Tech Mono',monospace"}}>
-          {status.txt}
-        </div>
-      )}
-
-      <div style={{fontSize:9,color:'var(--tx3)',marginBottom:14,letterSpacing:1,lineHeight:1.6}}>
-        Key saved to browser (domain-restricted — safe). Model/prompt settings sync to GitHub.
-        The chatbot reads this file at runtime — no backend required.
-      </div>
-
-      {/* API Key */}
-      <div className="form-group">
-        <label className="form-label">
-          Gemini API Key
-          {form.gemini_api_key && <span style={{color:'var(--g)',fontSize:9,marginLeft:8}}>● set</span>}
-        </label>
-        <div style={{display:'flex',gap:8}}>
-          <input className="form-input" type={showKey?'text':'password'}
-            placeholder="AIza… — get free at aistudio.google.com/app/apikey"
-            value={form.gemini_api_key||''} style={{flex:1}}
-            onChange={e=>setForm(f=>({...f,gemini_api_key:e.target.value}))}/>
-          <button className="btn btn-ghost btn-sm" onClick={()=>setShowKey(s=>!s)}>
-            {showKey?'🙈':'👁'}
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={testKey} disabled={testing||!form.gemini_api_key}>
-            {testing?'…':'Test'}
-          </button>
-        </div>
-      </div>
-
-      <div className="form-row form-row-2">
-        {F('Default Model', 'gemini_model', 'text', {select:true, options:[
-          'gemini-2.5-flash-lite','gemini-2.5-flash-lite'
-        ]})}
-        {F('Premium Model', 'gemini_model_premium', 'text', {select:true, options:[
-          'gemini-2.5-flash-lite','gemini-2.5-flash-lite','gemini-2.5-flash-preview-05-06'
-        ]})}
-      </div>
-
-      <div className="form-row form-row-3">
-        {F('Max Tokens', 'max_tokens')}
-        {F('Max Tokens (premium)', 'max_tokens_premium')}
-        {F('Temperature (0–1)', 'temperature')}
-      </div>
-
-      {F('Bot Display Name', 'bot_name')}
-      {F('System Prompt', 'system_prompt', 'text', {textarea:true, rows:7})}
-
-      <div style={{display:'flex',gap:10,marginTop:4}}>
-        <button className="btn btn-blue" onClick={saveConfig} disabled={loading}>
-          {loading ? '⠿ Saving…' : '⊕ Save AI Config'}
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={loadConfig} disabled={loading}>
-          ↺ Reload
-        </button>
-      </div>
-    </div>
-  )
-}
-
 function SettingsSection({ data, ghCfg, onDisconnect }) {
   const [pwd, setPwd] = useState({old:'',newP:'',confirm:''})
   const [msg, setMsg] = useState(null)
@@ -2619,9 +2503,6 @@ function SettingsSection({ data, ghCfg, onDisconnect }) {
   return (
     <div>
       <div className="section-header"><div><span className="section-title">Settings</span></div></div>
-
-      {/* ── GEMINI AI CONFIG ── */}
-      <GeminiConfigCard ghCfg={ghCfg} />
 
       {/* ── PASSWORD + GITHUB ── */}
       <div className="grid-2" style={{marginBottom:20}}>
