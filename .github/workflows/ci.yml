@@ -1,6 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# CI — Validate every push and PR before it can merge
-# Updated: includes SOC dashboard and tracker validation
+# CI — Validate every push and PR before it can merge — MILITARY GRADE v2.0
+# ORIGINAL: Steps 1-8 preserved exactly
+# NEW v2.0: Steps 9-11 added (Worker audit, secret scan, performance budget)
 # ═══════════════════════════════════════════════════════════════════════════
 name: CI — Validate
 
@@ -11,6 +12,7 @@ on:
       - 'frontend/**'
       - 'scripts/**'
       - '.github/workflows/**'
+      - 'worker.js'
   pull_request:
     branches: [main]
 
@@ -37,13 +39,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      # ── 1. JS syntax check ────────────────────────────────────────────
+      # ── 1. JS syntax check (ORIGINAL) ────────────────────────────────
       - name: JS syntax check
         id: js_check
         run: |
           set +e
           ERRORS=0
-          # Check all JS files including SOC tracker and admin security
           for f in frontend/*.js frontend/ai/*.js frontend/admin/security.js; do
             [ -f "$f" ] || continue
             node --check "$f" 2>/tmp/node_err_$(basename $f)
@@ -58,7 +59,7 @@ jobs:
           echo "js_errors=$ERRORS" >> $GITHUB_OUTPUT
           [ $ERRORS -eq 0 ] && echo "✅ All JS files clean" || exit 1
 
-      # ── 2. JSON validation ────────────────────────────────────────────
+      # ── 2. JSON validation (ORIGINAL) ────────────────────────────────
       - name: JSON validation
         id: json_check
         run: |
@@ -84,7 +85,7 @@ jobs:
           done
           [ $ERRORS -eq 0 ] && echo "✅ All JSON valid" || exit 1
 
-      # ── 3. Service worker version check ───────────────────────────────
+      # ── 3. Service worker version check (ORIGINAL) ───────────────────
       - name: SW version check
         run: |
           python3 - << 'PYEOF'
@@ -98,7 +99,7 @@ jobs:
           print(f"✓  SW version: {ver}")
           PYEOF
 
-      # ── 4. Critical files check — includes SOC files ──────────────────
+      # ── 4. Critical files check (ORIGINAL) ───────────────────────────
       - name: Critical files check
         run: |
           MISSING=0
@@ -132,14 +133,13 @@ jobs:
           done
           [ $MISSING -eq 0 ] || exit 1
 
-      # ── 5. SOC security checks ────────────────────────────────────────
+      # ── 5. SOC security checks (ORIGINAL) ────────────────────────────
       - name: SOC security checks
         run: |
           python3 - << 'PYEOF'
           import re, sys
           errors = 0
 
-          # 1. Tracker must NOT contain secrets
           tracker = open('frontend/soc-tracker-v2.js').read()
           secret_patterns = [
               (r'groq\.com', 'Groq API reference'),
@@ -154,15 +154,12 @@ jobs:
           if not errors:
               print('✓  soc-tracker-v2.js: no secrets found')
 
-          # 2. Tracker must fetch config from Worker
           if 'workers.dev' not in tracker:
               print('❌ soc-tracker-v2.js: Worker URL missing')
               errors += 1
           else:
               print('✓  soc-tracker-v2.js: Worker URL present')
 
-          # 3. All HTML pages must have tracker
-          import re
           for page in ['frontend/index.html', 'frontend/dashboard.html',
                        'frontend/recruiter.html', 'frontend/ai/index.html']:
               try:
@@ -178,7 +175,6 @@ jobs:
               except FileNotFoundError:
                   pass
 
-          # 4. Security dashboard must be isolated
           sec_html = open('frontend/admin/security.html').read()
           if 'soc-tracker-v2.js' in sec_html:
               print('❌ security.html: tracker injected (must be isolated)')
@@ -186,10 +182,9 @@ jobs:
           else:
               print('✓  security.html: properly isolated')
 
-          # 5. No Groq references anywhere in frontend
           import os
           for root, dirs, files in os.walk('frontend'):
-              dirs[:] = [d for d in dirs if d != 'admin']  # skip admin dist
+              dirs[:] = [d for d in dirs if d != 'admin']
               for fname in files:
                   if not fname.endswith(('.html', '.js', '.css')): continue
                   fpath = os.path.join(root, fname)
@@ -205,7 +200,7 @@ jobs:
               sys.exit(1)
           PYEOF
 
-      # ── 6. HTML internal reference check ─────────────────────────────
+      # ── 6. HTML internal reference check (ORIGINAL) ──────────────────
       - name: HTML internal reference check
         run: |
           python3 - << 'PYEOF'
@@ -243,7 +238,7 @@ jobs:
               print(f"\n✅ HTML references OK ({len(pages)} pages checked)")
           PYEOF
 
-      # ── 7. Cert data integrity ────────────────────────────────────────
+      # ── 7. Cert data integrity (ORIGINAL) ────────────────────────────
       - name: Cert data integrity
         run: |
           python3 - << 'PYEOF'
@@ -265,7 +260,7 @@ jobs:
           print(f"\n✅ Total credentials: {total}")
           PYEOF
 
-      # ── 8. Post summary ───────────────────────────────────────────────
+      # ── 8. Post summary (ORIGINAL) ────────────────────────────────────
       - name: Write job summary
         if: always()
         run: |
@@ -278,3 +273,164 @@ jobs:
           echo "| Critical Files | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
           echo "| SOC Security | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit: \`${{ github.sha }}\` | [View](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |" >> $GITHUB_STEP_SUMMARY
+
+      # ════════════════════════════════════════════════════════════════
+      # NEW v2.0 STEPS BELOW
+      # ════════════════════════════════════════════════════════════════
+
+      # ── 9. Worker security audit (NEW) ───────────────────────────────
+      - name: Worker security audit
+        id: worker_audit
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          import os
+
+          if not os.path.exists('worker.js'):
+              print('⚠  worker.js not found — skipping')
+              sys.exit(0)
+
+          worker = open('worker.js').read()
+          errors = 0
+
+          # Must have rate limiting
+          if 'RATE_KV' not in worker and 'rateLimit' not in worker:
+              print('❌ worker.js: Rate limiting not implemented')
+              errors += 1
+          else:
+              print('✓  worker.js: Rate limiting present')
+
+          # Must not expose secrets in responses
+          raw_key = worker.replace('env.GEMINI_API_KEY', '').replace("'GEMINI_API_KEY'", '')
+          if 'GEMINI_API_KEY' in raw_key:
+              print('❌ worker.js: GEMINI_API_KEY may be exposed')
+              errors += 1
+          else:
+              print('✓  worker.js: No raw secrets in responses')
+
+          # Must have security headers
+          security_headers = [
+              'Strict-Transport-Security',
+              'X-Content-Type-Options',
+              'X-Frame-Options',
+              'X-Request-ID',
+          ]
+          for h in security_headers:
+              if h not in worker:
+                  print(f'❌ worker.js: Missing header {h}')
+                  errors += 1
+              else:
+                  print(f'✓  worker.js: {h} present')
+
+          # CORS wildcard warning (not a hard failure — may be intentional)
+          if "'Access-Control-Allow-Origin': '*'" in worker:
+              print('⚠  worker.js: CORS still using wildcard — consider upgrading to origin allowlist')
+
+          # Must have geo-blocking support
+          if 'BLOCKED_COUNTRIES' not in worker:
+              print('⚠  worker.js: Geo-blocking not implemented')
+          else:
+              print('✓  worker.js: Geo-blocking present')
+
+          # Must have audit logging
+          if 'auditLog' not in worker and 'audit:' not in worker:
+              print('⚠  worker.js: Audit logging not found')
+          else:
+              print('✓  worker.js: Audit logging present')
+
+          if errors == 0:
+              print('\n✅ Worker security audit passed')
+          else:
+              print(f'\n❌ {errors} worker security issue(s)')
+              sys.exit(1)
+          PYEOF
+
+      # ── 10. Secret leak scan (NEW) ───────────────────────────────────
+      - name: Secret leak scan
+        id: secret_scan
+        run: |
+          python3 - << 'PYEOF'
+          import re, os, sys
+          warnings = 0
+
+          # Patterns that should NEVER appear in frontend files
+          forbidden = [
+              (r'AIza[A-Za-z0-9_-]{35}', 'Google API key'),
+              (r'ghp_[A-Za-z0-9]{36}', 'GitHub PAT'),
+              (r'sk-[A-Za-z0-9]{48}', 'OpenAI key'),
+              (r'APPS_SCRIPT_URL\s*=\s*["\']https://script', 'Apps Script URL in code'),
+              (r'SOC_API_KEY\s*=\s*["\'][^"\']{10,}["\']', 'SOC API key literal'),
+              (r'GEMINI_API_KEY\s*=\s*["\'][^"\']{20,}["\']', 'Gemini key literal'),
+          ]
+
+          for root, dirs, files in os.walk('frontend'):
+              dirs[:] = [d for d in dirs if d not in ['certificates', 'cert_logos', 'admin']]
+              for fname in files:
+                  if not fname.endswith(('.js', '.html')): continue
+                  fpath = os.path.join(root, fname)
+                  content = open(fpath, errors='replace').read()
+                  for pattern, label in forbidden:
+                      if re.search(pattern, content):
+                          print(f'⚠  {fpath}: possible {label}')
+                          warnings += 1
+
+          # Also scan worker.js
+          if os.path.exists('worker.js'):
+              worker = open('worker.js').read()
+              # Worker CAN reference env.GEMINI_API_KEY — only flag hardcoded literals
+              if re.search(r'AIza[A-Za-z0-9_-]{35}', worker):
+                  print('❌ worker.js: Hardcoded Google API key found')
+                  sys.exit(1)
+
+          if warnings == 0:
+              print('✅ Secret scan complete — no leaks found')
+          else:
+              print(f'\n⚠  Secret scan: {warnings} potential issue(s) — review above')
+              # Warnings only — don't fail CI (may be false positives in cert IDs)
+          PYEOF
+
+      # ── 11. Performance budget check (NEW) ───────────────────────────
+      - name: Performance budget
+        id: perf_budget
+        run: |
+          python3 - << 'PYEOF'
+          import os, sys
+          from pathlib import Path
+
+          # Max file size budgets (bytes)
+          budgets = {
+              'frontend/soc-tracker-v2.js':   35_000,   # +5KB for v3.0 additions
+              'frontend/cybaash_chatbot.js':  250_000,  # generous — large KB
+              'frontend/dashboard.html':      350_000,  # generous — large dashboard
+              'worker.js':                    100_000,  # CF Worker limit is 1MB
+          }
+
+          errors = 0
+          for fpath, limit in budgets.items():
+              if not os.path.exists(fpath): continue
+              size = os.path.getsize(fpath)
+              kb = size / 1024
+              if size > limit:
+                  print(f'❌ {fpath}: {kb:.1f}KB exceeds {limit/1024:.0f}KB budget')
+                  errors += 1
+              else:
+                  print(f'✓  {fpath}: {kb:.1f}KB (budget: {limit/1024:.0f}KB)')
+
+          if errors == 0:
+              print('\n✅ All files within performance budget')
+          else:
+              print(f'\n⚠  {errors} file(s) over budget — consider optimization')
+              # Warning only — don't hard fail on size
+          PYEOF
+
+      # ── Update summary with new steps ────────────────────────────────
+      - name: Update job summary with v2.0 checks
+        if: always()
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### v2.0 Security Checks" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Worker Audit | ${{ steps.worker_audit.outcome == 'success' && '✅ Pass' || '⚠ Review' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Scan | ${{ steps.secret_scan.outcome == 'success' && '✅ Pass' || '⚠ Review' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Perf Budget | ${{ steps.perf_budget.outcome == 'success' && '✅ Pass' || '⚠ Review' }} |" >> $GITHUB_STEP_SUMMARY
