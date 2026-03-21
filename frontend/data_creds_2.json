@@ -103,7 +103,9 @@
       "url": "https://www.linkedin.com/learning/certificates/852d19ecc6f2f747b03399074de08bdd99d88061634757352943a2780f746c1e",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0021.jpg",
       "title": "Building Rapport with Customers (2022)",
@@ -154,7 +156,9 @@
       "url": "https://www.linkedin.com/learning/certificates/8627f4dbaf83bccc6f4128e603fd3fdbff8b383b82309d02ca992c43740d9a0f",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0024.jpg",
       "title": "Building Your Innovation Skills",
@@ -318,7 +322,9 @@
       "url": "https://www.linkedin.com/learning/certificates/42514c2a16514c77996063eba3c2192eea6a657fa80b6131c87aa1ed3175aff0",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "programming"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0033.jpg",
       "title": "C++ Development: Advanced Concepts, Lambda Expressions, and Best Practices",
@@ -824,7 +830,9 @@
       "url": "https://www.linkedin.com/learning/certificates/c4851724a42089c7803d7d1df60e884bd5bfee02b3f4758b0174d7dd7bd98522",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0060.jpg",
       "title": "Customer Service Foundations",

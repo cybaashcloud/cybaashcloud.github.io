@@ -122,7 +122,9 @@
       "url": "https://www.linkedin.com/learning/certificates/b44840227794603231590045b7126f6830587a02ad010f3022bc18c8dde303e3",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0190.jpg",
       "title": "Negotiating with Agility",
@@ -138,7 +140,9 @@
       "url": "https://www.linkedin.com/learning/certificates/b6707113f4f9b457c73271dbdc5094448a7917ad3d51822dc2365f6f298fe8c8",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0191.jpg",
       "title": "Negotiation Foundations",
@@ -354,7 +358,9 @@
       "url": "https://www.linkedin.com/learning/certificates/336eab1053a9dd60efd66442041b10f6e0e1cfdd3a6ba8e1050b0a61f6d7592b",
       "date": "2026-03",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0203.jpg",
       "title": "Practical GitHub Actions",
@@ -370,7 +376,9 @@
       "url": "https://www.linkedin.com/learning/certificates/ebeca581a11e158bb68447261e026ac5748ce7dd0fcffb7b84dda9575a230965",
       "date": "2026-03",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0204.jpg",
       "title": "Practical GitHub Code Search",
@@ -1075,7 +1083,9 @@
       "url": "https://www.linkedin.com/learning/certificates/2c2ace641b3872d58a4d35228726b93f57008e9496dec54ede25d79ec003a441",
       "date": "2026-03",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "data"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0242.jpg",
       "title": "Statistics Foundations 1: The Basics",
@@ -1184,7 +1194,9 @@
       "url": "https://www.linkedin.com/learning/certificates/24d448d901cbd563e396d381015b661feb115f96485ab037b7e8967c53d08faf",
       "date": "2026-03",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "programming"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0248.jpg",
       "title": "Supercharge the Development Process with GitHub Extensions for Copilot Chat",

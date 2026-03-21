@@ -84,7 +84,9 @@
       "url": "https://www.linkedin.com/learning/certificates/f06eb99aad1bbc00c261da76d118e0ed659e0ffd97a9479e103159537e9e55bf",
       "date": "2026-03",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "data"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0104.jpg",
       "title": "Git Essential Training",
@@ -119,7 +121,9 @@
       "url": "https://www.linkedin.com/learning/certificates/290803d6387da0f2f5df81fbccdf40482c0324aaca803807b8863eacb80c420a",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0106.jpg",
       "title": "Grammar Foundations",
@@ -230,7 +234,9 @@
       "url": "https://www.linkedin.com/learning/certificates/15d7d61fb5a22931a8e40cf2c11919e52c2446b8584a5c6fca31d7fe0cd685fb",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0112.jpg",
       "title": "How to Prepare for Your Negotiations",
@@ -395,7 +401,9 @@
       "url": "https://www.linkedin.com/learning/certificates/9b5a26d2e05e86d8c0a67f6a1dce76a7cc661521adb25a36a330455b11ff2546",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "data"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0121.jpg",
       "title": "InDesign 2025 Essential Training",
@@ -560,7 +568,9 @@
       "url": "https://www.linkedin.com/learning/certificates/9da931623d5b4991375329d191ba7462d2af81f4df505e1da1d6430e9c59e0da",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0130.jpg",
       "title": "Introduction to IT Architecture",
@@ -894,7 +904,9 @@
       "url": "https://www.linkedin.com/learning/certificates/69898bc5f0ed7f81ef924f826efe9f262c29592814a96f2aadf6d4edffb0c081",
       "date": "2026-02",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "professional"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0148.jpg",
       "title": "Lean Foundations",
@@ -965,7 +977,9 @@
       "url": "https://www.linkedin.com/learning/certificates/92cd50a7c4de83800bd7c4ef684a58d272dd0279903497e0d14572b2a5bd5a68",
       "date": "2026-03",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "networking"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0152.jpg",
       "title": "Learning ECMAScript 6+ (ES6+)",
@@ -1437,7 +1451,9 @@
       "url": "https://www.linkedin.com/learning/certificates/bdbd44569e5715e2d558686a3407c2af99d2112e6c8f9bc448d10716cb2a4ed4",
       "date": "2026-03",
       "logo": "",
-      "tags": [],
+      "tags": [
+        "data"
+      ],
       "type": "linkedin",
       "image": "/certificates/auto/li0177.jpg",
       "title": "Managing Data with Microsoft 365",
