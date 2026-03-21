@@ -32,7 +32,6 @@ on:
 jobs:
   build-cache:
     runs-on: ubuntu-latest
-    environment: github-pages
     permissions:
       contents: write
 
