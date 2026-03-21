@@ -1691,697 +1691,535 @@ function updateApp() {
 <script>
 // ═══════════════════════════════════════════════════════════════════════
 // CV / RESUME GENERATOR
-// ── PDF RESUME — premium redesign ──────────────────────────────────────────
+// ── PDF RESUME — v3 ─────────────────────────────────────────────────────────
 function generateResume() {
   const m     = (typeof D !== 'undefined' && D?.main) || {};
   const ab    = m.about || {}, ct = m.contact || {};
   const exp   = m.experience || [], sk = m.skills || [], proj = m.projects || [];
   const creds = (typeof D !== 'undefined' && D?.creds) || [];
 
-  const name      = ab.name      || 'Mohamed Aasiq';
-  const title     = ab.title     || 'Cybersecurity Specialist & Ethical Hacker';
-  const loc       = ab.location  || 'Pollachi, Tamil Nadu, India';
-  const email     = ct.email     || ab.email    || 'mohamedaasiq07@gmail.com';
-  const phone     = ct.phone     || '+91 95665 96077';
-  const liRaw     = ct.linkedin  || ab.linkedin || 'https://linkedin.com/in/mohamedaasiq07';
-  const ghRaw     = ct.github    || ab.github   || 'https://github.com/cybaash';
-  const liShort   = liRaw.replace(/^https?:\/\/(www\.)?/,'');
-  const ghShort   = ghRaw.replace(/^https?:\/\/(www\.)?/,'');
-  const site      = 'cybaash.github.io';
-  const bio       = ab.bio || 'Dedicated Cybersecurity Specialist and Ethical Hacker with expertise in penetration testing, cloud security, network defense, and AI-augmented threat analysis. Proven track record securing complex digital infrastructures.';
-  const yrs       = ab.yearsExp || '8';
-  const langs     = ct.languages || 'Tamil · Urdu · English · Hindi';
-  const specRaw   = ct.specialization || 'Pen Testing|Cloud Security|Network Defense|AI Security';
-  const specs     = specRaw.split(/[|·,]/).map(s=>s.trim()).filter(Boolean);
+  const name   = ab.name     || 'Mohamed Aasiq';
+  const ttl    = ab.title    || 'Cybersecurity Specialist & Ethical Hacker';
+  const loc    = ab.location || 'Pollachi, Tamil Nadu, India';
+  const email  = ct.email    || ab.email    || 'mohamedaasiq07@gmail.com';
+  const phone  = ct.phone    || '+91 95665 96077';
+  const liRaw  = ct.linkedin || ab.linkedin || 'https://linkedin.com/in/mohamedaasiq07';
+  const ghRaw  = ct.github   || ab.github   || 'https://github.com/cybaash';
+  const li     = liRaw.replace(/^https?:\/\/(www\.)?/,'');
+  const gh     = ghRaw.replace(/^https?:\/\/(www\.)?/,'');
+  const web    = 'cybaash.github.io';
+  const bio    = ab.bio || 'Cybersecurity Specialist and Ethical Hacker with expertise in penetration testing, cloud security, network defense, and AI-augmented threat analysis.';
+  const yrs    = ab.yearsExp || '8';
+  const langs  = ct.languages || 'Tamil · Urdu · English · Hindi';
+  const specR  = ct.specialization || 'Pen Testing|Cloud Security|Network Defense|AI Security';
+  const specs  = specR.split(/[|·,]/).map(s=>s.trim()).filter(Boolean);
+
+  // ── inline cert classifier (matches recruiter.html exactly) ─────────────
+  function classifyCred(c) {
+    if (c.type==='credly'||c.type==='badge') return 'Credly Badges';
+    if (c.type==='certificate'||c.type==='exam') {
+      const iss=(c.issuer||'').toLowerCase();
+      if (iss.includes('amazon')||iss.includes('aws')) return 'AWS / Amazon';
+      return 'Professional Certs';
+    }
+    const t=(c.title||'').toLowerCase(), tg=(c.tags||[]).join(' ').toLowerCase();
+    const has=(...kw)=>kw.some(k=>t.includes(k)||tg.includes(k));
+    if (has('cybersecurity','ethical hack','penetration','pentest','red team','blue team',
+            'soc','siem','malware','incident response','vulnerability','exploit',
+            'forensic','owasp','ransomware','phishing','security','kali','nmap',
+            'wireshark','network security','hacking','encryption','zero trust','firewall'))
+      return 'Cybersecurity';
+    if (has('artificial intelligence','machine learning','generative ai','gen ai','llm',
+            'large language','agentic','copilot','responsible ai','deep learning',
+            'neural','mlops','ai security','ai product','ai for','ai in','ai pair',
+            'ai tools','ai writing','ai governance','red teaming for generative'))
+      return 'AI & ML';
+    if (has('aws','azure','cloud','devops','docker','kubernetes','snowflake',
+            'finops','devsecops','ci/cd','infrastructure as code','serverless','multicloud'))
+      return 'Cloud & DevOps';
+    if (has('python','javascript','java ','c++','html','css ','react','node','github',
+            'git ','sql','programming','coding','linux','ubuntu','bash','shell','kali purple',
+            'red hat','blockchain','web developer','full-stack'))
+      return 'Programming';
+    if (has('leadership','management','product management','agile','scrum','ciso',
+            'executive','strategy','negotiat','emotional intelligence','manager',
+            'diversity','lean','supply chain','communication','customer service',
+            'conflict resolution','assertive','public speaking','storytelling'))
+      return 'Management';
+    if (has('marketing','seo','social media','email marketing','content marketing',
+            'copywriting','digital marketing','adobe','photoshop','canva','creative'))
+      return 'Marketing';
+    if (has('data science','data engineering','data analysis','analytics',
+            'tableau','power bi','statistics','knime','data visualization','wolfram'))
+      return 'Data Science';
+    return 'Other';
+  }
+
+  const catMap={};
+  creds.forEach(c=>{ const k=classifyCred(c); catMap[k]=(catMap[k]||0)+1; });
   const certCount = creds.length || 334;
-
-  /* ── cert category breakdown ─────────────────────────────────── */
-  const catMap = {};
-  creds.forEach(c => {
-    const cat = c.category || c.domain || 'General';
-    catMap[cat] = (catMap[cat]||0) + 1;
-  });
-  const catEntries = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const catEntries = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
   const topN = catEntries.length ? Math.max(...catEntries.map(([,v])=>v)) : 1;
-  const catRows = catEntries.map(([k,v]) => {
-    const pct = Math.round(v/topN*100);
-    return `<tr>
-      <td class="ct-k">${k}</td>
-      <td class="ct-bar"><div class="cb" style="width:${pct}%"></div></td>
-      <td class="ct-n">${v}</td>
-    </tr>`;
-  }).join('') || `
-    <tr><td class="ct-k">Cybersecurity</td><td class="ct-bar"><div class="cb" style="width:100%"></div></td><td class="ct-n">73</td></tr>
-    <tr><td class="ct-k">AI &amp; ML</td><td class="ct-bar"><div class="cb" style="width:70%"></div></td><td class="ct-n">51</td></tr>
-    <tr><td class="ct-k">Cloud &amp; DevOps</td><td class="ct-bar"><div class="cb" style="width:75%"></div></td><td class="ct-n">55</td></tr>
-    <tr><td class="ct-k">Programming</td><td class="ct-bar"><div class="cb" style="width:40%"></div></td><td class="ct-n">29</td></tr>
-    <tr><td class="ct-k">Management</td><td class="ct-bar"><div class="cb" style="width:38%"></div></td><td class="ct-n">28</td></tr>
-    <tr><td class="ct-k">Networking</td><td class="ct-bar"><div class="cb" style="width:16%"></div></td><td class="ct-n">12</td></tr>
-    <tr><td class="ct-k">Data Science</td><td class="ct-bar"><div class="cb" style="width:12%"></div></td><td class="ct-n">9</td></tr>`;
-  const certTotal = catEntries.reduce((s,[,v])=>s+v, 0) || certCount;
 
-  /* ── experience ──────────────────────────────────────────────── */
-  const expHTML = exp.map((e, i) => `
-    <div class="exp${i===exp.length-1?' last':''}">
-      <div class="exg">
-        <div>
-          <div class="exr">${e.role||''}</div>
-          <div class="exc">${[e.company, e.location, e.country].filter(Boolean).join(' · ')}</div>
+  const catRows = catEntries.length ? catEntries.map(([k,v])=>{
+    const w=Math.round(v/topN*100);
+    return `<tr>
+      <td class="ck">${k}</td>
+      <td class="cb-td"><div class="cbar" style="width:${w}%"></div></td>
+      <td class="cn">${v}</td></tr>`;
+  }).join('') : `
+    <tr><td class="ck">Cybersecurity</td><td class="cb-td"><div class="cbar" style="width:100%"></div></td><td class="cn">73</td></tr>
+    <tr><td class="ck">AI &amp; ML</td><td class="cb-td"><div class="cbar" style="width:70%"></div></td><td class="cn">51</td></tr>
+    <tr><td class="ck">Cloud &amp; DevOps</td><td class="cb-td"><div class="cbar" style="width:75%"></div></td><td class="cn">55</td></tr>
+    <tr><td class="ck">Programming</td><td class="cb-td"><div class="cbar" style="width:40%"></div></td><td class="cn">29</td></tr>
+    <tr><td class="ck">Management</td><td class="cb-td"><div class="cbar" style="width:38%"></div></td><td class="cn">28</td></tr>
+    <tr><td class="ck">Networking</td><td class="cb-td"><div class="cbar" style="width:16%"></div></td><td class="cn">12</td></tr>
+    <tr><td class="ck">Data Science</td><td class="cb-td"><div class="cbar" style="width:12%"></div></td><td class="cn">9</td></tr>`;
+
+  // ── skills — smart short names, max 5 per cat ────────────────────────────
+  function shortName(n) {
+    n = n.replace(/\s*\(.*?\)/g,'').replace(/\s*by\s+.*/i,'').trim();
+    const words = n.split(/\s+/);
+    if (words.length <= 4) return n;
+    return words.slice(0,4).join(' ');
+  }
+  const skillHTML = sk.slice(0,6).map(cat=>{
+    const items=(cat.items||[]).slice(0,5).map(i=>`<span class="ski">${shortName(i.name)}</span>`).join('');
+    return `<div class="skc"><div class="skh">${cat.name}</div><div class="skl">${items}</div></div>`;
+  }).join('');
+
+  // ── experience ───────────────────────────────────────────────────────────
+  const expHTML = exp.map((e,i)=>`
+    <div class="exp${i===exp.length-1?' xl':''}">
+      <div class="exbar"></div>
+      <div class="exbody">
+        <div class="exg">
+          <div>
+            <div class="exr">${e.role||''}</div>
+            <div class="exc">${[e.company,e.location,e.country].filter(Boolean).join(' · ')}</div>
+          </div>
+          <div class="exrt">
+            <div class="exd">${e.startDate||''} – ${e.current?'Present':(e.endDate||'')}</div>
+            ${e.type?`<span class="ety">${e.type}</span>`:''}
+          </div>
         </div>
-        <div class="exright">
-          <div class="exd">${e.startDate||''} – ${e.current?'Present':(e.endDate||'')}</div>
-          ${e.type?`<span class="etype">${e.type}</span>`:''}
-        </div>
+        ${e.desc?`<p class="exdesc">${e.desc}</p>`:''}
+        ${(e.achievements||[]).length?`<ul class="ach">${e.achievements.slice(0,3).map(a=>`<li>${a}</li>`).join('')}</ul>`:''}
       </div>
-      ${e.desc?`<p class="exdesc">${e.desc}</p>`:''}
-      ${(e.achievements||[]).length?`<ul class="ach">${e.achievements.slice(0,3).map(a=>`<li>${a}</li>`).join('')}</ul>`:''}
     </div>`).join('');
 
-  /* ── projects ────────────────────────────────────────────────── */
-  const projHTML = proj.slice(0,3).map((p,i) => `
-    <div class="pr${i===Math.min(proj.length,3)-1?' last':''}">
+  // ── projects ─────────────────────────────────────────────────────────────
+  const projHTML = proj.slice(0,3).map((p,i)=>`
+    <div class="pr${i===Math.min(proj.length,3)-1?' xl':''}">
       <div class="prg">
         <span class="prn">${p.title||''}</span>
         ${p.status?`<span class="prs">${p.status}</span>`:''}
         ${p.liveUrl?`<a class="pru" href="${p.liveUrl}">${p.liveUrl.replace(/^https?:\/\//,'')}</a>`:''}
       </div>
-      ${p.desc?`<p class="prd">${p.desc.slice(0,200)}${p.desc.length>200?'…':''}</p>`:''}
+      ${p.desc?`<p class="prd">${p.desc.slice(0,180)}${p.desc.length>180?'…':''}</p>`:''}
       ${p.tech?.length?`<div class="ptags">${p.tech.slice(0,7).map(t=>`<span class="ptag">${t}</span>`).join('')}</div>`:''}
     </div>`).join('');
 
-  /* ── skills ──────────────────────────────────────────────────── */
-  const skillHTML = sk.slice(0,6).map(cat => {
-    const top = (cat.items||[]).slice(0,6).map(i=>i.name.length>30?i.name.slice(0,28)+'…':i.name);
-    return `<div class="skc">
-      <div class="skh">${cat.name}</div>
-      <div class="skl">${top.map(n=>`<span class="ski">${n}</span>`).join('')}</div>
-    </div>`;
-  }).join('');
-
   const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const yr    = new Date().getFullYear();
 
   const html = `<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${name.replace(/ /g,'_')}_Resume_${new Date().getFullYear()}</title>
+<title>${name.replace(/ /g,'_')}_Resume_${yr}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ── RESET ──────────────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
-/* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root{
-  --ink:    #0c0c14;
-  --ink2:   #24243a;
-  --mu:     #64698a;
-  --mu2:    #9da2c0;
-  --ac:     #1a4fd6;
-  --ac-t:   rgba(26,79,214,.08);
-  --line:   #e4e6f0;
-  --line2:  #eff0f8;
-  --bg:     #ffffff;
-  --sb-bg:  #f7f8fc;
-  --sb-bd:  #eaecf6;
-  --ok:     #15803d;
-  --ok-bg:  #dcfce7;
-  --tag:    #f0f1fa;
-  --tag-bd: #dde0f2;
+  --ink:   #0b0b14;
+  --ink2:  #222236;
+  --mu:    #5f637a;
+  --mu2:   #9498b0;
+  --ac:    #1847d4;
+  --ac-l:  #e9eeff;
+  --ac-m:  rgba(24,71,212,.12);
+  --line:  #e2e4ef;
+  --line2: #eceef8;
+  --bg:    #ffffff;
+  --sb:    #f6f7fc;
+  --ok:    #166534;
+  --ok-bg: #dcfce7;
+  --tag:   #eff0f8;
+  --tbd:   #e0e2f0;
 }
+html,body{background:var(--bg);color:var(--ink);
+  font-family:'Inter',-apple-system,'Segoe UI',sans-serif;
+  font-size:9.5pt;line-height:1.6;
+  -webkit-font-smoothing:antialiased;font-feature-settings:'kern' 1,'liga' 1}
 
-/* ── BASE ────────────────────────────────────────────────────────────── */
-html,body{
-  background:var(--bg);
-  color:var(--ink);
-  font-family:'Inter',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
-  font-size:9.5pt;
-  line-height:1.6;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-  font-feature-settings:'kern' 1,'liga' 1,'calt' 1;
-}
+/* ── PAGE ── */
+.page{max-width:816px;margin:0 auto;display:grid;grid-template-rows:auto auto 1fr auto}
 
-/* ── PAGE SHELL ──────────────────────────────────────────────────────── */
-.page{
-  max-width:800px;
-  margin:0 auto;
-  display:grid;
-  grid-template-rows:auto 1fr auto;
-  min-height:100%;
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   HEADER
-══════════════════════════════════════════════════════════════════════ */
+/* ══ HERO HEADER ══════════════════════════════════════════════════════════ */
 .hdr{
-  padding:48px 48px 32px;
-  border-bottom:1.5px solid var(--ink);
+  background:var(--ink);
+  color:#fff;
+  padding:40px 48px 36px;
   display:grid;
   grid-template-columns:1fr auto;
-  gap:32px;
-  align-items:end;
+  gap:40px;
+  align-items:center;
 }
-.hdr-l{}
 .name{
-  font-size:36pt;
-  font-weight:800;
-  letter-spacing:-2px;
-  line-height:.95;
-  color:var(--ink);
-  margin-bottom:9px;
+  font-size:38pt;font-weight:900;letter-spacing:-2.5px;
+  line-height:.92;color:#fff;margin-bottom:10px;
 }
 .jtitle{
-  font-size:10.5pt;
-  font-weight:500;
-  color:var(--ac);
-  letter-spacing:.01em;
-  margin-bottom:16px;
+  font-size:10.5pt;font-weight:400;color:rgba(255,255,255,.6);
+  letter-spacing:.04em;margin-bottom:18px;
 }
-.hmeta{
-  display:flex;
-  flex-wrap:wrap;
-  gap:0;
-}
+.hmeta{display:flex;flex-wrap:wrap;gap:4px 0}
 .hm{
-  font-size:8.5pt;
-  color:var(--mu);
-  display:flex;
-  align-items:center;
-  gap:5px;
-  padding-right:16px;
-  margin-right:16px;
-  border-right:1px solid var(--line);
+  font-size:8pt;color:rgba(255,255,255,.55);
+  display:flex;align-items:center;gap:5px;
+  padding-right:14px;margin-right:14px;
+  border-right:1px solid rgba(255,255,255,.12);
 }
 .hm:last-child{border-right:none;padding-right:0;margin-right:0}
-.hm svg{opacity:.45;flex-shrink:0}
-.hm a{color:var(--ac);text-decoration:none}
-.hdr-r{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  align-items:flex-end;
-  padding-bottom:2px;
+.hm svg{opacity:.4;flex-shrink:0}
+.hm a{color:rgba(255,255,255,.75);text-decoration:none}
+.hlinks{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.hl{
+  display:flex;align-items:center;gap:7px;
+  font-size:8pt;color:rgba(255,255,255,.5);text-decoration:none;
 }
-.hlink{
-  font-size:8pt;
-  color:var(--mu);
-  text-decoration:none;
-  display:flex;
-  align-items:center;
-  gap:6px;
-  line-height:1;
-}
-.hlink svg{color:var(--mu2);flex-shrink:0}
-.hlink:hover{color:var(--ac)}
-.hlink span{color:var(--ac)}
+.hl:hover{color:#fff}
+.hl svg{opacity:.4;flex-shrink:0}
+.hl span{color:rgba(255,255,255,.75)}
 
-/* ══════════════════════════════════════════════════════════════════════
-   BODY GRID — sidebar + main
-══════════════════════════════════════════════════════════════════════ */
-.body{
-  display:grid;
-  grid-template-columns:220px 1fr;
-  gap:0;
-  align-items:start;
-}
+/* ── ACCENT STRIPE ── */
+.stripe{height:3px;background:linear-gradient(90deg,var(--ac) 0%,#6c8fff 60%,var(--ac) 100%)}
 
-/* ── SIDEBAR ─────────────────────────────────────────────────────────── */
+/* ══ BODY GRID ════════════════════════════════════════════════════════════ */
+.body{display:grid;grid-template-columns:212px 1fr}
+
+/* ── SIDEBAR ── */
 .sb{
-  background:var(--sb-bg);
-  border-right:1px solid var(--sb-bd);
-  padding:32px 24px 40px;
-  display:flex;
-  flex-direction:column;
-  gap:28px;
+  background:var(--sb);border-right:1px solid var(--line);
+  padding:30px 22px 36px;display:flex;flex-direction:column;gap:26px;
 }
-/* sidebar section head */
 .sbh{
-  font-size:6.5pt;
-  font-weight:700;
-  letter-spacing:.22em;
-  text-transform:uppercase;
-  color:var(--mu);
-  margin-bottom:12px;
-  display:flex;
-  align-items:center;
-  gap:7px;
-}
-.sbh::after{
-  content:'';
-  flex:1;
-  height:1px;
-  background:var(--sb-bd);
+  font-size:6pt;font-weight:800;letter-spacing:.25em;
+  text-transform:uppercase;color:var(--mu2);
+  margin-bottom:11px;padding-bottom:7px;
+  border-bottom:1px solid var(--line);
 }
 
-/* ── STATS ── */
+/* stats */
 .stats{display:flex;flex-direction:column;gap:0}
 .stat{
-  padding:12px 0;
-  border-bottom:1px solid var(--line2);
-  display:flex;
-  align-items:baseline;
-  gap:6px;
+  display:flex;align-items:baseline;gap:7px;
+  padding:10px 0;border-bottom:1px solid var(--line2);
 }
-.stat:first-child{padding-top:0}
-.stat:last-child{border-bottom:none;padding-bottom:0}
+.stat:first-child{padding-top:2px}
+.stat:last-child{border-bottom:none;padding-bottom:2px}
 .sn{
-  font-size:22pt;
-  font-weight:800;
-  letter-spacing:-1px;
-  line-height:1;
-  color:var(--ink);
-  font-variant-numeric:tabular-nums;
+  font-size:26pt;font-weight:800;letter-spacing:-1.5px;
+  line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;
 }
-.sn sup{font-size:10pt;vertical-align:super;font-weight:700}
-.sl{font-size:7pt;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+.sn sup{font-size:11pt;vertical-align:super;font-weight:700}
+.sl{font-size:6.5pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu2)}
 
-/* ── CERT TABLE ── */
-.cert-verified{
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  font-size:7.5pt;
-  font-weight:600;
-  color:var(--ok);
-  background:var(--ok-bg);
-  padding:3px 9px;
-  border-radius:99px;
-  margin-bottom:12px;
-  letter-spacing:.03em;
+/* cert table */
+.cvd{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:7.5pt;font-weight:700;color:var(--ok);
+  background:var(--ok-bg);padding:3px 9px;border-radius:99px;
+  margin-bottom:11px;letter-spacing:.02em;
 }
 .ct{width:100%;border-collapse:collapse}
-.ct tr{vertical-align:middle}
-.ct-k{
-  font-size:8pt;
-  color:var(--ink2);
-  padding:3.5px 0;
-  width:auto;
-  white-space:nowrap;
-  padding-right:8px;
+.ck{font-size:7.5pt;color:var(--ink2);padding:3px 0;padding-right:6px;white-space:nowrap;vertical-align:middle}
+.cb-td{width:54px;padding:3px 0;vertical-align:middle}
+.cbar{height:3px;background:var(--ac);border-radius:99px;opacity:.5;min-width:2px}
+.cn{font-size:7.5pt;font-weight:700;color:var(--ink);text-align:right;
+  padding:3px 0 3px 6px;font-variant-numeric:tabular-nums;
+  font-family:'JetBrains Mono',monospace;vertical-align:middle}
+.ctot .ck,.ctot .cn,.ctot .cb-td{
+  font-weight:800;border-top:1px solid var(--line);padding-top:7px;
 }
-.ct-bar{width:60px;padding:3.5px 0}
-.cb{height:3px;background:var(--ac);border-radius:99px;opacity:.55;min-width:2px}
-.ct-n{
-  font-size:8pt;
-  font-weight:700;
-  color:var(--ink);
-  text-align:right;
-  padding:3.5px 0;
-  padding-left:8px;
-  font-variant-numeric:tabular-nums;
-  font-family:'JetBrains Mono',monospace;
+.ctot .ck{color:var(--ink)}
+
+/* lang */
+.lang-list{display:flex;flex-direction:column;gap:6px}
+.lang-i{
+  display:flex;align-items:center;gap:7px;
+  font-size:8.5pt;color:var(--ink2);
 }
-.ct-total .ct-k{font-weight:700;color:var(--ink);padding-top:7px;border-top:1px solid var(--line)}
-.ct-total .ct-n{font-weight:800;padding-top:7px;border-top:1px solid var(--line)}
-.ct-total .ct-bar{padding-top:7px;border-top:1px solid var(--line)}
-
-/* ── LINKS ── */
-.links{display:flex;flex-direction:column;gap:10px}
-.link-item{}
-.link-lbl{font-size:6.5pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mu2);margin-bottom:2px}
-.link-val{display:flex;align-items:center;gap:5px}
-.link-val a{font-size:8pt;color:var(--ac);text-decoration:none;line-height:1.3}
-.link-val svg{color:var(--mu2);flex-shrink:0}
-
-/* ── LANGS ── */
-.lang-list{font-size:8.5pt;color:var(--ink2);line-height:1.9}
-.lang-item{display:flex;align-items:baseline;gap:6px}
-.lang-item::before{content:'·';color:var(--ac);font-weight:700;font-size:11pt;line-height:1}
-
-/* ══════════════════════════════════════════════════════════════════════
-   MAIN
-══════════════════════════════════════════════════════════════════════ */
-.main{
-  padding:32px 36px 40px 36px;
-  display:flex;
-  flex-direction:column;
-  gap:26px;
+.lang-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--ac);flex-shrink:0;opacity:.7;
 }
 
-/* ── SECTION ─────────────────────────────────────────────────────────── */
-.sec{}
+/* links */
+.links{display:flex;flex-direction:column;gap:11px}
+.li2{}
+.li2-lbl{font-size:6pt;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--mu2);margin-bottom:3px}
+.li2-val{display:flex;align-items:center;gap:5px}
+.li2-val a{font-size:8pt;color:var(--ac);text-decoration:none;line-height:1.3}
+.li2-val svg{color:var(--mu2);flex-shrink:0}
+
+/* ══ MAIN ═════════════════════════════════════════════════════════════════ */
+.main{padding:28px 34px 32px;display:flex;flex-direction:column;gap:22px}
+
+/* section */
 .sh{
-  font-size:6.5pt;
-  font-weight:700;
-  letter-spacing:.22em;
-  text-transform:uppercase;
-  color:var(--mu);
+  display:flex;align-items:center;gap:10px;
   margin-bottom:14px;
-  display:flex;
-  align-items:center;
-  gap:9px;
-  padding-bottom:9px;
-  border-bottom:1.5px solid var(--ink);
 }
-.sh-ac{
-  width:16px;
-  height:1.5px;
-  background:var(--ac);
-  flex-shrink:0;
+.sh-bar{width:18px;height:2px;background:var(--ac);flex-shrink:0}
+.sh-txt{
+  font-size:6.5pt;font-weight:800;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--mu);
 }
+.sh-rule{flex:1;height:1px;background:var(--line)}
 
-/* ── SUMMARY ─────────────────────────────────────────────────────────── */
+/* profile */
 .bio{font-size:9.5pt;color:var(--ink2);line-height:1.75;margin-bottom:12px}
-.spec-grid{display:flex;flex-wrap:wrap;gap:5px}
-.spec-chip{
-  font-size:8pt;
-  font-weight:500;
-  color:var(--ac);
-  background:var(--ac-t);
-  padding:3px 10px;
-  border-radius:3px;
-  letter-spacing:.01em;
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{
+  font-size:8pt;font-weight:500;color:var(--ac);
+  background:var(--ac-m);padding:4px 11px;border-radius:3px;
 }
 
-/* ── EXPERIENCE ──────────────────────────────────────────────────────── */
-.exp{padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line)}
-.exp.last{border-bottom:none;padding-bottom:0;margin-bottom:0}
-.exg{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:5px}
+/* experience */
+.exp{
+  display:grid;grid-template-columns:2px 1fr;gap:0 14px;
+  padding-bottom:16px;margin-bottom:16px;
+}
+.exp.xl{padding-bottom:0;margin-bottom:0}
+.exbar{background:var(--line2);border-radius:99px;margin-top:5px}
+.exp:hover .exbar{background:var(--ac);transition:background .2s}
+.exbody{}
+.exg{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:5px}
 .exr{font-size:11pt;font-weight:700;color:var(--ink);line-height:1.2}
 .exc{font-size:8.5pt;color:var(--mu);margin-top:3px}
-.exright{text-align:right;flex-shrink:0}
+.exrt{text-align:right;flex-shrink:0}
 .exd{
-  font-size:7.5pt;
-  color:var(--mu);
-  font-family:'JetBrains Mono',monospace;
-  white-space:nowrap;
-  display:block;
-  margin-bottom:4px;
+  display:block;font-size:7.5pt;color:var(--mu);
+  font-family:'JetBrains Mono',monospace;white-space:nowrap;margin-bottom:4px;
 }
-.etype{
-  font-size:6.5pt;
-  font-weight:700;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  color:var(--ac);
-  background:var(--ac-t);
-  padding:2px 7px;
-  border-radius:3px;
+.ety{
+  font-size:6.5pt;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ac);background:var(--ac-l);padding:2px 7px;border-radius:3px;
 }
-.exdesc{font-size:8.5pt;color:var(--ink2);line-height:1.7;margin:7px 0 8px}
-.ach{list-style:none;display:flex;flex-direction:column;gap:4px;padding-left:14px}
+.exdesc{font-size:8.5pt;color:var(--ink2);line-height:1.7;margin:6px 0 7px}
+.ach{list-style:none;padding-left:0;display:flex;flex-direction:column;gap:4px}
 .ach li{
-  font-size:8.5pt;
-  color:var(--ink2);
-  position:relative;
-  line-height:1.55;
+  font-size:8.5pt;color:var(--ink2);padding-left:13px;
+  position:relative;line-height:1.55;
 }
 .ach li::before{
-  content:'▸';
-  position:absolute;
-  left:-14px;
-  top:0;
-  color:var(--ac);
-  font-size:8pt;
-  line-height:1.6;
+  content:'▸';position:absolute;left:0;top:0;
+  color:var(--ac);font-size:7.5pt;line-height:1.7;
 }
 
-/* ── PROJECTS ────────────────────────────────────────────────────────── */
-.pr{padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line)}
-.pr.last{border-bottom:none;padding-bottom:0;margin-bottom:0}
+/* projects */
+.pr{padding-bottom:11px;margin-bottom:11px;border-bottom:1px solid var(--line2)}
+.pr.xl{border-bottom:none;padding-bottom:0;margin-bottom:0}
 .prg{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px}
 .prn{font-size:10pt;font-weight:700;color:var(--ink)}
 .prs{
-  font-size:6.5pt;
-  font-weight:700;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  color:var(--ok);
-  background:var(--ok-bg);
-  padding:2px 7px;
-  border-radius:99px;
+  font-size:6.5pt;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ok);background:var(--ok-bg);padding:2px 7px;border-radius:99px;
 }
-.pru{
-  font-size:7.5pt;
-  color:var(--ac);
-  text-decoration:none;
-  font-family:'JetBrains Mono',monospace;
-  margin-left:auto;
-}
-.prd{font-size:8.5pt;color:var(--ink2);line-height:1.65;margin-bottom:7px}
+.pru{font-size:8pt;color:var(--ac);text-decoration:none;
+  font-family:'JetBrains Mono',monospace;margin-left:auto}
+.prd{font-size:8.5pt;color:var(--ink2);line-height:1.65;margin-bottom:6px}
 .ptags{display:flex;flex-wrap:wrap;gap:4px}
-.ptag{
-  font-size:7.5pt;
-  color:var(--mu);
-  background:var(--tag);
-  border:1px solid var(--tag-bd);
-  padding:2px 7px;
-  border-radius:2px;
-}
+.ptag{font-size:7pt;color:var(--mu);background:var(--tag);
+  border:1px solid var(--tbd);padding:2px 6px;border-radius:2px}
 
-/* ══════════════════════════════════════════════════════════════════════
-   SKILLS — full-width strip below body grid
-══════════════════════════════════════════════════════════════════════ */
-.skills-strip{
+/* ══ SKILLS STRIP ═════════════════════════════════════════════════════════ */
+.sk-strip{
   border-top:1px solid var(--line);
-  padding:24px 48px 32px;
+  padding:22px 34px 22px 34px;
+  margin-left:212px;
 }
-.skills-sh{
-  font-size:6.5pt;
-  font-weight:700;
-  letter-spacing:.22em;
-  text-transform:uppercase;
-  color:var(--mu);
-  margin-bottom:16px;
-  display:flex;
-  align-items:center;
-  gap:9px;
+.sk-sh{
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;
 }
-.skills-sh::after{content:'';flex:1;height:1px;background:var(--line)}
-.skills-sh-ac{width:16px;height:1.5px;background:var(--ac);flex-shrink:0}
-.skgrid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:16px 32px;
-}
+.sk-sh-bar{width:18px;height:2px;background:var(--ac);flex-shrink:0}
+.sk-sh-txt{font-size:6.5pt;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--mu)}
+.sk-sh-rule{flex:1;height:1px;background:var(--line)}
+.skgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 28px}
 .skc{}
 .skh{
-  font-size:7.5pt;
-  font-weight:700;
-  color:var(--ink);
-  letter-spacing:.04em;
-  margin-bottom:7px;
-  padding-bottom:5px;
-  border-bottom:1px solid var(--line);
+  font-size:7pt;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink2);margin-bottom:7px;padding-bottom:5px;
+  border-bottom:1.5px solid var(--ink);
 }
 .skl{display:flex;flex-wrap:wrap;gap:4px}
 .ski{
-  font-size:7.5pt;
-  color:var(--ink2);
-  background:var(--tag);
-  border:1px solid var(--tag-bd);
-  padding:2px 7px;
-  border-radius:2px;
+  font-size:7.5pt;color:var(--ink2);background:var(--tag);
+  border:1px solid var(--tbd);padding:2px 7px;border-radius:2px;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   FOOTER
-══════════════════════════════════════════════════════════════════════ */
+/* ══ FOOTER ═══════════════════════════════════════════════════════════════ */
 .ft{
-  padding:14px 48px;
-  border-top:1px solid var(--line);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  font-size:7.5pt;
-  color:var(--mu);
+  padding:12px 48px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:7.5pt;color:var(--mu);
 }
 .ft a{color:var(--ac);text-decoration:none}
 .ft strong{color:var(--ink2);font-weight:600}
 
-/* ══════════════════════════════════════════════════════════════════════
-   PRINT
-══════════════════════════════════════════════════════════════════════ */
+/* ══ PRINT ════════════════════════════════════════════════════════════════ */
 @media print{
-  html,body{font-size:9pt;background:#fff}
-  @page{size:A4;margin:10mm 12mm}
-  .page{max-width:100%}
-  .hdr{padding:0 0 20px}
-  .body{grid-template-columns:200px 1fr}
-  .sb{padding:20px 20px 0}
-  .main{padding:20px 24px 0 24px}
-  .skills-strip{padding:16px 0 0}
-  .ft{padding:10px 0 0}
+  html,body{font-size:9pt}
+  @page{size:A4;margin:0}
+  .page{max-width:100%;min-height:297mm}
+  .hdr{padding:28px 36px 24px}
+  .body{grid-template-columns:196px 1fr}
+  .sb{padding:22px 18px}
+  .main{padding:22px 28px 0 28px}
+  .sk-strip{padding:16px 28px;margin-left:196px}
+  .ft{padding:10px 36px}
   .exp,.pr,.skc{break-inside:avoid}
-  a{color:var(--ac)!important;text-decoration:none!important}
-  .hlink span,.link-val a,.pru,.hm a{color:var(--ac)!important}
-  .name{font-size:30pt}
+  .hdr{break-inside:avoid}
+  a{text-decoration:none!important}
+  .hl span,.li2-val a,.pru,.hm a{color:var(--ac)!important}
+  .name{font-size:32pt}
+  .sk-strip{border-top:1px solid var(--line)}
 }
-
-/* ── SCREEN CHROME ── */
 @media screen{
-  body{background:#d8dce8;padding:32px 0 48px}
+  body{background:#c8cdd8;padding:32px 0 56px}
   .page{
-    box-shadow:0 2px 8px rgba(0,0,0,.08),0 8px 40px rgba(0,0,0,.1);
-    border-radius:4px;
-    overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,.08),0 12px 48px rgba(0,0,0,.16);
+    border-radius:3px;overflow:hidden;
   }
 }
 </style></head><body><div class="page">
 
-<!-- ════════════════════ HEADER ════════════════════ -->
+<!-- HEADER -->
 <div class="hdr">
-  <div class="hdr-l">
+  <div>
     <div class="name">${name}</div>
-    <div class="jtitle">${title}</div>
+    <div class="jtitle">${ttl}</div>
     <div class="hmeta">
       <div class="hm">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
         ${loc}
       </div>
       <div class="hm">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         <a href="mailto:${email}">${email}</a>
       </div>
       <div class="hm">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
         ${phone}
       </div>
     </div>
   </div>
-  <div class="hdr-r">
-    <a class="hlink" href="https://${liShort}">
+  <div class="hlinks">
+    <a class="hl" href="https://${li}">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
-      <span>${liShort}</span>
+      <span>${li}</span>
     </a>
-    <a class="hlink" href="https://${ghShort}">
+    <a class="hl" href="https://${gh}">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
-      <span>${ghShort}</span>
+      <span>${gh}</span>
     </a>
-    <a class="hlink" href="https://${site}">
+    <a class="hl" href="https://${web}">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-      <span>${site}</span>
+      <span>${web}</span>
     </a>
   </div>
 </div>
+<div class="stripe"></div>
 
-<!-- ════════════════════ BODY ════════════════════ -->
+<!-- BODY -->
 <div class="body">
 
   <!-- SIDEBAR -->
   <div class="sb">
 
-    <!-- Stats -->
     <div>
       <div class="sbh">At a glance</div>
       <div class="stats">
-        <div class="stat">
-          <div class="sn">${certCount}</div>
-          <div class="sl">Certifications</div>
-        </div>
-        <div class="stat">
-          <div class="sn">${yrs}<sup>+</sup></div>
-          <div class="sl">Years exp.</div>
-        </div>
-        <div class="stat">
-          <div class="sn">8</div>
-          <div class="sl">Domains</div>
-        </div>
+        <div class="stat"><div class="sn">${certCount}</div><div class="sl">Certs</div></div>
+        <div class="stat"><div class="sn">${yrs}<sup>+</sup></div><div class="sl">Years</div></div>
+        <div class="stat"><div class="sn">8</div><div class="sl">Domains</div></div>
       </div>
     </div>
 
-    <!-- Certifications breakdown -->
     <div>
       <div class="sbh">Certifications</div>
-      <div class="cert-verified">✓ ${certCount} Verified</div>
-      <table class="ct">
-        <tbody>
-          ${catRows}
-          <tr class="ct-total">
-            <td class="ct-k">Total</td>
-            <td class="ct-bar"></td>
-            <td class="ct-n">${certTotal}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="cvd">✓ ${certCount} Verified</div>
+      <table class="ct"><tbody>
+        ${catRows}
+        <tr class="ctot"><td class="ck">Total</td><td class="cb-td"></td><td class="cn">${certCount}</td></tr>
+      </tbody></table>
     </div>
 
-    <!-- Languages -->
     <div>
       <div class="sbh">Languages</div>
       <div class="lang-list">
-        ${langs.split(/[·,]/).map(l=>l.trim()).filter(Boolean).map(l=>`<div class="lang-item">${l}</div>`).join('')}
+        ${langs.split(/[·,]/).map(l=>l.trim()).filter(Boolean).map(l=>`<div class="lang-i"><div class="lang-dot"></div>${l}</div>`).join('')}
       </div>
     </div>
 
-    <!-- Links -->
     <div>
       <div class="sbh">Links</div>
       <div class="links">
-        <div class="link-item">
-          <div class="link-lbl">LinkedIn</div>
-          <div class="link-val">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
-            <a href="https://${liShort}">${liShort}</a>
-          </div>
-        </div>
-        <div class="link-item">
-          <div class="link-lbl">GitHub</div>
-          <div class="link-val">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
-            <a href="https://${ghShort}">${ghShort}</a>
-          </div>
-        </div>
-        <div class="link-item">
-          <div class="link-lbl">Portfolio</div>
-          <div class="link-val">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-            <a href="https://${site}">${site}</a>
-          </div>
-        </div>
+        <div class="li2"><div class="li2-lbl">LinkedIn</div><div class="li2-val"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg><a href="https://${li}">${li}</a></div></div>
+        <div class="li2"><div class="li2-lbl">GitHub</div><div class="li2-val"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg><a href="https://${gh}">${gh}</a></div></div>
+        <div class="li2"><div class="li2-lbl">Portfolio</div><div class="li2-val"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg><a href="https://${web}">${web}</a></div></div>
       </div>
     </div>
 
-  </div><!-- /sb -->
+  </div>
 
   <!-- MAIN -->
   <div class="main">
 
-    <!-- Profile -->
     <div class="sec">
-      <div class="sh"><div class="sh-ac"></div>Profile</div>
+      <div class="sh"><div class="sh-bar"></div><span class="sh-txt">Profile</span><div class="sh-rule"></div></div>
       <p class="bio">${bio}</p>
-      <div class="spec-grid">${specs.map(s=>`<span class="spec-chip">${s}</span>`).join('')}</div>
+      <div class="chips">${specs.map(s=>`<span class="chip">${s}</span>`).join('')}</div>
     </div>
 
-    <!-- Experience -->
     ${expHTML ? `<div class="sec">
-      <div class="sh"><div class="sh-ac"></div>Experience</div>
+      <div class="sh"><div class="sh-bar"></div><span class="sh-txt">Experience</span><div class="sh-rule"></div></div>
       ${expHTML}
     </div>` : ''}
 
-    <!-- Projects -->
     ${projHTML ? `<div class="sec">
-      <div class="sh"><div class="sh-ac"></div>Projects</div>
+      <div class="sh"><div class="sh-bar"></div><span class="sh-txt">Projects</span><div class="sh-rule"></div></div>
       ${projHTML}
     </div>` : ''}
 
-  </div><!-- /main -->
-</div><!-- /body -->
+  </div>
+</div>
 
-<!-- ════════════════════ SKILLS ════════════════════ -->
-${skillHTML ? `<div class="skills-strip">
-  <div class="skills-sh"><div class="skills-sh-ac"></div>Technical Skills</div>
+<!-- SKILLS -->
+${skillHTML ? `<div class="sk-strip">
+  <div class="sk-sh"><div class="sk-sh-bar"></div><span class="sk-sh-txt">Technical Skills</span><div class="sk-sh-rule"></div></div>
   <div class="skgrid">${skillHTML}</div>
 </div>` : ''}
 
-<!-- ════════════════════ FOOTER ════════════════════ -->
+<!-- FOOTER -->
 <div class="ft">
-  <strong>${name} · ${title}</strong>
-  <span><a href="https://${site}">${site}</a> · Generated ${today}</span>
+  <strong>${name} · ${ttl}</strong>
+  <span><a href="https://${web}">${web}</a> · Generated ${today}</span>
 </div>
 
-</div><!-- /page -->
+</div>
 <script>
-if(document.fonts){document.fonts.ready.then(()=>setTimeout(()=>window.print(),500));}
-else{window.onload=()=>setTimeout(()=>window.print(),700);}
+if(document.fonts){document.fonts.ready.then(()=>setTimeout(()=>window.print(),550));}
+else{window.onload=()=>setTimeout(()=>window.print(),750);}
 <\/script></body></html>`;
 
-  const blob = new Blob([html], { type:'text/html;charset=utf-8' });
+  const blob = new Blob([html],{type:'text/html;charset=utf-8'});
   const url  = URL.createObjectURL(blob);
-  const win  = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!win) { alert('Pop-up blocked — allow pop-ups for this site and try again.'); URL.revokeObjectURL(url); return; }
-  setTimeout(() => URL.revokeObjectURL(url), 120000);
+  const win  = window.open(url,'_blank','noopener,noreferrer');
+  if(!win){alert('Pop-up blocked — allow pop-ups for this site and try again.');URL.revokeObjectURL(url);return;}
+  setTimeout(()=>URL.revokeObjectURL(url),120000);
 }
 </script>
 
