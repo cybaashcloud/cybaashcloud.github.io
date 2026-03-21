@@ -1298,6 +1298,237 @@ input[type=range]::-webkit-slider-thumb {
     grid-template-columns: 1fr !important;
   }
 
+
+  /* ═══════════════════════════════════════════════════════
+     MOBILE DRAWER SYSTEM
+  ═══════════════════════════════════════════════════════ */
+
+  /* Hide side panels from normal flow on mobile */
+  #leftPanel, #rightPanel {
+    display: none !important;
+  }
+
+  /* Drawer overlay */
+  .mob-drawer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.65);
+    z-index: 1100;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    animation: fadeIn .18s ease;
+  }
+  .mob-drawer-overlay.open { display: block; }
+
+  /* Drawer panel — slides from left or right */
+  .mob-drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 88vw;
+    max-width: 340px;
+    background: var(--bg);
+    z-index: 1101;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid var(--border);
+    transition: transform .24s cubic-bezier(.4,0,.2,1);
+    display: flex;
+    flex-direction: column;
+  }
+  .mob-drawer.left  { left: 0;  transform: translateX(-100%); border-left: none; }
+  .mob-drawer.right { right: 0; transform: translateX(100%);  border-right: none; }
+  .mob-drawer.open  { transform: translateX(0); }
+
+  /* Drawer header bar */
+  .mob-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel2);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    flex-shrink: 0;
+  }
+  .mob-drawer-head-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--blue);
+  }
+  .mob-drawer-close {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    font-size: 14px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    flex-shrink: 0;
+    font-family: monospace;
+  }
+  .mob-drawer-close:hover { border-color: var(--red); color: var(--red); }
+
+  /* Drawer content wrapper */
+  .mob-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+  /* Make the panel inside the drawer fully visible */
+  .mob-drawer-body .panel {
+    display: block !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    border: none !important;
+    height: auto !important;
+  }
+  .mob-drawer-body .panel-title { cursor: default; }
+
+  /* ── FAB trigger buttons (Attack | DNA) ─────────────────────── */
+  .mob-fab-bar {
+    display: flex;
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 10px;
+    z-index: 1050;
+    padding: 0;
+  }
+  .mob-fab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 16px;
+    height: 42px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    border-radius: 2px;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .mob-fab.left-fab  { border-color: rgba(255,34,68,.4);  color: var(--red); }
+  .mob-fab.right-fab { border-color: rgba(0,212,255,.4);  color: var(--blue); }
+  .mob-fab.left-fab:hover  { background: rgba(255,34,68,.08);  border-color: var(--red); }
+  .mob-fab.right-fab:hover { background: rgba(0,212,255,.08); border-color: var(--blue); }
+  .mob-fab-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor; flex-shrink: 0; animation: pulse 2s infinite;
+  }
+
+  /* ── MOBILE HEADER ──────────────────────────────────────────── */
+  /* Header: logo + hamburger only */
+  .header-stats { display: none !important; }
+  .mob-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    cursor: pointer;
+    border-radius: 2px;
+    flex-shrink: 0;
+    font-size: 16px;
+    margin-left: auto;
+    font-family: monospace;
+  }
+  .mob-menu-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* Header drawer */
+  .mob-header-drawer {
+    position: fixed;
+    top: 46px;
+    left: 0;
+    right: 0;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    z-index: 1200;
+    transform: translateY(-110%);
+    transition: transform .22s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  }
+  .mob-header-drawer.open { transform: translateY(0); }
+
+  /* Header drawer content */
+  .mob-hd-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .mob-hd-stats .stat-pill {
+    font-size: 9px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    background: var(--panel2);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .mob-hd-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .mob-hd-btns .btn, .mob-hd-btns button {
+    width: 100%;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    padding: 14px 16px;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    min-height: 48px;
+    height: auto;
+    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: none;
+  }
+  .mob-hd-btns .btn:hover, .mob-hd-btns button:hover {
+    background: var(--panel2);
+  }
+  .mob-hd-btns .btn-red  { color: var(--red);   border-color: transparent; border-bottom: 1px solid var(--border); }
+  .mob-hd-btns .btn-green{ color: var(--green); border-color: transparent; border-bottom: 1px solid var(--border); }
+
+  /* ── COLLAPSIBLE TABS ────────────────────────────────────────── */
+  /* Make the tabs bar a collapsible section */
+  .tabs-wrapper {
+    position: relative;
+  }
+  .tabs-toggle {
+    display: none; /* hidden on desktop */
+  }
+
+  /* Center panel: add bottom padding for FABs */
+  .center { padding-bottom: 72px !important; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
   /* Knowledge graph */
   #graphCanvas { height: 300px !important; }
 
@@ -2756,6 +2987,8 @@ body.attacker-mode #attackerBadge { display: block; }
 
 <div class="header">
   <div class="logo">CY<span>B</span>AASH <span style="font-size:10px;color:var(--dim);letter-spacing:2px">// AUTONOMOUS CYBER RANGE</span></div>
+  <!-- Mobile hamburger — only visible on mobile via CSS -->
+  <button class="mob-menu-btn" id="mobMenuBtn" onclick="mobToggleHeader()" aria-label="Menu" style="display:none">☰</button>
   <div class="header-stats">
     <div class="stat-pill">
       <div class="pulse-dot" id="statusDot"></div>
@@ -2769,6 +3002,49 @@ body.attacker-mode #attackerBadge { display: block; }
     <button class="btn btn-red" onclick="window.open('recruiter.html','_blank','noopener,noreferrer')">RECRUITER VIEW</button>
     <button class="btn btn-green" id="termToggleBtn" onclick="termToggle()" style="letter-spacing:2px">⌨ TERMINAL</button>
     <button id="cybaash-nav-btn" onclick="window.open('ai/','_blank','noopener,noreferrer')">CYBAASH AI</button>
+  </div>
+</div>
+
+<!-- MOBILE HEADER DRAWER -->
+<div class="mob-header-drawer" id="mobHeaderDrawer" aria-hidden="true">
+  <div class="mob-hd-stats">
+    <div class="stat-pill"><div class="pulse-dot" id="mStatusDot"></div><span id="mStatusLabel" style="color:var(--dim)">STANDBY</span></div>
+    <div class="stat-pill">CERTS <span class="val blue" id="mHeaderCertCount">…</span></div>
+    <div class="stat-pill">THREAT <span class="val" id="mThreatValH">0%</span></div>
+    <div class="stat-pill">ATK <span class="val red" id="mAtkCount">0</span></div>
+    <div class="stat-pill">DEF <span class="val green" id="mDefCount">0</span></div>
+    <div class="stat-pill">SCORE <span class="val yellow" id="mScoreH">—</span></div>
+  </div>
+  <div class="mob-hd-btns">
+    <button class="btn btn-red" onclick="window.open('recruiter.html','_blank','noopener,noreferrer');mobCloseHeader()">↗ RECRUITER VIEW</button>
+    <button class="btn btn-green" onclick="termToggle();mobCloseHeader()">⌨ TERMINAL</button>
+    <button id="mob-cybaash-ai-btn" onclick="window.open('ai/','_blank','noopener,noreferrer');mobCloseHeader()">⬡ CYBAASH AI</button>
+    <button class="btn" onclick="mobOpenLeft();mobCloseHeader()">⚔ ATTACK ENGINE</button>
+    <button class="btn" onclick="mobOpenRight();mobCloseHeader()">◆ SKILL DNA</button>
+    <button class="btn" onclick="mobCloseHeader()" style="color:var(--dim);border-bottom:none">✕ CLOSE</button>
+  </div>
+</div>
+
+<!-- MOBILE LEFT DRAWER (Attack Engine) -->
+<div class="mob-drawer-overlay" id="mobOverlay" onclick="mobCloseAll()"></div>
+<div class="mob-drawer left" id="mobLeftDrawer" role="complementary" aria-label="Attack Engine">
+  <div class="mob-drawer-head">
+    <span class="mob-drawer-head-title">⚔ ATTACK ENGINE</span>
+    <button class="mob-drawer-close" onclick="mobCloseAll()">✕</button>
+  </div>
+  <div class="mob-drawer-body" id="mobLeftBody">
+    <!-- leftPanel cloned here by JS -->
+  </div>
+</div>
+
+<!-- MOBILE RIGHT DRAWER (Skill DNA) -->
+<div class="mob-drawer right" id="mobRightDrawer" role="complementary" aria-label="Skill DNA">
+  <div class="mob-drawer-head">
+    <span class="mob-drawer-head-title" style="color:var(--blue)">◆ SKILL DNA</span>
+    <button class="mob-drawer-close" onclick="mobCloseAll()">✕</button>
+  </div>
+  <div class="mob-drawer-body" id="mobRightBody">
+    <!-- rightPanel cloned here by JS -->
   </div>
 </div>
 
@@ -2788,11 +3064,12 @@ body.attacker-mode #attackerBadge { display: block; }
 
   <!-- LEFT PANEL: Attack / Defense Status -->
   <div class="panel" id="leftPanel">
-    <div class="panel-title">
+    <div class="panel-title" id="leftPanelTitle">
       <span>ATTACK ENGINE</span>
       <span class="tag red" id="redTeamStatus">IDLE</span>
     </div>
 
+    <div id="leftPanelBody">
     <div class="controls">
       <button class="btn btn-red" id="btnLaunchAtk" onclick="launchAttack()">▶ LAUNCH</button>
       <button class="btn btn-yellow" id="btnPauseAtk" onclick="togglePause()" disabled>⏸ PAUSE</button>
@@ -2843,7 +3120,8 @@ body.attacker-mode #attackerBadge { display: block; }
     <div id="skillInfluence" style="padding:4px 0">
       <!-- filled dynamically -->
     </div>
-  </div>
+  </div><!-- /leftPanelBody -->
+  </div><!-- /leftPanel -->
 
   <!-- CENTER PANEL: Network Map + Events -->
   <div class="center" id="centerPanel">
@@ -2988,7 +3266,8 @@ body.attacker-mode #attackerBadge { display: block; }
 
   <!-- RIGHT PANEL: Skill DNA + Metrics -->
   <div class="panel" id="rightPanel">
-    <div class="panel-title">SKILL DNA</div>
+    <div class="panel-title" id="rightPanelTitle">SKILL DNA</div>
+    <div id="rightPanelBody">
 
     <!-- Skill Bars — filled dynamically from data_main.json -->
     <div id="skillDNA">
@@ -3034,8 +3313,21 @@ body.attacker-mode #attackerBadge { display: block; }
       <div class="mini-metric"><span class="mini-label">NODES COMPROMISED</span><span class="mini-val red" id="nodesComp">0</span></div>
       <div class="mini-metric"><span class="mini-label">NODES SECURED</span><span class="mini-val green" id="nodesSecure">0</span></div>
     </div>
-  </div>
+    </div><!-- /rightPanelBody -->
+  </div><!-- /rightPanel -->
 
+</div><!-- /main -->
+
+<!-- MOBILE FAB BAR -->
+<div class="mob-fab-bar" id="mobFabBar" style="display:none">
+  <button class="mob-fab left-fab" onclick="mobOpenLeft()">
+    <span class="mob-fab-dot"></span>
+    ⚔ ATTACK
+  </button>
+  <button class="mob-fab right-fab" onclick="mobOpenRight()">
+    <span class="mob-fab-dot"></span>
+    ◆ DNA
+  </button>
 </div>
 
 <script>
@@ -9683,6 +9975,156 @@ Drop file or click to upload<br>
 
 })();
 
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// MOBILE DRAWER & HEADER SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+(function(){
+  var BP = 768;
+  var headerOpen = false, leftOpen = false, rightOpen = false;
+  var leftCloned = false, rightCloned = false;
+
+  function checkMob() {
+    var mob = window.innerWidth <= BP;
+    var fab = document.getElementById('mobFabBar');
+    var btn = document.getElementById('mobMenuBtn');
+    if (fab) fab.style.display = mob ? 'flex' : 'none';
+    if (btn) btn.style.display = mob ? 'flex' : 'none';
+    if (!mob) { mobCloseAll(); mobCloseHeader(); }
+  }
+  window.addEventListener('resize', checkMob);
+  window.addEventListener('DOMContentLoaded', function(){ setTimeout(checkMob, 100); });
+
+  // Clone left panel into left drawer (once, re-clone when invalidated)
+  function cloneLeft() {
+    if (leftCloned) return;
+    var src  = document.getElementById('leftPanelBody');
+    var dest = document.getElementById('mobLeftBody');
+    if (!src || !dest) return;
+    dest.innerHTML = src.innerHTML;
+    // Hide the panel-title already shown in drawer header
+    var pt = dest.querySelector('#leftPanelTitle');
+    if (pt) pt.style.display = 'none';
+    leftCloned = true;
+  }
+  function cloneRight() {
+    if (rightCloned) return;
+    var src  = document.getElementById('rightPanelBody');
+    var dest = document.getElementById('mobRightBody');
+    if (!src || !dest) return;
+    dest.innerHTML = src.innerHTML;
+    var pt = dest.querySelector('#rightPanelTitle');
+    if (pt) pt.style.display = 'none';
+    rightCloned = true;
+  }
+
+  // Open left drawer
+  window.mobOpenLeft = function() {
+    leftCloned = false; // always fresh
+    cloneLeft();
+    document.getElementById('mobLeftDrawer').classList.add('open');
+    document.getElementById('mobOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    leftOpen = true;
+  };
+  window.mobCloseLeft = function() {
+    document.getElementById('mobLeftDrawer').classList.remove('open');
+    if (!rightOpen) {
+      document.getElementById('mobOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    leftOpen = false;
+  };
+
+  // Open right drawer
+  window.mobOpenRight = function() {
+    rightCloned = false; // always fresh
+    cloneRight();
+    document.getElementById('mobRightDrawer').classList.add('open');
+    document.getElementById('mobOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    rightOpen = true;
+  };
+  window.mobCloseRight = function() {
+    document.getElementById('mobRightDrawer').classList.remove('open');
+    if (!leftOpen) {
+      document.getElementById('mobOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    rightOpen = false;
+  };
+
+  window.mobCloseAll = function() {
+    var ld = document.getElementById('mobLeftDrawer');
+    var rd = document.getElementById('mobRightDrawer');
+    var ov = document.getElementById('mobOverlay');
+    if (ld) ld.classList.remove('open');
+    if (rd) rd.classList.remove('open');
+    if (ov) ov.classList.remove('open');
+    document.body.style.overflow = '';
+    leftOpen = false; rightOpen = false;
+  };
+
+  // Header drawer toggle
+  window.mobToggleHeader = function() {
+    syncHeaderStats();
+    var d = document.getElementById('mobHeaderDrawer');
+    var b = document.getElementById('mobMenuBtn');
+    if (!d) return;
+    headerOpen = !headerOpen;
+    d.classList.toggle('open', headerOpen);
+    if (b) b.textContent = headerOpen ? '✕' : '☰';
+  };
+  window.mobCloseHeader = function() {
+    var d = document.getElementById('mobHeaderDrawer');
+    var b = document.getElementById('mobMenuBtn');
+    if (d) d.classList.remove('open');
+    if (b) b.textContent = '☰';
+    headerOpen = false;
+  };
+
+  // Close header on outside click
+  document.addEventListener('click', function(e) {
+    if (!headerOpen) return;
+    var d = document.getElementById('mobHeaderDrawer');
+    var b = document.getElementById('mobMenuBtn');
+    if (d && !d.contains(e.target) && b && !b.contains(e.target)) mobCloseHeader();
+  });
+
+  // Mirror header stats into mobile header drawer
+  var MIRROR = [
+    ['statusLabel','mStatusLabel'],
+    ['headerCertCount','mHeaderCertCount'],
+    ['threatValH','mThreatValH'],
+    ['atkCount','mAtkCount'],
+    ['defCount','mDefCount'],
+    ['scoreH','mScoreH']
+  ];
+  function syncHeaderStats() {
+    MIRROR.forEach(function(pair) {
+      var s = document.getElementById(pair[0]);
+      var d = document.getElementById(pair[1]);
+      if (s && d) { d.textContent = s.textContent; d.className = s.className; }
+    });
+    // sync pulse dot class
+    var sd = document.getElementById('statusDot');
+    var md = document.getElementById('mStatusDot');
+    if (sd && md) md.className = sd.className;
+  }
+  // Live sync on RAF when header open
+  function liveSyncLoop() {
+    if (headerOpen) syncHeaderStats();
+    requestAnimationFrame(liveSyncLoop);
+  }
+  requestAnimationFrame(liveSyncLoop);
+
+  // Escape key closes everything
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { mobCloseAll(); mobCloseHeader(); }
+  });
+
+})();
 </script>
 </body>
 </html>
