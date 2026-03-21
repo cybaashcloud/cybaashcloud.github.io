@@ -172,10 +172,76 @@ function startClock() {
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTHENTICATION
 // ─────────────────────────────────────────────────────────────────────────────
+// ── Login rate limiting constants ─────────────────────────────────────────
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutes
+
+function getLoginState() {
+  try {
+    return JSON.parse(sessionStorage.getItem('soc_login_state') || '{}');
+  } catch(_) { return {}; }
+}
+
+function setLoginState(state) {
+  sessionStorage.setItem('soc_login_state', JSON.stringify(state));
+}
+
+function checkLockout() {
+  const s = getLoginState();
+  if (!s.lockedUntil) return null;
+  const remaining = s.lockedUntil - Date.now();
+  if (remaining > 0) return remaining;
+  // Lockout expired — clear it
+  setLoginState({});
+  return null;
+}
+
+function recordFailedAttempt() {
+  const s = getLoginState();
+  const attempts = (s.attempts || 0) + 1;
+  if (attempts >= LOGIN_MAX_ATTEMPTS) {
+    setLoginState({ attempts, lockedUntil: Date.now() + LOGIN_LOCKOUT_MS });
+    return { locked: true, remaining: LOGIN_LOCKOUT_MS };
+  }
+  setLoginState({ attempts });
+  return { locked: false, attempts, remaining: LOGIN_MAX_ATTEMPTS - attempts };
+}
+
+function showLockoutTimer(ms) {
+  const errorEl = el('login-error');
+  const btn = el('login-btn') || document.querySelector('.login-btn');
+  if (btn) btn.disabled = true;
+
+  function tick() {
+    const remaining = checkLockout();
+    if (!remaining) {
+      if (errorEl) { errorEl.classList.remove('show'); errorEl.textContent = ''; }
+      if (btn) btn.disabled = false;
+      return;
+    }
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    if (errorEl) {
+      errorEl.textContent = 'Too many attempts. Locked for ' +
+        mins + 'm ' + secs.toString().padStart(2,'0') + 's';
+      errorEl.classList.add('show');
+    }
+    setTimeout(tick, 1000);
+  }
+  tick();
+}
+
 async function handleLogin(e) {
   e.preventDefault();
   const pw = el('login-password').value;
   const errorEl = el('login-error');
+
+  // ── Check lockout first ────────────────────────────────────────────────
+  const lockRemaining = checkLockout();
+  if (lockRemaining) {
+    showLockoutTimer(lockRemaining);
+    return;
+  }
 
   if (!pw) {
     errorEl.textContent = 'Password required.';
@@ -183,13 +249,13 @@ async function handleLogin(e) {
     return;
   }
 
-  // Verify against Apps Script if configured, otherwise local hash
   const hash = await sha256(pw);
 
-  // Try Apps Script token validation
+  // ── Try Apps Script token validation ──────────────────────────────────
   try {
     const verified = await callAppsScript('verifyAdmin', { token: hash });
     if (verified && verified.ok) {
+      setLoginState({}); // clear attempts on success
       grantSession();
       return;
     }
@@ -197,33 +263,45 @@ async function handleLogin(e) {
     // Falls through to local hash check
   }
 
-  // Local fallback — check stored or default hash
+  // ── Local hash check ──────────────────────────────────────────────────
   const localHash   = localStorage.getItem('soc_pw_hash');
   const defaultHash = SOC_CONFIG.passwordHash;
   const storedHash  = localHash || defaultHash;
 
-  // Debug: log hash comparison (first 8 chars only for security)
-  console.log('[SOC] Login attempt — computed:', hash.substring(0,8), 'stored:', storedHash.substring(0,8), 'match:', hash === storedHash);
+  console.log('[SOC] Login attempt — computed:', hash.substring(0,8),
+    'stored:', storedHash.substring(0,8), 'match:', hash === storedHash);
 
   if (hash === storedHash) {
+    setLoginState({}); // clear attempts on success
     grantSession();
     return;
   }
 
-  // If local hash doesn't match, try default hash as fallback
-  // (in case localStorage has a stale wrong value)
+  // Stale localStorage hash fallback
   if (localHash && hash === defaultHash) {
-    console.log('[SOC] localStorage hash stale — matched default hash, clearing old hash');
+    console.log('[SOC] Stale localStorage hash — matched default, clearing');
     localStorage.removeItem('soc_pw_hash');
+    setLoginState({});
     grantSession();
     return;
   }
 
-  errorEl.textContent = 'Invalid credentials. Access denied.';
-  errorEl.classList.add('show');
-  termLog('error', 'Failed login attempt from ' + (navigator.userAgent || 'unknown'));
+  // ── Record failed attempt ─────────────────────────────────────────────
+  const result = recordFailedAttempt();
+  termLog('error', 'Failed login attempt (' +
+    (result.locked ? 'LOCKED' : (LOGIN_MAX_ATTEMPTS - result.attempts + 1) + ' attempts left') + ')');
+
+  if (result.locked) {
+    showLockoutTimer(LOGIN_LOCKOUT_MS);
+  } else {
+    const left = LOGIN_MAX_ATTEMPTS - result.attempts;
+    errorEl.textContent = 'Invalid credentials. ' +
+      (left === 1 ? '1 attempt remaining before lockout.' : left + ' attempts remaining.');
+    errorEl.classList.add('show');
+    setTimeout(() => errorEl.classList.remove('show'), 4000);
+  }
+
   el('login-password').value = '';
-  setTimeout(() => errorEl.classList.remove('show'), 4000);
 }
 
 function grantSession() {
