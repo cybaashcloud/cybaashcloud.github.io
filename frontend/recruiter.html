@@ -1691,339 +1691,693 @@ function updateApp() {
 <script>
 // ═══════════════════════════════════════════════════════════════════════
 // CV / RESUME GENERATOR
-// Uses browser print → Save as PDF — Apple/Google level design
-// ═══════════════════════════════════════════════════════════════════════
-
+// ── PDF RESUME — premium redesign ──────────────────────────────────────────
 function generateResume() {
   const m     = (typeof D !== 'undefined' && D?.main) || {};
   const ab    = m.about || {}, ct = m.contact || {};
   const exp   = m.experience || [], sk = m.skills || [], proj = m.projects || [];
   const creds = (typeof D !== 'undefined' && D?.creds) || [];
 
-  const name     = ab.name      || 'Mohamed Aasiq';
-  const title    = ab.title     || 'Cybersecurity Specialist & Ethical Hacker';
-  const loc      = ab.location  || 'Pollachi, Tamil Nadu, India';
-  const email    = ct.email     || ab.email    || 'mohamedaasiq07@gmail.com';
-  const phone    = ct.phone     || '+91 95665 96077';
-  const linkedin = (ct.linkedin || ab.linkedin || 'https://linkedin.com/in/mohamedaasiq07')
-                    .replace(/^https?:\/\//,'');
-  const github   = (ct.github   || ab.github   || 'https://github.com/cybaash')
-                    .replace(/^https?:\/\//,'');
-  const website  = 'cybaash.github.io';
-  const bio      = ab.bio || 'Cybersecurity Specialist and Ethical Hacker with expertise in penetration testing, cloud security, network defense, and AI security.';
-  const yrs      = ab.yearsExp || '8';
-  const langs    = ct.languages || 'Tamil (Native) · Urdu (Native) · English (Professional) · Hindi';
-  const spec     = ct.specialization || 'Penetration Testing · Cloud Security · Network Defense · AI Security';
+  const name      = ab.name      || 'Mohamed Aasiq';
+  const title     = ab.title     || 'Cybersecurity Specialist & Ethical Hacker';
+  const loc       = ab.location  || 'Pollachi, Tamil Nadu, India';
+  const email     = ct.email     || ab.email    || 'mohamedaasiq07@gmail.com';
+  const phone     = ct.phone     || '+91 95665 96077';
+  const liRaw     = ct.linkedin  || ab.linkedin || 'https://linkedin.com/in/mohamedaasiq07';
+  const ghRaw     = ct.github    || ab.github   || 'https://github.com/cybaash';
+  const liShort   = liRaw.replace(/^https?:\/\/(www\.)?/,'');
+  const ghShort   = ghRaw.replace(/^https?:\/\/(www\.)?/,'');
+  const site      = 'cybaash.github.io';
+  const bio       = ab.bio || 'Dedicated Cybersecurity Specialist and Ethical Hacker with expertise in penetration testing, cloud security, network defense, and AI-augmented threat analysis. Proven track record securing complex digital infrastructures.';
+  const yrs       = ab.yearsExp || '8';
+  const langs     = ct.languages || 'Tamil · Urdu · English · Hindi';
+  const specRaw   = ct.specialization || 'Pen Testing|Cloud Security|Network Defense|AI Security';
+  const specs     = specRaw.split(/[|·,]/).map(s=>s.trim()).filter(Boolean);
   const certCount = creds.length || 334;
 
-  // ── Cert table ──────────────────────────────────────────────────────────
+  /* ── cert category breakdown ─────────────────────────────────── */
   const catMap = {};
   creds.forEach(c => {
     const cat = c.category || c.domain || 'General';
-    catMap[cat] = (catMap[cat] || 0) + 1;
+    catMap[cat] = (catMap[cat]||0) + 1;
   });
-  const catRows = Object.entries(catMap).slice(0, 7)
-    .sort((a,b) => b[1] - a[1])
-    .map(([k,v]) => `<tr><td>${k}</td><td class="nr">${v}</td></tr>`).join('') ||
-    `<tr><td>Cybersecurity &amp; Security</td><td class="nr">73</td></tr>
-     <tr><td>AI &amp; Machine Learning</td><td class="nr">51</td></tr>
-     <tr><td>Cloud &amp; DevOps</td><td class="nr">55</td></tr>
-     <tr><td>Programming</td><td class="nr">29</td></tr>
-     <tr><td>Networking &amp; Linux</td><td class="nr">12</td></tr>
-     <tr><td>Management &amp; Leadership</td><td class="nr">28</td></tr>
-     <tr><td>Data Science</td><td class="nr">9</td></tr>`;
+  const catEntries = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const topN = catEntries.length ? Math.max(...catEntries.map(([,v])=>v)) : 1;
+  const catRows = catEntries.map(([k,v]) => {
+    const pct = Math.round(v/topN*100);
+    return `<tr>
+      <td class="ct-k">${k}</td>
+      <td class="ct-bar"><div class="cb" style="width:${pct}%"></div></td>
+      <td class="ct-n">${v}</td>
+    </tr>`;
+  }).join('') || `
+    <tr><td class="ct-k">Cybersecurity</td><td class="ct-bar"><div class="cb" style="width:100%"></div></td><td class="ct-n">73</td></tr>
+    <tr><td class="ct-k">AI &amp; ML</td><td class="ct-bar"><div class="cb" style="width:70%"></div></td><td class="ct-n">51</td></tr>
+    <tr><td class="ct-k">Cloud &amp; DevOps</td><td class="ct-bar"><div class="cb" style="width:75%"></div></td><td class="ct-n">55</td></tr>
+    <tr><td class="ct-k">Programming</td><td class="ct-bar"><div class="cb" style="width:40%"></div></td><td class="ct-n">29</td></tr>
+    <tr><td class="ct-k">Management</td><td class="ct-bar"><div class="cb" style="width:38%"></div></td><td class="ct-n">28</td></tr>
+    <tr><td class="ct-k">Networking</td><td class="ct-bar"><div class="cb" style="width:16%"></div></td><td class="ct-n">12</td></tr>
+    <tr><td class="ct-k">Data Science</td><td class="ct-bar"><div class="cb" style="width:12%"></div></td><td class="ct-n">9</td></tr>`;
+  const certTotal = catEntries.reduce((s,[,v])=>s+v, 0) || certCount;
 
-  // ── Skill pills ─────────────────────────────────────────────────────────
-  const skillHTML = sk.slice(0, 5).map(cat => {
-    const items = (cat.items || []).slice(0, 7)
-      .map(i => `<span class="pill">${i.name.length > 34 ? i.name.slice(0,32) + '…' : i.name}</span>`)
-      .join('');
-    return `<div class="skb"><div class="skn">${cat.name}</div><div class="skp">${items}</div></div>`;
+  /* ── experience ──────────────────────────────────────────────── */
+  const expHTML = exp.map((e, i) => `
+    <div class="exp${i===exp.length-1?' last':''}">
+      <div class="exg">
+        <div>
+          <div class="exr">${e.role||''}</div>
+          <div class="exc">${[e.company, e.location, e.country].filter(Boolean).join(' · ')}</div>
+        </div>
+        <div class="exright">
+          <div class="exd">${e.startDate||''} – ${e.current?'Present':(e.endDate||'')}</div>
+          ${e.type?`<span class="etype">${e.type}</span>`:''}
+        </div>
+      </div>
+      ${e.desc?`<p class="exdesc">${e.desc}</p>`:''}
+      ${(e.achievements||[]).length?`<ul class="ach">${e.achievements.slice(0,3).map(a=>`<li>${a}</li>`).join('')}</ul>`:''}
+    </div>`).join('');
+
+  /* ── projects ────────────────────────────────────────────────── */
+  const projHTML = proj.slice(0,3).map((p,i) => `
+    <div class="pr${i===Math.min(proj.length,3)-1?' last':''}">
+      <div class="prg">
+        <span class="prn">${p.title||''}</span>
+        ${p.status?`<span class="prs">${p.status}</span>`:''}
+        ${p.liveUrl?`<a class="pru" href="${p.liveUrl}">${p.liveUrl.replace(/^https?:\/\//,'')}</a>`:''}
+      </div>
+      ${p.desc?`<p class="prd">${p.desc.slice(0,200)}${p.desc.length>200?'…':''}</p>`:''}
+      ${p.tech?.length?`<div class="ptags">${p.tech.slice(0,7).map(t=>`<span class="ptag">${t}</span>`).join('')}</div>`:''}
+    </div>`).join('');
+
+  /* ── skills ──────────────────────────────────────────────────── */
+  const skillHTML = sk.slice(0,6).map(cat => {
+    const top = (cat.items||[]).slice(0,6).map(i=>i.name.length>30?i.name.slice(0,28)+'…':i.name);
+    return `<div class="skc">
+      <div class="skh">${cat.name}</div>
+      <div class="skl">${top.map(n=>`<span class="ski">${n}</span>`).join('')}</div>
+    </div>`;
   }).join('');
 
-  // ── Experience ──────────────────────────────────────────────────────────
-  const expHTML = exp.map((e, idx) => `
-    <div class="exp${idx < exp.length - 1 ? '' : ' last'}">
-      <div class="exh">
-        <div>
-          <div class="exr">${e.role || ''}</div>
-          <div class="exc">${e.company || ''}${e.location ? ' · ' + e.location : ''}${e.country ? ' ' + e.country : ''}</div>
-        </div>
-        <div class="exmeta">
-          <span class="exd">${e.startDate || ''} – ${e.current ? 'Present' : (e.endDate || '')}</span>
-          ${e.type ? `<span class="ext">${e.type}</span>` : ''}
-        </div>
-      </div>
-      ${e.desc ? `<p class="exdesc">${e.desc}</p>` : ''}
-      ${(e.achievements||[]).length ? `<ul class="ach">${e.achievements.map(a=>`<li>${a}</li>`).join('')}</ul>` : ''}
-    </div>`).join('');
+  const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 
-  // ── Projects ────────────────────────────────────────────────────────────
-  const projHTML = proj.slice(0, 3).map(p => `
-    <div class="pr">
-      <div class="prh">
-        <span class="prn">${p.title || ''}</span>
-        ${p.status ? `<span class="prt">${p.status}</span>` : ''}
-        ${p.liveUrl ? `<a class="prl" href="${p.liveUrl}">${p.liveUrl.replace(/^https?:\/\//,'')}</a>` : ''}
-      </div>
-      ${p.desc ? `<p class="prd">${p.desc.slice(0, 180)}${p.desc.length > 180 ? '…' : ''}</p>` : ''}
-      ${p.tech?.length ? `<div class="prtechs">${p.tech.slice(0,6).map(t=>`<span class="ptag">${t}</span>`).join('')}</div>` : ''}
-    </div>`).join('');
-
-  const today = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
-
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+  const html = `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${name.replace(/ /g,'_')}_Resume_${new Date().getFullYear()}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+/* ── RESET ──────────────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root{
-  --ink:  #0d0d14;
-  --ink2: #2c2c3e;
-  --mu:   #72728a;
-  --mu2:  #a0a0b8;
-  --ac:   #0052cc;
-  --ac2:  #e8f0ff;
-  --line: #e4e4ef;
-  --bg:   #ffffff;
-  --bg2:  #f8f8fc;
-  --tag:  #f0f0f8;
-  --green:#006644;
-  --gbg:  #e3f5ec;
+  --ink:    #0c0c14;
+  --ink2:   #24243a;
+  --mu:     #64698a;
+  --mu2:    #9da2c0;
+  --ac:     #1a4fd6;
+  --ac-t:   rgba(26,79,214,.08);
+  --line:   #e4e6f0;
+  --line2:  #eff0f8;
+  --bg:     #ffffff;
+  --sb-bg:  #f7f8fc;
+  --sb-bd:  #eaecf6;
+  --ok:     #15803d;
+  --ok-bg:  #dcfce7;
+  --tag:    #f0f1fa;
+  --tag-bd: #dde0f2;
 }
-html,body{background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:10pt;line-height:1.55;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 
-/* ── PAGE ─────────────────────────────────────────────────────────────── */
-.page{max-width:800px;margin:0 auto;padding:56px 60px 60px}
+/* ── BASE ────────────────────────────────────────────────────────────── */
+html,body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Inter',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+  font-size:9.5pt;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-feature-settings:'kern' 1,'liga' 1,'calt' 1;
+}
 
-/* ── HEADER ───────────────────────────────────────────────────────────── */
-.hdr{padding-bottom:28px;margin-bottom:30px;border-bottom:2px solid var(--ink)}
-.hdr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:18px}
-.name{font-size:32pt;font-weight:800;letter-spacing:-1.5px;line-height:1;color:var(--ink)}
-.htitle{font-size:11pt;font-weight:500;color:var(--ac);margin-top:8px;letter-spacing:.01em}
-.hlinks{text-align:right;display:flex;flex-direction:column;gap:5px;padding-top:4px}
-.hlinks a{font-size:8.5pt;color:var(--mu);text-decoration:none;display:flex;align-items:center;justify-content:flex-end;gap:5px}
-.hlinks a:hover{color:var(--ac)}
-.hlinks a span.lbl{font-size:7.5pt;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mu2);min-width:62px;text-align:right}
-.hlinks a span.val{color:var(--ac)}
-.hmeta{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
-.hmeta-item{display:flex;align-items:center;gap:6px;font-size:9pt;color:var(--mu)}
-.hmeta-item svg{flex-shrink:0;opacity:.5}
-.hmeta-item a{color:var(--ac);text-decoration:none}
+/* ── PAGE SHELL ──────────────────────────────────────────────────────── */
+.page{
+  max-width:800px;
+  margin:0 auto;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  min-height:100%;
+}
 
-/* ── SECTION ──────────────────────────────────────────────────────────── */
-.sec{margin-bottom:28px}
-.sh{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.sh-line{flex:1;height:1px;background:var(--line)}
-.sh-text{font-size:7.5pt;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mu);white-space:nowrap}
-.sh-dot{width:5px;height:5px;background:var(--ac);border-radius:50%;flex-shrink:0}
+/* ══════════════════════════════════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════════════════════════════════ */
+.hdr{
+  padding:48px 48px 32px;
+  border-bottom:1.5px solid var(--ink);
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:32px;
+  align-items:end;
+}
+.hdr-l{}
+.name{
+  font-size:36pt;
+  font-weight:800;
+  letter-spacing:-2px;
+  line-height:.95;
+  color:var(--ink);
+  margin-bottom:9px;
+}
+.jtitle{
+  font-size:10.5pt;
+  font-weight:500;
+  color:var(--ac);
+  letter-spacing:.01em;
+  margin-bottom:16px;
+}
+.hmeta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:0;
+}
+.hm{
+  font-size:8.5pt;
+  color:var(--mu);
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding-right:16px;
+  margin-right:16px;
+  border-right:1px solid var(--line);
+}
+.hm:last-child{border-right:none;padding-right:0;margin-right:0}
+.hm svg{opacity:.45;flex-shrink:0}
+.hm a{color:var(--ac);text-decoration:none}
+.hdr-r{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  align-items:flex-end;
+  padding-bottom:2px;
+}
+.hlink{
+  font-size:8pt;
+  color:var(--mu);
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  line-height:1;
+}
+.hlink svg{color:var(--mu2);flex-shrink:0}
+.hlink:hover{color:var(--ac)}
+.hlink span{color:var(--ac)}
 
-/* ── PROFILE GRID ─────────────────────────────────────────────────────── */
-.pg{display:grid;grid-template-columns:1fr 188px;gap:36px;align-items:start}
-.bio{font-size:9.5pt;color:var(--ink2);line-height:1.75}
-.bio+.bio{margin-top:10px}
-.spec-row{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
-.spec-pill{font-size:8pt;font-weight:500;color:var(--ac);background:var(--ac2);padding:3px 9px;border-radius:99px}
-.lang-row{margin-top:10px;font-size:8.5pt;color:var(--mu)}
-.stats{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:4px;overflow:hidden}
-.stat-item{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
-.stat-item:last-child{border-bottom:none}
-.stat-n{font-size:26pt;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
-.stat-n sup{font-size:12pt;font-weight:600;vertical-align:super}
-.stat-l{font-size:7pt;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin-top:2px}
+/* ══════════════════════════════════════════════════════════════════════
+   BODY GRID — sidebar + main
+══════════════════════════════════════════════════════════════════════ */
+.body{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  gap:0;
+  align-items:start;
+}
 
-/* ── TWO-COL MAIN ─────────────────────────────────────────────────────── */
-.mc{display:grid;grid-template-columns:1fr 200px;gap:36px;align-items:start}
+/* ── SIDEBAR ─────────────────────────────────────────────────────────── */
+.sb{
+  background:var(--sb-bg);
+  border-right:1px solid var(--sb-bd);
+  padding:32px 24px 40px;
+  display:flex;
+  flex-direction:column;
+  gap:28px;
+}
+/* sidebar section head */
+.sbh{
+  font-size:6.5pt;
+  font-weight:700;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--mu);
+  margin-bottom:12px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.sbh::after{
+  content:'';
+  flex:1;
+  height:1px;
+  background:var(--sb-bd);
+}
 
-/* ── EXPERIENCE ───────────────────────────────────────────────────────── */
-.exp{padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+/* ── STATS ── */
+.stats{display:flex;flex-direction:column;gap:0}
+.stat{
+  padding:12px 0;
+  border-bottom:1px solid var(--line2);
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+.stat:first-child{padding-top:0}
+.stat:last-child{border-bottom:none;padding-bottom:0}
+.sn{
+  font-size:22pt;
+  font-weight:800;
+  letter-spacing:-1px;
+  line-height:1;
+  color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.sn sup{font-size:10pt;vertical-align:super;font-weight:700}
+.sl{font-size:7pt;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+
+/* ── CERT TABLE ── */
+.cert-verified{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-size:7.5pt;
+  font-weight:600;
+  color:var(--ok);
+  background:var(--ok-bg);
+  padding:3px 9px;
+  border-radius:99px;
+  margin-bottom:12px;
+  letter-spacing:.03em;
+}
+.ct{width:100%;border-collapse:collapse}
+.ct tr{vertical-align:middle}
+.ct-k{
+  font-size:8pt;
+  color:var(--ink2);
+  padding:3.5px 0;
+  width:auto;
+  white-space:nowrap;
+  padding-right:8px;
+}
+.ct-bar{width:60px;padding:3.5px 0}
+.cb{height:3px;background:var(--ac);border-radius:99px;opacity:.55;min-width:2px}
+.ct-n{
+  font-size:8pt;
+  font-weight:700;
+  color:var(--ink);
+  text-align:right;
+  padding:3.5px 0;
+  padding-left:8px;
+  font-variant-numeric:tabular-nums;
+  font-family:'JetBrains Mono',monospace;
+}
+.ct-total .ct-k{font-weight:700;color:var(--ink);padding-top:7px;border-top:1px solid var(--line)}
+.ct-total .ct-n{font-weight:800;padding-top:7px;border-top:1px solid var(--line)}
+.ct-total .ct-bar{padding-top:7px;border-top:1px solid var(--line)}
+
+/* ── LINKS ── */
+.links{display:flex;flex-direction:column;gap:10px}
+.link-item{}
+.link-lbl{font-size:6.5pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mu2);margin-bottom:2px}
+.link-val{display:flex;align-items:center;gap:5px}
+.link-val a{font-size:8pt;color:var(--ac);text-decoration:none;line-height:1.3}
+.link-val svg{color:var(--mu2);flex-shrink:0}
+
+/* ── LANGS ── */
+.lang-list{font-size:8.5pt;color:var(--ink2);line-height:1.9}
+.lang-item{display:flex;align-items:baseline;gap:6px}
+.lang-item::before{content:'·';color:var(--ac);font-weight:700;font-size:11pt;line-height:1}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MAIN
+══════════════════════════════════════════════════════════════════════ */
+.main{
+  padding:32px 36px 40px 36px;
+  display:flex;
+  flex-direction:column;
+  gap:26px;
+}
+
+/* ── SECTION ─────────────────────────────────────────────────────────── */
+.sec{}
+.sh{
+  font-size:6.5pt;
+  font-weight:700;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--mu);
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding-bottom:9px;
+  border-bottom:1.5px solid var(--ink);
+}
+.sh-ac{
+  width:16px;
+  height:1.5px;
+  background:var(--ac);
+  flex-shrink:0;
+}
+
+/* ── SUMMARY ─────────────────────────────────────────────────────────── */
+.bio{font-size:9.5pt;color:var(--ink2);line-height:1.75;margin-bottom:12px}
+.spec-grid{display:flex;flex-wrap:wrap;gap:5px}
+.spec-chip{
+  font-size:8pt;
+  font-weight:500;
+  color:var(--ac);
+  background:var(--ac-t);
+  padding:3px 10px;
+  border-radius:3px;
+  letter-spacing:.01em;
+}
+
+/* ── EXPERIENCE ──────────────────────────────────────────────────────── */
+.exp{padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line)}
 .exp.last{border-bottom:none;padding-bottom:0;margin-bottom:0}
-.exh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px}
+.exg{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:5px}
 .exr{font-size:11pt;font-weight:700;color:var(--ink);line-height:1.2}
 .exc{font-size:8.5pt;color:var(--mu);margin-top:3px}
-.exmeta{text-align:right;flex-shrink:0}
-.exd{display:block;font-size:8pt;color:var(--mu);font-variant-numeric:tabular-nums;white-space:nowrap}
-.ext{display:inline-block;margin-top:4px;font-size:7pt;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ac);background:var(--ac2);padding:2px 7px;border-radius:99px}
-.exdesc{font-size:9pt;color:var(--ink2);line-height:1.7;margin-bottom:8px}
-.ach{list-style:none;display:flex;flex-direction:column;gap:4px}
-.ach li{font-size:8.5pt;color:var(--ink2);padding-left:14px;position:relative;line-height:1.55}
-.ach li::before{content:'·';position:absolute;left:0;top:0;color:var(--ac);font-weight:700;font-size:12pt;line-height:1.1}
-
-/* ── CERTIFICATIONS TABLE ─────────────────────────────────────────────── */
-.cert-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gbg);color:var(--green);font-size:7.5pt;font-weight:700;letter-spacing:.08em;padding:4px 10px;border-radius:99px;margin-bottom:12px}
-.cert-badge::before{content:'✓';font-weight:900}
-.ct{width:100%;border-collapse:collapse;font-size:8.5pt}
-.ct thead th{font-size:7pt;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);border-bottom:1.5px solid var(--ink);padding:4px 6px;text-align:left}
-.ct thead th:last-child{text-align:right}
-.ct tbody td{padding:5px 6px;border-bottom:1px solid var(--line);color:var(--ink2)}
-.ct tbody tr:last-child td{border-bottom:none}
-.nr{text-align:right;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
-.ctot td{font-weight:800;color:var(--ink);border-top:1.5px solid var(--ink)!important;padding-top:7px}
-
-/* ── SIDEBAR LINKS ────────────────────────────────────────────────────── */
-.ll{display:flex;flex-direction:column;gap:8px}
-.ll a{font-size:8.5pt;color:var(--ac);text-decoration:none;display:flex;align-items:center;gap:6px;line-height:1.3}
-.ll a svg{flex-shrink:0;color:var(--mu2)}
-.ll-lbl{font-size:7pt;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);display:block;margin-bottom:2px}
-
-/* ── SKILLS ───────────────────────────────────────────────────────────── */
-.skills-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 28px}
-.skb{display:flex;flex-direction:column;gap:6px}
-.skn{font-size:7.5pt;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
-.skp{display:flex;flex-wrap:wrap;gap:4px}
-.pill{font-size:8pt;color:var(--ink2);background:var(--tag);padding:3px 9px;border:1px solid var(--line);border-radius:2px;white-space:nowrap}
-
-/* ── PROJECTS ─────────────────────────────────────────────────────────── */
-.pr{padding:10px 0;border-bottom:1px solid var(--line)}
-.pr:first-child{padding-top:0}
-.pr:last-child{border-bottom:none;padding-bottom:0}
-.prh{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;flex-wrap:wrap}
-.prn{font-size:10pt;font-weight:700;color:var(--ink)}
-.prt{font-size:7pt;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--gbg);color:var(--green);padding:2px 7px;border-radius:99px}
-.prl{font-size:8pt;color:var(--ac);text-decoration:none;margin-left:auto;font-variant-numeric:tabular-nums}
-.prd{font-size:8.5pt;color:var(--ink2);line-height:1.65}
-.prtechs{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.ptag{font-size:7.5pt;color:var(--mu);background:var(--tag);padding:2px 7px;border-radius:2px;border:1px solid var(--line)}
-
-/* ── FOOTER ───────────────────────────────────────────────────────────── */
-.ft{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:8pt;color:var(--mu)}
-.ft a{color:var(--ac);text-decoration:none}
-.ft-av{font-weight:600;color:var(--ink2)}
-
-/* ── PRINT ────────────────────────────────────────────────────────────── */
-@media print{
-  html,body{font-size:9.5pt;background:#fff}
-  .page{padding:0;max-width:100%}
-  @page{size:A4;margin:14mm 16mm}
-  .exp,.sec,.skb,.pr{break-inside:avoid}
-  a{color:var(--ac)!important;text-decoration:none!important}
-  .hlinks a span.val,.ll a,.prl,.hmeta-item a{color:var(--ac)!important}
+.exright{text-align:right;flex-shrink:0}
+.exd{
+  font-size:7.5pt;
+  color:var(--mu);
+  font-family:'JetBrains Mono',monospace;
+  white-space:nowrap;
+  display:block;
+  margin-bottom:4px;
 }
-/* ── SCREEN CHROME ────────────────────────────────────────────────────── */
+.etype{
+  font-size:6.5pt;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ac);
+  background:var(--ac-t);
+  padding:2px 7px;
+  border-radius:3px;
+}
+.exdesc{font-size:8.5pt;color:var(--ink2);line-height:1.7;margin:7px 0 8px}
+.ach{list-style:none;display:flex;flex-direction:column;gap:4px;padding-left:14px}
+.ach li{
+  font-size:8.5pt;
+  color:var(--ink2);
+  position:relative;
+  line-height:1.55;
+}
+.ach li::before{
+  content:'▸';
+  position:absolute;
+  left:-14px;
+  top:0;
+  color:var(--ac);
+  font-size:8pt;
+  line-height:1.6;
+}
+
+/* ── PROJECTS ────────────────────────────────────────────────────────── */
+.pr{padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.pr.last{border-bottom:none;padding-bottom:0;margin-bottom:0}
+.prg{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+.prn{font-size:10pt;font-weight:700;color:var(--ink)}
+.prs{
+  font-size:6.5pt;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ok);
+  background:var(--ok-bg);
+  padding:2px 7px;
+  border-radius:99px;
+}
+.pru{
+  font-size:7.5pt;
+  color:var(--ac);
+  text-decoration:none;
+  font-family:'JetBrains Mono',monospace;
+  margin-left:auto;
+}
+.prd{font-size:8.5pt;color:var(--ink2);line-height:1.65;margin-bottom:7px}
+.ptags{display:flex;flex-wrap:wrap;gap:4px}
+.ptag{
+  font-size:7.5pt;
+  color:var(--mu);
+  background:var(--tag);
+  border:1px solid var(--tag-bd);
+  padding:2px 7px;
+  border-radius:2px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SKILLS — full-width strip below body grid
+══════════════════════════════════════════════════════════════════════ */
+.skills-strip{
+  border-top:1px solid var(--line);
+  padding:24px 48px 32px;
+}
+.skills-sh{
+  font-size:6.5pt;
+  font-weight:700;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--mu);
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.skills-sh::after{content:'';flex:1;height:1px;background:var(--line)}
+.skills-sh-ac{width:16px;height:1.5px;background:var(--ac);flex-shrink:0}
+.skgrid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px 32px;
+}
+.skc{}
+.skh{
+  font-size:7.5pt;
+  font-weight:700;
+  color:var(--ink);
+  letter-spacing:.04em;
+  margin-bottom:7px;
+  padding-bottom:5px;
+  border-bottom:1px solid var(--line);
+}
+.skl{display:flex;flex-wrap:wrap;gap:4px}
+.ski{
+  font-size:7.5pt;
+  color:var(--ink2);
+  background:var(--tag);
+  border:1px solid var(--tag-bd);
+  padding:2px 7px;
+  border-radius:2px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════════════════════════════════ */
+.ft{
+  padding:14px 48px;
+  border-top:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:7.5pt;
+  color:var(--mu);
+}
+.ft a{color:var(--ac);text-decoration:none}
+.ft strong{color:var(--ink2);font-weight:600}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PRINT
+══════════════════════════════════════════════════════════════════════ */
+@media print{
+  html,body{font-size:9pt;background:#fff}
+  @page{size:A4;margin:10mm 12mm}
+  .page{max-width:100%}
+  .hdr{padding:0 0 20px}
+  .body{grid-template-columns:200px 1fr}
+  .sb{padding:20px 20px 0}
+  .main{padding:20px 24px 0 24px}
+  .skills-strip{padding:16px 0 0}
+  .ft{padding:10px 0 0}
+  .exp,.pr,.skc{break-inside:avoid}
+  a{color:var(--ac)!important;text-decoration:none!important}
+  .hlink span,.link-val a,.pru,.hm a{color:var(--ac)!important}
+  .name{font-size:30pt}
+}
+
+/* ── SCREEN CHROME ── */
 @media screen{
-  body{background:#dde1ea}
-  .page{box-shadow:0 4px 40px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.08);margin:40px auto;border-radius:3px}
+  body{background:#d8dce8;padding:32px 0 48px}
+  .page{
+    box-shadow:0 2px 8px rgba(0,0,0,.08),0 8px 40px rgba(0,0,0,.1);
+    border-radius:4px;
+    overflow:hidden;
+  }
 }
 </style></head><body><div class="page">
 
-<!-- HEADER -->
+<!-- ════════════════════ HEADER ════════════════════ -->
 <div class="hdr">
-  <div class="hdr-top">
-    <div>
-      <div class="name">${name}</div>
-      <div class="htitle">${title}</div>
-    </div>
-    <div class="hlinks">
-      <a href="mailto:${email}"><span class="lbl">Email</span><span class="val">${email}</span></a>
-      <a href="tel:${phone.replace(/\s/g,'')}"><span class="lbl">Phone</span><span class="val">${phone}</span></a>
-      <a href="https://${linkedin}"><span class="lbl">LinkedIn</span><span class="val">${linkedin}</span></a>
-      <a href="https://${github}"><span class="lbl">GitHub</span><span class="val">${github}</span></a>
-      <a href="https://${website}"><span class="lbl">Portfolio</span><span class="val">${website}</span></a>
-    </div>
-  </div>
-  <div class="hmeta">
-    <div class="hmeta-item">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-      ${loc}
-    </div>
-    <div class="hmeta-item">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-      ${yrs}+ Years Experience
-    </div>
-    <div class="hmeta-item">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      ${certCount} Verified Certifications
-    </div>
-  </div>
-</div>
-
-<!-- PROFILE -->
-<div class="sec">
-  <div class="sh"><span class="sh-dot"></span><span class="sh-text">Profile</span><span class="sh-line"></span></div>
-  <div class="pg">
-    <div>
-      <p class="bio">${bio}</p>
-      <div class="spec-row">${spec.split(/[·|,]/).map(s=>s.trim()).filter(Boolean).map(s=>`<span class="spec-pill">${s}</span>`).join('')}</div>
-      <p class="lang-row">${langs}</p>
-    </div>
-    <div class="stats">
-      <div class="stat-item"><div class="stat-n">${certCount}</div><div class="stat-l">Certifications</div></div>
-      <div class="stat-item"><div class="stat-n">${yrs}<sup>+</sup></div><div class="stat-l">Years Exp.</div></div>
-      <div class="stat-item"><div class="stat-n">8</div><div class="stat-l">Domains</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- MAIN TWO-COL -->
-<div class="mc">
-  <div>
-    <!-- EXPERIENCE -->
-    ${expHTML ? `<div class="sec"><div class="sh"><span class="sh-dot"></span><span class="sh-text">Experience</span><span class="sh-line"></span></div>${expHTML}</div>` : ''}
-    <!-- PROJECTS -->
-    ${projHTML ? `<div class="sec"><div class="sh"><span class="sh-dot"></span><span class="sh-text">Projects</span><span class="sh-line"></span></div>${projHTML}</div>` : ''}
-  </div>
-  <div>
-    <!-- CERTIFICATIONS -->
-    <div class="sec">
-      <div class="sh"><span class="sh-dot"></span><span class="sh-text">Certifications</span><span class="sh-line"></span></div>
-      <div class="cert-badge">${certCount} Verified</div>
-      <table class="ct">
-        <thead><tr><th>Domain</th><th>Count</th></tr></thead>
-        <tbody>
-          ${catRows}
-          <tr class="ctot"><td>Total</td><td class="nr">${certCount}</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <!-- LINKS -->
-    <div class="sec" style="margin-top:8px">
-      <div class="sh"><span class="sh-dot"></span><span class="sh-text">Links</span><span class="sh-line"></span></div>
-      <div class="ll">
-        <div>
-          <span class="ll-lbl">LinkedIn</span>
-          <a href="https://${linkedin}">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
-            ${linkedin}
-          </a>
-        </div>
-        <div>
-          <span class="ll-lbl">GitHub</span>
-          <a href="https://${github}">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
-            ${github}
-          </a>
-        </div>
-        <div>
-          <span class="ll-lbl">Portfolio</span>
-          <a href="https://${website}">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-            ${website}
-          </a>
-        </div>
+  <div class="hdr-l">
+    <div class="name">${name}</div>
+    <div class="jtitle">${title}</div>
+    <div class="hmeta">
+      <div class="hm">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${loc}
+      </div>
+      <div class="hm">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <a href="mailto:${email}">${email}</a>
+      </div>
+      <div class="hm">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+        ${phone}
       </div>
     </div>
   </div>
+  <div class="hdr-r">
+    <a class="hlink" href="https://${liShort}">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+      <span>${liShort}</span>
+    </a>
+    <a class="hlink" href="https://${ghShort}">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+      <span>${ghShort}</span>
+    </a>
+    <a class="hlink" href="https://${site}">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+      <span>${site}</span>
+    </a>
+  </div>
 </div>
 
-<!-- SKILLS -->
-${skillHTML ? `<div class="sec"><div class="sh"><span class="sh-dot"></span><span class="sh-text">Technical Skills</span><span class="sh-line"></span></div><div class="skills-grid">${skillHTML}</div></div>` : ''}
+<!-- ════════════════════ BODY ════════════════════ -->
+<div class="body">
 
-<!-- FOOTER -->
+  <!-- SIDEBAR -->
+  <div class="sb">
+
+    <!-- Stats -->
+    <div>
+      <div class="sbh">At a glance</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="sn">${certCount}</div>
+          <div class="sl">Certifications</div>
+        </div>
+        <div class="stat">
+          <div class="sn">${yrs}<sup>+</sup></div>
+          <div class="sl">Years exp.</div>
+        </div>
+        <div class="stat">
+          <div class="sn">8</div>
+          <div class="sl">Domains</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Certifications breakdown -->
+    <div>
+      <div class="sbh">Certifications</div>
+      <div class="cert-verified">✓ ${certCount} Verified</div>
+      <table class="ct">
+        <tbody>
+          ${catRows}
+          <tr class="ct-total">
+            <td class="ct-k">Total</td>
+            <td class="ct-bar"></td>
+            <td class="ct-n">${certTotal}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Languages -->
+    <div>
+      <div class="sbh">Languages</div>
+      <div class="lang-list">
+        ${langs.split(/[·,]/).map(l=>l.trim()).filter(Boolean).map(l=>`<div class="lang-item">${l}</div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Links -->
+    <div>
+      <div class="sbh">Links</div>
+      <div class="links">
+        <div class="link-item">
+          <div class="link-lbl">LinkedIn</div>
+          <div class="link-val">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+            <a href="https://${liShort}">${liShort}</a>
+          </div>
+        </div>
+        <div class="link-item">
+          <div class="link-lbl">GitHub</div>
+          <div class="link-val">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+            <a href="https://${ghShort}">${ghShort}</a>
+          </div>
+        </div>
+        <div class="link-item">
+          <div class="link-lbl">Portfolio</div>
+          <div class="link-val">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            <a href="https://${site}">${site}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sb -->
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- Profile -->
+    <div class="sec">
+      <div class="sh"><div class="sh-ac"></div>Profile</div>
+      <p class="bio">${bio}</p>
+      <div class="spec-grid">${specs.map(s=>`<span class="spec-chip">${s}</span>`).join('')}</div>
+    </div>
+
+    <!-- Experience -->
+    ${expHTML ? `<div class="sec">
+      <div class="sh"><div class="sh-ac"></div>Experience</div>
+      ${expHTML}
+    </div>` : ''}
+
+    <!-- Projects -->
+    ${projHTML ? `<div class="sec">
+      <div class="sh"><div class="sh-ac"></div>Projects</div>
+      ${projHTML}
+    </div>` : ''}
+
+  </div><!-- /main -->
+</div><!-- /body -->
+
+<!-- ════════════════════ SKILLS ════════════════════ -->
+${skillHTML ? `<div class="skills-strip">
+  <div class="skills-sh"><div class="skills-sh-ac"></div>Technical Skills</div>
+  <div class="skgrid">${skillHTML}</div>
+</div>` : ''}
+
+<!-- ════════════════════ FOOTER ════════════════════ -->
 <div class="ft">
-  <span class="ft-av">${name}</span>
-  <span><a href="https://${website}">${website}</a> · Generated ${today}</span>
+  <strong>${name} · ${title}</strong>
+  <span><a href="https://${site}">${site}</a> · Generated ${today}</span>
 </div>
 
-</div>
+</div><!-- /page -->
 <script>
 if(document.fonts){document.fonts.ready.then(()=>setTimeout(()=>window.print(),500));}
 else{window.onload=()=>setTimeout(()=>window.print(),700);}
 <\/script></body></html>`;
 
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const blob = new Blob([html], { type:'text/html;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const win  = window.open(url, '_blank', 'noopener,noreferrer');
   if (!win) { alert('Pop-up blocked — allow pop-ups for this site and try again.'); URL.revokeObjectURL(url); return; }
