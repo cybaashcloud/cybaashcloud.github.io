@@ -1,17 +1,17 @@
 /**
- * CyberBot — Frontend Script (AWS Free Tier / Static Mode)
+ * CYBAASH AI — Frontend Script (AWS Free Tier / Static Mode)
  * All AI powered by Gemini directly — no backend required.
  * Password analysis runs 100% client-side.
  */
 
 // Route all Gemini calls through Cloudflare Worker — key never in browser
-const PROXY_URL = 'https://cybaash.mohamedaasiq07.workers.dev';
+const PROXY_URL = 'https://cybaash-gemini.workers.dev';
 
 const CONFIG = {
   geminiKey:   '',  // unused when PROXY_URL is set
   geminiModel: 'gemini-2.5-flash-lite',
   maxHistory:  10,
-  systemPrompt: `You are CyberBot — an expert cybersecurity assistant for educational and ethical purposes.
+  systemPrompt: `You are CYBAASH AI — an expert cybersecurity assistant for educational and ethical purposes.
 Explain vulnerabilities (SQLi, XSS, CSRF, buffer overflows, RCE, LFI, SSRF), teach secure coding,
 guide penetration testing concepts (CTF/lab only), and advise on system hardening.
 Rules: Never help attack real systems. Always use educational context. Use markdown formatting.
@@ -115,7 +115,7 @@ async function callGeminiAnalyze(prompt) {
 
 function localFallback(msg) {
   const m = msg.toLowerCase();
-  if (/hi|hello|hey/.test(m)) return { reply: '## CYBAASH CyberBot ⚡\n\nSet a **Gemini API key** in Admin → Settings to enable full AI responses.\n\nAsk me about: SQLi, XSS, CSRF, buffer overflows, OWASP Top 10, pentesting.', tokens: null };
+  if (/hi|hello|hey/.test(m)) return { reply: '## CYBAASH CYBAASH AI ⚡\n\nSet a **Gemini API key** in Admin → Settings to enable full AI responses.\n\nAsk me about: SQLi, XSS, CSRF, buffer overflows, OWASP Top 10, pentesting.', tokens: null };
   if (/sqli|sql inject/.test(m)) return { reply: '## SQL Injection\n\n**Fix:** Use parameterized queries:\n```python\ncursor.execute("SELECT * FROM users WHERE id=%s", (id,))\n```\n\n*Set a Gemini API key for full AI explanations.*', tokens: null };
   if (/xss|cross.site/.test(m)) return { reply: '## Cross-Site Scripting (XSS)\n\n**Fix:** Escape output and use Content-Security-Policy headers.\n\n*Set a Gemini API key for full AI explanations.*', tokens: null };
   return { reply: '**Demo mode** — Set your Gemini API key in **Admin → Settings → Gemini AI Configuration** to enable full AI responses.', tokens: null };
@@ -154,7 +154,7 @@ function fillAndSend(message) {
 }
 
 function renderWelcome() {
-  appendMessage('bot', `## CyberBot AI ⚡\n\nYour cybersecurity assistant. Ask me about:\n\n- **Vulnerabilities** — SQLi, XSS, CSRF, buffer overflows\n- **Secure coding** — best practices, code review\n- **Pen testing** — concepts and methodology (CTF/lab only)\n- **Tools** — use the sidebar to analyze passwords, URLs, and code\n\n*Educational use only. Never target real systems without permission.*`, [], null, true);
+  appendMessage('bot', `## CYBAASH AI AI ⚡\n\nYour cybersecurity assistant. Ask me about:\n\n- **Vulnerabilities** — SQLi, XSS, CSRF, buffer overflows\n- **Secure coding** — best practices, code review\n- **Pen testing** — concepts and methodology (CTF/lab only)\n- **Tools** — use the sidebar to analyze passwords, URLs, and code\n\n*Educational use only. Never target real systems without permission.*`, [], null, true);
 }
 
 function appendMessage(role, text, flags = [], tokens = null, isFirst = false, isError = false) {

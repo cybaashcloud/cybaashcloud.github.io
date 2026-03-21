@@ -2396,9 +2396,9 @@ const AI_CONFIG_DEFAULTS = {
   max_tokens:           '1024',
   max_tokens_premium:   '1024',
   temperature:          '0.4',
-  bot_name:             'CyberBot',
+  bot_name:             'CYBAASH AI',
   system_prompt:
-    'You are CyberBot — an expert cybersecurity assistant for educational and ethical purposes.\n' +
+    'You are CYBAASH AI — an expert cybersecurity assistant for educational and ethical purposes.\n' +
     'Explain vulnerabilities (SQLi, XSS, CSRF, buffer overflows, RCE, LFI, SSRF), teach secure coding,\n' +
     'guide penetration testing concepts (CTF/lab only), and advise on system hardening.\n' +
     'Rules: Never help attack real systems. Always use educational context. Use markdown formatting.\n' +

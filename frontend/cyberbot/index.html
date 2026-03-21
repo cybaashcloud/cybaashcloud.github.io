@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>CyberBot — AI Cybersecurity Assistant</title>
+<title>CYBAASH AI — AI Cybersecurity Assistant</title>
 <meta name="description" content="AI-powered cybersecurity assistant by Mohamed Aasiq.">
 <meta name="theme-color" content="#030a0f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -516,7 +516,7 @@ textarea, input, select { font: inherit; color: inherit; }
   * { animation: none !important; transition: none !important; }
 }
 
-/* ── CYBERBOT MOBILE HEADER ── */
+/* ── CYBAASH AI MOBILE HEADER ── */
 #cyb-mobile-header {
   display: none;
   position: fixed;
@@ -570,7 +570,7 @@ textarea, input, select { font: inherit; color: inherit; }
 </style>
 <link rel="stylesheet" href="../mobile.css">
 </head>
-<body class="page-cyberbot">
+<body class="page-cybaash-ai">
 
 <div class="app">
 
@@ -745,7 +745,7 @@ textarea, input, select { font: inherit; color: inherit; }
 <!-- termPreview: hidden, keeps animateTerminalPreview() from erroring -->
 <div id="termPreview" style="display:none"></div>
 
-<script src="cyberbot_script.js"></script>
+<script src="cybaash-ai_script.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════
    SIDEBAR (mobile)
@@ -794,7 +794,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (orig) orig.apply(this, arguments);
   };
 
-  /* sendQuick is defined in cyberbot_script.js — wrap it */
+  /* sendQuick is defined in cybaash-ai_script.js — wrap it */
   var origQuick = window.sendQuick;
   window.sendQuick = function(msg) {
     hideChips();
@@ -856,7 +856,7 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close
 var msgEl = document.getElementById('messages');
 if (msgEl) msgEl.style.overscrollBehavior = 'contain';
 
-/* switchSession is defined in cyberbot_script.js — alias for safety */
+/* switchSession is defined in cybaash-ai_script.js — alias for safety */
 if (typeof switchSession === 'undefined') {
   window.switchSession = function(id) {
     if (typeof window._switchSession === 'function') window._switchSession(id);

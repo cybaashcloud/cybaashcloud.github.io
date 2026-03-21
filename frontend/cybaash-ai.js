@@ -30,7 +30,7 @@
      The Worker holds the real API key — browser never sees it.
      Set PROXY_URL to your Worker URL once deployed.
      Leave as '' to fall back to direct calls (key required).     */
-  var PROXY_URL = 'https://cybaash.mohamedaasiq07.workers.dev';
+  var PROXY_URL = 'https://cybaash-gemini.workers.dev';
 
   var cfg = {
     key:    '',   // only used if PROXY_URL is empty
@@ -39,7 +39,7 @@
     temp:   0.4,
     rpm:    8,    // client-side cap — 2 under the 10 RPM free tier limit of gemini-2.5-flash-lite
     prompt: [
-      'You are CyberBot — an expert cybersecurity assistant embedded in',
+      'You are CYBAASH AI — an expert cybersecurity assistant embedded in',
       'Mohamed Aasiq\'s portfolio at cybaashcloud.github.io.',
       '',
       'Primary role: help visitors (recruiters, developers, students)',
@@ -170,7 +170,7 @@
         .then(function (data) {
           if (!data || !data.entries) { tryNext(idx + 1); return; }
           cache = data.entries || [];
-          console.log('[CyberBot] Cache loaded: ' + cache.length + ' entries');
+          console.log('[CYBAASH AI] Cache loaded: ' + cache.length + ' entries');
         })
         .catch(function () { tryNext(idx + 1); });
     }

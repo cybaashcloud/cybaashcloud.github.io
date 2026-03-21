@@ -6000,7 +6000,7 @@ const GEMINI_AI = {
   },
 
   systemPrompt() {
-    return `You are CYBAASH AI — the terminal assistant embedded in Mohamed Aasiq's autonomous cyber range portfolio.
+    return `You are CYBAASH AI — the terminal cybersecurity assistant embedded in Mohamed Aasiq's autonomous cyber range portfolio.
 
 === ABOUT MOHAMED AASIQ ===
 Name: Mohamed Aasiq | Title: Cybersecurity Specialist & Ethical Hacker
@@ -6035,7 +6035,7 @@ Linux/Networking: Ubuntu, Red Hat, Kali Purple, Linux CLI, Network Security, TLS
 
 === WEBSITE (CYBAASH) ===
 URL: https://cybaash.github.io
-Pages: / (Cyber range simulation) | /recruiter.html (CV view) | /dashboard.html (Operator dashboard) | /cyberbot/ (AI chatbot) | /admin/ (Admin panel)
+Pages: / (Cyber range simulation) | /recruiter.html (CV view) | /dashboard.html (Operator dashboard) | /cyberbot/ (CYBAASH AI) | /admin/ (Admin panel)
 Tech: HTML/CSS/JS 7000+ lines, React, Gemini AI, GitHub Pages, PWA
 Features: Live cyber range sim, kill chain simulation, AI terminal, decision engine, knowledge graph, what-if engine, time-travel replay, PWA
 
@@ -6089,54 +6089,49 @@ Languages: Tamil (Native), Urdu (Native), English (Professional), Hindi.
   },
 
   async ask(message) {
-    const key = this.getKey();
-
-    // ── LOCAL KNOWLEDGE LOOKUP — answers without API key ─────────────
+    // ── LOCAL KNOWLEDGE LOOKUP ──────────────────────────────────────
     const local = GEMINI_AI.localLookup(message.toLowerCase());
-    if (local && !key) {
-      termPrint({ t:'t-sys', v:'[CYBAASH AI] ─── Local Knowledge ───────────' });
+    if (local) {
+      termPrint({ t:'t-sys', v:'[CYBAASH AI] ─── Cyber Intelligence ───────' });
       local.split('\n').filter(l=>l.trim()).forEach(line => {
         termPrint({ t:'t-out', v:'  ' + sanitizeText(line) });
       });
-      termPrint({ t:'t-dim', v:'─── Set Gemini key for full AI: gemini key YOUR_KEY ──' });
+
       return;
     }
 
-    if (!key) {
-      termPrint([
-        { t:'t-warn', v:'[GEMINI] No API key set.' },
-        { t:'t-out',  v:'  Run: gemini key YOUR_GEMINI_API_KEY' },
-        { t:'t-dim',  v:'  Get free key at: aistudio.google.com/app/apikey' },
-        { t:'t-dim',  v:'  Key stored only in your browser — never sent to server.' },
-      ]);
-      return;
-    }
+    // No key needed — proxy handles authentication
     if (this.loading) {
-      termPrint({ t:'t-warn', v:'[GEMINI] Processing — please wait…' });
+      termPrint({ t:'t-warn', v:'[CYBAASH AI] Processing — please wait…' });
       return;
     }
     this.loading = true;
     const typingId = 'gm-typing-' + Date.now();
-    termPrint({ t:'t-sys', v:'[GEMINI AI] ▋ Thinking…', id: typingId });
+    termPrint({ t:'t-sys', v:'[CYBAASH AI] ▋ Thinking…', id: typingId });
 
     this.history.push({ role: 'user', parts: [{ text: message }] });
     if (this.history.length > 20) this.history = this.history.slice(-20);
 
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${key}`;
-      const resp = await fetch(url, {
+      // Route through Cloudflare proxy — key never in browser
+      const TERM_PROXY = 'https://cybaash.mohamedaasiq07.workers.dev';
+      const resp = await fetch(TERM_PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: this.systemPrompt() }] },
-          contents: this.history,
-          generationConfig: { temperature: 0.4, maxOutputTokens: 512 },
-          safetySettings: [
-            { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-          ]
+          model: this.model,
+          stream: false,
+          payload: {
+            system_instruction: { parts: [{ text: this.systemPrompt() }] },
+            contents: this.history,
+            generationConfig: { temperature: 0.4, maxOutputTokens: 512 },
+            safetySettings: [
+              { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
+              { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
+              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+            ]
+          }
         })
       });
 
@@ -6151,7 +6146,7 @@ Languages: Tamil (Native), Urdu (Native), English (Professional), Hindi.
 
       this.history.push({ role: 'model', parts: [{ text: reply }] });
 
-      termPrint({ t:'t-sys', v:'[CYBAASH AI] ───────────────────────────────' });
+      termPrint({ t:'t-sys', v:'[CYBAASH AI] ─────────────────────────────' });
       reply.split('\n').filter(l => l.trim()).forEach(line => {
         // Strip markdown for terminal display
         const clean = line.replace(/\*\*(.*?)\*\*/g,'$1').replace(/`(.*?)`/g,'$1').replace(/^#+\s/,'');
@@ -6161,50 +6156,30 @@ Languages: Tamil (Native), Urdu (Native), English (Professional), Hindi.
 
     } catch(err) {
       document.getElementById(typingId)?.remove();
-      termPrint({ t:'t-err', v:`[GEMINI] Error: ${err.message}` });
+      termPrint({ t:'t-err', v:`[CYBAASH AI] Error: ${err.message}` });
     } finally {
       this.loading = false;
     }
   },
 
-  reset() { this.history = []; termPrint({ t:'t-sys', v:'[GEMINI] Conversation history cleared.' }); }
+  reset() { this.history = []; termPrint({ t:'t-sys', v:'[CYBAASH AI] Conversation history cleared.' }); }
 };
 
-// ── GEMINI KEY MANAGEMENT COMMAND ────────────────────────────────
+// ── AI COMMAND — alias for ask ───────────────────────────────────
 defCmd('gemini', (args) => {
   const sub = args[0];
-  if (sub === 'key') {
-    const k = args[1];
-    if (!k) {
-      const stored = GEMINI_AI.getKey();
-      termPrint({ t:'t-out', v: stored ? '[GEMINI] API key: ✓ configured' : '[GEMINI] No key set. Run: gemini key YOUR_KEY' });
-      return;
-    }
-    GEMINI_AI.setKey(k);
-    termPrint([
-      { t:'t-sys', v:'[GEMINI] API key saved to browser storage ✓' },
-      { t:'t-dim', v:'  Key never leaves your browser — only sent to Google Gemini API.' },
-      { t:'t-dim', v:'  Run: ask <question> to start chatting.' },
-    ]);
-    return;
-  }
-  if (sub === 'clear') { GEMINI_AI.clearKey(); termPrint({ t:'t-sys', v:'[GEMINI] Key cleared.' }); return; }
   if (sub === 'reset') { GEMINI_AI.reset(); return; }
   if (sub === 'status') {
-    termPrint({ t:'t-out', v:`[GEMINI] Key: ${GEMINI_AI.getKey() ? '✓ set' : '✗ not set'} | Model: ${GEMINI_AI.model}` });
+    termPrint({ t:'t-out', v:`[CYBAASH AI] Model: ${GEMINI_AI.model} | Proxy: active` });
     return;
   }
-  // Ask Gemini directly
-  const q = args.join(' ');
+  const q = args.join(' ').trim();
   if (q) { GEMINI_AI.ask(q); return; }
   termPrint([
     { t:'t-out', v:'Usage:' },
-    { t:'t-out', v:'  gemini key YOUR_API_KEY   — Set Gemini key (stored locally)' },
-    { t:'t-out', v:'  gemini clear              — Remove saved key' },
-    { t:'t-out', v:'  gemini status             — Check key status' },
-    { t:'t-out', v:'  gemini reset              — Clear chat history' },
-    { t:'t-out', v:'  ask <question>            — Chat with Gemini AI' },
-    { t:'t-dim', v:'  Get free key: aistudio.google.com/app/apikey' },
+    { t:'t-out', v:'  ask <question>    — Chat with CYBAASH AI' },
+    { t:'t-out', v:'  gemini reset      — Clear chat history' },
+    { t:'t-out', v:'  gemini status     — Show AI status' },
   ]);
 });
 
@@ -6322,7 +6297,7 @@ defCmd('website', () => {
     { t:'t-out',    v:'  / ................ Autonomous cyber range simulation' },
     { t:'t-out',    v:'  /recruiter.html .. Clean CV view for recruiters' },
     { t:'t-out',    v:'  /dashboard.html .. Operator dashboard (GitHub storage)' },
-    { t:'t-out',    v:'  /cyberbot/ ....... AI-powered cybersecurity assistant' },
+    { t:'t-out',    v:'  /cyberbot/ ....... CYBAASH AI cybersecurity assistant' },
     { t:'t-out',    v:'  /admin/ .......... Admin panel (React)' },
     { t:'t-sep',    v:'──────────────────────────────────────────────────────' },
     { t:'t-dim',    v:'  Stack: HTML/CSS/JS · React · Gemini AI · GitHub Pages · PWA' },
