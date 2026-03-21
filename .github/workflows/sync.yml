@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # DEPLOY — Build admin panel + assemble _site + publish to GitHub Pages
-# Content-hash SW versioning ensures the browser always gets fresh files.
+# Updated: includes SOC dashboard, security panel, and tracker
 # ═══════════════════════════════════════════════════════════════════════════
 name: Deploy to GitHub Pages
 
@@ -12,7 +12,7 @@ on:
       - '.github/workflows/sync.yml'
       - 'scripts/**'
   workflow_dispatch:
-  workflow_call:                  # called by weekly-pipeline.yml after data sync
+  workflow_call:
 
 permissions:
   contents: read
@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0           # full history for accurate change detection
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -48,8 +48,8 @@ jobs:
 
       - name: Verify admin build
         run: |
-          test -d frontend/admin/dist          || { echo "ERROR: dist/ missing";       exit 1; }
-          test -f frontend/admin/dist/index.html || { echo "ERROR: dist/index.html";  exit 1; }
+          test -d frontend/admin/dist            || { echo "ERROR: dist/ missing";       exit 1; }
+          test -f frontend/admin/dist/index.html || { echo "ERROR: dist/index.html";     exit 1; }
           echo "Admin build OK: $(find frontend/admin/dist -type f | wc -l) files"
 
       - name: Assemble _site
@@ -73,12 +73,23 @@ jobs:
             [ -f "frontend/$f" ] && cp "frontend/$f" "_site/$f" && echo "OK $f" || echo "SKIP $f"
           done
 
+          # ── SOC Tracker (no secrets — config fetched from Cloudflare Worker) ──
+          cp frontend/soc-tracker-v2.js _site/soc-tracker-v2.js
+          echo "OK soc-tracker-v2.js"
+
+          # ── SOC Security Dashboard (isolated — separate from admin panel) ─────
+          mkdir -p _site/admin
+          cp frontend/admin/security.html _site/admin/security.html
+          cp frontend/admin/security.js   _site/admin/security.js
+          cp frontend/admin/security.css  _site/admin/security.css
+          echo "OK admin/security.{html,js,css}"
+
           # ── Portfolio images ──────────────────────────────────────────
           for f in avatar.png li-logo.jpg project_eatpqa2f.png; do
             [ -f "frontend/$f" ] && cp "frontend/$f" "_site/portfolio/$f" || true
           done
 
-          # ── Data files → portfolio/ AND root ─────────────────────────
+          # ── Data files ────────────────────────────────────────────────
           for f in data_main.json data_creds_1.json data_creds_2.json \
                    data_creds_3.json data_creds_4.json data_creds_5.json; do
             if [ -f "frontend/$f" ]; then
@@ -93,13 +104,15 @@ jobs:
           # ── AI cache ──────────────────────────────────────────────────
           [ -f frontend/data_ai_cache.json ] && \
             cp frontend/data_ai_cache.json _site/data_ai_cache.json && \
-            echo "OK data_ai_cache.json ($(python3 -c \
-              "import json; d=json.load(open('frontend/data_ai_cache.json')); \
-               print(str(d.get('total',0))+' entries')" 2>/dev/null || echo 'n/a'))" \
-            || echo "SKIP data_ai_cache.json"
+            echo "OK data_ai_cache.json" || echo "SKIP data_ai_cache.json"
 
-          # ── Admin panel ───────────────────────────────────────────────
+          # ── Admin panel (React content editor — separate from SOC) ────
           cp -r frontend/admin/dist/. _site/admin/
+          # Re-copy SOC files after dist copy (dist may overwrite security.*)
+          cp frontend/admin/security.html _site/admin/security.html
+          cp frontend/admin/security.js   _site/admin/security.js
+          cp frontend/admin/security.css  _site/admin/security.css
+          echo "OK SOC files re-applied after admin dist copy"
 
           # ── Certificates ──────────────────────────────────────────────
           if [ -d frontend/certificates ]; then
@@ -124,11 +137,20 @@ jobs:
 
           touch _site/.nojekyll
 
-          # ── Validate critical files ───────────────────────────────────
+          # ── Validate critical files including SOC ─────────────────────
           echo "=== Validating _site ==="
-          for f in _site/index.html _site/admin/index.html \
-                   _site/portfolio/data_main.json _site/data_main.json \
-                   _site/cybaash-ai.js _site/sw.js _site/mobile.css; do
+          for f in \
+            _site/index.html \
+            _site/admin/index.html \
+            _site/admin/security.html \
+            _site/admin/security.js \
+            _site/admin/security.css \
+            _site/soc-tracker-v2.js \
+            _site/portfolio/data_main.json \
+            _site/data_main.json \
+            _site/cybaash-ai.js \
+            _site/sw.js \
+            _site/mobile.css; do
             test -f "$f" && echo "✓ $f" || { echo "MISSING: $f"; exit 1; }
           done
           echo "Total files: $(find _site -type f | wc -l)"
@@ -136,22 +158,22 @@ jobs:
       - name: Sanitize AI config
         run: python3 scripts/deploy_ai_config.py
 
-      # ── SW version: hash of shell files (not just git SHA) ────────────
-      # Using file content hashes means the SW version changes IFF a shell
-      # file actually changed — not on every unrelated commit.
+      # ── SW version stamp ──────────────────────────────────────────────
       - name: Stamp SW version with content hash
         run: |
           python3 - << 'PYEOF'
           import hashlib, re, sys
           from pathlib import Path
 
-          # Hash the content of all shell files that the SW precaches
           shell_files = [
             '_site/index.html', '_site/recruiter.html', '_site/dashboard.html',
             '_site/style.css',  '_site/mobile.css',     '_site/script.js',
             '_site/github.js',  '_site/cybaash-ai.js',  '_site/cybaash-ai.css',
             '_site/cybaash_chatbot.js', '_site/ai/index.html',
             '_site/ai/cybaash-ai_script.js', '_site/ai/style.css',
+            '_site/soc-tracker-v2.js',
+            '_site/admin/security.html',
+            '_site/admin/security.js',
           ]
 
           h = hashlib.sha256()
@@ -160,7 +182,6 @@ jobs:
               if p.exists():
                   h.update(p.read_bytes())
 
-          # 8-char prefix of the content hash
           content_hash = h.hexdigest()[:8]
           version      = f'cybaash-v4-{content_hash}'
 
@@ -177,7 +198,6 @@ jobs:
 
           sw_path.write_text(new_text)
           print(f"SW VERSION stamped: {version}")
-          print(f"  (hash of {len(shell_files)} shell files)")
           PYEOF
 
       - name: Setup Pages
@@ -195,6 +215,8 @@ jobs:
           echo "## Deploy Build" >> $GITHUB_STEP_SUMMARY
           echo "- **Files assembled:** $TOTAL" >> $GITHUB_STEP_SUMMARY
           echo "- **Certificate files:** $CERTS" >> $GITHUB_STEP_SUMMARY
+          echo "- **SOC Dashboard:** \`/admin/security.html\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **SOC Tracker:** \`/soc-tracker-v2.js\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
 
   deploy:

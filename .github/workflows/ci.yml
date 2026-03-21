@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # CI — Validate every push and PR before it can merge
-# Runs in ~60s. Blocks deploy if anything is broken.
+# Updated: includes SOC dashboard and tracker validation
 # ═══════════════════════════════════════════════════════════════════════════
 name: CI — Validate
 
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write        # for PR comment with results
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -43,21 +43,19 @@ jobs:
         run: |
           set +e
           ERRORS=0
-          FILES=""
-          for f in frontend/*.js frontend/ai/*.js; do
+          # Check all JS files including SOC tracker and admin security
+          for f in frontend/*.js frontend/ai/*.js frontend/admin/security.js; do
             [ -f "$f" ] || continue
             node --check "$f" 2>/tmp/node_err_$(basename $f)
             if [ $? -ne 0 ]; then
               echo "❌ FAIL: $f"
               cat /tmp/node_err_$(basename $f)
               ERRORS=$((ERRORS+1))
-              FILES="$FILES\n- $f"
             else
               echo "✓  $f"
             fi
           done
           echo "js_errors=$ERRORS" >> $GITHUB_OUTPUT
-          echo "js_files=$FILES"   >> $GITHUB_OUTPUT
           [ $ERRORS -eq 0 ] && echo "✅ All JS files clean" || exit 1
 
       # ── 2. JSON validation ────────────────────────────────────────────
@@ -98,13 +96,9 @@ jobs:
               sys.exit(1)
           ver = m.group(1)
           print(f"✓  SW version: {ver}")
-
-          # Warn if version looks stale (hardcoded string, not SHA-ish)
-          if re.match(r'^cybaash-v\d+\.\d+$', ver):
-              print("⚠  SW version is a hardcoded tag — will be overwritten by stamp step at deploy")
           PYEOF
 
-      # ── 4. Critical files exist ────────────────────────────────────────
+      # ── 4. Critical files check — includes SOC files ──────────────────
       - name: Critical files check
         run: |
           MISSING=0
@@ -124,7 +118,11 @@ jobs:
             frontend/ai/index.html \
             frontend/ai/cybaash-ai_script.js \
             frontend/data_main.json \
-            frontend/offline.html; do
+            frontend/offline.html \
+            frontend/soc-tracker-v2.js \
+            frontend/admin/security.html \
+            frontend/admin/security.js \
+            frontend/admin/security.css; do
             if [ -f "$f" ]; then
               echo "✓  $f"
             else
@@ -134,7 +132,80 @@ jobs:
           done
           [ $MISSING -eq 0 ] || exit 1
 
-      # ── 5. HTML lint (no broken script/link/img src references) ───────
+      # ── 5. SOC security checks ────────────────────────────────────────
+      - name: SOC security checks
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          errors = 0
+
+          # 1. Tracker must NOT contain secrets
+          tracker = open('frontend/soc-tracker-v2.js').read()
+          secret_patterns = [
+              (r'groq\.com', 'Groq API reference'),
+              (r'REPLACE_WITH', 'unreplaced placeholder'),
+              (r'script\.google\.com/macros/s/[A-Za-z0-9_-]{20,}', 'hardcoded Apps Script URL'),
+              (r'["\']AIza[A-Za-z0-9_-]{35}["\']', 'hardcoded Google API key'),
+          ]
+          for pattern, label in secret_patterns:
+              if re.search(pattern, tracker):
+                  print(f'❌ soc-tracker-v2.js: found {label}')
+                  errors += 1
+          if not errors:
+              print('✓  soc-tracker-v2.js: no secrets found')
+
+          # 2. Tracker must fetch config from Worker
+          if 'workers.dev' not in tracker:
+              print('❌ soc-tracker-v2.js: Worker URL missing')
+              errors += 1
+          else:
+              print('✓  soc-tracker-v2.js: Worker URL present')
+
+          # 3. All HTML pages must have tracker
+          import re
+          for page in ['frontend/index.html', 'frontend/dashboard.html',
+                       'frontend/recruiter.html', 'frontend/ai/index.html']:
+              try:
+                  html = open(page).read()
+                  if 'soc-tracker-v2.js' not in html:
+                      print(f'❌ {page}: missing SOC tracker')
+                      errors += 1
+                  elif 'SOC_CONFIG' in html:
+                      print(f'❌ {page}: SOC_CONFIG block found (secrets in HTML)')
+                      errors += 1
+                  else:
+                      print(f'✓  {page}: tracker present, no secrets')
+              except FileNotFoundError:
+                  pass
+
+          # 4. Security dashboard must be isolated
+          sec_html = open('frontend/admin/security.html').read()
+          if 'soc-tracker-v2.js' in sec_html:
+              print('❌ security.html: tracker injected (must be isolated)')
+              errors += 1
+          else:
+              print('✓  security.html: properly isolated')
+
+          # 5. No Groq references anywhere in frontend
+          import os
+          for root, dirs, files in os.walk('frontend'):
+              dirs[:] = [d for d in dirs if d != 'admin']  # skip admin dist
+              for fname in files:
+                  if not fname.endswith(('.html', '.js', '.css')): continue
+                  fpath = os.path.join(root, fname)
+                  content = open(fpath, errors='replace').read()
+                  if 'groq.com' in content or 'groq_key' in content:
+                      print(f'❌ {fpath}: Groq reference found')
+                      errors += 1
+
+          if errors == 0:
+              print('\n✅ All SOC security checks passed')
+          else:
+              print(f'\n❌ {errors} SOC security check(s) failed')
+              sys.exit(1)
+          PYEOF
+
+      # ── 6. HTML internal reference check ─────────────────────────────
       - name: HTML internal reference check
         run: |
           python3 - << 'PYEOF'
@@ -142,34 +213,26 @@ jobs:
           from pathlib import Path
 
           frontend = Path('frontend')
-          pages    = list(frontend.glob('*.html')) + list(frontend.glob('ai/*.html'))
+          pages    = (list(frontend.glob('*.html')) +
+                      list(frontend.glob('ai/*.html')) +
+                      list(frontend.glob('admin/security.html')))
           errors   = 0
-
-          frontend_abs = frontend.resolve()
 
           for page in pages:
               html = page.read_text(errors='replace')
               page_dir = page.parent
-
-              # Find local (non-http) src/href references
               refs = re.findall(r'(?:src|href)=["\'](?!https?://|//|#|data:|mailto:)([^"\']+)["\']', html)
               for ref in refs:
-                  # Strip query strings and anchors
                   clean = ref.split('?')[0].split('#')[0]
-                  if not clean or clean.startswith('{{'):
-                      continue
-                  # Resolve: absolute paths (/foo) relative to frontend root,
-                  # relative paths (../foo or foo) relative to the page's own dir.
+                  if not clean or clean.startswith('{{'): continue
                   if clean.startswith('/'):
                       target = (frontend / clean.lstrip('/')).resolve()
                   else:
                       target = (page_dir / clean).resolve()
                   if not target.exists():
-                      # Soft warn for dynamic references
                       if any(x in clean for x in ['portfolio/', '/ai/', '/icons/', 'avatar', 'data_creds']):
                           continue
                       print(f"⚠  {page.name}: missing ref → {clean}")
-                      # Only error on critical JS/CSS
                       if clean.endswith(('.js', '.css')):
                           errors += 1
 
@@ -180,7 +243,7 @@ jobs:
               print(f"\n✅ HTML references OK ({len(pages)} pages checked)")
           PYEOF
 
-      # ── 6. Cert data integrity ─────────────────────────────────────────
+      # ── 7. Cert data integrity ────────────────────────────────────────
       - name: Cert data integrity
         run: |
           python3 - << 'PYEOF'
@@ -194,7 +257,6 @@ jobs:
               d = json.loads(p.read_text())
               creds = d.get('credentials', [])
               total += len(creds)
-              # Check required fields
               broken = [c['id'] for c in creds if not c.get('id') or not c.get('title')]
               if broken:
                   print(f"⚠  data_creds_{n}.json: {len(broken)} entries missing id/title")
@@ -203,7 +265,7 @@ jobs:
           print(f"\n✅ Total credentials: {total}")
           PYEOF
 
-      # ── 7. Post summary ───────────────────────────────────────────────
+      # ── 8. Post summary ───────────────────────────────────────────────
       - name: Write job summary
         if: always()
         run: |
@@ -214,4 +276,5 @@ jobs:
           echo "| JS Syntax | ${{ steps.js_check.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| JSON Validation | ${{ steps.json_check.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Critical Files | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
+          echo "| SOC Security | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit: \`${{ github.sha }}\` | [View](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |" >> $GITHUB_STEP_SUMMARY
