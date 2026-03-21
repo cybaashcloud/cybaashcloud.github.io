@@ -639,6 +639,11 @@ table {
 
 <!-- ── APP SHELL ────────────────────────────────────────────────── -->
 <div id="app" style="display:none">
+  <!-- ── THREAT LEVEL BANNER (military upgrade) ──────────── -->
+  <div id="threatBanner" style="display:none;background:linear-gradient(90deg,rgba(255,34,68,.15),rgba(255,34,68,.05));border-bottom:1px solid var(--red);padding:6px 20px;font-size:10px;letter-spacing:2px;color:var(--red);text-align:center;position:sticky;top:0;z-index:200">
+    <span id="threatBannerText">⚠ ELEVATED THREAT LEVEL — MONITORING ACTIVE</span>
+    <button onclick="document.getElementById('threatBanner').style.display='none'" style="float:right;background:none;border:none;color:var(--red);cursor:pointer;font-size:12px">✕</button>
+  </div>
   <header class="hdr">
     <div class="hdr-logo">CYB<span>AASH</span></div>
     <div class="hdr-tag">// OPERATOR DASHBOARD</div>
@@ -661,6 +666,10 @@ table {
       </button>
       <button class="sb-tab" onclick="switchView('launch',this)">
         <span class="sb-icon">⊕</span> New Mission
+      </button>
+
+      <button class="sb-tab" onclick="switchView('tools',this)">
+        <span>⚙</span>TOOLS
       </button>
       <button class="sb-tab" onclick="switchView('profile',this)">
         <span class="sb-icon">◉</span> Profile
@@ -1528,8 +1537,71 @@ function updateApp() {
 }
 </script>
 
+
+    <!-- ── TOOLS PANEL (military upgrade) ────────────────── -->
+    <div id="view-tools" style="display:none;padding:20px 0">
+      <div class="panel-header" style="margin-bottom:16px">
+        <span class="panel-title">// SECURITY TOOLKIT</span>
+        <span style="color:var(--dim);font-size:9px;letter-spacing:1px">EDUCATIONAL · ETHICAL USE ONLY</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px">
+        <div class="scenario-card" onclick="window.open('/ai/index.html','_blank')" style="cursor:pointer">
+          <div style="font-size:20px;margin-bottom:6px">🤖</div>
+          <div style="color:var(--blue);font-size:10px;letter-spacing:1px">AI CHAT</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">Ask cybersecurity questions</div>
+        </div>
+        <div class="scenario-card" onclick="window.open('/admin/security.html','_blank')" style="cursor:pointer">
+          <div style="font-size:20px;margin-bottom:6px">🛡️</div>
+          <div style="color:var(--blue);font-size:10px;letter-spacing:1px">SOC DASHBOARD</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">Security operations center</div>
+        </div>
+        <div class="scenario-card" onclick="window.open('/admin/intel.html','_blank')" style="cursor:pointer">
+          <div style="font-size:20px;margin-bottom:6px">🔍</div>
+          <div style="color:var(--purple);font-size:10px;letter-spacing:1px">INTEL PANEL</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">IP threat intelligence</div>
+        </div>
+        <div class="scenario-card" style="cursor:pointer" onclick="checkThreatLevel()">
+          <div style="font-size:20px;margin-bottom:6px">⚡</div>
+          <div style="color:var(--orange);font-size:10px;letter-spacing:1px">THREAT SCAN</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">Check current threat level</div>
+        </div>
+        <div class="scenario-card" style="cursor:pointer" onclick="window.open('https://cybaash.mohamedaasiq07.workers.dev/threats','_blank')">
+          <div style="font-size:20px;margin-bottom:6px">☠</div>
+          <div style="color:var(--red);font-size:10px;letter-spacing:1px">THREAT INTEL</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">Blocked IP database</div>
+        </div>
+        <div class="scenario-card" style="cursor:pointer" onclick="window.open('/admin/intel.html','_blank')">
+          <div style="font-size:20px;margin-bottom:6px">📋</div>
+          <div style="color:var(--yellow);font-size:10px;letter-spacing:1px">AUDIT LOG</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">Worker audit entries</div>
+        </div>
+      </div>
+      <div style="background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.2);padding:12px;border-radius:2px;font-size:10px;color:var(--dim)">
+        ⚠ <strong style="color:var(--yellow)">Educational &amp; authorized testing only.</strong>
+        All activity monitored by CYBAASH SOC.
+        Shortcuts: <span style="color:var(--text)">Ctrl+Shift+S</span> SOC ·
+        <span style="color:var(--text)">Ctrl+Shift+A</span> AI ·
+        <span style="color:var(--text)">Ctrl+Shift+L</span> Admin
+      </div>
+    </div>
   <!-- ── CYBAASH SOC TRACKER — config loaded from Cloudflare Worker ── -->
   <script src="/soc-tracker-v2.js"></script>
   <!-- ───────────────────────────────────────────────────────────────── -->
+
+  <!-- ── Military upgrade script (threat banner + ticker + keyboard shortcuts) -->
+  <script src="/dashboard-military-additions.js" defer>
+// ── Military upgrade: handle tools view ──────────────────
+const _origSwitchView = switchView;
+function switchView(view, btn) {
+  _origSwitchView(view, btn);
+  const toolsPanel = document.getElementById('view-tools');
+  if (toolsPanel) toolsPanel.style.display = (view === 'tools') ? 'block' : 'none';
+}
+</script>
+  <!-- ── SOC LIVE TICKER (military upgrade) ──────────────── -->
+  <div id="socTicker" style="position:fixed;bottom:0;left:0;right:0;background:rgba(3,10,15,.95);border-top:1px solid var(--border);padding:4px 20px;font-size:9px;color:var(--dim);letter-spacing:1px;white-space:nowrap;overflow:hidden;z-index:50">
+    <span style="color:var(--blue);margin-right:12px">▶ CYBAASH SOC</span>
+    <span id="tickerText" style="transition:opacity 0.2s ease">Initializing threat feed...</span>
+  </div>
 </body>
 </html>

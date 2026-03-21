@@ -93,6 +93,8 @@
     <button class="nav-tab" data-tab="firewall">🔥 Firewall</button>
     <button class="nav-tab" data-tab="terminal">⚡ Terminal</button>
     <button class="nav-tab" data-tab="settings">⚙ Settings</button>
+    <button class="nav-tab" data-tab="apt">🔴 APT Alerts<span id="apt-badge" style="background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;margin-left:6px;display:none">0</span></button>
+    <button class="nav-tab" data-tab="intel">🔍 Intel Panel</button>
   </nav>
 
   <!-- CONTENT -->
@@ -399,13 +401,20 @@
     <!-- ─── TAB: TERMINAL ───────────────────────────────────────── -->
     <div id="panel-terminal" class="tab-panel">
       <div class="section-header mb-16">
-        <span class="section-title">SOC Activity Terminal</span>
+        <span class="section-title">⚡ SOC Command Terminal</span>
         <div class="flex gap-8">
           <button class="btn btn-ghost btn-sm" onclick="el('terminal-output').innerHTML='';STATE.terminalLines=[];">Clear</button>
         </div>
       </div>
-      <div class="terminal" id="terminal-output">
-        <div class="t-line"><span class="t-time">[BOOT]</span><span class="t-level-info">[INFO]</span><span class="t-msg">CYBAASH SOC Terminal ready. All actions logged.</span></div>
+      <div class="terminal" id="terminal-output" style="min-height:280px">
+        <div class="t-line"><span class="t-time">[BOOT]</span><span class="t-level-info">[INFO]</span><span class="t-msg">CYBAASH SOC Terminal v2.0 ready. Type 'help' for commands.</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <span style="color:var(--blue);font-family:'Courier New',monospace;font-size:12px">soc@cybaash:~$</span>
+        <input type="text" id="terminal-input" placeholder="Type a command... (help, apt-alerts, intel list, geo, purge 30, export, scan <url>)"
+          style="flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:'Courier New',monospace;font-size:11px;border-radius:2px;outline:none"
+          autocomplete="off" autocorrect="off" spellcheck="false" />
+        <button class="btn btn-ghost btn-sm" onclick="runTerminalCommand()">Run</button>
       </div>
     </div><!-- /panel-terminal -->
 
@@ -475,6 +484,32 @@
 
     </div><!-- /panel-settings -->
 
+    <!-- ─── TAB: APT ALERTS ──────────────────────────────────────── -->
+    <div id="panel-apt" class="tab-panel">
+      <div class="section-header mb-16">
+        <span class="section-title">🔴 APT &amp; Critical Threat Alerts</span>
+        <div class="flex gap-8">
+          <button class="btn btn-ghost btn-sm" onclick="loadAPTAlerts()">⟳ Refresh</button>
+          <a href="/admin/intel.html" target="_blank" class="btn btn-ghost btn-sm">🔍 Intel Panel</a>
+        </div>
+      </div>
+      <div id="apt-alerts-list">
+        <div class="empty-state"><span class="es-icon">🛡️</span>Click Refresh to load APT alerts.</div>
+      </div>
+    </div><!-- /panel-apt -->
+
+    <!-- ─── TAB: INTEL PANEL ─────────────────────────────────────── -->
+    <div id="panel-intel" class="tab-panel">
+      <div class="section-header mb-16">
+        <span class="section-title">🔍 Threat Intelligence</span>
+      </div>
+      <div style="text-align:center;padding:40px">
+        <p style="color:var(--text-secondary);margin-bottom:20px">Full threat intel operations panel opens in a new tab.</p>
+        <a href="/admin/intel.html" target="_blank" class="btn btn-ghost">Open Intel Panel →</a>
+      </div>
+    </div><!-- /panel-intel -->
+
+
   </main>
 </div><!-- /#soc-app -->
 
@@ -525,5 +560,6 @@
   }, 2000);
 </script>
 
+  <script src="security-military-additions.js" defer></script>
 </body>
 </html>

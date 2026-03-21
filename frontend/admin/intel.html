@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYBAASH — Threat Intelligence Panel</title>
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <!-- COMPLETELY ISOLATED: No shared JS/CSS with main site -->
+  <link rel="stylesheet" href="security.css" />
+  <style>
+    /* ── Intel Panel overrides ─────────────────────────────────── */
+    .intel-section {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .intel-section h3 {
+      color: var(--cyan);
+      font-size: 11px;
+      letter-spacing: 3px;
+      margin: 0 0 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .intel-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .intel-input {
+      flex: 1;
+      min-width: 160px;
+      background: var(--bg-input, #0a1520);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      border-radius: 2px;
+      outline: none;
+    }
+    .intel-input:focus { border-color: var(--cyan); }
+    .intel-result {
+      background: var(--bg, #030a0f);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      min-height: 60px;
+      color: var(--text-secondary, #5a7a9a);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .intel-result.has-result { color: var(--text-primary, #c8e0f4); }
+    .intel-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .intel-table th {
+      color: var(--cyan);
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-align: left;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg, #030a0f);
+    }
+    .intel-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(26,58,92,.3);
+      color: var(--text-primary, #c8e0f4);
+      font-family: 'Courier New', monospace;
+    }
+    .intel-table tr:hover td { background: rgba(0,212,255,.04); }
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px,1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-chip {
+      background: var(--bg, #030a0f);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-chip .val {
+      font-family: 'Courier New', monospace;
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--cyan);
+    }
+    .stat-chip .lbl {
+      font-size: 8px;
+      letter-spacing: 2px;
+      color: var(--text-muted, #5a7a9a);
+      margin-top: 4px;
+    }
+    .country-flag { font-size: 16px; margin-right: 6px; }
+    .risk-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .risk-dot.red    { background: var(--red, #ff2244); box-shadow: 0 0 6px var(--red,#ff2244); }
+    .risk-dot.orange { background: #ff6600; }
+    .risk-dot.yellow { background: var(--yellow, #ffd700); }
+    .risk-dot.green  { background: var(--green, #00ff88); }
+    .empty-msg {
+      color: var(--text-muted, #5a7a9a);
+      text-align: center;
+      padding: 24px;
+      font-size: 11px;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--cyan);
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+      opacity: .7;
+      transition: opacity .2s;
+    }
+    .back-link:hover { opacity: 1; }
+    .loading-text { color: var(--text-muted,#5a7a9a); font-size:11px; text-align:center; padding:20px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-bg-grid"></div>
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="shield-icon">🔍</span>
+      <h1>THREAT INTEL</h1>
+      <p>INTELLIGENCE OPERATIONS PANEL</p>
+    </div>
+    <form id="login-form" autocomplete="off">
+      <div class="login-field">
+        <label for="login-password">Admin Passphrase</label>
+        <div style="position:relative">
+          <input type="password" id="login-password" placeholder="Enter secure passphrase" autocomplete="current-password" autofocus />
+          <button type="button" id="toggle-pw" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted,#5a7a9a);cursor:pointer;font-size:16px;">👁</button>
+        </div>
+      </div>
+      <div id="login-error" class="login-error">Invalid credentials.</div>
+      <button type="submit" class="login-btn">AUTHENTICATE &rarr;</button>
+    </form>
+    <div class="login-footer">RESTRICTED SYSTEM · All access attempts are logged.</div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN INTEL APP
+═══════════════════════════════════════════════════════════════ -->
+<div id="intel-app">
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="brand-icon">🔍</span>
+      <div>
+        <h2>THREAT INTELLIGENCE</h2>
+        <span>CYBAASH INTEL OPS PANEL</span>
+      </div>
+    </div>
+    <div class="topbar-status">
+      <div class="status-pill">
+        <div class="status-dot" id="api-dot"></div>
+        <span id="api-text">CONNECTING</span>
+      </div>
+      <span class="topbar-clock" id="intel-clock">00:00:00 UTC</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="security.html" class="btn btn-ghost btn-sm">← SOC Dashboard</a>
+      <button class="btn btn-red btn-sm" id="logout-btn">⏻ Logout</button>
+    </div>
+  </header>
+
+  <main class="content" style="padding: 24px; max-width: 1200px; margin: 0 auto;">
+
+    <!-- Stats Row -->
+    <div class="stat-row" id="intel-stats-row">
+      <div class="stat-chip"><div class="val" id="stat-threats">—</div><div class="lbl">THREAT INTEL ENTRIES</div></div>
+      <div class="stat-chip"><div class="val" id="stat-audit">—</div><div class="lbl">AUDIT LOG ENTRIES</div></div>
+      <div class="stat-chip"><div class="val" id="stat-geo">—</div><div class="lbl">ATTACK COUNTRIES</div></div>
+      <div class="stat-chip"><div class="val" id="stat-bot">—</div><div class="lbl">BOT DETECTION RATE</div></div>
+    </div>
+
+    <!-- ── 1. IP Intel Search ───────────────────────────────────── -->
+    <div class="intel-section">
+      <h3>🔍 IP THREAT INTELLIGENCE LOOKUP</h3>
+      <div class="intel-input-row">
+        <input type="text" id="ip-lookup-input" class="intel-input" placeholder="e.g. 103.21.244.8" maxlength="45" />
+        <button class="btn btn-ghost btn-sm" onclick="lookupIP()">LOOKUP</button>
+        <button class="btn btn-red btn-sm" onclick="addToIntel()">+ ADD TO INTEL</button>
+        <button class="btn btn-green btn-sm" onclick="removeFromIntel()">− REMOVE</button>
+      </div>
+      <div id="ip-lookup-result" class="intel-result">Enter an IP address and click LOOKUP to query threat intelligence.</div>
+    </div>
+
+    <!-- ── 2. Active Threat Intel List ─────────────────────────── -->
+    <div class="intel-section">
+      <h3>☠ ACTIVE THREAT INTEL ENTRIES</h3>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-ghost btn-sm" onclick="loadThreats()">⟳ Refresh</button>
+        <span id="threats-count" style="color:var(--text-muted,#5a7a9a);font-size:10px;align-self:center"></span>
+      </div>
+      <div id="threats-list"><div class="loading-text">Loading...</div></div>
+    </div>
+
+    <!-- ── 3. Geo Stats ─────────────────────────────────────────── -->
+    <div class="intel-section">
+      <h3>🌍 ATTACK GEOGRAPHY</h3>
+      <div id="geo-list"><div class="loading-text">Loading...</div></div>
+    </div>
+
+    <!-- ── 4. Audit Log ─────────────────────────────────────────── -->
+    <div class="intel-section">
+      <h3>📋 WORKER AUDIT LOG (LAST 50)</h3>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-ghost btn-sm" onclick="loadAudit()">⟳ Refresh</button>
+        <input type="text" id="audit-filter" class="intel-input" placeholder="Filter by IP or path..." style="max-width:220px" oninput="filterAudit()" />
+      </div>
+      <div id="audit-list"><div class="loading-text">Loading...</div></div>
+    </div>
+
+    <!-- ── 5. Export Controls ───────────────────────────────────── -->
+    <div class="intel-section">
+      <h3>📤 EXPORT & MAINTENANCE</h3>
+      <div class="intel-input-row" style="flex-wrap:wrap;gap:10px">
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV(100)">Export 100 Logs (CSV)</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV(500)">Export 500 Logs (CSV)</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV(1000)">Export 1000 Logs (CSV)</button>
+        <button class="btn btn-ghost btn-sm" onclick="sendReport()">📧 Send Daily Report</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="purge-days" class="intel-input" placeholder="Days" style="width:80px" value="30" min="1" max="365" />
+          <button class="btn btn-red btn-sm" onclick="purgeLogs()">🗑 Purge Old Logs</button>
+        </div>
+      </div>
+      <div id="export-result" class="intel-result" style="min-height:40px;display:none"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+'use strict';
+
+const WORKER  = 'https://cybaash.mohamedaasiq07.workers.dev';
+const DEFAULT_HASH = 'df132f130508df6a9d31b7fe7dc77a058296bb8d12c8202fca2c765dd0c7e52b'; // cybaash-soc-admin
+
+let SOC_WORKER_KEY = ''; // loaded after auth
+let allAuditEntries = [];
+
+// ── Utils ──────────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function showToast(msg, type, dur) {
+  dur = dur || 3000;
+  var icons = { success:'✓', error:'✕', warning:'⚠', info:'ℹ' };
+  var c = el('toast-container');
+  var t = document.createElement('div');
+  t.className = 'toast ' + (type||'info');
+  t.innerHTML = '<span class="toast-icon">' + (icons[type]||'ℹ') + '</span><span>' + esc(msg) + '</span>';
+  c.appendChild(t);
+  setTimeout(function(){ t.classList.add('fade-out'); setTimeout(function(){ t.remove(); },300); }, dur);
+}
+
+async function sha256(msg) {
+  var buf  = new TextEncoder().encode(msg);
+  var hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+function startClock() {
+  setInterval(function(){
+    var c = el('intel-clock');
+    if (c) c.textContent = new Date().toLocaleTimeString('en-US',{hour12:false}) + ' UTC';
+  }, 1000);
+}
+
+// ── Authentication ─────────────────────────────────────────────
+async function handleLogin(e) {
+  e.preventDefault();
+  var pw  = el('login-password').value;
+  var err = el('login-error');
+  if (!pw) { err.textContent = 'Password required.'; err.classList.add('show'); return; }
+
+  var hash = await sha256(pw);
+
+  // Try Apps Script verify
+  try {
+    var resp = await fetch(WORKER + '/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'verifyAdmin', token: hash }),
+      signal: AbortSignal.timeout(8000)
+    });
+    var result = await resp.json();
+    if (result && result.ok) { grantAccess(); return; }
+  } catch(_) {}
+
+  // Local hash fallback
+  var storedHash = localStorage.getItem('soc_pw_hash') || DEFAULT_HASH;
+  if (hash === storedHash) { grantAccess(); return; }
+
+  err.textContent = 'Invalid credentials. Access denied.';
+  err.classList.add('show');
+  el('login-password').value = '';
+}
+
+function grantAccess() {
+  sessionStorage.setItem('intel_session', JSON.stringify({ expiry: Date.now() + 30*60*1000 }));
+  el('login-screen').style.display = 'none';
+  el('intel-app').classList.add('active');
+  el('api-dot').className = 'status-dot active';
+  el('api-text').textContent = 'LIVE';
+  startClock();
+  initIntel();
+}
+
+function checkSession() {
+  try {
+    var sess = JSON.parse(sessionStorage.getItem('intel_session') || '{}');
+    if (sess.expiry && Date.now() < sess.expiry) { grantAccess(); return true; }
+  } catch(_) {}
+  return false;
+}
+
+function logout() {
+  sessionStorage.removeItem('intel_session');
+  el('intel-app').classList.remove('active');
+  el('login-screen').style.display = 'flex';
+  el('login-password').value = '';
+}
+
+// ── Worker API ─────────────────────────────────────────────────
+async function callAPI(body) {
+  var resp = await fetch(WORKER + '/api', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15000)
+  });
+  return resp.json();
+}
+
+async function callWorkerDirect(path, body) {
+  var headers = { 'Content-Type': 'application/json' };
+  if (SOC_WORKER_KEY) headers['X-SOC-Key'] = SOC_WORKER_KEY;
+  var resp = await fetch(WORKER + path, {
+    method: 'GET',
+    headers: headers,
+    signal: AbortSignal.timeout(10000)
+  });
+  return resp.json();
+}
+
+// ── Init ───────────────────────────────────────────────────────
+async function initIntel() {
+  await Promise.all([ loadStats(), loadThreats(), loadGeoStats(), loadAudit() ]);
+}
+
+// ── Stats ──────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    var [threatData, geoData, behavData] = await Promise.all([
+      callWorkerDirect('/threats'),
+      callAPI({ action: 'getGeoStats' }),
+      callAPI({ action: 'getBehaviorStats' })
+    ]);
+
+    el('stat-threats').textContent = (threatData.total || threatData.threats?.length || 0);
+    el('stat-geo').textContent     = (geoData.countries?.length || 0);
+
+    var stats = behavData.stats || {};
+    var total = stats.total || 1;
+    var botPct = Math.round(((stats.botDetected||0) / total) * 100);
+    el('stat-bot').textContent = botPct + '%';
+  } catch(e) {
+    console.warn('[Intel] Stats error:', e);
+  }
+}
+
+// ── IP Lookup ──────────────────────────────────────────────────
+async function lookupIP() {
+  var ip  = (el('ip-lookup-input').value || '').trim();
+  var out = el('ip-lookup-result');
+  if (!ip) { out.textContent = 'Enter an IP address.'; return; }
+
+  out.textContent = 'Looking up ' + ip + '...';
+  out.classList.remove('has-result');
+
+  try {
+    var [threats, logs] = await Promise.all([
+      callWorkerDirect('/threats').catch(function(){ return { threats:[] }; }),
+      callAPI({ action: 'getLogs', limit: 500 })
+    ]);
+
+    var inIntel = (threats.threats || []).find(function(t){ return t.ip === ip; });
+    var ipLogs  = (logs.logs || []).filter(function(l){ return l.ip === ip; });
+    var maxRisk = ipLogs.length ? Math.max.apply(null, ipLogs.map(function(l){ return l.risk; })) : 0;
+    var attackTypes = [...new Set(ipLogs.map(function(l){ return l.attackType; }).filter(function(t){ return t && t !== 'CLEAN'; }))];
+    var lastSeen = ipLogs.length ? ipLogs[ipLogs.length-1].timestamp : null;
+
+    var lines = [
+      '═══════════════════════════════════════',
+      ' IP INTEL REPORT: ' + ip,
+      '═══════════════════════════════════════',
+      '',
+      '  Threat Intel DB  : ' + (inIntel ? '🔴 FLAGGED' : '✅ Not in intel DB'),
+    ];
+    if (inIntel) {
+      lines.push('  Reason            : ' + (inIntel.reason||'—'));
+      lines.push('  Flagged At        : ' + (inIntel.blockedAt||'—'));
+      lines.push('  Threat Score      : ' + (inIntel.score||'—'));
+    }
+    lines = lines.concat([
+      '',
+      '  Requests in Log   : ' + ipLogs.length,
+      '  Max Risk Score    : ' + maxRisk + '/100',
+      '  Attack Types      : ' + (attackTypes.join(', ') || 'CLEAN'),
+      '  Last Seen         : ' + (lastSeen ? new Date(lastSeen).toLocaleString() : 'Never'),
+      '',
+      '═══════════════════════════════════════',
+    ]);
+
+    out.textContent = lines.join('\n');
+    out.classList.add('has-result');
+  } catch(e) {
+    out.textContent = 'Error: ' + e.message;
+  }
+}
+
+async function addToIntel() {
+  var ip = (el('ip-lookup-input').value || '').trim();
+  if (!ip) { showToast('Enter an IP address first', 'warning'); return; }
+  if (!confirm('Add ' + ip + ' to threat intelligence DB?')) return;
+
+  try {
+    var resp = await fetch(WORKER + '/intel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-SOC-Key': SOC_WORKER_KEY || '' },
+      body: JSON.stringify({ ip: ip, action: 'add', reason: 'Manual — added from Intel Panel', score: 80 })
+    });
+    var result = await resp.json();
+    if (result.success) {
+      showToast(ip + ' added to threat intel', 'success');
+      loadThreats();
+      loadStats();
+    } else {
+      showToast('Failed: ' + (result.error || 'unknown'), 'error');
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function removeFromIntel() {
+  var ip = (el('ip-lookup-input').value || '').trim();
+  if (!ip) { showToast('Enter an IP address first', 'warning'); return; }
+  if (!confirm('Remove ' + ip + ' from threat intelligence DB?')) return;
+
+  try {
+    var resp = await fetch(WORKER + '/intel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-SOC-Key': SOC_WORKER_KEY || '' },
+      body: JSON.stringify({ ip: ip, action: 'remove' })
+    });
+    var result = await resp.json();
+    if (result.success) {
+      showToast(ip + ' removed from threat intel', 'success');
+      loadThreats();
+      loadStats();
+    } else {
+      showToast('Failed: ' + (result.error || 'unknown'), 'error');
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── Threats ────────────────────────────────────────────────────
+async function loadThreats() {
+  var container = el('threats-list');
+  container.innerHTML = '<div class="loading-text">Loading...</div>';
+
+  try {
+    var data   = await callWorkerDirect('/threats');
+    var threats = data.threats || [];
+
+    el('stat-threats').textContent = data.total || threats.length;
+    el('threats-count').textContent = threats.length + ' entries';
+
+    if (!threats.length) {
+      container.innerHTML = '<div class="empty-msg">✅ No threat intel entries. System clear.</div>';
+      return;
+    }
+
+    container.innerHTML =
+      '<table class="intel-table">' +
+      '<thead><tr><th>IP</th><th>REASON</th><th>FLAGGED AT</th><th>SCORE</th><th>ACTION</th></tr></thead>' +
+      '<tbody>' +
+      threats.map(function(t) {
+        var score = t.score || 0;
+        var dot   = score >= 80 ? 'red' : score >= 60 ? 'orange' : score >= 40 ? 'yellow' : 'green';
+        return '<tr>' +
+          '<td><span class="risk-dot ' + dot + '"></span>' + esc(t.ip) + '</td>' +
+          '<td style="color:var(--text-muted,#5a7a9a)">' + esc(t.reason||'—') + '</td>' +
+          '<td style="color:var(--text-muted,#5a7a9a);font-size:10px">' + (t.blockedAt ? new Date(t.blockedAt).toLocaleString() : '—') + '</td>' +
+          '<td style="color:' + (score>=80?'var(--red)':score>=60?'#ff6600':'var(--yellow)') + '">' + score + '</td>' +
+          '<td><button class="btn btn-green btn-sm" onclick="quickRemove(\'' + esc(t.ip) + '\')">Remove</button></td>' +
+          '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  } catch(e) {
+    container.innerHTML = '<div class="empty-msg" style="color:var(--red)">Error: ' + esc(e.message) + '</div>';
+  }
+}
+
+async function quickRemove(ip) {
+  if (!confirm('Remove ' + ip + ' from threat intel?')) return;
+  el('ip-lookup-input').value = ip;
+  await removeFromIntel();
+}
+
+// ── Geo Stats ──────────────────────────────────────────────────
+async function loadGeoStats() {
+  var container = el('geo-list');
+  container.innerHTML = '<div class="loading-text">Loading...</div>';
+
+  try {
+    var data      = await callAPI({ action: 'getGeoStats' });
+    var countries = data.countries || [];
+
+    el('stat-geo').textContent = countries.length;
+
+    if (!countries.length) {
+      container.innerHTML = '<div class="empty-msg">No geo data available yet.</div>';
+      return;
+    }
+
+    var max = countries[0].count || 1;
+    container.innerHTML =
+      '<table class="intel-table">' +
+      '<thead><tr><th>COUNTRY</th><th>REQUESTS</th><th>SHARE</th><th>BAR</th></tr></thead>' +
+      '<tbody>' +
+      countries.map(function(c) {
+        var pct = Math.round((c.count / max) * 100);
+        var color = pct > 75 ? '#ff2244' : pct > 40 ? '#ff6600' : '#00d4ff';
+        return '<tr>' +
+          '<td><strong>' + esc(c.country||'??') + '</strong></td>' +
+          '<td>' + c.count + '</td>' +
+          '<td style="color:var(--text-muted,#5a7a9a);font-size:10px">' + Math.round((c.count/max)*100) + '% of top</td>' +
+          '<td style="width:120px"><div style="background:#0a1520;height:6px;border-radius:2px">' +
+          '<div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:2px"></div>' +
+          '</div></td>' +
+          '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  } catch(e) {
+    container.innerHTML = '<div class="empty-msg" style="color:var(--red)">Error: ' + esc(e.message) + '</div>';
+  }
+}
+
+// ── Audit Log ──────────────────────────────────────────────────
+async function loadAudit() {
+  var container = el('audit-list');
+  container.innerHTML = '<div class="loading-text">Loading...</div>';
+
+  try {
+    var data = await callWorkerDirect('/audit');
+    allAuditEntries = data.entries || [];
+    el('stat-audit').textContent = data.total || allAuditEntries.length;
+    renderAudit(allAuditEntries);
+  } catch(e) {
+    container.innerHTML = '<div class="empty-msg" style="color:var(--text-muted,#5a7a9a)">Audit log requires SOC_WORKER_KEY in the worker secrets. Entries: ' + esc(e.message) + '</div>';
+  }
+}
+
+function filterAudit() {
+  var q = (el('audit-filter').value || '').toLowerCase();
+  var filtered = allAuditEntries.filter(function(e) {
+    return !q || (e.ip||'').includes(q) || (e.path||'').includes(q) || (e.method||'').includes(q.toUpperCase());
+  });
+  renderAudit(filtered);
+}
+
+function renderAudit(entries) {
+  var container = el('audit-list');
+  if (!entries || !entries.length) {
+    container.innerHTML = '<div class="empty-msg">No audit log entries found.</div>';
+    return;
+  }
+  container.innerHTML =
+    '<table class="intel-table">' +
+    '<thead><tr><th>TIMESTAMP</th><th>IP</th><th>METHOD</th><th>PATH</th><th>STATUS</th><th>COUNTRY</th></tr></thead>' +
+    '<tbody>' +
+    entries.slice(0, 50).map(function(e) {
+      var statusColor = e.statusCode >= 400 ? 'var(--red)' : e.statusCode >= 300 ? '#ff6600' : 'var(--green, #00ff88)';
+      return '<tr>' +
+        '<td style="font-size:10px;color:var(--text-muted,#5a7a9a)">' + (e.timestamp ? new Date(e.timestamp).toLocaleTimeString('en-US',{hour12:false}) : '—') + '</td>' +
+        '<td>' + esc(e.ip||'—') + '</td>' +
+        '<td style="color:var(--cyan)">' + esc(e.method||'—') + '</td>' +
+        '<td style="color:var(--text-muted,#5a7a9a);max-width:200px;overflow:hidden;text-overflow:ellipsis">' + esc(e.path||'—') + '</td>' +
+        '<td style="color:' + statusColor + ';font-weight:bold">' + (e.statusCode||'—') + '</td>' +
+        '<td>' + esc(e.country||'??') + '</td>' +
+        '</tr>';
+    }).join('') +
+    '</tbody></table>';
+}
+
+// ── Export ─────────────────────────────────────────────────────
+async function exportCSV(limit) {
+  showToast('Exporting ' + limit + ' logs...', 'info', 2000);
+  try {
+    var data = await callAPI({ action: 'exportCSV', limit: limit });
+    if (!data.success || !data.csv) { showToast('Export failed: ' + (data.error||'no data'), 'error'); return; }
+
+    var blob = new Blob([data.csv], { type: 'text/csv' });
+    var a    = document.createElement('a');
+    a.href   = URL.createObjectURL(blob);
+    a.download = 'cybaash-soc-logs-' + new Date().toISOString().split('T')[0] + '-' + limit + '.csv';
+    a.click();
+    showToast('Exported ' + data.rows + ' rows', 'success');
+  } catch(e) {
+    showToast('Export error: ' + e.message, 'error');
+  }
+}
+
+async function sendReport() {
+  showToast('Sending daily report...', 'info', 2000);
+  try {
+    var data = await callAPI({ action: 'sendDailyReport' });
+    if (data.success) showToast('Daily report sent', 'success');
+    else showToast('Failed: ' + (data.error||'unknown'), 'error');
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function purgeLogs() {
+  var days = parseInt(el('purge-days').value) || 30;
+  if (!confirm('Delete all SOC logs older than ' + days + ' days? This cannot be undone.')) return;
+
+  showToast('Purging logs older than ' + days + ' days...', 'warning', 3000);
+  try {
+    var data = await callAPI({ action: 'purgeOldLogs', keepDays: days });
+    if (data.success) {
+      var out = el('export-result');
+      out.style.display = 'block';
+      out.classList.add('has-result');
+      out.textContent = '✅ Purge complete\nDeleted: ' + data.deleted + ' rows\nKeep last: ' + days + ' days';
+      showToast('Purged ' + data.deleted + ' old log rows', 'success');
+    } else {
+      showToast('Purge failed: ' + (data.error||'unknown'), 'error');
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── Boot ───────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  el('login-form')?.addEventListener('submit', handleLogin);
+  el('logout-btn')?.addEventListener('click', logout);
+  el('toggle-pw')?.addEventListener('click', function() {
+    var inp = el('login-password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
+  el('ip-lookup-input')?.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') lookupIP();
+  });
+
+  if (!checkSession()) {
+    el('login-screen').style.display = 'flex';
+  }
+});
+</script>
+</body>
+</html>

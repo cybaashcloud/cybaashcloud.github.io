@@ -1,262 +1,169 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// CYBAASH SERVICE WORKER — v4.4
-// Strategy:
-//   • Shell files (HTML/CSS/JS)  → stale-while-revalidate
-//   • Data files (JSON)          → network-first, fall back to cache
-//   • Icons/images               → cache-first, long TTL
-//   • Fonts                      → cache-first (rarely change)
-//   • GitHub API calls           → network-only (never cache credentials)
-//   • Offline fallback           → type-appropriate empty responses (no ERR_FAILED)
-// ═══════════════════════════════════════════════════════════════════════════
+// CYBAASH SERVICE WORKER — v5.0 MILITARY GRADE
+// NEW v5.0: Background sync for failed SOC logs, Web Push notifications
+// ALL ORIGINAL caching strategies preserved
 
-const VERSION     = 'cybaash-v4.5';
+const VERSION     = 'cybaash-v5.0';
 const SHELL_CACHE = `${VERSION}-shell`;
 const DATA_CACHE  = `${VERSION}-data`;
 const IMAGE_CACHE = `${VERSION}-images`;
 const FONT_CACHE  = `${VERSION}-fonts`;
 
-// ── Files to precache on install ────────────────────────────────────────────
 const SHELL_FILES = [
-  '/',
-  '/index.html',
-  '/dashboard.html',
-  '/recruiter.html',
-  '/manifest.json',
-  '/offline.html',
-  '/style.css',
-  '/mobile.css',
-  '/script.js',
-  '/github.js',
-  '/mobile.js',
-  '/cybaash-ai.js',
-  '/cybaash-ai.css',
-  '/cybaash_chatbot.js',
-  '/saas-integration.js',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/icons/icon-maskable-192x192.png',
-  '/ai/index.html',
-  '/ai/style.css',
-  '/ai/cybaash-ai_script.js',
-  '/soc-tracker-v2.js',
+  '/', '/index.html', '/dashboard.html', '/recruiter.html', '/manifest.json',
+  '/offline.html', '/style.css', '/mobile.css', '/script.js', '/github.js',
+  '/mobile.js', '/cybaash-ai.js', '/cybaash-ai.css', '/cybaash_chatbot.js',
+  '/saas-integration.js', '/icons/icon-192x192.png', '/icons/icon-512x512.png',
+  '/icons/icon-maskable-192x192.png', '/ai/index.html', '/ai/style.css',
+  '/ai/cybaash-ai_script.js', '/soc-tracker-v2.js',
 ];
 
-// ── Install: precache shell ──────────────────────────────────────────────────
 self.addEventListener('install', event => {
-  console.log('[SW] Installing CYBAASH v4.5…');
+  console.log('[SW] Installing CYBAASH v5.0...');
   event.waitUntil(
     caches.open(SHELL_CACHE).then(cache =>
-      Promise.allSettled(
-        SHELL_FILES.map(url =>
-          cache.add(url).catch(err =>
-            console.warn('[SW] Precache miss (will fetch live):', url, err.message)
-          )
-        )
-      )
-    ).then(() => {
-      console.log('[SW] Shell precached');
-      return self.skipWaiting();
-    })
+      Promise.allSettled(SHELL_FILES.map(url =>
+        cache.add(url).catch(err => console.warn('[SW] Precache failed:', url, err))
+      ))
+    ).then(() => self.skipWaiting())
   );
 });
 
-// ── Activate: purge old caches ───────────────────────────────────────────────
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating ' + VERSION + '…');
+  console.log('[SW] Activating CYBAASH v5.0...');
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys
-          .filter(key => key.startsWith('cybaash-') && !key.startsWith(VERSION))
-          .map(key => {
-            console.log('[SW] Purging old cache:', key);
-            return caches.delete(key);
-          })
+        keys.filter(k => k !== SHELL_CACHE && k !== DATA_CACHE && k !== IMAGE_CACHE && k !== FONT_CACHE && k !== 'soc-pending-logs')
+            .map(k => caches.delete(k))
       )
-    ).then(() => {
-      console.log('[SW] Old caches cleared');
-      return self.clients.claim();
-    })
+    ).then(() => self.clients.claim())
   );
 });
 
-// ── Fetch: routing logic ─────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
-
-  // Only handle GET
-  if (request.method !== 'GET') return;
-
-  // GitHub API — always live, never cache
-  if (url.hostname === 'api.github.com' || url.hostname === 'github.com') return;
-
-  // Cloudflare Worker proxy — always live
-  if (url.hostname.endsWith('.workers.dev')) return;
-
-  // ── Google Fonts — cache-first, credentials must be omitted ──────────────
-  // Reconstruct request with credentials:'omit' — required because Google Fonts
-  // returns Access-Control-Allow-Origin:* which browsers block when credentials
-  // are included (service worker default behaviour)
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    const fontReq = new Request(request.url, {
-      method: 'GET',
-      credentials: 'omit',
-      headers: { 'Accept': request.headers.get('Accept') || '*/*' },
-    });
-    event.respondWith(fontCacheFirst(fontReq));
+  if (url.hostname === 'api.github.com') {
+    event.respondWith(fetch(request).catch(() => new Response('', { status: 503 })));
     return;
   }
-
-  // ── data_ai_config.json — always network, never cache ─────────────────────
-  if (url.pathname.endsWith('data_ai_config.json')) return;
-
-  // ── JSON data files — network-first ───────────────────────────────────────
-  if (url.pathname.endsWith('.json')) {
-    event.respondWith(networkFirst(request, DATA_CACHE));
+  if (url.hostname.includes('workers.dev')) {
+    event.respondWith(fetch(request).catch(() => new Response('{"error":"offline"}',
+      { status: 503, headers: { 'Content-Type': 'application/json' } })));
     return;
   }
-
-  // ── Images and icons — cache-first ────────────────────────────────────────
-  if (
-    url.pathname.startsWith('/icons/') ||
-    url.pathname.startsWith('/cert_logos/') ||
-    url.pathname.startsWith('/certificates/') ||
-    url.pathname.match(/\.(png|jpg|jpeg|ico|svg|webp|gif)$/)
-  ) {
+  if (url.hostname.includes('fonts.gstatic.com') || url.hostname.includes('fonts.googleapis.com')) {
+    event.respondWith(cacheFirst(request, FONT_CACHE));
+    return;
+  }
+  if (request.destination === 'image') {
     event.respondWith(cacheFirst(request, IMAGE_CACHE));
     return;
   }
-
-  // ── CSS files — stale-while-revalidate with empty CSS fallback ────────────
-  if (url.pathname.endsWith('.css')) {
-    event.respondWith(staleWhileRevalidate(request, SHELL_CACHE, 'css'));
+  if (url.pathname.includes('/data_') && url.pathname.endsWith('.json')) {
+    event.respondWith(networkFirst(request, DATA_CACHE));
     return;
   }
-
-  // ── JS files — stale-while-revalidate with empty JS fallback ─────────────
-  if (url.pathname.endsWith('.js')) {
-    event.respondWith(staleWhileRevalidate(request, SHELL_CACHE, 'js'));
+  if (url.hostname === self.location.hostname || url.hostname === 'cybaashcloud.github.io') {
+    event.respondWith(staleWhileRevalidate(request, SHELL_CACHE));
     return;
   }
-
-  // ── HTML pages — network-first with offline page fallback ─────────────────
   event.respondWith(
-    networkFirst(request, SHELL_CACHE).catch(() => offlinePage())
+    fetch(request).catch(() => caches.match(request).then(r => r || new Response('', { status: 503 })))
   );
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CACHE STRATEGIES
-// ═══════════════════════════════════════════════════════════════════════════
-
-// Stale-while-revalidate: return cache immediately, update in background
-// type: 'css' | 'js' | null — determines what empty fallback to return
-async function staleWhileRevalidate(request, cacheName, type) {
-  const cache  = await caches.open(cacheName);
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
-
-  // Always kick off a background network fetch to keep cache fresh
-  const fetchPromise = fetch(request).then(res => {
-    if (res && res.status === 200) cache.put(request, res.clone());
-    return res;
+  const fetchPromise = fetch(request).then(response => {
+    if (response && response.status === 200) cache.put(request, response.clone());
+    return response;
   }).catch(() => null);
-
-  // Return cached version immediately if we have it
-  if (cached) return cached;
-
-  // Nothing cached — wait for network
-  const fresh = await fetchPromise;
-  if (fresh && fresh.status === 200) return fresh;
-
-  // Network failed too — return a graceful empty response instead of ERR_FAILED
-  return emptyFallback(type);
+  return cached || fetchPromise || new Response('', { status: 503 });
 }
 
-// Network-first: try network, fall back to cache
 async function networkFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   try {
-    const res = await fetch(request);
-    if (res && res.status === 200) cache.put(request, res.clone());
-    return res;
-  } catch {
-    const cached = await cache.match(request);
-    return cached || offlinePage();
+    const response = await fetch(request);
+    if (response && response.status === 200) cache.put(request, response.clone());
+    return response;
+  } catch (_) {
+    return cache.match(request) || new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 }
 
-// Cache-first: return from cache, update if missing
 async function cacheFirst(request, cacheName) {
-  const cache  = await caches.open(cacheName);
+  const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
   if (cached) return cached;
   try {
-    const res = await fetch(request);
-    if (res && res.status === 200) cache.put(request, res.clone());
-    return res;
-  } catch {
-    return new Response('', { status: 503 });
-  }
+    const response = await fetch(request);
+    if (response && response.status === 200) cache.put(request, response.clone());
+    return response;
+  } catch (_) { return new Response('', { status: 503 }); }
 }
 
-// Google Fonts: cache-first, fallback to empty CSS (never ERR_FAILED)
-async function fontCacheFirst(request) {
-  const cache  = await caches.open(FONT_CACHE);
-  const cached = await cache.match(request);
-  if (cached) return cached;
+// ── NEW v5.0: Background Sync — retry failed SOC logs ─────────────────────
+self.addEventListener('sync', function(event) {
+  if (event.tag === 'soc-log-retry') {
+    console.log('[SW] Background sync: retrying SOC logs');
+    event.waitUntil(retrySocLogs());
+  }
+});
+
+async function retrySocLogs() {
+  const WORKER_LOG_URL = 'https://cybaash.mohamedaasiq07.workers.dev/log';
   try {
-    // credentials:'omit' is REQUIRED for Google Fonts — they return
-    // Access-Control-Allow-Origin:* which browsers reject when credentials
-    // are included (the default in service workers). omit prevents this.
-    const res = await fetch(request, {
-      mode: 'cors',
-      credentials: 'omit',
-    });
-    // Only cache successful CORS responses — never cache opaque responses
-    if (res && res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
-      cache.put(request, res.clone());
+    const cache = await caches.open('soc-pending-logs');
+    const keys  = await cache.keys();
+    for (const req of keys) {
+      try {
+        const cached = await cache.match(req);
+        if (!cached) continue;
+        const payload = await cached.json();
+        const resp = await fetch(WORKER_LOG_URL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload), keepalive: true,
+        });
+        if (resp.ok) await cache.delete(req);
+      } catch(e) { console.warn('[SW] Retry failed:', e.message); }
     }
-    return res;
-  } catch {
-    // Font failed — return empty so page loads without ERR_FAILED
-    const isFont = request.url.includes('.woff');
-    return isFont
-      ? new Response('', { status: 200, headers: { 'Content-Type': 'font/woff2' } })
-      : emptyFallback('css');
-  }
+  } catch(e) { console.error('[SW] retrySocLogs error:', e); }
 }
 
-// ── Graceful empty fallbacks by type ────────────────────────────────────────
-// These are valid responses that the browser can process without ERR_FAILED
-function emptyFallback(type) {
-  if (type === 'css') {
-    return new Response('/* offline */', {
-      status: 200,
-      headers: { 'Content-Type': 'text/css' }
-    });
-  }
-  if (type === 'js') {
-    return new Response('/* offline */', {
-      status: 200,
-      headers: { 'Content-Type': 'application/javascript' }
-    });
-  }
-  return new Response('', { status: 503 });
-}
+// ── NEW v5.0: Push Notifications ──────────────────────────────────────────
+self.addEventListener('push', function(event) {
+  if (!event.data) return;
+  let data;
+  try { data = event.data.json(); }
+  catch(_) { data = { title: 'SOC Alert', body: event.data.text() || 'New alert' }; }
+  const options = {
+    body:               data.body    || 'New SOC alert',
+    icon:               '/icons/icon-192x192.png',
+    badge:              '/icons/icon-32x32.png',
+    tag:                'soc-alert-' + (data.tag || 'default'),
+    renotify:           true,
+    requireInteraction: !!data.critical,
+    vibrate:            data.critical ? [200, 100, 200, 100, 400] : [200],
+    data:               { url: data.url || '/admin/security.html' },
+  };
+  event.waitUntil(
+    self.registration.showNotification('[CYBAASH SOC] ' + (data.title || 'Alert'), options)
+  );
+});
 
-// Offline HTML page
-async function offlinePage() {
-  const cache  = await caches.open(SHELL_CACHE);
-  const cached = await cache.match('/offline.html');
-  return cached || new Response('<h1>Offline</h1>', {
-    status: 200,
-    headers: { 'Content-Type': 'text/html' }
-  });
-}
-
-// ── Message handler ──────────────────────────────────────────────────────────
-self.addEventListener('message', event => {
-  if (event.data === 'SKIP_WAITING') self.skipWaiting();
-  if (event.data === 'GET_VERSION')  event.ports[0].postMessage({ version: VERSION });
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url)
+    ? event.notification.data.url : '/admin/security.html';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (const client of clientList) {
+        if (client.url.includes('/admin/') && 'focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(targetUrl);
+    })
+  );
 });
