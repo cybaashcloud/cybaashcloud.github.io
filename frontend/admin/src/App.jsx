@@ -254,19 +254,7 @@ const CSS = `
   .tag-input{background:none;border:none;outline:none;font-family:'Share Tech Mono',monospace;
     font-size:11px;color:var(--text);min-width:80px;flex:1}
   /* CREDENTIALS TABS */
-  .cred-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .cred-tab{padding:10px 20px;cursor:pointer;font-family:'Share Tech Mono',monospace;
-    font-size:10px;letter-spacing:2px;color:var(--dim);border-bottom:2px solid transparent;
-    transition:all .15s;display:flex;align-items:center;gap:8px;text-transform:uppercase;
-    background:none;border-left:none;border-right:none;border-top:none}
   .cred-tab:hover{color:var(--text)}
-  .active-credly{border-bottom-color:var(--yellow)!important;color:var(--yellow)!important}
-  .active-professional{border-bottom-color:var(--green)!important;color:var(--green)!important}
-  .active-linkedin{border-bottom-color:var(--blue)!important;color:var(--blue)!important}
-  .cred-tab-count{font-size:9px;padding:1px 6px;border-radius:10px;font-weight:700}
-  .cred-tab-count-credly{background:rgba(255,215,0,.12);color:var(--yellow);border:1px solid rgba(255,215,0,.25)}
-  .cred-tab-count-professional{background:rgba(0,255,136,.08);color:var(--green);border:1px solid rgba(0,255,136,.2)}
-  .cred-tab-count-linkedin{background:rgba(0,212,255,.1);color:var(--blue);border:1px solid rgba(0,212,255,.2)}
   .cred-section-banner{padding:10px 14px;margin-bottom:14px;border-left:2px solid;
     font-size:10px;letter-spacing:1.5px;background:var(--bg2)}
   .cred-section-banner-credly{border-color:var(--yellow);color:var(--yellow)}
@@ -393,9 +381,7 @@ const CSS = `
     .modal-footer{padding:12px 14px;flex-wrap:wrap;gap:8px}
     .modal-footer .btn{flex:1;justify-content:center}
     /* Credentials tab strip */
-    .cred-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap}
-    .cred-tabs::-webkit-scrollbar{display:none}
-    .cred-tab{flex-shrink:0;white-space:nowrap;min-height:44px;padding:10px 14px}
+    .sub-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr))}
     /* Credential list rows */
     .cred-row{flex-wrap:wrap;gap:6px;padding:10px 0}
     /* Skills — skill name min-width flex */
@@ -442,7 +428,7 @@ const CSS = `
     .project-img{height:80px}
     /* Cred banner */
     .cred-section-banner{font-size:9px;padding:8px 10px}
-    .cred-tab{padding:10px 10px;font-size:8px}
+    .sub-grid{grid-template-columns:repeat(auto-fill,minmax(80px,1fr))}
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -602,10 +588,6 @@ const CSS = `
   }
 
   /* ── CREDENTIAL TABS — fade edge scroll affordance ── */
-  .cred-tabs {
-    -webkit-mask-image: linear-gradient(to right, transparent 0px, #000 8px, #000 calc(100% - 8px), transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0px, #000 8px, #000 calc(100% - 8px), transparent 100%);
-  }
 
   /* ── BUTTONS — touch feedback ── */
   @media(hover:none) and (pointer:coarse) {
@@ -855,13 +837,7 @@ const CSS = `
     .modal-footer .btn { flex:1; justify-content:center; }
 
     /* Cred tabs */
-    .cred-tabs {
-      overflow-x:auto !important; -webkit-overflow-scrolling:touch !important;
-      scrollbar-width:none; flex-wrap:nowrap !important;
-      -webkit-mask-image:linear-gradient(to right,transparent 0,#000 6px,#000 calc(100% - 6px),transparent 100%);
-    }
-    .cred-tabs::-webkit-scrollbar { display:none; }
-    .cred-tab { flex-shrink:0 !important; min-height:44px !important; padding:0 14px !important; display:flex !important; align-items:center !important; touch-action:manipulation; }
+
 
     /* Auth screen */
     .auth-shell { padding-top:max(24px,env(safe-area-inset-top)) !important; padding-bottom:max(24px,env(safe-area-inset-bottom)) !important; }
@@ -916,7 +892,6 @@ const CSS = `
     .form-input,.form-textarea,.form-select { font-size:16px !important; }
     .project-img { height:80px; }
     .cred-section-banner { font-size:9px !important; padding:8px 10px !important; }
-    .cred-tab { padding:0 10px !important; font-size:8px !important; }
     input,textarea,select { font-size:16px !important; }
   }
 
@@ -1550,38 +1525,129 @@ const BLANK_LINKEDIN = () => ({
   courseId: '', learningPathName: '',
 })
 
-// Which types belong to each tab
-const TAB_TYPES = {
-  credly:       ['badge', 'credly'],
-  professional: ['certificate', 'exam'],
-  linkedin:     ['linkedin', 'learning-path', 'other'],
+// ── Subsections matching recruiter.html exactly ──────────────────────────────
+const CRED_SUBS = [
+  { id: 'credly',    label: 'Credly Badges',            col: 'var(--amber)' },
+  { id: 'aws',       label: 'AWS / Amazon',             col: '#ff9900' },
+  { id: 'cert',      label: 'Professional Certs',       col: 'var(--g)' },
+  { id: 'cybersec',  label: 'Cybersecurity',            col: 'var(--r)' },
+  { id: 'aiml',      label: 'AI & ML',                  col: 'var(--purple)' },
+  { id: 'cloud',     label: 'Cloud & DevOps',           col: 'var(--blue)' },
+  { id: 'prog',      label: 'Programming',              col: '#00ff88' },
+  { id: 'business',  label: 'Business & Mgmt',         col: 'var(--y)' },
+  { id: 'marketing', label: 'Marketing & SEO',          col: '#f7931e' },
+  { id: 'data',      label: 'Data & Analytics',         col: '#44bbff' },
+  { id: 'other',     label: 'Other',                    col: 'var(--tx3)' },
+]
+
+// Same classification logic as recruiter.html getSubsection()
+function getSubsection(c) {
+  if (c.type === 'credly' || c.type === 'badge') return 'credly'
+  if (c.type === 'certificate' || c.type === 'exam') {
+    const iss = (c.issuer || '').toLowerCase()
+    if (iss.includes('amazon') || iss.includes('aws')) return 'aws'
+    return 'cert'
+  }
+  const title = (c.title || '').toLowerCase()
+  const tags  = (c.tags  || []).map(t => t.toLowerCase()).join(' ')
+  const th = (...kws) => kws.some(k => title.includes(k))
+  const tg = (...kws) => kws.some(k => tags.includes(k))
+
+  if (th('cybersecurity','ethical hack','penetration','pentest','red team','blue team',
+         'soc ','siem','firewall','malware','incident response','threat','vulnerability',
+         'exploit','forensic','owasp','ransomware','phishing','security','kali',
+         'network security','hacking','nmap','wireshark','cisco','packet tracer',
+         'information security','privacy','authentication','encryption','zero trust')
+    || tg('security','cybersecurity','hacking','pentest','soc','siem','firewall','malware',
+          'phishing','ransomware','vulnerability','exploit','forensic','ethical hack',
+          'red team','blue team','networking','linux','cisco','owasp','threat','incident'))
+    return 'cybersec'
+
+  if (th('artificial intelligence','machine learning','generative ai','gen ai',
+         'llm','large language','agentic ai','copilot','responsible ai','deep learning',
+         'neural network','mlops','ai security','ai product','ai for','ai in','ai pair',
+         'ai tools','ai writing','ai software','ai imaging','ai native','ai governance',
+         'red teaming for generative')
+    || tg('ai/ml','artificial intelligence','machine learning','generative','llm','mlops'))
+    return 'aiml'
+
+  if (th('aws','azure','cloud','devops','docker','kubernetes','snowflake',
+         'finops','devsecops','ci/cd','infrastructure as code','serverless','multicloud',
+         'cloud strategy','cloud architecture','cloud security','cloud practitioner',
+         'cloud quest','amazon','security hub')
+    || tg('cloud','devops','docker','aws','azure','snowflake','kubernetes','ci/cd'))
+    return 'cloud'
+
+  if (th('python','javascript','java ','c++','c# ','html','css ','react','node',
+         'swift','kotlin','android','github','git ','rest api','sql ','nosql',
+         'programming','software development','coding','web developer',
+         'full-stack','backend','frontend','blockchain','bitcoin',
+         '.net','asp.net','red hat','linux','ubuntu','bash','shell','unix','kali purple',
+         'learning linux','linux command','refactoring')
+    || tg('python','javascript','java','programming','github','coding','sql','react',
+          'android','swift','kotlin','c++','c#','html','linux','bash'))
+    return 'prog'
+
+  if (th('leadership','management','product management','agile','scrum',
+         'project management','operations management','ciso','executive','strategy',
+         'negotiat','emotional intelligence','interpersonal','human skills','manager',
+         'first-time manager','diversity','equity','inclusion','lean','operational',
+         'supply chain','quality management','program management','it leadership',
+         'business analysis','business writing','change','innovation','organizational',
+         'public speaking','speech','impromptu','storytelling','presenting',
+         'body language','conflict resolution','assertive','workplace',
+         'communication','customer service','customer','rapport','listening',
+         'feedback','credibility','confidence','trust','cultural',
+         'benefits realization','process improvement','it architecture','it strategy',
+         'creating positive','facilitating','responsible','reputation',
+         'quick scripts','difficult conversations','non-technical','mental health',
+         'motivat','personality','stability','disruption',
+         'solution sales','selling','c-suite','succeeding as','influencing')
+    || tg('management','leadership','product management','negotiat','agile',
+          'emotional intelligence','communication','scrum','customer'))
+    return 'business'
+
+  if (th('marketing','seo','social media','email marketing','content marketing',
+         'copywriting','digital marketing','adobe','illustrator','indesign','premiere',
+         'photoshop','creative','canva','youtube seo','conversion rate','ecommerce',
+         'newsletter','grammarly','writing','grammar','persuasive',
+         'storytelling for business')
+    || tg('marketing','seo','social media','adobe','email marketing','content','copywriting'))
+    return 'marketing'
+
+  if (th('data science','data engineering','data analysis','analytics',
+         'tableau','power bi','statistics','knime','data visualization','data literacy',
+         'machine learning statistical','wolfram','data set','data structures')
+    || tg('data','analytics','statistics','tableau','power bi','knime','wolfram'))
+    return 'data'
+
+  return 'other'
 }
 
+// Legacy CRED_TABS kept for blank form templates only
 const CRED_TABS = [
-  { id: 'credly',       label: 'Credly Badges',              icon: '🏅', color: 'var(--amber)',  blank: BLANK_CREDLY },
-  { id: 'professional', label: 'Professional Certificates',  icon: '📜', color: 'var(--g)',      blank: BLANK_PROFESSIONAL },
-  { id: 'linkedin',     label: 'LinkedIn & Others',          icon: '🔗', color: 'var(--blue)',   blank: BLANK_LINKEDIN },
+  { id: 'credly',       label: 'Credly Badges',             color: 'var(--amber)', blank: BLANK_CREDLY },
+  { id: 'professional', label: 'Professional Certificates', color: 'var(--g)',     blank: BLANK_PROFESSIONAL },
+  { id: 'linkedin',     label: 'LinkedIn & Others',         color: 'var(--blue)',  blank: BLANK_LINKEDIN },
 ]
 
 // Sub-section CSS additions (tab strip + section divider)
 const CRED_CSS = `
-  .cred-tabs{display:flex;gap:0;border-bottom:1px solid var(--bd);margin-bottom:24px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-  .cred-tab{padding:10px 22px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:11px;
-    letter-spacing:2px;color:var(--tx3);border-bottom:2px solid transparent;transition:all .2s;
-    display:flex;align-items:center;gap:8px;user-select:none;text-transform:uppercase}
-  .cred-tab:hover{color:var(--tx)}
-  .cred-tab.active-credly{color:var(--amber);border-bottom-color:var(--amber)}
-  .cred-tab.active-professional{color:var(--g);border-bottom-color:var(--g)}
-  .cred-tab.active-linkedin{color:var(--blue);border-bottom-color:var(--blue)}
-  .cred-tab-count{font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700}
-  .cred-tab-count-credly{background:rgba(255,170,0,.15);color:var(--amber);border:1px solid #664400}
-  .cred-tab-count-professional{background:rgba(0,255,65,.08);color:var(--g);border:1px solid var(--g3)}
-  .cred-tab-count-linkedin{background:rgba(68,170,255,.1);color:var(--blue);border:1px solid #004488}
-  .cred-section-banner{padding:12px 16px;margin-bottom:16px;border-left:3px solid;
+  /* ── Subsection stat-card grid (matches recruiter.html) ── */
+  .sub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin-bottom:20px}
+  .sub-card{background:var(--panel);border:1px solid var(--bd);padding:10px 8px 8px;text-align:center;
+    cursor:pointer;transition:border-color .18s,background .18s;display:flex;flex-direction:column;
+    align-items:center;gap:4px;position:relative;overflow:hidden}
+  .sub-card:hover{border-color:var(--tx3)}
+  .sub-card.active{background:rgba(0,212,255,.03)}
+  .sub-n{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;line-height:1;transition:color .18s}
+  .sub-l{font-size:7px;letter-spacing:1.2px;color:var(--tx3);text-transform:uppercase;line-height:1.3;transition:color .18s}
+  .sub-card.active .sub-l{color:inherit}
+  .sub-bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:currentColor;opacity:0;transition:opacity .18s}
+  .sub-card.active .sub-bar{opacity:1}
+  /* ── Retained for banner ── */
+  .cred-section-banner{padding:10px 14px;margin-bottom:14px;border-left:3px solid;
     font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1.5px;background:var(--bg2)}
-  .cred-section-banner-credly{border-color:var(--amber);color:var(--amber)}
-  .cred-section-banner-professional{border-color:var(--g);color:var(--g)}
-  .cred-section-banner-linkedin{border-color:var(--blue);color:var(--blue)}
   /* ── CERT CARD GRID (matches recruiter.html) ── */
   .cred-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:4px}
   .cred-card{background:var(--panel);border:1px solid var(--border);display:flex;flex-direction:column;
@@ -1617,6 +1683,7 @@ const CRED_CSS = `
 function CredentialsSection({ data, onSave }) {
   const [creds, setCreds]     = useState(data || [])
   const [credTab, setCredTab] = useState('credly')
+  const [subSec, setSubSec]   = useState('credly')
   const [modal, setModal]     = useState(null)
   const [form, setForm]       = useState({})
   const [confirm, setConfirm] = useState(null)
@@ -1701,18 +1768,19 @@ function CredentialsSection({ data, onSave }) {
   const del = async id => { const prev = creds; await commit(creds.filter(c => c.id !== id), prev); setConfirm(null) }
   const u   = k => e => setForm(p => ({ ...p, [k]: e.target.value }))
 
-  // Items for the active tab
-  const tabTypes   = TAB_TYPES[credTab] || []
-  const tabItems   = creds.filter(c => tabTypes.includes(c.type))
-  const filtered   = tabItems.filter(c =>
+  // Items for the active subsection (using recruiter-matching getSubsection)
+  const subCfg   = CRED_SUBS.find(s => s.id === subSec) || CRED_SUBS[0]
+  const subItems = creds.filter(c => getSubsection(c) === subSec)
+  const filtered = subItems.filter(c =>
     c.title?.toLowerCase().includes(search.toLowerCase()) ||
     c.issuer?.toLowerCase().includes(search.toLowerCase())
   )
 
-  const tabCfg = CRED_TABS.find(t => t.id === credTab)
+  // For "Add" button — pick blank template by type
+  const tabCfg = CRED_TABS.find(t => t.id === credTab) || CRED_TABS[0]
 
-  // Count per tab
-  const countFor = id => creds.filter(c => TAB_TYPES[id]?.includes(c.type)).length
+  // Count per subsection
+  const countFor = id => creds.filter(c => getSubsection(c) === id).length
 
   return (
     <div>
@@ -1736,39 +1804,35 @@ function CredentialsSection({ data, onSave }) {
           />
           <button
             className="btn"
-            style={{ borderColor: tabCfg.color, color: tabCfg.color }}
+            style={{ borderColor: subCfg.col, color: subCfg.col }}
             onClick={() => open()}
           >
-            + Add {credTab === 'credly' ? 'Badge' : credTab === 'professional' ? 'Certificate' : 'Course'}
+            + Add Credential
           </button>
         </div>
       </div>
 
-      {/* Tab Strip */}
-      <div className="cred-tabs" role="tablist" aria-label="Credential categories">
-        {CRED_TABS.map(tab => (
+      {/* Subsection stat-card grid — matches recruiter.html */}
+      <div className="sub-grid" role="tablist" aria-label="Credential subsections">
+        {CRED_SUBS.filter(s => countFor(s.id) > 0 || s.id === subSec).map(s => (
           <button
-            key={tab.id}
+            key={s.id}
             role="tab"
-            aria-selected={credTab === tab.id}
-            className={`cred-tab${credTab === tab.id ? ` active-${tab.id}` : ''}`}
-            onClick={() => setCredTab(tab.id)}
-            style={{background:'none',border:'none',cursor:'pointer'}}
+            aria-selected={subSec === s.id}
+            className={`sub-card${subSec === s.id ? ' active' : ''}`}
+            onClick={() => setSubSec(s.id)}
+            style={{color: subSec === s.id ? s.col : 'var(--tx3)', borderColor: subSec === s.id ? s.col : undefined, background: 'none', fontFamily: 'inherit'}}
           >
-            <span aria-hidden="true">{tab.icon}</span>
-            <span>{tab.label}</span>
-            {countFor(tab.id) > 0 && (
-              <span className={`cred-tab-count cred-tab-count-${tab.id}`}>{countFor(tab.id)}</span>
-            )}
+            <span className="sub-n">{countFor(s.id)}</span>
+            <span className="sub-l">{s.label}</span>
+            <span className="sub-bar" />
           </button>
         ))}
       </div>
 
       {/* Section Banner */}
-      <div className={`cred-section-banner cred-section-banner-${credTab}`}>
-        {credTab === 'credly' && '▸ CREDLY DIGITAL BADGES — Paste your Credly badge URL or upload badge image'}
-        {credTab === 'professional' && '▸ PROFESSIONAL CERTIFICATES — Industry certifications, exam passes, learning paths'}
-        {credTab === 'linkedin' && '▸ LINKEDIN LEARNING & OTHERS — LinkedIn courses, MOOCs, online learning, misc certs'}
+      <div className="cred-section-banner" style={{borderColor: subCfg.col, color: subCfg.col}}>
+        ▸ {subCfg.label.toUpperCase()} — {countFor(subSec)} credential{countFor(subSec) !== 1 ? 's' : ''}
       </div>
 
       {/* Table */}
@@ -2093,7 +2157,7 @@ function CredentialsSection({ data, onSave }) {
             <button className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>
             <button
               className="btn"
-              style={{ borderColor: tabCfg.color, color: tabCfg.color }}
+              style={{ borderColor: subCfg.col, color: subCfg.col }}
               onClick={save}
             >
               Save
