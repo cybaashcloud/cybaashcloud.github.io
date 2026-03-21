@@ -19,8 +19,9 @@ const SOC_CONFIG = {
 
   // Admin password (hashed via SHA-256 — change this)
   // Generate: https://emn178.github.io/online-tools/sha256.html
-  // Default: "cybaash-soc-2024" → replace with your own
-  passwordHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+  // Default password: cybaash-soc-admin
+  // Change it: login → Settings tab → New Admin Password → Save
+  passwordHash: 'df132f130508df6a9d31b7fe7dc77a058296bb8d12c8202fca2c765dd0c7e52b',  // default: cybaash-soc-admin — change via Settings tab
 
   // Session timeout in minutes
   sessionTimeout: 30,
@@ -197,8 +198,23 @@ async function handleLogin(e) {
   }
 
   // Local fallback — check stored or default hash
-  const storedHash = localStorage.getItem('soc_pw_hash') || SOC_CONFIG.passwordHash;
+  const localHash   = localStorage.getItem('soc_pw_hash');
+  const defaultHash = SOC_CONFIG.passwordHash;
+  const storedHash  = localHash || defaultHash;
+
+  // Debug: log hash comparison (first 8 chars only for security)
+  console.log('[SOC] Login attempt — computed:', hash.substring(0,8), 'stored:', storedHash.substring(0,8), 'match:', hash === storedHash);
+
   if (hash === storedHash) {
+    grantSession();
+    return;
+  }
+
+  // If local hash doesn't match, try default hash as fallback
+  // (in case localStorage has a stale wrong value)
+  if (localHash && hash === defaultHash) {
+    console.log('[SOC] localStorage hash stale — matched default hash, clearing old hash');
+    localStorage.removeItem('soc_pw_hash');
     grantSession();
     return;
   }
@@ -261,23 +277,21 @@ setInterval(() => {
 // APPS SCRIPT API
 // ─────────────────────────────────────────────────────────────────────────────
 async function callAppsScript(action, params = {}) {
-  const url = SOC_CONFIG.appsScriptUrl;
-  if (!url || url.trim() === '') {
-    // Demo mode — return mock data
-    return getMockData(action, params);
-  }
+  // Always route through Cloudflare Worker /api to avoid CORS issues
+  // Worker proxies to Apps Script server-side with proper CORS headers
+  const WORKER_API = 'https://cybaash.mohamedaasiq07.workers.dev/api';
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(WORKER_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...params }),
       signal: AbortSignal.timeout(15000),
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
     return await response.json();
   } catch (err) {
-    termLog('warn', `API error [${action}]: ${err.message}`);
+    termLog('warn', 'API error [' + action + ']: ' + err.message);
     return getMockData(action, params);
   }
 }
@@ -845,23 +859,24 @@ function loadSettings() {
 // ─────────────────────────────────────────────────────────────────────────────
 // ── Load appsScriptUrl from Cloudflare Worker at startup ──────────────────
 async function loadSOCConfig() {
-  try {
-    const resp = await fetch('https://cybaash.mohamedaasiq07.workers.dev/config');
-    if (!resp.ok) throw new Error('Config fetch failed: ' + resp.status);
-    const cfg = await resp.json();
-    // Worker /config returns { endpoint, apiKey }
-    // endpoint is the Worker /log URL — but SOC dashboard talks directly
-    // to Apps Script, so we read the real URL from a separate Worker route
-    if (cfg.appsScriptUrl) SOC_CONFIG.appsScriptUrl = cfg.appsScriptUrl;
-    if (cfg.socDashUrl)    SOC_CONFIG.appsScriptUrl = cfg.socDashUrl;
-    // fallback: check localStorage (set via Settings tab)
-    const saved = localStorage.getItem('soc_apps_script_url');
-    if (saved && !SOC_CONFIG.appsScriptUrl) SOC_CONFIG.appsScriptUrl = saved;
-  } catch(e) {
-    // Config fetch failed — dashboard still works, just needs manual URL in Settings
-    console.warn('[SOC] Could not load config from Worker:', e.message);
-  }
+  // All API calls now go through Worker /api — no direct Apps Script URL needed
+  // Worker handles CORS, auth injection, and forwarding server-side
+  console.log('[SOC] Config: all calls routed via Worker /api');
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMERGENCY RESET — run in browser console if locked out:
+//   SOCreset()
+// This clears stored password hash and lets you log in with default password
+// ─────────────────────────────────────────────────────────────────────────────
+window.SOCreset = function() {
+  localStorage.removeItem('soc_pw_hash');
+  localStorage.removeItem('soc_apps_script_url');
+  sessionStorage.removeItem('soc_session');
+  console.log('[SOC] Reset complete. Refresh the page and log in with: cybaash-soc-admin');
+  location.reload();
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   loadSOCConfig(); // async — non-blocking
