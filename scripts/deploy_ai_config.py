@@ -29,6 +29,8 @@ SAFE_FIELDS = {
     "model",
     "temperature",
     "maxTokens",
+    "max_tokens",
+    "max_tokens_premium",
     "systemPromptPublic",
     "contextWindow",
     "enableSearch",
