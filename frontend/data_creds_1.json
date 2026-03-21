@@ -360,7 +360,8 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "?issuanceId=b4d7314b-7b8a-4f68-a4bd-b86893e1a96c",
-      "pdfUrl": "/certificates/cisco_packet_tracer.pdf"
+      "pdfUrl": "/certificates/cisco_packet_tracer.pdf",
+      "certJpeg": "certificates/auto/pro011.jpg"
     },
     {
       "id": "pro012",
@@ -1233,7 +1234,8 @@
         "Security Monitoring",
         "AWS"
       ],
-      "pdfUrl": "/certificates/aws/00574a53-30d0-47d8-8e14-52283b174bd3.pdf"
+      "pdfUrl": "/certificates/aws/00574a53-30d0-47d8-8e14-52283b174bd3.pdf",
+      "certJpeg": "certificates/auto/pro056.jpg"
     },
     {
       "id": "pro057",
@@ -1253,7 +1255,8 @@
         "STRIDE",
         "AWS"
       ],
-      "pdfUrl": "/certificates/aws/30bc8ae4-d388-4b2e-8116-9c377a1f9975.pdf"
+      "pdfUrl": "/certificates/aws/30bc8ae4-d388-4b2e-8116-9c377a1f9975.pdf",
+      "certJpeg": "certificates/auto/pro057.jpg"
     },
     {
       "id": "pro058",
@@ -1274,7 +1277,8 @@
         "Compliance",
         "AWS"
       ],
-      "pdfUrl": "/certificates/aws/4750cacd-fe35-4978-9be0-c620a35b2f5b.pdf"
+      "pdfUrl": "/certificates/aws/4750cacd-fe35-4978-9be0-c620a35b2f5b.pdf",
+      "certJpeg": "certificates/auto/pro058.jpg"
     },
     {
       "id": "pro059",
@@ -1295,7 +1299,8 @@
         "AWS Best Practices",
         "AWS"
       ],
-      "pdfUrl": "/certificates/aws/6a093802-71c6-4d32-9c3c-27764f126da9.pdf"
+      "pdfUrl": "/certificates/aws/6a093802-71c6-4d32-9c3c-27764f126da9.pdf",
+      "certJpeg": "certificates/auto/pro059.jpg"
     },
     {
       "id": "pro060",
@@ -1316,7 +1321,8 @@
         "AWS Best Practices",
         "AWS"
       ],
-      "pdfUrl": "/certificates/aws/dfb92807-60c7-41f1-88a5-55c937a59671.pdf"
+      "pdfUrl": "/certificates/aws/dfb92807-60c7-41f1-88a5-55c937a59671.pdf",
+      "certJpeg": "certificates/auto/pro060.jpg"
     },
     {
       "id": "pro061",
@@ -1337,7 +1343,8 @@
         "Compliance",
         "AWS"
       ],
-      "pdfUrl": "/certificates/aws/1916f81c-efe3-4160-b906-044c748fa723.pdf"
+      "pdfUrl": "/certificates/aws/1916f81c-efe3-4160-b906-044c748fa723.pdf",
+      "certJpeg": "certificates/auto/pro061.jpg"
     },
     {
       "id": "pro062",
@@ -1358,7 +1365,8 @@
         "AWS Services",
         "AWS"
       ],
-      "pdfUrl": "/certificates/aws/24ddc7ba-31fb-4c8b-a5f4-ce00b2835af4.pdf"
+      "pdfUrl": "/certificates/aws/24ddc7ba-31fb-4c8b-a5f4-ce00b2835af4.pdf",
+      "certJpeg": "certificates/auto/pro062.jpg"
     },
     {
       "id": "pro063",
@@ -1379,7 +1387,8 @@
         "Log Analytics",
         "AWS"
       ],
-      "pdfUrl": "/certificates/aws/f854d6e8-a474-4c6d-83e3-649ea25ad651.pdf"
+      "pdfUrl": "/certificates/aws/f854d6e8-a474-4c6d-83e3-649ea25ad651.pdf",
+      "certJpeg": "certificates/auto/pro063.jpg"
     },
     {
       "id": "pro064",
@@ -1400,7 +1409,8 @@
         "DNS Security",
         "AWS"
       ],
-      "pdfUrl": "/certificates/aws/e36766ae-56bb-4bb1-b5cd-d0a58f0523bc.pdf"
+      "pdfUrl": "/certificates/aws/e36766ae-56bb-4bb1-b5cd-d0a58f0523bc.pdf",
+      "certJpeg": "certificates/auto/pro064.jpg"
     },
     {
       "id": "li0001",
