@@ -30,7 +30,7 @@
      The Worker holds the real API key — browser never sees it.
      Set PROXY_URL to your Worker URL once deployed.
      Leave as '' to fall back to direct calls (key required).     */
-  var PROXY_URL = 'https://cybaash-gemini.workers.dev';
+  var PROXY_URL = 'https://cybaash.mohamedaasiq07.workers.dev';
 
   var cfg = {
     key:    '',   // only used if PROXY_URL is empty
