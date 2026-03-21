@@ -1,0 +1,121 @@
+/**
+ * recruiter-patch.css — Recruiter view overrides & fixes
+ * AASIQ OS Portfolio v4.4
+ *
+ * Layered on top of style.css. Polishes the recruiter-facing
+ * PDF-exportable view without touching the main stylesheet.
+ */
+
+/* ── Recruiter page shell ──────────────────────────────────────────────── */
+.recruiter-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  color: #c8d8e8;
+}
+
+/* ── Section headings ─────────────────────────────────────────────────── */
+.recruiter-section-title {
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #00d4ff;
+  border-bottom: 1px solid #1a3a5c;
+  padding-bottom: 0.4rem;
+  margin: 2rem 0 1rem;
+}
+
+/* ── Cert grid ─────────────────────────────────────────────────────────── */
+.cert-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+.cert-card {
+  background: #0a1520;
+  border: 1px solid #1a3a5c;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transition: border-color 0.2s;
+}
+.cert-card:hover { border-color: #00d4ff; }
+.cert-card__logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.cert-card__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #c8d8e8;
+  line-height: 1.3;
+}
+.cert-card__issuer {
+  font-size: 0.7rem;
+  color: #5a8a9f;
+}
+.cert-card__date {
+  font-size: 0.65rem;
+  color: #3a6a8f;
+  margin-top: auto;
+}
+.cert-card__badge-link {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.65rem;
+  color: #00d4ff;
+  text-decoration: none;
+}
+.cert-card__badge-link:hover { text-decoration: underline; }
+
+/* ── Projects list ─────────────────────────────────────────────────────── */
+.project-card {
+  background: #0a1520;
+  border: 1px solid #1a3a5c;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+.project-card__name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #00d4ff;
+  margin-bottom: 0.3rem;
+}
+.project-card__desc {
+  font-size: 0.78rem;
+  color: #8aabb8;
+  line-height: 1.5;
+}
+.project-card__links {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.75rem;
+}
+.project-card__links a {
+  font-size: 0.7rem;
+  color: #00ff88;
+  text-decoration: none;
+}
+.project-card__links a:hover { text-decoration: underline; }
+
+/* ── Print / PDF export ────────────────────────────────────────────────── */
+@media print {
+  body { background: #fff !important; color: #111 !important; }
+  .recruiter-section-title { color: #005580 !important; border-color: #ccc !important; }
+  .cert-card, .project-card { border-color: #ccc !important; background: #f9f9f9 !important; }
+  .cert-card__title, .project-card__name { color: #111 !important; }
+  .cert-card__issuer, .cert-card__date, .project-card__desc { color: #555 !important; }
+  .cert-card__badge-link, .project-card__links a { color: #005580 !important; }
+  nav, header, .admin-bar, .mobile-nav { display: none !important; }
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .cert-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .recruiter-page { padding: 1rem 0.75rem; }
+}

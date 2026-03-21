@@ -1,0 +1,90 @@
+/**
+ * dashboard-patch.css — Dashboard page overrides & fixes
+ * AASIQ OS Portfolio v4.4
+ *
+ * Layered on top of style.css. Fixes layout quirks specific to
+ * dashboard.html without touching the main stylesheet.
+ */
+
+/* ── Reset any panel overflow that breaks the dashboard grid ─────────── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+/* ── Stat cards ────────────────────────────────────────────────────────── */
+.stat-card {
+  background: #0a1520;
+  border: 1px solid #1a3a5c;
+  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: #00d4ff; }
+.stat-card__label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5a8a9f;
+  margin-bottom: 0.4rem;
+}
+.stat-card__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #00d4ff;
+  line-height: 1;
+}
+.stat-card__sub {
+  font-size: 0.75rem;
+  color: #3a6a8f;
+  margin-top: 0.3rem;
+}
+
+/* ── GitHub user header ────────────────────────────────────────────────── */
+.gh-user-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: #060f18;
+  border-bottom: 1px solid #1a3a5c;
+}
+.gh-user-header img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #00d4ff;
+}
+.gh-user-header a {
+  color: #00d4ff;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.gh-user-header a:hover { text-decoration: underline; }
+
+/* ── Cert count badge ──────────────────────────────────────────────────── */
+.cert-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #0a1520;
+  border: 1px solid #00ff88;
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  color: #00ff88;
+}
+
+/* ── Responsive tweaks ─────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  .stat-card__value { font-size: 1.5rem; }
+}

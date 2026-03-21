@@ -1,0 +1,83 @@
+/**
+ * offline-patch.css — Offline fallback page styling
+ * AASIQ OS Portfolio v4.4
+ */
+
+/* ── Full-screen centred layout ───────────────────────────────────────── */
+.offline-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  background: #030a0f;
+  color: #c8d8e8;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+}
+
+/* ── Icon / glyph ─────────────────────────────────────────────────────── */
+.offline-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  color: #ff2244;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── Headline ─────────────────────────────────────────────────────────── */
+.offline-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #00d4ff;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Body copy ────────────────────────────────────────────────────────── */
+.offline-body {
+  font-size: 0.85rem;
+  color: #5a8a9f;
+  max-width: 380px;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+/* ── Retry button ─────────────────────────────────────────────────────── */
+.offline-retry {
+  display: inline-block;
+  padding: 0.6rem 1.5rem;
+  border: 1px solid #00d4ff;
+  border-radius: 4px;
+  color: #00d4ff;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: background 0.2s, color 0.2s;
+  text-decoration: none;
+}
+.offline-retry:hover {
+  background: #00d4ff;
+  color: #030a0f;
+}
+
+/* ── Status line ──────────────────────────────────────────────────────── */
+.offline-status {
+  margin-top: 2rem;
+  font-size: 0.7rem;
+  color: #1a3a5c;
+  letter-spacing: 0.05em;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 400px) {
+  .offline-title { font-size: 1.1rem; }
+  .offline-icon  { font-size: 3rem; }
+}
