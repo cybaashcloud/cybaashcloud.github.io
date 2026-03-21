@@ -1,17 +1,19 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// CYBAASH SERVICE WORKER — v4.0
+// CYBAASH SERVICE WORKER — v4.4
 // Strategy:
-//   • Shell files (HTML/CSS/JS)  → Cache-first, update in background
-//   • Data files (JSON)          → Network-first, fall back to cache
-//   • Icons/images               → Cache-first, long TTL
-//   • GitHub API calls           → Network-only (never cache credentials)
-//   • Offline fallback           → Custom offline page
+//   • Shell files (HTML/CSS/JS)  → stale-while-revalidate
+//   • Data files (JSON)          → network-first, fall back to cache
+//   • Icons/images               → cache-first, long TTL
+//   • Fonts                      → cache-first (rarely change)
+//   • GitHub API calls           → network-only (never cache credentials)
+//   • Offline fallback           → type-appropriate empty responses (no ERR_FAILED)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const VERSION    = 'cybaash-v4.3';
-const SHELL_CACHE  = `${VERSION}-shell`;
-const DATA_CACHE   = `${VERSION}-data`;
-const IMAGE_CACHE  = `${VERSION}-images`;
+const VERSION     = 'cybaash-v4.4';
+const SHELL_CACHE = `${VERSION}-shell`;
+const DATA_CACHE  = `${VERSION}-data`;
+const IMAGE_CACHE = `${VERSION}-images`;
+const FONT_CACHE  = `${VERSION}-fonts`;
 
 // ── Files to precache on install ────────────────────────────────────────────
 const SHELL_FILES = [
@@ -19,37 +21,38 @@ const SHELL_FILES = [
   '/index.html',
   '/dashboard.html',
   '/recruiter.html',
-  '/saas-integration.js',
   '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/icons/icon-maskable-192x192.png',
   '/offline.html',
   '/style.css',
-  '/ai/index.html',
-  '/ai/cybaash-ai_script.js',
-  '/ai/style.css',
+  '/mobile.css',
+  '/script.js',
+  '/github.js',
+  '/mobile.js',
   '/cybaash-ai.js',
   '/cybaash-ai.css',
   '/cybaash_chatbot.js',
-  '/script.js',
-  '/github.js',
-  '/mobile.css',
-  '/mobile.js',
+  '/saas-integration.js',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/icons/icon-maskable-192x192.png',
+  '/ai/index.html',
+  '/ai/style.css',
+  '/ai/cybaash-ai_script.js',
 ];
 
 // ── Install: precache shell ──────────────────────────────────────────────────
 self.addEventListener('install', event => {
-  console.log('[SW] Installing CYBAASH v4.0…');
+  console.log('[SW] Installing CYBAASH v4.4…');
   event.waitUntil(
-    caches.open(SHELL_CACHE).then(cache => {
-      // Cache each file individually so one failure doesn't block all
-      return Promise.allSettled(
+    caches.open(SHELL_CACHE).then(cache =>
+      Promise.allSettled(
         SHELL_FILES.map(url =>
-          cache.add(url).catch(err => console.warn('[SW] Could not precache:', url, err.message))
+          cache.add(url).catch(err =>
+            console.warn('[SW] Precache miss (will fetch live):', url, err.message)
+          )
         )
-      );
-    }).then(() => {
+      )
+    ).then(() => {
       console.log('[SW] Shell precached');
       return self.skipWaiting();
     })
@@ -58,14 +61,14 @@ self.addEventListener('install', event => {
 
 // ── Activate: purge old caches ───────────────────────────────────────────────
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating…');
+  console.log('[SW] Activating v4.4…');
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
         keys
           .filter(key => key.startsWith('cybaash-') && !key.startsWith(VERSION))
           .map(key => {
-            console.log('[SW] Deleting old cache:', key);
+            console.log('[SW] Purging old cache:', key);
             return caches.delete(key);
           })
       )
@@ -81,49 +84,56 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // ── 1. Never intercept non-GET or cross-origin API calls ──────────────────
+  // Only handle GET
   if (request.method !== 'GET') return;
 
-  // GitHub API — always network, never cache (tokens, live data)
+  // GitHub API — always live, never cache
   if (url.hostname === 'api.github.com' || url.hostname === 'github.com') return;
 
-  // Google Fonts — network-first for freshness, cache for offline
+  // Cloudflare Worker proxy — always live
+  if (url.hostname.endsWith('.workers.dev')) return;
+
+  // ── Google Fonts — cache-first with graceful CSS fallback ─────────────────
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    event.respondWith(networkFirstWithCache(request, IMAGE_CACHE));
+    event.respondWith(fontCacheFirst(request));
     return;
   }
 
-  // ── 2. JSON data files — network-first (admin may have updated them) ──────
-  // data_ai_config.json: always network, never cache — it must never serve stale
-  if (url.pathname.endsWith('data_ai_config.json')) {
-    return;  // fall through to browser default (network-only)
-  }
+  // ── data_ai_config.json — always network, never cache ─────────────────────
+  if (url.pathname.endsWith('data_ai_config.json')) return;
+
+  // ── JSON data files — network-first ───────────────────────────────────────
   if (url.pathname.endsWith('.json')) {
-    event.respondWith(networkFirstWithCache(request, DATA_CACHE));
+    event.respondWith(networkFirst(request, DATA_CACHE));
     return;
   }
 
-  // ── 3. Icons and images — cache-first (they rarely change) ────────────────
+  // ── Images and icons — cache-first ────────────────────────────────────────
   if (
     url.pathname.startsWith('/icons/') ||
-    url.pathname.startsWith('/portfolio/') ||
+    url.pathname.startsWith('/cert_logos/') ||
+    url.pathname.startsWith('/certificates/') ||
     url.pathname.match(/\.(png|jpg|jpeg|ico|svg|webp|gif)$/)
   ) {
-    event.respondWith(cacheFirstWithNetwork(request, IMAGE_CACHE));
+    event.respondWith(cacheFirst(request, IMAGE_CACHE));
     return;
   }
 
-  // ── 4. JS files — stale-while-revalidate ──────────────────────────────────
+  // ── CSS files — stale-while-revalidate with empty CSS fallback ────────────
+  if (url.pathname.endsWith('.css')) {
+    event.respondWith(staleWhileRevalidate(request, SHELL_CACHE, 'css'));
+    return;
+  }
+
+  // ── JS files — stale-while-revalidate with empty JS fallback ─────────────
   if (url.pathname.endsWith('.js')) {
-    event.respondWith(staleWhileRevalidate(request, SHELL_CACHE));
+    event.respondWith(staleWhileRevalidate(request, SHELL_CACHE, 'js'));
     return;
   }
 
-  // ── 5. HTML pages and root — network-first + offline fallback ────────────
-  // Network-first ensures users always get the latest HTML immediately after deploy.
+  // ── HTML pages — network-first with offline page fallback ─────────────────
   event.respondWith(
-    networkFirstWithCache(request, SHELL_CACHE)
-      .catch(() => offlineFallback(request))
+    networkFirst(request, SHELL_CACHE).catch(() => offlinePage())
   );
 });
 
@@ -131,72 +141,106 @@ self.addEventListener('fetch', event => {
 // CACHE STRATEGIES
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Stale-while-revalidate: return cache immediately, update cache in background
-async function staleWhileRevalidate(request, cacheName) {
-  const cache = await caches.open(cacheName);
+// Stale-while-revalidate: return cache immediately, update in background
+// type: 'css' | 'js' | null — determines what empty fallback to return
+async function staleWhileRevalidate(request, cacheName, type) {
+  const cache  = await caches.open(cacheName);
   const cached = await cache.match(request);
 
-  const networkFetch = fetch(request).then(response => {
-    if (response && response.status === 200) {
-      cache.put(request, response.clone());
-    }
-    return response;
+  // Always kick off a background network fetch to keep cache fresh
+  const fetchPromise = fetch(request).then(res => {
+    if (res && res.status === 200) cache.put(request, res.clone());
+    return res;
   }).catch(() => null);
 
-  return cached || await networkFetch || offlineFallback(request);
+  // Return cached version immediately if we have it
+  if (cached) return cached;
+
+  // Nothing cached — wait for network
+  const fresh = await fetchPromise;
+  if (fresh && fresh.status === 200) return fresh;
+
+  // Network failed too — return a graceful empty response instead of ERR_FAILED
+  return emptyFallback(type);
 }
 
 // Network-first: try network, fall back to cache
-async function networkFirstWithCache(request, cacheName) {
+async function networkFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   try {
-    const response = await fetch(request);
-    if (response && response.status === 200) {
-      cache.put(request, response.clone());
-    }
-    return response;
+    const res = await fetch(request);
+    if (res && res.status === 200) cache.put(request, res.clone());
+    return res;
   } catch {
     const cached = await cache.match(request);
-    return cached || offlineFallback(request);
+    return cached || offlinePage();
   }
 }
 
-// Cache-first: return cache, fetch and update if missing
-async function cacheFirstWithNetwork(request, cacheName) {
-  const cache = await caches.open(cacheName);
+// Cache-first: return from cache, update if missing
+async function cacheFirst(request, cacheName) {
+  const cache  = await caches.open(cacheName);
   const cached = await cache.match(request);
   if (cached) return cached;
-
   try {
-    const response = await fetch(request);
-    if (response && response.status === 200) {
-      cache.put(request, response.clone());
-    }
-    return response;
+    const res = await fetch(request);
+    if (res && res.status === 200) cache.put(request, res.clone());
+    return res;
   } catch {
-    return offlineFallback(request);
+    return new Response('', { status: 503 });
   }
 }
 
-// Offline fallback
-async function offlineFallback(request) {
-  const url = new URL(request.url);
-  // Return offline.html for navigation requests
-  if (request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/') {
-    const cache = await caches.open(SHELL_CACHE);
-    const offline = await cache.match('/offline.html');
-    if (offline) return offline;
+// Google Fonts: cache-first, fallback to empty CSS (never ERR_FAILED)
+async function fontCacheFirst(request) {
+  const cache  = await caches.open(FONT_CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  try {
+    // fetch with no-cors for font files, cors for CSS
+    const isCss = request.url.includes('fonts.googleapis.com');
+    const res   = await fetch(request, isCss ? {} : { mode: 'no-cors' });
+    // Only cache valid responses (opaque responses from no-cors have status 0)
+    if (res && (res.status === 200 || res.type === 'opaque')) {
+      cache.put(request, res.clone());
+    }
+    return res;
+  } catch {
+    // Return empty CSS so the page still loads without ERR_FAILED
+    return emptyFallback('css');
   }
-  // For other resources return a simple error response
-  return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
 }
 
-// ── Message handler: force update from client ────────────────────────────────
+// ── Graceful empty fallbacks by type ────────────────────────────────────────
+// These are valid responses that the browser can process without ERR_FAILED
+function emptyFallback(type) {
+  if (type === 'css') {
+    return new Response('/* offline */', {
+      status: 200,
+      headers: { 'Content-Type': 'text/css' }
+    });
+  }
+  if (type === 'js') {
+    return new Response('/* offline */', {
+      status: 200,
+      headers: { 'Content-Type': 'application/javascript' }
+    });
+  }
+  return new Response('', { status: 503 });
+}
+
+// Offline HTML page
+async function offlinePage() {
+  const cache  = await caches.open(SHELL_CACHE);
+  const cached = await cache.match('/offline.html');
+  return cached || new Response('<h1>Offline</h1>', {
+    status: 200,
+    headers: { 'Content-Type': 'text/html' }
+  });
+}
+
+// ── Message handler ──────────────────────────────────────────────────────────
 self.addEventListener('message', event => {
-  if (event.data === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-  if (event.data === 'GET_VERSION') {
-    event.ports[0].postMessage({ version: VERSION });
-  }
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data === 'GET_VERSION')  event.ports[0].postMessage({ version: VERSION });
 });
