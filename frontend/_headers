@@ -41,6 +41,21 @@
   Content-Type: application/json; charset=utf-8
   Cache-Control: public, max-age=0, must-revalidate
 
+# ── SOC Security Dashboard: strict security headers ─────────────────────────
+/admin/security.html
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Cache-Control: no-store, no-cache, must-revalidate
+  Pragma: no-cache
+
+/admin/security.js
+  Cache-Control: no-store, no-cache, must-revalidate
+  X-Content-Type-Options: nosniff
+
+/admin/security.css
+  Cache-Control: no-store, no-cache, must-revalidate
+
 # ── Admin panel assets: immutable (content-hashed by Vite) ───────────────────
 /admin/*
   Cache-Control: public, max-age=31536000, immutable
@@ -48,3 +63,8 @@
 # ── HTML pages: always revalidate ────────────────────────────────────────────
 /
   Cache-Control: no-cache, must-revalidate
+
+# ── SOC Tracker: always fresh ─────────────────────────────────────────────────
+/soc-tracker-v2.js
+  Cache-Control: no-cache, must-revalidate
+  X-Content-Type-Options: nosniff
