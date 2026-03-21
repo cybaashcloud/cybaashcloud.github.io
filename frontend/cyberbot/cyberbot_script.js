@@ -5,7 +5,7 @@
  */
 
 // Route all Gemini calls through Cloudflare Worker — key never in browser
-const PROXY_URL = 'https://cybaash-gemini.workers.dev';
+const PROXY_URL = 'https://cybaash.mohamedaasiq07.workers.dev';
 
 const CONFIG = {
   geminiKey:   '',  // unused when PROXY_URL is set
