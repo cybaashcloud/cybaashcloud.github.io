@@ -69,7 +69,8 @@ jobs:
           [ -f frontend/style.css          ] && cp frontend/style.css          _site/style.css          || true
           [ -f frontend/mobile.css ] && cp frontend/mobile.css _site/mobile.css || true
           [ -f frontend/mobile.js  ] && cp frontend/mobile.js  _site/mobile.js  || true
-          # Mobile CSS — single file only          [ -f frontend/ai-script.js ] && cp frontend/ai-script.js _site/ai-script.js || true
+          # Root-level AI script
+          [ -f frontend/ai-script.js ] && cp frontend/ai-script.js _site/ai-script.js || true
           [ -f frontend/cybaash_chatbot.js ] && cp frontend/cybaash_chatbot.js _site/cybaash_chatbot.js || true
 
           # ── Portfolio images ──────────────────────────────────────────
