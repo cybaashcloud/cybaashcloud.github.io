@@ -145,9 +145,11 @@ jobs:
           pages    = list(frontend.glob('*.html')) + list(frontend.glob('ai/*.html'))
           errors   = 0
 
+          frontend_abs = frontend.resolve()
+
           for page in pages:
               html = page.read_text(errors='replace')
-              base = page.parent
+              page_dir = page.parent
 
               # Find local (non-http) src/href references
               refs = re.findall(r'(?:src|href)=["\'](?!https?://|//|#|data:|mailto:)([^"\']+)["\']', html)
@@ -156,8 +158,12 @@ jobs:
                   clean = ref.split('?')[0].split('#')[0]
                   if not clean or clean.startswith('{{'):
                       continue
-                  # Resolve relative to frontend root
-                  target = (frontend / clean.lstrip('/')).resolve()
+                  # Resolve: absolute paths (/foo) relative to frontend root,
+                  # relative paths (../foo or foo) relative to the page's own dir.
+                  if clean.startswith('/'):
+                      target = (frontend / clean.lstrip('/')).resolve()
+                  else:
+                      target = (page_dir / clean).resolve()
                   if not target.exists():
                       # Soft warn for dynamic references
                       if any(x in clean for x in ['portfolio/', '/ai/', '/icons/', 'avatar', 'data_creds']):

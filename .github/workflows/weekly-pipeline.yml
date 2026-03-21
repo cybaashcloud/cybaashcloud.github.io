@@ -53,8 +53,9 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: .github/scripts/requirements.txt
 
-      - run: pip install requests beautifulsoup4 pymupdf pillow
+      - run: pip install -r .github/scripts/requirements.txt
 
       - name: Run fetch_cert_images
         working-directory: frontend
@@ -99,10 +100,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: .github/scripts/requirements.txt
 
       - run: |
           sudo apt-get install -y tesseract-ocr --quiet
-          pip install requests pillow pytesseract
+          pip install -r .github/scripts/requirements.txt
 
       - name: Run skill sync
         working-directory: frontend
@@ -142,8 +145,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: .github/scripts/requirements.txt
 
-      - run: pip install requests
+      - run: pip install -r .github/scripts/requirements.txt
 
       - name: Build AI cache
         env:
@@ -186,7 +191,7 @@ jobs:
       - name: Sync cert counts
         run: |
           python3 - << 'PYEOF'
-          import json, re
+          import json
           from pathlib import Path
 
           # Count all credentials across data_creds_1..5.json
@@ -209,10 +214,10 @@ jobs:
               print(f"data_main.json: certCount {old} → {total}")
 
           # ── Write a version metadata file ─────────────────────────────
-          import datetime
+          from datetime import datetime, timezone
           meta = {
               'certCount':  total,
-              'builtAt':    datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+              'builtAt':    datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
               'version':    '4.4',
           }
           Path('frontend/data_meta.json').write_text(
