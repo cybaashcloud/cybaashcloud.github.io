@@ -1691,171 +1691,339 @@ function updateApp() {
 <script>
 // ═══════════════════════════════════════════════════════════════════════
 // CV / RESUME GENERATOR
-// Uses browser print → Save as PDF
+// Uses browser print → Save as PDF — Apple/Google level design
 // ═══════════════════════════════════════════════════════════════════════
 
 function generateResume() {
-  const m   = (typeof D !== 'undefined' && D?.main) || {};
-  const ab  = m.about || {}, ct = m.contact || {}, exp = m.experience || [];
-  const sk  = m.skills || [], proj = m.projects || [];
+  const m     = (typeof D !== 'undefined' && D?.main) || {};
+  const ab    = m.about || {}, ct = m.contact || {};
+  const exp   = m.experience || [], sk = m.skills || [], proj = m.projects || [];
   const creds = (typeof D !== 'undefined' && D?.creds) || [];
-  const name = ab.name || 'Mohamed Aasiq';
-  const title = ab.title || 'Cybersecurity Specialist & Ethical Hacker';
-  const loc = ab.location || 'Pollachi, Tamil Nadu, India';
-  const email = ct.email || ab.email || 'mohamedaasiq07@gmail.com';
-  const phone = ct.phone || '+91 95665 96077';
-  const linkedin = ct.linkedin || ab.linkedin || 'https://linkedin.com/in/mohamedaasiq07';
-  const github = ct.github || ab.github || 'https://github.com/cybaash';
-  const thm = ct.tryhackme || 'https://tryhackme.com/p/AasiqSec';
-  const bio = ab.bio || 'Cybersecurity Specialist and Ethical Hacker with expertise in penetration testing, cloud security, network defense, and AI security.';
-  const yrs = ab.yearsExp || '8';
-  const langs = ct.languages || 'Tamil (Native) · Urdu (Native) · English (Professional) · Hindi';
-  const spec = ct.specialization || 'Pen Testing | Cloud Security | Network Defense | AI Security';
+
+  const name     = ab.name      || 'Mohamed Aasiq';
+  const title    = ab.title     || 'Cybersecurity Specialist & Ethical Hacker';
+  const loc      = ab.location  || 'Pollachi, Tamil Nadu, India';
+  const email    = ct.email     || ab.email    || 'mohamedaasiq07@gmail.com';
+  const phone    = ct.phone     || '+91 95665 96077';
+  const linkedin = (ct.linkedin || ab.linkedin || 'https://linkedin.com/in/mohamedaasiq07')
+                    .replace(/^https?:\/\//,'');
+  const github   = (ct.github   || ab.github   || 'https://github.com/cybaash')
+                    .replace(/^https?:\/\//,'');
+  const website  = 'cybaash.github.io';
+  const bio      = ab.bio || 'Cybersecurity Specialist and Ethical Hacker with expertise in penetration testing, cloud security, network defense, and AI security.';
+  const yrs      = ab.yearsExp || '8';
+  const langs    = ct.languages || 'Tamil (Native) · Urdu (Native) · English (Professional) · Hindi';
+  const spec     = ct.specialization || 'Penetration Testing · Cloud Security · Network Defense · AI Security';
   const certCount = creds.length || 334;
 
+  // ── Cert table ──────────────────────────────────────────────────────────
   const catMap = {};
-  creds.forEach(c => { const cat = c.category || c.domain || 'General'; catMap[cat] = (catMap[cat]||0)+1; });
-  const catRows = Object.entries(catMap).slice(0,7).map(([k,v]) =>
-    `<tr><td>${k}</td><td class="nr">${v}</td></tr>`).join('') ||
+  creds.forEach(c => {
+    const cat = c.category || c.domain || 'General';
+    catMap[cat] = (catMap[cat] || 0) + 1;
+  });
+  const catRows = Object.entries(catMap).slice(0, 7)
+    .sort((a,b) => b[1] - a[1])
+    .map(([k,v]) => `<tr><td>${k}</td><td class="nr">${v}</td></tr>`).join('') ||
     `<tr><td>Cybersecurity &amp; Security</td><td class="nr">73</td></tr>
      <tr><td>AI &amp; Machine Learning</td><td class="nr">51</td></tr>
      <tr><td>Cloud &amp; DevOps</td><td class="nr">55</td></tr>
      <tr><td>Programming</td><td class="nr">29</td></tr>
      <tr><td>Networking &amp; Linux</td><td class="nr">12</td></tr>
-     <tr><td>Management</td><td class="nr">28</td></tr>
+     <tr><td>Management &amp; Leadership</td><td class="nr">28</td></tr>
      <tr><td>Data Science</td><td class="nr">9</td></tr>`;
 
-  const skillHTML = sk.slice(0,4).map(cat =>
-    `<div class="skb"><div class="skn">${cat.name}</div><div class="skp">${
-      (cat.items||[]).slice(0,8).map(i=>`<span class="pill">${i.name.length>36?i.name.slice(0,34)+'…':i.name}</span>`).join('')
-    }</div></div>`).join('');
+  // ── Skill pills ─────────────────────────────────────────────────────────
+  const skillHTML = sk.slice(0, 5).map(cat => {
+    const items = (cat.items || []).slice(0, 7)
+      .map(i => `<span class="pill">${i.name.length > 34 ? i.name.slice(0,32) + '…' : i.name}</span>`)
+      .join('');
+    return `<div class="skb"><div class="skn">${cat.name}</div><div class="skp">${items}</div></div>`;
+  }).join('');
 
-  const expHTML = exp.map(e => `
-    <div class="exp">
+  // ── Experience ──────────────────────────────────────────────────────────
+  const expHTML = exp.map((e, idx) => `
+    <div class="exp${idx < exp.length - 1 ? '' : ' last'}">
       <div class="exh">
-        <div><div class="exr">${e.role||''}</div>
-        <div class="exc">${e.company||''} ${e.country||''} · <span class="ext">${e.type||'Full-time'}</span> · ${e.location||''}</div></div>
-        <div class="exd">${e.startDate||''} – ${e.current?'Present':(e.endDate||'')}</div>
+        <div>
+          <div class="exr">${e.role || ''}</div>
+          <div class="exc">${e.company || ''}${e.location ? ' · ' + e.location : ''}${e.country ? ' ' + e.country : ''}</div>
+        </div>
+        <div class="exmeta">
+          <span class="exd">${e.startDate || ''} – ${e.current ? 'Present' : (e.endDate || '')}</span>
+          ${e.type ? `<span class="ext">${e.type}</span>` : ''}
+        </div>
       </div>
-      <p class="exdesc">${e.desc||''}</p>
-      <ul class="ach">${(e.achievements||[]).map(a=>`<li>${a}</li>`).join('')}</ul>
+      ${e.desc ? `<p class="exdesc">${e.desc}</p>` : ''}
+      ${(e.achievements||[]).length ? `<ul class="ach">${e.achievements.map(a=>`<li>${a}</li>`).join('')}</ul>` : ''}
     </div>`).join('');
 
-  const projHTML = proj.slice(0,3).map(p=>`
+  // ── Projects ────────────────────────────────────────────────────────────
+  const projHTML = proj.slice(0, 3).map(p => `
     <div class="pr">
-      <div class="prh"><span class="prn">${p.title||''}</span>
-      <span class="prt">${p.status||'Active'}</span>
-      ${p.liveUrl?`<a class="prl" href="${p.liveUrl}">${p.liveUrl.replace('https://','')}</a>`:''}</div>
-      ${p.desc?`<p class="prd">${p.desc.slice(0,200)}${p.desc.length>200?'…':''}</p>`:''}
+      <div class="prh">
+        <span class="prn">${p.title || ''}</span>
+        ${p.status ? `<span class="prt">${p.status}</span>` : ''}
+        ${p.liveUrl ? `<a class="prl" href="${p.liveUrl}">${p.liveUrl.replace(/^https?:\/\//,'')}</a>` : ''}
+      </div>
+      ${p.desc ? `<p class="prd">${p.desc.slice(0, 180)}${p.desc.length > 180 ? '…' : ''}</p>` : ''}
+      ${p.tech?.length ? `<div class="prtechs">${p.tech.slice(0,6).map(t=>`<span class="ptag">${t}</span>`).join('')}</div>` : ''}
     </div>`).join('');
 
-  const today = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const today = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
 
   const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
-<title>Mohamed_Aasiq_Resume_${new Date().getFullYear()}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${name.replace(/ /g,'_')}_Resume_${new Date().getFullYear()}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--ink:#0a0a10;--ink2:#2a2a3a;--mu:#6b6b88;--ac:#0057ff;--ru:#d8d8e8;--bg:#fff;--bg2:#f5f5fb;--tag:#eeeef8}
-html,body{background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,sans-serif;font-size:10pt;line-height:1.6;-webkit-font-smoothing:antialiased}
-.page{max-width:780px;margin:0 auto;padding:52px 56px 56px}
-.hdr{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start;padding-bottom:22px;margin-bottom:26px;border-bottom:2.5px solid var(--ink)}
-.name{font-size:30pt;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:6px}
-.hl{font-size:9.5pt;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ac);margin-bottom:10px}
-.hm{display:flex;gap:18px;flex-wrap:wrap;font-size:8.5pt;color:var(--mu)}
-.hm a{color:var(--ac);text-decoration:none}
-.hr{text-align:right;font-size:8.5pt;color:var(--mu);line-height:2;padding-top:4px}
-.hr a{color:var(--ac);text-decoration:none;display:block}
-.sec{margin-bottom:24px}
-.sh{font-size:7.5pt;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);border-bottom:1.5px solid var(--ink);padding-bottom:5px;margin-bottom:14px;display:flex;align-items:center;gap:7px}
-.sh::before{content:'';display:inline-block;width:7px;height:7px;background:var(--ac);flex-shrink:0}
-.pg{display:grid;grid-template-columns:1fr 210px;gap:28px;align-items:start}
-.bio{font-size:9.5pt;color:var(--ink2);line-height:1.7}
-.bio strong{color:var(--ink);font-weight:600}
-.ks{display:flex;flex-direction:column;gap:8px}
-.ki{background:var(--bg2);border:1px solid var(--ru);padding:12px 16px}
-.kn{font-size:24pt;font-weight:800;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums}
-.kl{font-size:7pt;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-top:3px}
-.mc{display:grid;grid-template-columns:1fr 220px;gap:30px}
-.exp{padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--ru)}
-.exp:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-.exh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px}
+:root{
+  --ink:  #0d0d14;
+  --ink2: #2c2c3e;
+  --mu:   #72728a;
+  --mu2:  #a0a0b8;
+  --ac:   #0052cc;
+  --ac2:  #e8f0ff;
+  --line: #e4e4ef;
+  --bg:   #ffffff;
+  --bg2:  #f8f8fc;
+  --tag:  #f0f0f8;
+  --green:#006644;
+  --gbg:  #e3f5ec;
+}
+html,body{background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:10pt;line-height:1.55;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+/* ── PAGE ─────────────────────────────────────────────────────────────── */
+.page{max-width:800px;margin:0 auto;padding:56px 60px 60px}
+
+/* ── HEADER ───────────────────────────────────────────────────────────── */
+.hdr{padding-bottom:28px;margin-bottom:30px;border-bottom:2px solid var(--ink)}
+.hdr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:18px}
+.name{font-size:32pt;font-weight:800;letter-spacing:-1.5px;line-height:1;color:var(--ink)}
+.htitle{font-size:11pt;font-weight:500;color:var(--ac);margin-top:8px;letter-spacing:.01em}
+.hlinks{text-align:right;display:flex;flex-direction:column;gap:5px;padding-top:4px}
+.hlinks a{font-size:8.5pt;color:var(--mu);text-decoration:none;display:flex;align-items:center;justify-content:flex-end;gap:5px}
+.hlinks a:hover{color:var(--ac)}
+.hlinks a span.lbl{font-size:7.5pt;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mu2);min-width:62px;text-align:right}
+.hlinks a span.val{color:var(--ac)}
+.hmeta{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
+.hmeta-item{display:flex;align-items:center;gap:6px;font-size:9pt;color:var(--mu)}
+.hmeta-item svg{flex-shrink:0;opacity:.5}
+.hmeta-item a{color:var(--ac);text-decoration:none}
+
+/* ── SECTION ──────────────────────────────────────────────────────────── */
+.sec{margin-bottom:28px}
+.sh{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.sh-line{flex:1;height:1px;background:var(--line)}
+.sh-text{font-size:7.5pt;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mu);white-space:nowrap}
+.sh-dot{width:5px;height:5px;background:var(--ac);border-radius:50%;flex-shrink:0}
+
+/* ── PROFILE GRID ─────────────────────────────────────────────────────── */
+.pg{display:grid;grid-template-columns:1fr 188px;gap:36px;align-items:start}
+.bio{font-size:9.5pt;color:var(--ink2);line-height:1.75}
+.bio+.bio{margin-top:10px}
+.spec-row{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
+.spec-pill{font-size:8pt;font-weight:500;color:var(--ac);background:var(--ac2);padding:3px 9px;border-radius:99px}
+.lang-row{margin-top:10px;font-size:8.5pt;color:var(--mu)}
+.stats{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.stat-item{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.stat-item:last-child{border-bottom:none}
+.stat-n{font-size:26pt;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat-n sup{font-size:12pt;font-weight:600;vertical-align:super}
+.stat-l{font-size:7pt;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin-top:2px}
+
+/* ── TWO-COL MAIN ─────────────────────────────────────────────────────── */
+.mc{display:grid;grid-template-columns:1fr 200px;gap:36px;align-items:start}
+
+/* ── EXPERIENCE ───────────────────────────────────────────────────────── */
+.exp{padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+.exp.last{border-bottom:none;padding-bottom:0;margin-bottom:0}
+.exh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px}
 .exr{font-size:11pt;font-weight:700;color:var(--ink);line-height:1.2}
-.exc{font-size:9pt;color:var(--mu);margin-top:2px}
-.ext{font-weight:500;color:var(--ac)}
-.exd{font-size:8pt;color:var(--mu);white-space:nowrap;font-family:'JetBrains Mono',monospace;margin-top:3px;flex-shrink:0}
-.exdesc{font-size:9pt;color:var(--ink2);margin:6px 0 7px;line-height:1.65}
-.ach{list-style:none;display:flex;flex-direction:column;gap:3px}
-.ach li{font-size:8.5pt;color:var(--ink2);display:flex;align-items:baseline;gap:6px;line-height:1.5}
-.ach li::before{content:'—';color:var(--ac);font-weight:700;flex-shrink:0}
-.ct{width:100%;border-collapse:collapse;font-size:9pt}
-.ct thead th{font-size:7.5pt;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);border-bottom:1px solid var(--ru);padding:4px 8px;text-align:left}
-.ct tbody td{padding:5px 8px;border-bottom:1px solid var(--ru);color:var(--ink2)}
+.exc{font-size:8.5pt;color:var(--mu);margin-top:3px}
+.exmeta{text-align:right;flex-shrink:0}
+.exd{display:block;font-size:8pt;color:var(--mu);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ext{display:inline-block;margin-top:4px;font-size:7pt;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ac);background:var(--ac2);padding:2px 7px;border-radius:99px}
+.exdesc{font-size:9pt;color:var(--ink2);line-height:1.7;margin-bottom:8px}
+.ach{list-style:none;display:flex;flex-direction:column;gap:4px}
+.ach li{font-size:8.5pt;color:var(--ink2);padding-left:14px;position:relative;line-height:1.55}
+.ach li::before{content:'·';position:absolute;left:0;top:0;color:var(--ac);font-weight:700;font-size:12pt;line-height:1.1}
+
+/* ── CERTIFICATIONS TABLE ─────────────────────────────────────────────── */
+.cert-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gbg);color:var(--green);font-size:7.5pt;font-weight:700;letter-spacing:.08em;padding:4px 10px;border-radius:99px;margin-bottom:12px}
+.cert-badge::before{content:'✓';font-weight:900}
+.ct{width:100%;border-collapse:collapse;font-size:8.5pt}
+.ct thead th{font-size:7pt;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);border-bottom:1.5px solid var(--ink);padding:4px 6px;text-align:left}
+.ct thead th:last-child{text-align:right}
+.ct tbody td{padding:5px 6px;border-bottom:1px solid var(--line);color:var(--ink2)}
 .ct tbody tr:last-child td{border-bottom:none}
-.nr{text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--ink)}
-.ctot td{font-weight:800;color:var(--ink);border-top:2px solid var(--ink)!important;padding-top:7px}
-.cbadge{display:inline-block;background:var(--ac);color:#fff;font-size:7pt;font-weight:700;letter-spacing:.06em;padding:3px 8px;text-transform:uppercase;margin-bottom:10px}
-.ll{display:flex;flex-direction:column;gap:5px}
-.ll a{font-size:8.5pt;color:var(--ac);text-decoration:none;display:flex;align-items:center;gap:5px}
-.ll a::before{content:'→';font-weight:700;flex-shrink:0}
-.skb{margin-bottom:12px}
-.skn{font-size:8pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);margin-bottom:5px}
+.nr{text-align:right;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.ctot td{font-weight:800;color:var(--ink);border-top:1.5px solid var(--ink)!important;padding-top:7px}
+
+/* ── SIDEBAR LINKS ────────────────────────────────────────────────────── */
+.ll{display:flex;flex-direction:column;gap:8px}
+.ll a{font-size:8.5pt;color:var(--ac);text-decoration:none;display:flex;align-items:center;gap:6px;line-height:1.3}
+.ll a svg{flex-shrink:0;color:var(--mu2)}
+.ll-lbl{font-size:7pt;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);display:block;margin-bottom:2px}
+
+/* ── SKILLS ───────────────────────────────────────────────────────────── */
+.skills-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 28px}
+.skb{display:flex;flex-direction:column;gap:6px}
+.skn{font-size:7.5pt;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
 .skp{display:flex;flex-wrap:wrap;gap:4px}
-.pill{font-size:8pt;background:var(--tag);color:var(--ink2);padding:3px 8px;border:1px solid var(--ru);white-space:nowrap;border-radius:2px}
-.pr{padding:8px 0;border-bottom:1px solid var(--ru)}
-.pr:last-child{border-bottom:none}
-.prh{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.pill{font-size:8pt;color:var(--ink2);background:var(--tag);padding:3px 9px;border:1px solid var(--line);border-radius:2px;white-space:nowrap}
+
+/* ── PROJECTS ─────────────────────────────────────────────────────────── */
+.pr{padding:10px 0;border-bottom:1px solid var(--line)}
+.pr:first-child{padding-top:0}
+.pr:last-child{border-bottom:none;padding-bottom:0}
+.prh{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;flex-wrap:wrap}
 .prn{font-size:10pt;font-weight:700;color:var(--ink)}
-.prt{font-size:7.5pt;background:var(--tag);padding:2px 7px;color:var(--mu);border:1px solid var(--ru);border-radius:2px}
-.prl{font-size:8pt;color:var(--ac);text-decoration:none;font-family:'JetBrains Mono',monospace;margin-left:auto}
-.prd{font-size:8.5pt;color:var(--ink2);line-height:1.6}
-.ft{margin-top:28px;padding-top:12px;border-top:1px solid var(--ru);display:flex;justify-content:space-between;font-size:8pt;color:var(--mu)}
+.prt{font-size:7pt;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--gbg);color:var(--green);padding:2px 7px;border-radius:99px}
+.prl{font-size:8pt;color:var(--ac);text-decoration:none;margin-left:auto;font-variant-numeric:tabular-nums}
+.prd{font-size:8.5pt;color:var(--ink2);line-height:1.65}
+.prtechs{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.ptag{font-size:7.5pt;color:var(--mu);background:var(--tag);padding:2px 7px;border-radius:2px;border:1px solid var(--line)}
+
+/* ── FOOTER ───────────────────────────────────────────────────────────── */
+.ft{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:8pt;color:var(--mu)}
 .ft a{color:var(--ac);text-decoration:none}
-@media print{html,body{font-size:9.5pt;background:#fff}.page{padding:0;max-width:100%}@page{size:A4;margin:13mm 15mm}.exp,.sec,.skb{break-inside:avoid}a{color:var(--ac)!important}}
-@media screen{body{background:#e8e8f0}.page{box-shadow:0 8px 60px rgba(0,0,0,.14);margin:36px auto;background:#fff;border-radius:2px}}
+.ft-av{font-weight:600;color:var(--ink2)}
+
+/* ── PRINT ────────────────────────────────────────────────────────────── */
+@media print{
+  html,body{font-size:9.5pt;background:#fff}
+  .page{padding:0;max-width:100%}
+  @page{size:A4;margin:14mm 16mm}
+  .exp,.sec,.skb,.pr{break-inside:avoid}
+  a{color:var(--ac)!important;text-decoration:none!important}
+  .hlinks a span.val,.ll a,.prl,.hmeta-item a{color:var(--ac)!important}
+}
+/* ── SCREEN CHROME ────────────────────────────────────────────────────── */
+@media screen{
+  body{background:#dde1ea}
+  .page{box-shadow:0 4px 40px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.08);margin:40px auto;border-radius:3px}
+}
 </style></head><body><div class="page">
+
+<!-- HEADER -->
 <div class="hdr">
-  <div><div class="name">${name}</div><div class="hl">${title}</div>
-  <div class="hm"><span>📍 ${loc}</span><span><a href="mailto:${email}">${email}</a></span><span>${phone}</span></div></div>
-  <div class="hr"><a href="${linkedin}">linkedin.com/in/mohamedaasiq07</a><a href="${github}">github.com/cybaash</a><a href="${thm}">tryhackme.com/p/AasiqSec</a><a href="https://cybaash.github.io">cybaash.github.io</a></div>
-</div>
-<div class="sec"><div class="sh">Profile</div>
-  <div class="pg">
-    <div><p class="bio">${bio}</p>
-    <p class="bio" style="margin-top:9px"><strong>Specialization:</strong> ${spec}</p>
-    <p class="bio" style="margin-top:4px"><strong>Languages:</strong> ${langs}</p></div>
-    <div class="ks">
-      <div class="ki"><div class="kn">${certCount}</div><div class="kl">Certifications</div></div>
-      <div class="ki"><div class="kn">${yrs}+</div><div class="kl">Years exp.</div></div>
-      <div class="ki"><div class="kn">8</div><div class="kl">Domains</div></div>
+  <div class="hdr-top">
+    <div>
+      <div class="name">${name}</div>
+      <div class="htitle">${title}</div>
+    </div>
+    <div class="hlinks">
+      <a href="mailto:${email}"><span class="lbl">Email</span><span class="val">${email}</span></a>
+      <a href="tel:${phone.replace(/\s/g,'')}"><span class="lbl">Phone</span><span class="val">${phone}</span></a>
+      <a href="https://${linkedin}"><span class="lbl">LinkedIn</span><span class="val">${linkedin}</span></a>
+      <a href="https://${github}"><span class="lbl">GitHub</span><span class="val">${github}</span></a>
+      <a href="https://${website}"><span class="lbl">Portfolio</span><span class="val">${website}</span></a>
+    </div>
+  </div>
+  <div class="hmeta">
+    <div class="hmeta-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      ${loc}
+    </div>
+    <div class="hmeta-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+      ${yrs}+ Years Experience
+    </div>
+    <div class="hmeta-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      ${certCount} Verified Certifications
     </div>
   </div>
 </div>
+
+<!-- PROFILE -->
+<div class="sec">
+  <div class="sh"><span class="sh-dot"></span><span class="sh-text">Profile</span><span class="sh-line"></span></div>
+  <div class="pg">
+    <div>
+      <p class="bio">${bio}</p>
+      <div class="spec-row">${spec.split(/[·|,]/).map(s=>s.trim()).filter(Boolean).map(s=>`<span class="spec-pill">${s}</span>`).join('')}</div>
+      <p class="lang-row">${langs}</p>
+    </div>
+    <div class="stats">
+      <div class="stat-item"><div class="stat-n">${certCount}</div><div class="stat-l">Certifications</div></div>
+      <div class="stat-item"><div class="stat-n">${yrs}<sup>+</sup></div><div class="stat-l">Years Exp.</div></div>
+      <div class="stat-item"><div class="stat-n">8</div><div class="stat-l">Domains</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN TWO-COL -->
 <div class="mc">
   <div>
-    <div class="sec"><div class="sh">Experience</div>${expHTML||'<p style="color:var(--mu);font-size:9pt">No data.</p>'}</div>
-    ${projHTML?`<div class="sec"><div class="sh">Projects</div>${projHTML}</div>`:''}
+    <!-- EXPERIENCE -->
+    ${expHTML ? `<div class="sec"><div class="sh"><span class="sh-dot"></span><span class="sh-text">Experience</span><span class="sh-line"></span></div>${expHTML}</div>` : ''}
+    <!-- PROJECTS -->
+    ${projHTML ? `<div class="sec"><div class="sh"><span class="sh-dot"></span><span class="sh-text">Projects</span><span class="sh-line"></span></div>${projHTML}</div>` : ''}
   </div>
   <div>
-    <div class="sec"><div class="sh">Certifications</div>
-      <div class="cbadge">${certCount} Verified</div>
-      <table class="ct"><thead><tr><th>Domain</th><th style="text-align:right">Count</th></tr></thead>
-      <tbody>${catRows}<tr class="ctot"><td>Total</td><td class="nr">${certCount}</td></tr></tbody></table>
+    <!-- CERTIFICATIONS -->
+    <div class="sec">
+      <div class="sh"><span class="sh-dot"></span><span class="sh-text">Certifications</span><span class="sh-line"></span></div>
+      <div class="cert-badge">${certCount} Verified</div>
+      <table class="ct">
+        <thead><tr><th>Domain</th><th>Count</th></tr></thead>
+        <tbody>
+          ${catRows}
+          <tr class="ctot"><td>Total</td><td class="nr">${certCount}</td></tr>
+        </tbody>
+      </table>
     </div>
-    <div class="sec" style="margin-top:20px"><div class="sh">Links</div>
-      <div class="ll"><a href="${linkedin}">LinkedIn Profile</a><a href="${github}">GitHub Portfolio</a><a href="${thm}">TryHackMe</a><a href="https://cybaash.github.io">Live Cyber Range</a></div>
+    <!-- LINKS -->
+    <div class="sec" style="margin-top:8px">
+      <div class="sh"><span class="sh-dot"></span><span class="sh-text">Links</span><span class="sh-line"></span></div>
+      <div class="ll">
+        <div>
+          <span class="ll-lbl">LinkedIn</span>
+          <a href="https://${linkedin}">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+            ${linkedin}
+          </a>
+        </div>
+        <div>
+          <span class="ll-lbl">GitHub</span>
+          <a href="https://${github}">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+            ${github}
+          </a>
+        </div>
+        <div>
+          <span class="ll-lbl">Portfolio</span>
+          <a href="https://${website}">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            ${website}
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-<div class="sec"><div class="sh">Technical Skills</div>${skillHTML||'<p style="color:var(--mu);font-size:9pt">No data.</p>'}</div>
-<div class="ft"><span>${name} · <a href="https://cybaash.github.io">cybaash.github.io</a></span><span>Generated ${today}</span></div>
-</div>
-<sc` + `ript>
-if(document.fonts){document.fonts.ready.then(()=>setTimeout(()=>window.print(),400));}else{window.onload=()=>setTimeout(()=>window.print(),600);}
-<\/sc` + `ript></body></html>`;
 
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+<!-- SKILLS -->
+${skillHTML ? `<div class="sec"><div class="sh"><span class="sh-dot"></span><span class="sh-text">Technical Skills</span><span class="sh-line"></span></div><div class="skills-grid">${skillHTML}</div></div>` : ''}
+
+<!-- FOOTER -->
+<div class="ft">
+  <span class="ft-av">${name}</span>
+  <span><a href="https://${website}">${website}</a> · Generated ${today}</span>
+</div>
+
+</div>
+<script>
+if(document.fonts){document.fonts.ready.then(()=>setTimeout(()=>window.print(),500));}
+else{window.onload=()=>setTimeout(()=>window.print(),700);}
+<\/script></body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const win  = window.open(url, '_blank', 'noopener,noreferrer');
   if (!win) { alert('Pop-up blocked — allow pop-ups for this site and try again.'); URL.revokeObjectURL(url); return; }
