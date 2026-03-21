@@ -13,7 +13,7 @@ env/
 
 # Logs
 *.log
-cyberbot.log
+ai.log
 
 # IDE
 .vscode/
