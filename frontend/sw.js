@@ -62,7 +62,7 @@ self.addEventListener('install', event => {
 
 // ── Activate: purge old caches ───────────────────────────────────────────────
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating v4.4…');
+  console.log('[SW] Activating ' + VERSION + '…');
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
@@ -94,9 +94,17 @@ self.addEventListener('fetch', event => {
   // Cloudflare Worker proxy — always live
   if (url.hostname.endsWith('.workers.dev')) return;
 
-  // ── Google Fonts — cache-first with graceful CSS fallback ─────────────────
+  // ── Google Fonts — cache-first, credentials must be omitted ──────────────
+  // Reconstruct request with credentials:'omit' — required because Google Fonts
+  // returns Access-Control-Allow-Origin:* which browsers block when credentials
+  // are included (service worker default behaviour)
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    event.respondWith(fontCacheFirst(request));
+    const fontReq = new Request(request.url, {
+      method: 'GET',
+      credentials: 'omit',
+      headers: { 'Accept': request.headers.get('Accept') || '*/*' },
+    });
+    event.respondWith(fontCacheFirst(fontReq));
     return;
   }
 
@@ -198,18 +206,24 @@ async function fontCacheFirst(request) {
   const cached = await cache.match(request);
   if (cached) return cached;
   try {
-    // Always use cors mode — Google Fonts supports CORS for both CSS and woff2
-    // no-cors creates opaque responses (status 0) that browsers reject as fonts
-    const res = await fetch(request, { mode: 'cors' });
-    // Only cache successful responses — never cache opaque (no-cors) responses
-    if (res && res.status === 200 && res.type === 'basic' || res.type === 'cors') {
+    // credentials:'omit' is REQUIRED for Google Fonts — they return
+    // Access-Control-Allow-Origin:* which browsers reject when credentials
+    // are included (the default in service workers). omit prevents this.
+    const res = await fetch(request, {
+      mode: 'cors',
+      credentials: 'omit',
+    });
+    // Only cache successful CORS responses — never cache opaque responses
+    if (res && res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
       cache.put(request, res.clone());
     }
     return res;
   } catch {
-    // Font failed — return empty fallback so page loads without ERR_FAILED
+    // Font failed — return empty so page loads without ERR_FAILED
     const isFont = request.url.includes('.woff');
-    return isFont ? new Response('', { status: 200 }) : emptyFallback('css');
+    return isFont
+      ? new Response('', { status: 200, headers: { 'Content-Type': 'font/woff2' } })
+      : emptyFallback('css');
   }
 }
 
