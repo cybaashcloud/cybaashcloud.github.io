@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CYBAASH SOC — Security Operations Center</title>
   <meta name="robots" content="noindex, nofollow, noarchive" />
-  <meta http-equiv="X-Frame-Options" content="DENY" />
-  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-  <meta http-equiv="Referrer-Policy" content="no-referrer" />
   <!-- COMPLETELY ISOLATED: No shared CSS/JS with main site -->
   <link rel="stylesheet" href="security.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
@@ -480,34 +477,50 @@
 </div><!-- /#soc-app -->
 
 <script>
-  // Expose switchTab and el globally for inline onclick handlers
-  window.switchTab = switchTab;
-  window.el = el;
-  window.blockIPQuick = blockIPQuick;
-  window.unblockIP = unblockIP;
-  window.blockManualIP = blockManualIP;
-  window.unblockManualIP = unblockManualIP;
-  window.exportLogs = exportLogs;
-  window.refreshAll = refreshAll;
-  window.saveSettings = saveSettings;
-  window.STATE = STATE;
+  // ── Stub functions defined IMMEDIATELY (synchronous, before defer loads) ──
+  // When security.js (defer) loads, its function declarations overwrite these
+  // stubs because JS function declarations hoist into the same global scope.
+  // onclick handlers call these stubs → they queue the call → real fn runs it.
 
-  // Sync alert counts to threats tab after render
-  document.addEventListener('DOMContentLoaded', () => {
-    const origRenderAlerts = window.renderAlerts;
-    setInterval(() => {
-      if (STATE.alerts.length) {
-        const c = l => STATE.alerts.filter(a => a.level === l).length;
-        const crit = el('count-critical'); if (crit) crit.textContent = c('critical');
-        const high = el('count-high');     if (high) high.textContent = c('high');
-        const med  = el('count-medium');   if (med)  med.textContent = c('medium');
-        const low  = el('count-low');      if (low)  low.textContent = c('low');
+  var _pendingTab = null;
 
-        const fullFeed = el('alert-feed-full');
-        if (fullFeed) fullFeed.innerHTML = el('alert-feed')?.innerHTML || '';
-      }
-    }, 2000);
+  // Stub: queues tab switch until security.js is ready
+  function switchTab(tabId) {
+    _pendingTab = tabId;
+  }
+  function el(id) { return document.getElementById(id); }
+  function blockIPQuick(ip) { console.log('[SOC] blockIPQuick queued:', ip); }
+  function unblockIP(ip) { console.log('[SOC] unblockIP queued:', ip); }
+  function blockManualIP() { console.log('[SOC] blockManualIP queued'); }
+  function unblockManualIP() { console.log('[SOC] unblockManualIP queued'); }
+  function exportLogs() { console.log('[SOC] exportLogs queued'); }
+  function refreshAll() { console.log('[SOC] refreshAll queued'); }
+  function saveSettings() { console.log('[SOC] saveSettings queued'); }
+
+  // ── After security.js loads, flush any pending operations ─────────────────
+  window.addEventListener('load', function() {
+    // If a tab was clicked before security.js loaded, switch to it now
+    if (_pendingTab && typeof switchTab === 'function') {
+      switchTab(_pendingTab);
+      _pendingTab = null;
+    }
+
+    // Expose STATE for external access
+    if (typeof STATE !== 'undefined') window.STATE = STATE;
   });
+
+  // ── Sync alert counts to threats panel every 2s ────────────────────────────
+  setInterval(function() {
+    if (typeof STATE === 'undefined' || !STATE.alerts || !STATE.alerts.length) return;
+    var c = function(l) { return STATE.alerts.filter(function(a){ return a.level === l; }).length; };
+    var elCrit = el('count-critical'); if (elCrit) elCrit.textContent = c('critical');
+    var elHigh = el('count-high');     if (elHigh) elHigh.textContent = c('high');
+    var elMed  = el('count-medium');   if (elMed)  elMed.textContent  = c('medium');
+    var elLow  = el('count-low');      if (elLow)  elLow.textContent  = c('low');
+    var feed   = el('alert-feed-full');
+    var mini   = el('alert-feed');
+    if (feed && mini) feed.innerHTML = mini.innerHTML;
+  }, 2000);
 </script>
 
 </body>
