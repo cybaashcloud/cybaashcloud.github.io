@@ -27,6 +27,15 @@ const SHELL_FILES = [
   '/offline.html',
   '/style.css',
   '/ai/index.html',
+  '/ai/cybaash-ai_script.js',
+  '/ai/style.css',
+  '/cybaash-ai.js',
+  '/cybaash-ai.css',
+  '/cybaash_chatbot.js',
+  '/script.js',
+  '/github.js',
+  '/mobile.css',
+  '/mobile.js',
 ];
 
 // ── Install: precache shell ──────────────────────────────────────────────────
