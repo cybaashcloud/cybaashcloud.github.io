@@ -662,7 +662,7 @@ body.replay-active #replayTab { background:rgba(170,68,255,.1); }
 
 /* resize drag state */
 body.term-resizing { cursor:ns-resize; user-select:none; }
-body.term-resizing * { pointer-events:none; }
+body.term-resizing *:not(#termOverlay):not(#termOverlay *) { pointer-events:none; }
 
 /* terminal active glow on toggle button */
 #termToggleBtn.term-active {
@@ -4002,6 +4002,10 @@ const TERM_BOOT = [
 function termToggle() {
   const el  = document.getElementById('termOverlay');
   const btn = document.getElementById('termToggleBtn');
+  // Safety: ensure body is never stuck with overflow:hidden from stale drawer state
+  if (!document.body.classList.contains('nav-open')) {
+    document.body.style.overflow = '';
+  }
   TERM.isOpen = !TERM.isOpen;
   el.classList.toggle('term-open', TERM.isOpen);
   btn.classList.toggle('term-active', TERM.isOpen);
@@ -8079,22 +8083,11 @@ Drop file or click to upload<br>
     let touchStartY = null;
     let startH      = null;
 
+    // Mobile: NO drag resize — fixed height via CSS is better UX
+    // Dragging on mobile causes touch event blocks and page freeze
+    // Users can dismiss terminal by tapping the red dot instead
     handle.addEventListener('touchstart', function (e) {
-      if (e.target.classList.contains('term-dot')) return;
-      touchStartY = e.touches[0].clientY;
-      startH = overlay.getBoundingClientRect().height;
-      e.preventDefault(); // prevent scroll while dragging
-    }, { passive: false });
-
-    document.addEventListener('touchmove', function (e) {
-      if (touchStartY === null) return;
-      const delta = touchStartY - e.touches[0].clientY;
-      const newH  = Math.max(120, Math.min(window.innerHeight * 0.85, startH + delta));
-      overlay.style.height = newH + 'px';
-    }, { passive: true });
-
-    document.addEventListener('touchend', function () {
-      touchStartY = null;
+      // Only allow term-dot clicks, no drag on mobile
     }, { passive: true });
   }
 
@@ -8143,12 +8136,14 @@ Drop file or click to upload<br>
       }
     }
 
-    // Prevent iOS from scrolling page when terminal input focused
+    // iOS/Android: when terminal input focused, just scroll output to bottom
+    // DO NOT use scrollIntoView on fixed element — causes page freeze on Android
     termInput.addEventListener('focus', function () {
       if (!isTouchDevice()) return;
-      setTimeout(() => {
-        termOverlay.scrollIntoView({ block: 'end', behavior: 'smooth' });
-      }, 320); // wait for keyboard to appear
+      setTimeout(function() {
+        var out = document.getElementById('termOutput');
+        if (out) out.scrollTop = out.scrollHeight;
+      }, 320);
     }, { passive: true });
 
     // Prevent default scroll behavior on terminal output (use container scroll)

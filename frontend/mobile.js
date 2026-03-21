@@ -108,7 +108,14 @@
 
     /* Wire buttons */
     var t = document.getElementById('drw-terminal');
-    if (t) t.addEventListener('click', function () { closeDrawer(); setTimeout(function () { if (typeof termToggle === 'function') termToggle(); }, 220); });
+    if (t) t.addEventListener('click', function () {
+      closeDrawer();
+      setTimeout(function () {
+        // Ensure scroll is not locked after drawer closes
+        document.body.style.overflow = '';
+        if (typeof termToggle === 'function') termToggle();
+      }, 250);
+    });
 
     var la = document.getElementById('drw-launch');
     if (la) la.addEventListener('click', function () { closeDrawer(); setTimeout(function () { if (typeof launchAttack === 'function') launchAttack(); }, 220); });

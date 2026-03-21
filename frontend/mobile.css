@@ -613,9 +613,12 @@ body.nav-open { overflow: hidden; }
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
 
-  /* Allow page body to scroll freely */
-  html { overflow-y: auto !important; height: auto !important; }
-  body { overflow-y: auto !important; overflow-x: hidden !important; height: auto !important; min-height: 100vh !important; }
+  /* Allow page body to scroll freely — NO !important on overflow-y
+     so that body.nav-open { overflow:hidden } still works for drawer */
+  html { height: auto; }
+  body { overflow-x: hidden !important; height: auto; min-height: 100vh; }
+  /* Only lock scroll when drawer is open */
+  body:not(.nav-open) { overflow-y: auto; }
 
   /* Kill the height lock on .main */
   .page-index .main {
@@ -683,4 +686,18 @@ body.nav-open { overflow: hidden; }
   .page-index .panel > * {
     max-height: none !important;
   }
+}
+
+/* ── TERMINAL FREEZE PREVENTION ──────────────────────────────── */
+@media (max-width: 768px) {
+  /* Never let resize state freeze the whole page on mobile */
+  body.term-resizing { pointer-events: auto !important; }
+  body.term-resizing * { pointer-events: auto !important; }
+
+  /* Terminal overlay: always interactive when open */
+  #termOverlay, #termOverlay * { pointer-events: auto !important; }
+
+  /* Title bar: tappable, not draggable on mobile */
+  .term-titlebar { touch-action: manipulation !important; cursor: pointer !important; }
+  #termOverlay::before { display: none !important; } /* kill resize handle pseudo */
 }
