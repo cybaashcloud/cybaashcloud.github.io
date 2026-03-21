@@ -1,0 +1,274 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# WEEKLY PIPELINE — Orchestrated data sync → deploy
+#
+# Order matters:
+#   1. cert-images  : render PDF → JPEG, scrape og:image
+#   2. skill-sync   : OCR cert images for skill tags (needs images from step 1)
+#   3. ai-cache     : rebuild Gemini answer cache (uses updated cert tags)
+#   4. cert-counts  : update hardcoded counts in data_main.json + sw.js
+#   5. deploy       : build admin + publish to Pages
+#
+# All steps share ONE git checkout via artifacts. Only one commit at the end.
+# ═══════════════════════════════════════════════════════════════════════════
+name: Weekly Data Pipeline
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'     # Sunday 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      skip_images:
+        description: 'Skip cert image fetch'
+        type: boolean
+        default: false
+      skip_skills:
+        description: 'Skip skill sync'
+        type: boolean
+        default: false
+      skip_ai_cache:
+        description: 'Skip AI cache rebuild'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Dry run — no commits, no deploy'
+        type: boolean
+        default: false
+
+jobs:
+  # ── STAGE 1: Fetch cert images ─────────────────────────────────────────
+  cert-images:
+    name: 1 · Cert Images
+    if: ${{ !inputs.skip_images }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - run: pip install requests beautifulsoup4 pymupdf pillow
+
+      - name: Run fetch_cert_images
+        working-directory: frontend
+        run: |
+          python3 ../.github/scripts/fetch_cert_images.py --dir .
+
+      - name: Commit new images
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frontend/certificates/auto/ frontend/data_creds_*.json
+          if git diff --cached --quiet; then
+            echo "No new cert images."
+          else
+            N=$(git diff --cached --name-only | grep -c "certificates/auto" || true)
+            git commit -m "feat: render ${N} cert image(s) [skip ci]"
+            git push
+            echo "Pushed ${N} cert images."
+          fi
+
+      - name: Summary
+        run: echo "## Stage 1 — Cert Images" >> $GITHUB_STEP_SUMMARY
+
+  # ── STAGE 2: Skill sync ─────────────────────────────────────────────────
+  skill-sync:
+    name: 2 · Skill Sync
+    needs: cert-images
+    if: ${{ always() && !inputs.skip_skills }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - run: git pull --rebase   # pick up cert images from stage 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: |
+          sudo apt-get install -y tesseract-ocr --quiet
+          pip install requests pillow pytesseract
+
+      - name: Run skill sync
+        working-directory: frontend
+        run: python3 ../.github/scripts/sync_skills.py --dir .
+
+      - name: Commit skill updates
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase
+          git add frontend/data_creds_*.json
+          if git diff --cached --quiet; then
+            echo "No skill changes."
+          else
+            git commit -m "chore: sync credential skills [skip ci]"
+            git push
+          fi
+
+  # ── STAGE 3: AI cache rebuild ──────────────────────────────────────────
+  ai-cache:
+    name: 3 · AI Cache
+    needs: skill-sync
+    if: ${{ always() && !inputs.skip_ai_cache }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - run: git pull --rebase
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install requests
+
+      - name: Build AI cache
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FORCE_REBUILD:  'false'
+        run: python3 .github/scripts/build_ai_cache.py
+
+      - name: Commit cache
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase
+          git add frontend/data_ai_cache.json
+          if git diff --cached --quiet; then
+            echo "AI cache unchanged."
+          else
+            N=$(python3 -c "import json; d=json.load(open('frontend/data_ai_cache.json')); print(d['total'])")
+            git commit -m "chore: rebuild AI cache (${N} entries) [skip ci]"
+            git push
+          fi
+
+  # ── STAGE 4: Auto-update cert counts + version metadata ───────────────
+  cert-counts:
+    name: 4 · Cert Count Sync
+    needs: ai-cache
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - run: git pull --rebase
+
+      - name: Sync cert counts
+        run: |
+          python3 - << 'PYEOF'
+          import json, re
+          from pathlib import Path
+
+          # Count all credentials across data_creds_1..5.json
+          total = 0
+          for n in range(1, 6):
+              p = Path(f'frontend/data_creds_{n}.json')
+              if not p.exists(): continue
+              d = json.loads(p.read_text())
+              total += len(d.get('credentials', []))
+
+          print(f"Total credentials found: {total}")
+
+          # ── Update data_main.json certCount field ──────────────────────
+          main_path = Path('frontend/data_main.json')
+          if main_path.exists():
+              d = json.loads(main_path.read_text())
+              old = d.get('about', {}).get('certCount')
+              d.setdefault('about', {})['certCount'] = total
+              main_path.write_text(json.dumps(d, indent=2, ensure_ascii=False))
+              print(f"data_main.json: certCount {old} → {total}")
+
+          # ── Write a version metadata file ─────────────────────────────
+          import datetime
+          meta = {
+              'certCount':  total,
+              'builtAt':    datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+              'version':    '4.4',
+          }
+          Path('frontend/data_meta.json').write_text(
+              json.dumps(meta, indent=2), encoding='utf-8')
+          print(f"data_meta.json written")
+
+          # ── Write cert count to GITHUB_STEP_SUMMARY ───────────────────
+          import os
+          s = os.environ.get('GITHUB_STEP_SUMMARY')
+          if s:
+              with open(s, 'a') as f:
+                  f.write(f'## Stage 4 — Cert Counts\n')
+                  f.write(f'- **Total credentials:** {total}\n')
+          PYEOF
+
+      - name: Commit count updates
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase
+          git add frontend/data_main.json frontend/data_meta.json
+          if git diff --cached --quiet; then
+            echo "No count changes."
+          else
+            git commit -m "chore: auto-sync cert counts [skip ci]"
+            git push
+          fi
+
+  # ── STAGE 5: Trigger deploy ────────────────────────────────────────────
+  trigger-deploy:
+    name: 5 · Deploy
+    needs: cert-counts
+    if: ${{ !inputs.dry_run && always() }}
+    uses: ./.github/workflows/sync.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+  # ── Final summary ──────────────────────────────────────────────────────
+  summary:
+    name: Pipeline Summary
+    needs: [cert-images, skill-sync, ai-cache, cert-counts]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write pipeline summary
+        run: |
+          echo "## Weekly Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| 1 · Cert Images | ${{ needs.cert-images.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 2 · Skill Sync  | ${{ needs.skill-sync.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 3 · AI Cache    | ${{ needs.ai-cache.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 4 · Cert Counts | ${{ needs.cert-counts.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_Triggered: ${{ github.event_name }} · ${{ github.run_id }}_" >> $GITHUB_STEP_SUMMARY

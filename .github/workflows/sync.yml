@@ -1,4 +1,8 @@
-name: Deploy CYBAASH AI to GitHub Pages
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPLOY — Build admin panel + assemble _site + publish to GitHub Pages
+# Content-hash SW versioning ensures the browser always gets fresh files.
+# ═══════════════════════════════════════════════════════════════════════════
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -8,6 +12,7 @@ on:
       - '.github/workflows/sync.yml'
       - 'scripts/**'
   workflow_dispatch:
+  workflow_call:                  # called by weekly-pipeline.yml after data sync
 
 permissions:
   contents: read
@@ -18,13 +23,14 @@ concurrency:
 
 jobs:
   build:
+    name: Build _site
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0           # full history for accurate change detection
 
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -40,10 +46,10 @@ jobs:
         env:
           VITE_BASE_URL: /admin/
 
-      - name: Verify admin build output
+      - name: Verify admin build
         run: |
-          test -d frontend/admin/dist || { echo "ERROR: frontend/admin/dist/ missing"; exit 1; }
-          test -f frontend/admin/dist/index.html || { echo "ERROR: admin dist/index.html missing"; exit 1; }
+          test -d frontend/admin/dist          || { echo "ERROR: dist/ missing";       exit 1; }
+          test -f frontend/admin/dist/index.html || { echo "ERROR: dist/index.html";  exit 1; }
           echo "Admin build OK: $(find frontend/admin/dist -type f | wc -l) files"
 
       - name: Assemble _site
@@ -51,35 +57,30 @@ jobs:
           set -euo pipefail
           mkdir -p _site/portfolio _site/admin _site/icons _site/ai
 
-          # ── Core HTML pages ───────────────────────────────────────────
-          cp frontend/index.html        _site/index.html
-          cp frontend/recruiter.html    _site/recruiter.html
-          cp frontend/dashboard.html    _site/dashboard.html
-          cp frontend/offline.html      _site/offline.html
+          # ── Core pages ───────────────────────────────────────────────
+          cp frontend/index.html      _site/index.html
+          cp frontend/recruiter.html  _site/recruiter.html
+          cp frontend/dashboard.html  _site/dashboard.html
+          cp frontend/offline.html    _site/offline.html
 
-          # ── Cyberbot ──────────────────────────────────────────────────
+          # ── AI chatbot ────────────────────────────────────────────────
           cp -r frontend/ai/. _site/ai/
 
           # ── JS / CSS ──────────────────────────────────────────────────
-          cp frontend/cybaash-ai.js      _site/cybaash-ai.js
-          cp frontend/cybaash-ai.css     _site/cybaash-ai.css
-          cp frontend/script.js          _site/script.js
-          cp frontend/github.js          _site/github.js
-          cp frontend/saas-integration.js _site/saas-integration.js
-          [ -f frontend/style.css          ] && cp frontend/style.css          _site/style.css          || true
-          [ -f frontend/mobile.css ] && cp frontend/mobile.css _site/mobile.css || true
-          [ -f frontend/mobile.js  ] && cp frontend/mobile.js  _site/mobile.js  || true
-          # Root-level AI script
-          [ -f frontend/ai-script.js ] && cp frontend/ai-script.js _site/ai-script.js || true
-          [ -f frontend/cybaash_chatbot.js ] && cp frontend/cybaash_chatbot.js _site/cybaash_chatbot.js || true
+          for f in cybaash-ai.js cybaash-ai.css script.js github.js \
+                   saas-integration.js style.css mobile.css mobile.js \
+                   ai-script.js cybaash_chatbot.js; do
+            [ -f "frontend/$f" ] && cp "frontend/$f" "_site/$f" && echo "OK $f" || echo "SKIP $f"
+          done
 
           # ── Portfolio images ──────────────────────────────────────────
-          [ -f frontend/avatar.png           ] && cp frontend/avatar.png           _site/portfolio/avatar.png           || true
-          [ -f frontend/li-logo.jpg          ] && cp frontend/li-logo.jpg          _site/portfolio/li-logo.jpg          || true
-          [ -f frontend/project_eatpqa2f.png ] && cp frontend/project_eatpqa2f.png _site/portfolio/project_eatpqa2f.png || true
+          for f in avatar.png li-logo.jpg project_eatpqa2f.png; do
+            [ -f "frontend/$f" ] && cp "frontend/$f" "_site/portfolio/$f" || true
+          done
 
-          # ── Data files → portfolio/ AND root (both paths used by app) ─
-          for f in data_main.json data_creds_1.json data_creds_2.json data_creds_3.json data_creds_4.json data_creds_5.json; do
+          # ── Data files → portfolio/ AND root ─────────────────────────
+          for f in data_main.json data_creds_1.json data_creds_2.json \
+                   data_creds_3.json data_creds_4.json data_creds_5.json; do
             if [ -f "frontend/$f" ]; then
               cp "frontend/$f" "_site/portfolio/$f"
               cp "frontend/$f" "_site/$f"
@@ -89,58 +90,95 @@ jobs:
             fi
           done
 
+          # ── AI cache ──────────────────────────────────────────────────
+          [ -f frontend/data_ai_cache.json ] && \
+            cp frontend/data_ai_cache.json _site/data_ai_cache.json && \
+            echo "OK data_ai_cache.json ($(python3 -c \
+              "import json; d=json.load(open('frontend/data_ai_cache.json')); \
+               print(str(d.get('total',0))+' entries')" 2>/dev/null || echo 'n/a'))" \
+            || echo "SKIP data_ai_cache.json"
+
           # ── Admin panel ───────────────────────────────────────────────
           cp -r frontend/admin/dist/. _site/admin/
 
-          # ── AI config ─────────────────────────────────────────────────
-          [ -f frontend/data_ai_config.json ] && cp frontend/data_ai_config.json _site/data_ai_config.json || true
-
-          # ── Certificates (all types: LinkedIn, Cisco, AWS, etc.) ──────
+          # ── Certificates ──────────────────────────────────────────────
           if [ -d frontend/certificates ]; then
             mkdir -p _site/certificates
             cp -r frontend/certificates/. _site/certificates/
             echo "OK certificates/ ($(find frontend/certificates -type f | wc -l) files)"
-          else
-            echo "SKIP certificates/"
           fi
-
-          # ── Cert logos (pro012–pro024 thumbnail images) ───────────────
           if [ -d frontend/cert_logos ]; then
             mkdir -p _site/cert_logos
             cp -r frontend/cert_logos/. _site/cert_logos/
             echo "OK cert_logos/ ($(find frontend/cert_logos -type f | wc -l) files)"
-          else
-            echo "SKIP cert_logos/"
           fi
 
-          # ── PWA manifest + service worker ────────────────────────────
+          # ── PWA manifest + service worker ─────────────────────────────
           cp frontend/manifest.json _site/manifest.json
           cp frontend/sw.js         _site/sw.js
-          cp frontend/_headers      _site/_headers
+          [ -f frontend/_headers ] && cp frontend/_headers _site/_headers
 
           # ── Icons ─────────────────────────────────────────────────────
-          find frontend/icons \( -name '*.png' -o -name '*.ico' \) | while read -r icon; do
-            cp "$icon" "_site/icons/$(basename "$icon")"
-          done
+          find frontend/icons \( -name '*.png' -o -name '*.ico' \) | \
+            while read -r f; do cp "$f" "_site/icons/$(basename "$f")"; done
 
           touch _site/.nojekyll
 
           # ── Validate critical files ───────────────────────────────────
           echo "=== Validating _site ==="
-          test -f _site/index.html               || { echo "MISSING: index.html";               exit 1; }
-          test -f _site/admin/index.html         || { echo "MISSING: admin/index.html";         exit 1; }
-          test -f _site/portfolio/data_main.json || { echo "MISSING: portfolio/data_main.json"; exit 1; }
-          test -f _site/data_main.json           || { echo "MISSING: root data_main.json";      exit 1; }
-          test -f _site/cybaash-ai.js            || { echo "MISSING: cybaash-ai.js";            exit 1; }
-          echo "All critical files present."
+          for f in _site/index.html _site/admin/index.html \
+                   _site/portfolio/data_main.json _site/data_main.json \
+                   _site/cybaash-ai.js _site/sw.js _site/mobile.css; do
+            test -f "$f" && echo "✓ $f" || { echo "MISSING: $f"; exit 1; }
+          done
           echo "Total files: $(find _site -type f | wc -l)"
 
       - name: Sanitize AI config
         run: python3 scripts/deploy_ai_config.py
 
-      - name: Stamp SW cache version
+      # ── SW version: hash of shell files (not just git SHA) ────────────
+      # Using file content hashes means the SW version changes IFF a shell
+      # file actually changed — not on every unrelated commit.
+      - name: Stamp SW version with content hash
         run: |
-          python3 scripts/stamp_sw_version.py _site/sw.js "${{ github.sha }}"
+          python3 - << 'PYEOF'
+          import hashlib, re, sys
+          from pathlib import Path
+
+          # Hash the content of all shell files that the SW precaches
+          shell_files = [
+            '_site/index.html', '_site/recruiter.html', '_site/dashboard.html',
+            '_site/style.css',  '_site/mobile.css',     '_site/script.js',
+            '_site/github.js',  '_site/cybaash-ai.js',  '_site/cybaash-ai.css',
+            '_site/cybaash_chatbot.js', '_site/ai/index.html',
+            '_site/ai/cybaash-ai_script.js', '_site/ai/style.css',
+          ]
+
+          h = hashlib.sha256()
+          for f in shell_files:
+              p = Path(f)
+              if p.exists():
+                  h.update(p.read_bytes())
+
+          # 8-char prefix of the content hash
+          content_hash = h.hexdigest()[:8]
+          version      = f'cybaash-v4-{content_hash}'
+
+          sw_path = Path('_site/sw.js')
+          sw_text = sw_path.read_text()
+          new_text, count = re.subn(
+              r"(const VERSION\s*=\s*')[^']*(')",
+              rf"\g<1>{version}\g<2>",
+              sw_text
+          )
+          if count == 0:
+              print("ERROR: VERSION constant not found in sw.js")
+              sys.exit(1)
+
+          sw_path.write_text(new_text)
+          print(f"SW VERSION stamped: {version}")
+          print(f"  (hash of {len(shell_files)} shell files)")
+          PYEOF
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -150,7 +188,17 @@ jobs:
         with:
           path: _site
 
+      - name: Write build summary
+        run: |
+          TOTAL=$(find _site -type f | wc -l)
+          CERTS=$(find _site/certificates -type f 2>/dev/null | wc -l || echo 0)
+          echo "## Deploy Build" >> $GITHUB_STEP_SUMMARY
+          echo "- **Files assembled:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Certificate files:** $CERTS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
   deploy:
+    name: Publish to GitHub Pages
     runs-on: ubuntu-latest
     needs: build
     permissions:
