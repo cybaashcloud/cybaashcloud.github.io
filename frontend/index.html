@@ -1397,37 +1397,39 @@ input[type=range]::-webkit-slider-thumb {
   .mob-fab-bar {
     display: flex;
     position: fixed;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    gap: 10px;
+    bottom: 20px;
+    left: 16px;
+    gap: 8px;
     z-index: 1050;
     padding: 0;
   }
   .mob-fab {
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 0 16px;
-    height: 42px;
-    background: var(--panel2);
+    gap: 6px;
+    padding: 0 13px;
+    height: 38px;
+    background: rgba(6,15,24,.95);
     border: 1px solid var(--border);
     color: var(--dim);
     font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
+    font-size: 9px;
     letter-spacing: 1.5px;
     cursor: pointer;
     border-radius: 2px;
     white-space: nowrap;
-    box-shadow: 0 4px 20px rgba(0,0,0,.4);
-    transition: border-color .15s, color .15s, background .15s;
+    box-shadow: 0 4px 20px rgba(0,0,0,.6);
+    transition: border-color .15s, color .15s;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    touch-action: manipulation;
   }
-  .mob-fab.left-fab  { border-color: rgba(255,34,68,.4);  color: var(--red); }
-  .mob-fab.right-fab { border-color: rgba(0,212,255,.4);  color: var(--blue); }
-  .mob-fab.left-fab:hover  { background: rgba(255,34,68,.08);  border-color: var(--red); }
-  .mob-fab.right-fab:hover { background: rgba(0,212,255,.08); border-color: var(--blue); }
+  .mob-fab.left-fab  { border-color: rgba(255,34,68,.5);  color: var(--red); }
+  .mob-fab.right-fab { border-color: rgba(0,212,255,.5);  color: var(--blue); }
+  .mob-fab.left-fab:active  { background: rgba(255,34,68,.12); }
+  .mob-fab.right-fab:active { background: rgba(0,212,255,.1); }
   .mob-fab-dot {
-    width: 6px; height: 6px; border-radius: 50%;
+    width: 5px; height: 5px; border-radius: 50%;
     background: currentColor; flex-shrink: 0; animation: pulse 2s infinite;
   }
 
@@ -1439,52 +1441,58 @@ input[type=range]::-webkit-slider-thumb {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--dim);
+    width: 36px;
+    height: 36px;
+    background: rgba(0,212,255,.06);
+    border: 1px solid rgba(0,212,255,.3);
+    color: var(--blue);
     cursor: pointer;
     border-radius: 2px;
     flex-shrink: 0;
-    font-size: 16px;
+    font-size: 15px;
     margin-left: auto;
     font-family: monospace;
+    touch-action: manipulation;
   }
-  .mob-menu-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .mob-menu-btn:active { background: rgba(0,212,255,.14); border-color: var(--blue); }
 
   /* Header drawer */
   .mob-header-drawer {
     position: fixed;
-    top: 46px;
+    top: 0;
     left: 0;
     right: 0;
     background: var(--panel);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(0,212,255,.2);
     z-index: 1200;
     transform: translateY(-110%);
     transition: transform .22s cubic-bezier(.4,0,.2,1);
-    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    box-shadow: 0 8px 32px rgba(0,0,0,.7);
+    padding-top: 46px; /* clears header */
   }
   .mob-header-drawer.open { transform: translateY(0); }
 
   /* Header drawer content */
   .mob-hd-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--border);
+    background: var(--panel2);
   }
   .mob-hd-stats .stat-pill {
-    font-size: 9px;
-    padding: 4px 10px;
+    font-size: 8px;
+    padding: 6px 8px;
     border: 1px solid var(--border);
-    background: var(--panel2);
+    background: var(--bg);
     display: flex;
     align-items: center;
-    gap: 5px;
+    justify-content: center;
+    gap: 4px;
     white-space: nowrap;
+    border-radius: 2px;
+    letter-spacing: .5px;
   }
   .mob-hd-btns {
     display: flex;
@@ -1530,8 +1538,8 @@ input[type=range]::-webkit-slider-thumb {
     display: none; /* hidden on desktop */
   }
 
-  /* Center panel: add bottom padding for FABs */
-  .center { padding-bottom: 72px !important; }
+  /* Center panel: bottom padding clears FABs */
+  .center { padding-bottom: 80px !important; }
 
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
