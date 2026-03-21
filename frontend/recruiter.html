@@ -362,8 +362,8 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .empty-t{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--dim)}
 
 /* ── RESPONSIVE ── */
-@media(max-width:1000px){.ov-grid{grid-template-columns:1fr 1fr}.kpi-row{display:none}}
-@media(max-width:700px){.hero-inner{grid-template-columns:1fr}.ov-grid{grid-template-columns:1fr}.ov-wide{grid-template-columns:1fr}.cred-stats{grid-template-columns:repeat(3,1fr)}}
+
+
 
 /* ═══════════════════════════════════════════════════════
    RESPONSIVE ADDITIONS — recruiter.html
@@ -381,162 +381,17 @@ a, button, [onclick] {
 }
 
 /* ── TABLET  (≤ 1000px) — augments existing ── */
-@media (max-width: 1000px) {
-  .content { padding: 16px 14px; }
-  .hero { padding: 28px 20px 20px; }
-  .hero::before, .hero::after { display: none; } /* remove decorative blobs */
-  .hdr { padding: 10px 16px; flex-wrap: wrap; gap: 8px; }
-  .hdr-right { flex-wrap: wrap; gap: 6px; }
-  .btn { padding: 9px 14px; font-size: 9px; min-height: 44px; }
-  .cband-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
-  }
-}
+
 
 /* ── TABLET PORTRAIT  (≤ 768px) ── */
-@media (max-width: 768px) {
-  body { font-size: 13px; }
 
-  /* Header */
-  .hdr { padding: 10px 14px; position: sticky; top: 0; z-index: 200; }
-  .hdr-logo { font-size: 18px; letter-spacing: 2px; }
-  .hdr-right { width: 100%; justify-content: space-between; }
-
-  /* Hero section */
-  .hero { padding: 24px 16px 18px; }
-  .hero-inner {
-    grid-template-columns: 1fr !important;
-    gap: 20px;
-    text-align: center;
-  }
-  .hero-name { font-size: clamp(22px, 7vw, 36px) !important; }
-  .hero-title { font-size: clamp(11px, 3vw, 14px) !important; }
-  .hero-actions { justify-content: center; flex-wrap: wrap; gap: 8px; }
-  .avail-pill { justify-content: center; }
-
-  /* Avatar center on mobile */
-  .hero-avatar-wrap { margin: 0 auto; }
-
-  /* KPI row → wrap */
-  .kpi-row {
-    display: flex !important;
-    flex-wrap: wrap;
-    border: none;
-    gap: 8px;
-    background: none;
-  }
-  .kpi {
-    flex: 1 1 calc(50% - 8px);
-    border: 1px solid var(--border);
-    border-right: 1px solid var(--border) !important;
-    min-width: 100px;
-    padding: 12px 14px;
-  }
-  .kpi-num { font-size: 22px; }
-
-  /* Overview grids */
-  .ov-grid {
-    grid-template-columns: 1fr !important;
-  }
-  .ov-wide {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* DNA bars section */
-  .dna-section { padding: 14px; }
-
-  /* Credentials grid */
-  .cred-stats {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px;
-  }
-
-  /* Credential cards — full width rows on mobile */
-  .cr {
-    flex-direction: column;
-    gap: 10px;
-  }
-  .cr-has-logo { flex-direction: row; }
-  .cr-name { font-size: 12px; }
-  .cr-tags { flex-wrap: wrap; gap: 4px; }
-  .ct { font-size: 8px; padding: 2px 6px; }
-
-  /* Category band */
-  .cband-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 6px;
-  }
-
-  /* Projects grid */
-  .proj-grid { grid-template-columns: 1fr !important; }
-
-  /* Section labels */
-  .sec-label { font-size: 7px; letter-spacing: 3px; }
-
-  /* Credential filter tabs — scrollable */
-  .cred-tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex-wrap: nowrap;
-  }
-  .cred-tabs::-webkit-scrollbar { display: none; }
-  .cred-tab { flex-shrink: 0; white-space: nowrap; min-height: 44px; }
-
-  /* Badges grid */
-  .bdg-grid { grid-template-columns: repeat(2, 1fr) !important; }
-
-  /* Subsections */
-  .sub-sec-btn {
-    padding: 8px 12px;
-    font-size: 9px;
-    min-height: 44px;
-  }
-
-  /* Filter buttons */
-  .cf-btn, #filterBar { flex-wrap: wrap; }
-  .cf-btn { min-height: 44px; font-size: 9px; padding: 8px 12px; }
-}
 
 /* ── SMALL MOBILE  (≤ 480px) ── */
-@media (max-width: 480px) {
-  .hero-name { font-size: clamp(18px, 8vw, 26px) !important; }
-  .hero-actions { flex-direction: column; align-items: stretch; }
-  .hero-actions .btn { justify-content: center; width: 100%; }
-  .kpi-num { font-size: 18px; }
-  .kpi { flex: 1 1 100%; }
-  .cband-grid { grid-template-columns: 1fr 1fr !important; }
-  .bdg-grid { grid-template-columns: 1fr 1fr !important; }
-  .cred-stats { grid-template-columns: 1fr 1fr !important; }
 
-  /* Stack credential card content */
-  .cr-has-logo {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .cr-logo-wrap { width: 44px !important; height: 44px !important; }
-
-  /* Content padding */
-  .content { padding: 12px 10px; }
-}
 
 
 /* ── MOBILE INLINE GRID OVERRIDES ── */
-@media (max-width: 768px) {
-  body { overflow-x: hidden !important; }
-  * { max-width: 100vw; box-sizing: border-box; }
 
-  #gap,
-  [style*="grid-template-columns:1fr 1fr"],
-  [style*="grid-template-columns: 1fr 1fr"],
-  [style*="grid-template-columns:repeat(3"],
-  [style*="grid-template-columns:repeat(4"] {
-    grid-template-columns: 1fr !important;
-  }
-
-  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  [style*="display:flex"], [style*="display: flex"] { flex-wrap: wrap; }
-}
 
 /* ── RESUME BUTTON ─────────────────────────────────────────────── */
 #resumeBtn {
@@ -564,27 +419,7 @@ a, button, [onclick] {
 }
 
 /* ── PRINT STYLESHEET ──────────────────────────────────────────── */
-@media print {
-  body { background: #fff !important; color: #111 !important; }
-  .hdr, #resumeBtn, .ld-wrap, #filterBar, .kpi-row,
-  [onclick], .btn, .sub-sec-btn, .cr-v, .cr-arrow { display: none !important; }
-  .hero { background: #f8f9fa !important; border: none !important; padding: 20px !important; }
-  .hero-name { color: #0a1520 !important; font-size: 28px !important; }
-  .hero-eyebrow, .hero-title, .hero-loc, .avail-pill { color: #555 !important; }
-  .content { max-width: 100% !important; padding: 10px !important; }
-  .ov-grid, .ov-wide { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-  .card { background: #fff !important; border: 1px solid #ddd !important;
-    box-shadow: none !important; break-inside: avoid; }
-  .cr { border: 1px solid #eee !important; margin-bottom: 4px !important; }
-  .cr-name { color: #111 !important; font-size: 11px !important; }
-  .cr-iss, .cr-date { color: #555 !important; font-size: 10px !important; }
-  .sec-label { color: #0a66c2 !important; }
-  .dna-fill { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-  a { color: #0a66c2 !important; }
-  .hero-avatar-wrap { display: block !important; }
-  .hero-avatar { width: 80px !important; height: 80px !important; }
-  @page { margin: 15mm; size: A4; }
-}
+
 
 
 /* ── CONTACT FORM ──────────────────────────────────────────────── */
@@ -629,7 +464,7 @@ a, button, [onclick] {
 }
 .cf-status.ok  { background: rgba(0,255,136,.06); border: 1px solid rgba(0,255,136,.2); color: #00ff88; }
 .cf-status.err { background: rgba(255,34,68,.06); border: 1px solid rgba(255,34,68,.2); color: #ff2244; }
-@media(max-width:480px){ .cf-row { grid-template-columns: 1fr; } }
+
 
 
 /* ── HERO AVATAR ─────────────────────────────────────────── */
@@ -672,11 +507,7 @@ a, button, [onclick] {
   animation: availPulse 2s ease-in-out infinite;
 }
 @keyframes availPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-@media(max-width:768px) {
-  .hero-avatar-frame { width: 90px; height: 90px; }
-  .hero-avatar-img   { width: 90px; height: 90px; }
-  .hero-avatar-placeholder { font-size: 22px; }
-}
+
 
 /* ── APPLE HACKER CURSOR ─────────────────────── */
 *, *::before, *::after { cursor: none !important; }
@@ -695,72 +526,8 @@ body.cyb-clicking #cyb-cursor-ring{width:22px;height:22px;border-color:rgba(0,21
 
 
 /* ═══ RECRUITER HEADER FIX ═══ */
-@media (max-width: 768px) {
-  .hdr {
-    min-height: 52px;
-    padding: max(10px, env(safe-area-inset-top)) 12px 10px 12px !important;
-    flex-wrap: nowrap !important;
-    align-items: center;
-    gap: 8px;
-    position: sticky;
-    top: 0;
-    z-index: 200;
-    background: linear-gradient(90deg,#020a12,#0a1a2e,#020a12);
-  }
-  .hdr-logo {
-    font-size: clamp(12px, 4vw, 16px) !important;
-    letter-spacing: clamp(1px, .5vw, 3px) !important;
-    flex-shrink: 0;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 55vw;
-  }
-  .hdr-logo small { display: none; }
-  .hdr-right {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 8px !important;
-    width: auto !important;
-    flex-shrink: 0 !important;
-    margin-left: auto;
-    flex-wrap: nowrap !important;
-  }
-  /* Hide availability pill on small screens to save space */
-  .avail-pill { display: none !important; }
-  /* Back button — always visible, always tappable */
-  .btn-back {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 44px !important;
-    min-width: 44px;
-    padding: 8px 14px !important;
-    font-size: clamp(9px, 2.5vw, 11px) !important;
-    letter-spacing: 1px;
-    white-space: nowrap;
-    border: 1px solid var(--border);
-    color: var(--dim);
-    background: transparent;
-    touch-action: manipulation;
-    flex-shrink: 0;
-  }
-  .btn-back:active { color: var(--blue); border-color: var(--blue); }
-}
-@media (max-width: 480px) {
-  /* Very small: show just the arrow icon in back button */
-  .btn-back span,
-  .btn-back-text { display: none; }
-  .btn-back {
-    min-width: 44px;
-    width: 44px;
-    padding: 8px !important;
-  }
-  .hdr-logo { max-width: 65vw; }
-}
+
+
 /* ═══════════════════════════════════════════════════════ */
 
 /* === MOBILE PATCH === */
@@ -796,16 +563,7 @@ html {
 /* ── DISABLE CUSTOM CURSOR ON TOUCH DEVICES ─────────────────────
    recruiter.html has cursor: none — kills all touch interaction.
    ─────────────────────────────────────────────────────────────── */
-@media (hover: none) and (pointer: coarse) {
-  *, *::before, *::after { cursor: auto !important; }
-  a, button, [onclick], .tab, .btn, .fb, .cr, .bdg,
-  .cred-tab, .cf-btn, .sub-sec-btn, .more-btn,
-  .proj-card, .ctf-card, .pl, .ctf-lnk, .ci {
-    cursor: pointer !important;
-  }
-  #cyb-cursor,
-  #cyb-cursor-ring { display: none !important; }
-}
+
 
 /* ── HEADER ─────────────────────────────────────────────────────── */
 .hdr {
@@ -815,48 +573,9 @@ html {
   position: sticky; top: 0; z-index: 200;
 }
 
-@media (max-width: 768px) {
-  .hdr {
-    padding: max(10px, var(--sai-top)) max(12px, var(--sai-right)) 10px max(12px, var(--sai-left));
-    gap: 8px;
-    min-height: 52px;
-    flex-wrap: nowrap !important;
-    align-items: center;
-  }
-  .hdr-logo {
-    font-size: clamp(13px, 4.5vw, 18px);
-    letter-spacing: clamp(1px, .5vw, 3px);
-    flex-shrink: 0;
-  }
-  .hdr-logo small {
-    display: none; /* hide subtitle on small screens */
-  }
-  .hdr-right {
-    width: auto !important; /* don't force full width */
-    justify-content: flex-end;
-    gap: 8px;
-    flex-wrap: nowrap;
-  }
-  .avail-pill {
-    font-size: 8px;
-    padding: 4px 10px;
-    letter-spacing: 1px;
-    min-height: 30px;
-  }
-  .btn-back {
-    min-height: var(--touch-min);
-    padding: 8px 12px;
-    font-size: clamp(9px, 2.5vw, 11px);
-    letter-spacing: 1px;
-    flex-shrink: 0;
-  }
-}
 
-@media (max-width: 480px) {
-  /* On very small screens, hide availability pill, keep nav */
-  .avail-pill { display: none; }
-  .hdr-logo b { font-size: 1em; }
-}
+
+
 
 /* ── HERO SECTION ────────────────────────────────────────────────
    Already has partial mobile CSS. We enhance it.
@@ -866,81 +585,14 @@ html {
   padding-right: max(16px, var(--sai-right));
 }
 
-@media (max-width: 768px) {
-  .hero {
-    padding: clamp(20px, 5vw, 36px) max(14px, var(--sai-right)) clamp(18px, 4vw, 28px) max(14px, var(--sai-left));
-  }
-  .hero-inner {
-    grid-template-columns: 1fr !important;
-    gap: 20px;
-    text-align: center;
-  }
-  .hero-name { 
-    font-size: clamp(20px, 7vw, 34px) !important;
-    letter-spacing: clamp(2px, 1vw, 5px);
-  }
-  .hero-title {
-    font-size: clamp(10px, 2.8vw, 13px) !important;
-    letter-spacing: clamp(2px, 1vw, 4px);
-  }
-  .hero-meta {
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px 16px;
-  }
-  .meta-item {
-    font-size: 10px;
-    gap: 5px;
-  }
-  .meta-item a { color: var(--blue); }
 
-  /* Avatar — centered, smaller */
-  .hero-avatar-col { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center;
-    gap: 8px;
-  }
-  .hero-avatar-frame {
-    width: clamp(80px, 22vw, 110px) !important;
-    height: clamp(80px, 22vw, 110px) !important;
-  }
-  .hero-avatar-img {
-    width: clamp(80px, 22vw, 110px) !important;
-    height: clamp(80px, 22vw, 110px) !important;
-  }
-  .hero-avail-dot {
-    font-size: 8px;
-    letter-spacing: 1.5px;
-  }
-}
 
 /* ── KPI ROW ─────────────────────────────────────────────────────
    On small screens, wrap KPIs into a 2×2 grid for readability.
    ─────────────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .kpi-row {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    border: none !important;
-    background: none !important;
-  }
-  .kpi {
-    border: 1px solid var(--border) !important;
-    border-right: 1px solid var(--border) !important;
-    padding: 12px 10px !important;
-    text-align: center;
-    min-width: unset;
-  }
-  .kpi-num { font-size: clamp(20px, 6vw, 26px); }
-  .kpi-lbl { font-size: 7px; letter-spacing: 1px; margin-top: 3px; }
-}
 
-@media (max-width: 480px) {
-  .kpi { flex: 1 1 100%; }
-  .kpi-num { font-size: 20px; }
-}
+
+
 
 /* ── TABS (horizontal scroll) ────────────────────────────────────*/
 .tabs {
@@ -953,22 +605,7 @@ html {
 }
 .tabs::-webkit-scrollbar { display: none; }
 
-@media (max-width: 768px) {
-  .tabs { padding: 0 6px; }
-  .tab {
-    min-height: var(--touch-min);
-    min-width: var(--touch-min);
-    padding: 0 12px;
-    font-size: clamp(9px, 2.5vw, 12px);
-    letter-spacing: 1px;
-    flex-shrink: 0;
-    touch-action: manipulation;
-  }
-  .tab-ct {
-    font-size: 7px;
-    padding: 1px 4px;
-  }
-}
+
 
 /* ── CONTENT PADDING ─────────────────────────────────────────────*/
 .content {
@@ -1001,199 +638,57 @@ input[placeholder*="search"] {
 }
 
 /* ── FILTER BUTTONS ─────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .filter-bar { gap: 5px; flex-wrap: wrap; }
-  .fb {
-    min-height: var(--touch-min);
-    padding: 7px 12px;
-    font-size: 10px;
-    touch-action: manipulation;
-  }
-  /* Credential filter tabs */
-  .cred-tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex-wrap: nowrap !important;
-    -webkit-mask-image: linear-gradient(to right, transparent 0px, #000 8px, #000 calc(100% - 8px), transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0px, #000 8px, #000 calc(100% - 8px), transparent 100%);
-  }
-  .cred-tabs::-webkit-scrollbar { display: none; }
-  .cred-tab {
-    flex-shrink: 0;
-    white-space: nowrap;
-    min-height: var(--touch-min);
-    display: inline-flex; align-items: center;
-    padding: 0 12px;
-    font-size: 10px;
-  }
-  .sub-sec-btn {
-    min-height: var(--touch-min);
-    padding: 8px 12px;
-    font-size: 9px;
-  }
-}
+
 
 /* ── OVERVIEW GRIDS ──────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .ov-grid { grid-template-columns: 1fr !important; }
-  .ov-wide { grid-template-columns: 1fr !important; }
-  .card    { padding: clamp(12px, 3vw, 18px); }
-  .card-title { font-size: 8px; letter-spacing: 2px; }
-}
+
 
 /* ── DNA BARS ────────────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .dna-row { padding: 7px 0; gap: 8px; }
-  .dna-name { font-size: 11px; }
-  .dna-track { width: 60px; }
-  .dna-n { font-size: 9px; }
-}
+
 
 /* ── BADGES GRID ─────────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .bdg-grid { grid-template-columns: 1fr 1fr !important; gap: 6px; }
-  .bdg { 
-    padding: 10px 12px;
-    min-height: var(--touch-min);
-  }
-  .bdg-name { font-size: 11px; }
-}
 
-@media (max-width: 400px) {
-  .bdg-grid { grid-template-columns: 1fr !important; }
-}
+
+
 
 /* ── CREDENTIALS STATS ───────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .cred-stats {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 2px;
-  }
-  .cs { padding: 10px 6px; }
-  .cs-n { font-size: clamp(14px, 4.5vw, 20px); }
-  .cs-l { font-size: 6px; letter-spacing: 1px; }
-}
 
-@media (max-width: 480px) {
-  .cred-stats { grid-template-columns: repeat(3, 1fr) !important; }
-  .cs-n { font-size: 14px; }
-}
+
+
 
 /* ── CREDENTIAL GRID ─────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .cred-grid {
-    grid-template-columns: 1fr !important;
-    gap: 7px;
-  }
-  .cr { padding: 11px 13px; }
-  .cr-name { font-size: 12px; }
-  .cr-date { font-size: 8px; }
-}
 
-@media (min-width: 480px) and (max-width: 768px) {
-  .cred-grid { grid-template-columns: 1fr 1fr !important; }
-}
+
+
 
 /* ── CREDENTIAL LOGO WRAP ────────────────────────────────────────*/
-@media (max-width: 480px) {
-  .cr-has-logo { flex-direction: row !important; align-items: flex-start; }
-  .cr-logo-wrap,
-  .cr-logo-placeholder {
-    width: 36px !important;
-    height: 36px !important;
-    flex-shrink: 0;
-  }
-  .cr-logo-wrap.credly,
-  .cr-logo-placeholder.credly {
-    width: 40px !important;
-    height: 40px !important;
-  }
-}
+
 
 /* ── CATEGORY BAND ───────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .cband { padding: 20px max(14px, var(--sai-right)) max(20px, var(--sai-bottom)) max(14px, var(--sai-left)); }
-  .cband-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 6px; }
-  .ci {
-    padding: 11px 12px;
-    min-height: var(--touch-min);
-  }
-  .ci-lbl { font-size: 7px; letter-spacing: 2px; }
-  .ci-val { font-size: 12px; word-break: break-word; }
-}
 
-@media (max-width: 400px) {
-  .cband-grid { grid-template-columns: 1fr !important; }
-}
+
+
 
 /* ── SKILLS GRID ─────────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .sk-grid { grid-template-columns: 1fr !important; gap: 8px; }
-  .sk-card { padding: 14px; }
-  .sk-item {
-    padding: 6px 0;
-    min-height: 36px;
-  }
-  .sk-item-name { font-size: 11px; }
-}
 
-@media (min-width: 480px) and (max-width: 768px) {
-  .sk-grid { grid-template-columns: 1fr 1fr !important; }
-}
+
+
 
 /* ── PROJECTS GRID ───────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .proj-grid { grid-template-columns: 1fr !important; gap: 8px; }
-  .proj-img  { height: clamp(110px, 22vw, 140px); }
-  .proj-body { padding: clamp(12px, 3vw, 16px); }
-  .proj-title { font-size: 9px; letter-spacing: 1.5px; }
-  .proj-desc  { font-size: 11px; -webkit-line-clamp: 3; }
-  .pl {
-    min-height: var(--touch-min);
-    padding: 7px 12px;
-    font-size: 10px;
-  }
-}
 
-@media (min-width: 480px) and (max-width: 768px) {
-  .proj-grid { grid-template-columns: 1fr 1fr !important; }
-  .proj-img  { height: 120px; }
-}
+
+
 
 /* ── CTF GRID ────────────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .ctf-grid { grid-template-columns: 1fr !important; gap: 7px; }
-  .ctf-card { padding: 12px 13px; }
-  .ctf-room { font-size: 9px; letter-spacing: 1px; }
-  .ctf-desc { font-size: 11px; }
-  .ctf-lnk  { 
-    min-height: var(--touch-min);
-    padding: 7px 12px;
-    font-size: 10px;
-  }
-}
 
-@media (min-width: 480px) and (max-width: 768px) {
-  .ctf-grid { grid-template-columns: 1fr 1fr !important; }
-}
+
+
 
 /* ── EXPERIENCE LIST ─────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .exp-item { padding: 13px 14px; }
-  .exp-role { font-size: clamp(12px, 3.5vw, 14px); }
-  .exp-date { font-size: 8px; }
-  .exp-desc { font-size: 11px; }
-  .ach li   { font-size: 11px; line-height: 1.5; }
-  .exp-hdr  { flex-wrap: wrap; gap: 6px; }
-}
+
 
 /* ── PREDICTIONS / GAP ───────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .pred-row { padding: 8px 0; min-height: 36px; }
-  .pred-txt { font-size: 12px; }
-  .gap-item { padding: 7px 0; font-size: 11px; }
-}
+
 
 /* ── MORE BUTTON ─────────────────────────────────────────────────*/
 .more-btn {
@@ -1202,55 +697,16 @@ input[placeholder*="search"] {
 }
 
 /* ── OVERFLOW GUARD ──────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  body { overflow-x: hidden !important; }
-  .content { max-width: 100vw; }
-  table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    max-width: 100%;
-  }
-  /* Fix inline grid overrides */
-  [style*="grid-template-columns:1fr 1fr"],
-  [style*="grid-template-columns: 1fr 1fr"] {
-    grid-template-columns: 1fr !important;
-  }
-  [style*="display:flex"],
-  [style*="display: flex"] { flex-wrap: wrap; }
-  [style*="width:"] { max-width: 100% !important; }
-}
+
 
 /* ── HOVER → ACTIVE for touch ────────────────────────────────────*/
-@media (hover: none) and (pointer: coarse) {
-  .cr:hover,
-  .bdg:hover,
-  .ctf-card:hover,
-  .proj-card:hover,
-  .ci:hover { transform: none !important; box-shadow: none !important; }
-  .cr:active       { background: var(--panel2); }
-  .bdg:active      { opacity: .88; }
-  .proj-card:active { transform: scale(.99); }
-  .pl:hover,
-  .ctf-lnk:hover   { border-color: var(--border); color: var(--dim); }
-  .pl:active,
-  .ctf-lnk:active  { border-color: var(--blue); color: var(--blue); }
-}
+
 
 /* ── PRINT ───────────────────────────────────────────────────────*/
-@media print {
-  .hdr, .tabs { display: none !important; }
-  .content { padding: 0 !important; }
-}
+
 
 /* ── REDUCED MOTION ──────────────────────────────────────────────*/
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    transition-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-  }
-}
+
 
 </style>
 <link rel="manifest" href="/manifest.json">

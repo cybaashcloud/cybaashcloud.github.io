@@ -555,3 +555,132 @@ body.nav-open { overflow: hidden; }
 @media (max-width: 480px) {
   .msg-box { padding:20px 16px; width:min(500px,96vw); border-radius:12px; }
 }
+
+
+/* ── CRITICAL SCROLL FIX ─────────────────────────────────────── */
+/* The inline <style> sets .main { height: calc(100vh-90px); overflow:hidden }
+   This locks the page height and prevents scrolling on mobile.
+   We must override it here since it's not in a @media block. */
+@media (max-width: 768px) {
+
+  /* Allow page to scroll freely */
+  html, body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+  }
+
+  /* Remove the height lock and overflow clip on .main */
+  .page-index .main {
+    height: auto !important;
+    min-height: unset !important;
+    overflow: visible !important;
+  }
+
+  /* Each panel: auto height, scrolls with page */
+  .page-index .panel,
+  .page-index .center {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* On non-LIVE-RANGE tabs: hide leftPanel to show tab content full-screen */
+  /* leftPanel always visible only on Live Range */
+  body.tab-decisions   .page-index #leftPanel,
+  body.tab-scenarios   .page-index #leftPanel,
+  body.tab-graph       .page-index #leftPanel,
+  body.tab-whatif      .page-index #leftPanel,
+  body.tab-scoring     .page-index #leftPanel,
+  body.tab-replay      .page-index #leftPanel,
+  body.tab-missions    .page-index #leftPanel {
+    display: none !important;
+  }
+
+  /* Right panel: always hidden on mobile (too much info) */
+  .page-index #rightPanel { display: none !important; }
+
+  /* Live Range: show leftPanel collapsed above canvas */
+  body.tab-range .page-index #leftPanel { display: block !important; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   SCROLL FIX + TAB PANEL VISIBILITY
+   This MUST be last — overrides the inline <style> desktop rules
+   The inline style sets: .main { height:100vh; overflow:hidden }
+   which physically locks the page on mobile.
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Allow page body to scroll freely */
+  html { overflow-y: auto !important; height: auto !important; }
+  body { overflow-y: auto !important; overflow-x: hidden !important; height: auto !important; min-height: 100vh !important; }
+
+  /* Kill the height lock on .main */
+  .page-index .main {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: unset !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* All panels: auto height, no clipping */
+  .page-index .panel,
+  .page-index .center {
+    height: auto !important;
+    max-height: none !important;
+    min-height: unset !important;
+    overflow: visible !important;
+  }
+
+  /* Panel order: attack controls first, then content */
+  .page-index #leftPanel  { order: 1 !important; }
+  .page-index .center     { order: 2 !important; }
+  .page-index #rightPanel { order: 3 !important; }
+
+  /* RIGHT PANEL: always hidden on mobile (too dense) */
+  .page-index #rightPanel { display: none !important; }
+
+  /* TAB CONTENT VISIBILITY:
+     When a non-range tab is active, hide the leftPanel so the
+     tab content gets the full screen. Body class set by mobile.js. */
+  body.tab-decisions  .page-index #leftPanel,
+  body.tab-scenarios  .page-index #leftPanel,
+  body.tab-graph      .page-index #leftPanel,
+  body.tab-whatif     .page-index #leftPanel,
+  body.tab-scoring    .page-index #leftPanel,
+  body.tab-replay     .page-index #leftPanel,
+  body.tab-missions   .page-index #leftPanel {
+    display: none !important;
+  }
+
+  /* LIVE RANGE: show leftPanel (attack controls) */
+  body.tab-range .page-index #leftPanel { display: block !important; }
+  /* Default: show leftPanel (before JS sets the class) */
+  .page-index #leftPanel { display: block; }
+
+  /* All view panels: auto height, content visible */
+  .page-index #viewRange,    .page-index #viewDecisions,
+  .page-index #viewScenarios,.page-index #viewGraph,
+  .page-index #viewWhatif,   .page-index #viewScoring,
+  .page-index #viewReplay,   .page-index #viewMissions {
+    min-height: unset !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding-bottom: 24px !important;
+  }
+
+  /* Ensure .center padding doesn't cut content */
+  .page-index .center {
+    padding: 12px !important;
+    overflow: visible !important;
+  }
+
+  /* No forced height anywhere inside panels */
+  .page-index .panel > * {
+    max-height: none !important;
+  }
+}

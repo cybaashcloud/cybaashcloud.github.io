@@ -1104,276 +1104,20 @@ input[type=range]::-webkit-slider-thumb {
    ═══════════════════════════════════════════════════════ */
 
 /* ── TABLET  (≤ 1024px) ── */
-@media (max-width: 1024px) {
-  .main {
-    grid-template-columns: 240px 1fr 240px;
-    height: calc(100vh - 90px);
-  }
-  .header-stats { gap: 12px; }
-  .stat-pill { font-size: 9px; }
-}
+
 
 /* ── TABLET PORTRAIT  (≤ 860px) ── */
-@media (max-width: 860px) {
-  /* Collapse 3-col grid to 1 col + bottom sheet panels */
-  .main {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    overflow: visible;
-  }
-  .panel {
-    border-right: none !important;
-    border-left: none !important;
-    border-top: 1px solid var(--border);
-    max-height: 240px;
-    overflow-y: auto;
-  }
-  .center { max-height: 50vh; }
-  /* hide right panel on tablet to save space */
-  .panel:last-child { display: none; }
-  .header-stats { display: none; }
-  .logo small { display: none; }
-}
+
 
 /* ── MOBILE  (≤ 768px) ── */
-@media (max-width: 768px) {
-  /* Header — single tight row, no wrapping */
-  .header {
-    padding: 0 12px;
-    flex-wrap: nowrap;
-    gap: 6px;
-    height: 46px;
-    min-height: 46px;
-    align-items: center;
-    overflow: hidden;
-  }
-  .logo {
-    font-size: 13px;
-    letter-spacing: 2px;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-  /* Buttons — compact pills, NOT full-row */
-  .btn {
-    padding: 0 9px;
-    font-size: 8px;
-    min-height: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-  }
-  .btn-green, .btn-red {
-    padding: 0 9px;
-    min-height: 28px;
-    height: 28px;
-  }
-  /* Header right group — stay on same row, no full-width wrap */
-  .header > div:last-child {
-    width: auto;
-    justify-content: flex-end;
-    flex-wrap: nowrap;
-    gap: 4px;
-    flex: 1;
-  }
 
-  /* Tabs — horizontal scroll */
-  .tabs {
-    padding: 0 8px;
-    gap: 0;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    height: 36px;
-    align-items: stretch;
-  }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab {
-    padding: 0 10px;
-    font-size: 8px;
-    letter-spacing: 0.8px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    min-height: unset;
-    height: 36px;
-    display: flex;
-    align-items: center;
-  }
-
-  /* Main layout — single column */
-  .main {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    overflow: visible;
-  }
-  /* All panels scroll inline */
-  .panel {
-    border-right: none !important;
-    border-left: none !important;
-    border-top: 1px solid var(--border);
-    max-height: none;
-    overflow-y: visible;
-  }
-  .panel:last-child { display: block; }
-  .center {
-    min-height: 50vh;
-    overflow-y: visible;
-    padding: 12px;
-  }
-  #netContainer { height: 220px !important; }
-
-  /* Canvas network map */
-  #netCanvas { height: 220px !important; }
-
-  /* Left/Right panels get collapsed headers with toggle */
-  .panel-title {
-    font-size: 9px;
-    letter-spacing: 2px;
-    padding: 6px 12px;
-    cursor: pointer;
-    min-height: 36px;
-    display: flex;
-    align-items: center;
-  }
-
-  /* Kill chain phase buttons */
-  .phase-btn {
-    padding: 0 6px;
-    font-size: 7px;
-    min-height: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Event log */
-  #eventLog { height: 160px !important; }
-
-  /* Score grid */
-  .score-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px;
-  }
-  .score-card { padding: 10px; }
-  .score-val { font-size: 22px; }
-
-  /* Whatif sliders — full width */
-  .whatif-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    padding: 8px 14px;
-  }
-  .whatif-row input[type=range] { width: 100%; }
-
-  /* Sections inside panels */
-  .section-label { font-size: 8px; letter-spacing: 2px; }
-
-  /* Terminal overlay */
-  #termOverlay {
-    width: 100vw !important;
-    left: 0 !important;
-    right: 0 !important;
-    border-radius: 0 !important;
-  }
-  .term-input-row { flex-wrap: wrap; gap: 4px; }
-  #termInput { font-size: 12px; min-height: 44px; }
-
-  /* Modals */
-  .modal { width: 95vw !important; max-height: 90vh !important; }
-  .modal-body { padding: 14px; }
-
-  /* Replay panel */
-  #viewReplay .replay-timeline { font-size: 10px; }
-
-  /* Decisions table */
-  .decision-row { flex-direction: column; gap: 4px; padding: 10px 12px; }
-
-  /* Scenario cards */
-  .scenario-grid, .sc-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Knowledge graph */
-  #graphCanvas { height: 300px !important; }
-
-  /* Whatif view */
-  .whatif-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
 
 /* ── SMALL MOBILE  (≤ 480px) ── */
-@media (max-width: 480px) {
-  .logo { font-size: 12px; letter-spacing: 1.5px; }
-  .tab { font-size: 8px; padding: 0 8px; height: 34px; }
-  .btn { font-size: 8px; padding: 0 8px; }
-  #netCanvas { height: 180px !important; }
-  .score-grid { grid-template-columns: 1fr 1fr !important; }
-  .score-val { font-size: 18px; }
 
-  /* Stat pills — hide on tiny screens */
-  .stat-pill { display: none; }
-
-  /* Make buttons 2-col grid in left panel */
-  .ctrl-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
-  }
-  .ctrl-row .btn {
-    width: 100%;
-    justify-content: center;
-    min-height: 32px;
-    height: 32px;
-    font-size: 8px;
-  }
-}
 
 /* ── MOBILE INLINE GRID OVERRIDES ── */
 /* Fix all hardcoded inline grid-template-columns on mobile */
-@media (max-width: 768px) {
-  /* Prevent any element from overflowing viewport */
-  * { max-width: 100vw; }
-  body { overflow-x: hidden !important; }
 
-  /* Override all inline multi-column grids to single column */
-  #gapAnalysis,
-  #rpStats,
-  #rpStateSnap,
-  [style*="grid-template-columns:1fr 1fr"],
-  [style*="grid-template-columns: 1fr 1fr"],
-  [style*="grid-template-columns:repeat(2"],
-  [style*="grid-template-columns:repeat(3"],
-  [style*="grid-template-columns:repeat(4"],
-  [style*="grid-template-columns:1fr 1fr 1fr"] {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Allow 2-col on slightly wider phones (landscape) */
-  @media (min-width: 480px) {
-    [style*="grid-template-columns:1fr 1fr"],
-    [style*="grid-template-columns: 1fr 1fr"],
-    #gapAnalysis {
-      grid-template-columns: 1fr 1fr !important;
-    }
-  }
-
-  /* Fix any fixed-width containers */
-  [style*="width:"] { max-width: 100% !important; }
-
-  /* Ensure flex rows wrap on mobile */
-  [style*="display:flex"], [style*="display: flex"] {
-    flex-wrap: wrap;
-  }
-
-  /* Tables scroll horizontally */
-  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-}
 
 
 /* ── COMMAND PALETTE ─────────────────────────────────────────── */
@@ -1684,89 +1428,16 @@ body.attacker-mode #attackerBadge { display: block; }
    that is ALWAYS visible on any screen < 900px wide,
    regardless of touch/hover media query. */
 
-@media (max-width: 900px) {
-  /* Show only the 3 critical action buttons inline in header */
-  .header-stats { display: flex !important; gap: 5px !important; flex-wrap: nowrap !important; }
-  /* Hide the stat pills — only show action buttons */
-  .header-stats .stat-pill   { display: none !important; }
-  /* Show these 3 action buttons always — compact pills */
-  .header-stats .btn-red,
-  .header-stats .btn-green,
-  #termToggleBtn,
-  #cybaash-nav-btn {
-    display: inline-flex !important;
-    min-height: 26px !important;
-    height: 26px !important;
-    padding: 0 8px !important;
-    font-size: 8px !important;
-    letter-spacing: 0.7px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-    flex: none !important;
-  }
-}
 
-@media (max-width: 600px) {
-  /* Small screens: keep everything in ONE row — no wrapping */
-  .header {
-    flex-wrap: nowrap !important;
-    gap: 5px;
-    padding: 0 10px;
-    height: 44px;
-    min-height: 44px;
-    align-items: center;
-    overflow: hidden;
-  }
-  .logo { font-size: 12px !important; letter-spacing: 1px !important; flex-shrink: 0; }
-  .logo > span:last-child { display: none; }
-  .header-stats {
-    width: auto !important;
-    justify-content: flex-end !important;
-    gap: 4px !important;
-    flex: 1 !important;
-    flex-wrap: nowrap !important;
-  }
-  .header-stats .btn-red,
-  .header-stats .btn-green,
-  #termToggleBtn,
-  #cybaash-nav-btn {
-    flex: none !important;
-    width: auto !important;
-    justify-content: center;
-    font-size: 7.5px !important;
-    padding: 0 7px !important;
-    min-height: 24px !important;
-    height: 24px !important;
-    letter-spacing: 0.5px !important;
-  }
-}
+
+
 
 /* Also ensure the terminal overlay itself is reachable */
 #termOverlay {
   z-index: 9000 !important;
 }
 /* Terminal open state on mobile — full width */
-@media (max-width: 768px) {
-  #termOverlay.term-open {
-    transform: translateY(0) !important;
-    height: clamp(260px, 50vh, 55vh) !important;
-    border-radius: 12px 12px 0 0;
-  }
-  /* Input row stays above keyboard */
-  .term-input-row {
-    position: sticky;
-    bottom: 0;
-    background: rgba(2,6,10,.98);
-    padding: 8px 12px max(8px, env(safe-area-inset-bottom)) 12px;
-    z-index: 2;
-  }
-  #termInput {
-    font-size: 16px !important;
-    min-height: 44px;
-    -webkit-appearance: none;
-    border-radius: 2px;
-  }
-}
+
 /* ═══════════════════════════════════════════════════════ */
 
 /* === MOBILE PATCH === */
@@ -1788,21 +1459,7 @@ body.attacker-mode #attackerBadge { display: block; }
    The cyber range has a custom CSS cursor (cursor: none) that breaks
    usability on touch devices. Restore default on touch.
    ─────────────────────────────────────────────────────────────── */
-@media (hover: none) and (pointer: coarse) {
-  *, *::before, *::after {
-    cursor: auto !important;
-  }
-  a, button, [role="button"], select, input, textarea, .tab, .btn,
-  .phase-cell, .panel-title, .decision-box, .scenario-card,
-  .skill-bar-row, .cmd-item, .rp-ev {
-    cursor: pointer !important;
-  }
-  /* Hide cursor overlay elements entirely on touch */
-  #cyb-cursor,
-  #cyb-cursor-ring {
-    display: none !important;
-  }
-}
+
 
 /* ── HEADER (Cyber Range) ───────────────────────────────────────── */
 .header {
@@ -1811,30 +1468,9 @@ body.attacker-mode #attackerBadge { display: block; }
   padding-top: max(10px, var(--sai-top));
 }
 
-@media (max-width: 768px) {
-  .header {
-    padding: 0 max(12px, var(--sai-right)) 0 max(12px, var(--sai-left));
-    gap: 6px;
-    min-height: 46px;
-    height: 46px;
-    align-items: center;
-  }
-  .logo {
-    font-size: clamp(12px, 3.5vw, 14px);
-    letter-spacing: clamp(1px, .5vw, 2px);
-  }
-  /* Show stats row — hidden by default at this breakpoint in earlier block */
-  .header-stats {
-    display: flex !important;
-  }
-  /* Ensure header doesn't wrap */
-  .header > * { flex-shrink: 0; }
-}
 
-@media (max-width: 480px) {
-  .logo { font-size: 13px; letter-spacing: 1px; }
-  .logo small { display: none; }
-}
+
+
 
 /* ── TABS (horizontal scroll, touch-momentum) ────────────────────
    Existing code does this but we enhance for premium feel.
@@ -1848,105 +1484,23 @@ body.attacker-mode #attackerBadge { display: block; }
   mask-image: linear-gradient(to right, transparent 0px, #000 12px, #000 calc(100% - 12px), transparent 100%);
 }
 
-@media (max-width: 768px) {
-  .tabs {
-    padding: 0 8px;
-  }
-  .tab {
-    padding: 0 10px;
-    min-height: 36px;
-    min-width: 36px;
-    display: flex; align-items: center;
-    font-size: clamp(8px, 2vw, 10px);
-    letter-spacing: 1px;
-    flex-shrink: 0;
-  }
-}
+
 
 /* ── MAIN LAYOUT (3-panel → single column on mobile) ─────────────
    The existing code handles this. We add scroll improvements.
    ─────────────────────────────────────────────────────────────── */
-@media (max-width: 860px) {
-  .main {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    overflow: visible;
-    /* Extra space at bottom for iOS home bar */
-    padding-bottom: var(--sai-bottom);
-  }
-  .panel {
-    border-right: none !important;
-    border-left: none !important;
-    border-top: 1px solid var(--border);
-  }
-  /* All panels visible */
-  .panel:last-child { display: block !important; }
-  .center { min-height: 45vh; }
-}
+
 
 /* ── PANEL TITLES — Touch-friendly collapse toggles ──────────────*/
-@media (max-width: 768px) {
-  .panel-title {
-    min-height: 36px;
-    cursor: pointer;
-    display: flex; align-items: center;
-    justify-content: space-between;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  .panel-title:active { background: rgba(0,212,255,.05); }
-}
+
 
 /* ── BUTTONS — Touch targets ─────────────────────────────────────*/
-@media (max-width: 768px) {
-  .btn {
-    min-height: 30px;
-    height: 30px;
-    padding: 0 10px;
-    font-size: 8px;
-    letter-spacing: 0.8px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    touch-action: manipulation;
-  }
-  .controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
-    padding: 6px 12px;
-  }
-}
 
-@media (max-width: 480px) {
-  /* Stack control buttons on very small screens */
-  .controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
-    padding: 6px 12px;
-  }
-  .btn { width: 100%; justify-content: center; font-size: 8px; min-height: 28px; height: 28px; }
-}
+
+
 
 /* ── PHASE BAR — Touch-friendly ──────────────────────────────────*/
-@media (max-width: 768px) {
-  .phase-bar {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-  }
-  .phase-cell {
-    min-height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 8px;
-    text-align: center;
-    padding: 4px;
-    touch-action: manipulation;
-  }
-}
+
 
 /* ── TERMINAL OVERLAY — Mobile optimization ──────────────────────*/
 #termOverlay {
@@ -1954,149 +1508,28 @@ body.attacker-mode #attackerBadge { display: block; }
   padding-bottom: var(--sai-bottom);
 }
 
-@media (max-width: 768px) {
-  #termOverlay {
-    height: 50vh !important;
-    max-height: 60vh;
-    /* Slide from bottom feels natural on mobile */
-    border-radius: 16px 16px 0 0;
-    /* Handle safe area for iPhones with home indicator */
-    padding-bottom: max(4px, var(--sai-bottom));
-  }
 
-  /* Drag handle for terminal resize */
-  .term-titlebar {
-    padding: 10px 12px;
-    min-height: 44px;
-  }
-  
-  /* Larger touch dots */
-  .term-dot { width: 12px; height: 12px; }
-
-  /* Input row */
-  .term-input-row {
-    padding: clamp(8px, 2vw, 10px) clamp(10px, 2.5vw, 14px);
-    /* Give room above keyboard */
-    padding-bottom: max(8px, var(--sai-bottom));
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-  }
-
-  #termInput {
-    font-size: 16px !important; /* Prevent iOS zoom on focus */
-    min-height: 44px;
-    padding: 8px 12px;
-  }
-  
-  /* Terminal output */
-  #termOutput {
-    font-size: 11px;
-    padding: 8px 12px 4px;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .term-line { font-size: 11px; }
-}
 
 /* ── NETWORK CANVAS ─────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  #netContainer,
-  #netCanvas {
-    height: clamp(180px, 35vw, 260px) !important;
-    width: 100% !important;
-    touch-action: pan-y pinch-zoom;
-  }
-}
+
 
 /* ── SCORE GRID ──────────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  .score-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px;
-    padding: 10px 12px 12px;
-  }
-  .score-val { font-size: clamp(16px, 5vw, 22px) !important; }
-  .score-label { font-size: 7px; }
-}
+
 
 /* ── MODALS — Full-screen on small devices ───────────────────────*/
-@media (max-width: 640px) {
-  .modal {
-    width: 95vw !important;
-    max-height: 85vh !important;
-    max-width: none !important;
-    margin: 0 auto;
-    border-radius: 8px !important;
-  }
-  .modal-body { padding: clamp(12px, 3vw, 20px) !important; }
-  .modal-title { font-size: clamp(12px, 3vw, 14px) !important; }
-}
+
 
 /* ── COMMAND PALETTE — Mobile optimized ─────────────────────────*/
-@media (max-width: 768px) {
-  #cmdPalette { padding-top: 8vh; align-items: flex-start; }
-  #cmdBox {
-    width: 96vw;
-    max-height: 75vh;
-    border-radius: 8px;
-    margin-top: max(0px, var(--sai-top));
-  }
-  #cmdSearch {
-    font-size: 16px !important; /* Prevent iOS zoom */
-    min-height: 52px;
-    padding: 14px 16px;
-  }
-  .cmd-item { 
-    min-height: 52px;
-    padding: 12px 16px;
-    touch-action: manipulation;
-  }
-  .cmd-label { font-size: 13px; }
-  .cmd-key { font-size: 10px; min-width: 60px; }
-}
+
 
 /* ── SCENARIO & SKILL GRIDS ─────────────────────────────────────*/
-@media (max-width: 768px) {
-  .scenario-grid, .sc-grid,
-  .whatif-grid {
-    grid-template-columns: 1fr !important;
-  }
-  .scenario-card { padding: 12px; }
-  .scenario-title { font-size: 12px; }
-  
-  /* What-if sliders */
-  .whatif-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    padding: 8px 12px;
-  }
-  .whatif-row input[type=range] {
-    width: 100%;
-    height: 4px;
-    /* Larger touch target */
-    padding: 12px 0;
-    cursor: pointer;
-  }
-}
+
 
 /* ── EVENT LOG — Readable on mobile ─────────────────────────────*/
-@media (max-width: 768px) {
-  #eventLog { height: auto !important; max-height: 200px; }
-  .event-item {
-    padding: 6px 10px;
-    font-size: 10px;
-    gap: 6px;
-  }
-  .event-time { font-size: 9px; }
-  .event-type { min-width: 40px; font-size: 9px; }
-}
+
 
 /* ── GRAPH CANVAS ────────────────────────────────────────────────*/
-@media (max-width: 768px) {
-  #graphCanvas { height: clamp(240px, 50vw, 360px) !important; }
-}
+
 
 /* ── ATTACKER MODE BADGE ─────────────────────────────────────────*/
 #attackerBadge {
@@ -2111,81 +1544,19 @@ body.attacker-mode #attackerBadge { display: block; }
 }
 
 /* ── GLOBAL OVERFLOW FIX ─────────────────────────────────────────*/
-@media (max-width: 768px) {
-  /* Ensure no horizontal scroll */
-  .main, .panel, .center, #leftPanel, #rightPanel {
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
-  
-  /* All tables scroll horizontally */
-  table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    white-space: nowrap;
-    max-width: 100%;
-  }
-  
-  /* Fix inline flex rows wrapping on mobile */
-  [style*="display:flex"],
-  [style*="display: flex"] {
-    flex-wrap: wrap;
-  }
 
-  /* Fix grids with 2+ columns on mobile */
-  [style*="grid-template-columns:1fr 1fr"],
-  [style*="grid-template-columns: 1fr 1fr"],
-  [style*="grid-template-columns:repeat(2"],
-  [style*="grid-template-columns:repeat(3"],
-  [style*="grid-template-columns:repeat(4"] {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Allow 2-col on landscape mobile */
-  @media (min-width: 480px) {
-    [style*="grid-template-columns:1fr 1fr"],
-    [style*="grid-template-columns: 1fr 1fr"] {
-      grid-template-columns: 1fr 1fr !important;
-    }
-  }
-  
-  /* Fix fixed-width containers */
-  [style*="width:"] { max-width: 100% !important; }
-}
 
 /* ── REPLAY / DECISIONS / KNOWLEDGE GRAPH ───────────────────────*/
-@media (max-width: 768px) {
-  .rp-stat-n { font-size: 14px; }
-  .decision-row { flex-direction: column; gap: 4px; padding: 8px 10px; }
-  .decision-box { margin: 6px 10px; padding: 8px 10px; }
-  .decision-action { font-size: 10px; }
-  .decision-reason { font-size: 11px; }
-}
+
 
 /* ── SCORE RING ──────────────────────────────────────────────────*/
-@media (max-width: 480px) {
-  .score-ring-container svg { 
-    width: clamp(120px, 40vw, 180px) !important;
-    height: clamp(120px, 40vw, 180px) !important;
-  }
-}
+
 
 /* ── SKILL BAR ROWS ──────────────────────────────────────────────*/
-@media (max-width: 480px) {
-  .skill-bar-row {
-    padding: 5px 10px;
-  }
-  .skill-name { font-size: 9px; width: 70px; }
-  .skill-count { font-size: 9px; }
-}
+
 
 /* ── REDUCED MOTION support for range animations ─────────────────*/
-@media (prefers-reduced-motion: reduce) {
-  .ring, .ring-1, .ring-2, .ring-3 { animation: none !important; }
-  .pulse-dot { animation: none !important; }
-  .tab.active, .btn:hover { transition: none !important; }
-}
+
 
 /* ═══════════════════════════════════════════════════════════════════
    CYBAASH · MOBILE FEATURES CSS
@@ -2207,60 +1578,13 @@ body.attacker-mode #attackerBadge { display: block; }
   /* Allow tapping tooltip to dismiss */
   pointer-events: auto;
 }
-@media (max-width: 768px) {
-  #tooltip {
-    font-size: 11px;
-    padding: 8px 12px;
-    border-radius: 4px;
-    box-shadow: 0 4px 20px rgba(0,0,0,.6);
-  }
-}
+
 
 /* ── 2. KNOWLEDGE GRAPH CANVAS ───────────────────────────────── */
-@media (max-width: 768px) {
-  #kgCanvas {
-    touch-action: none;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  /* Hint text for mobile users */
-  #kgCanvas::after {
-    content: 'Drag to pan · Double-tap to reset';
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px;
-    color: rgba(90,122,154,.6);
-    pointer-events: none;
-    white-space: nowrap;
-  }
-}
+
 
 /* ── 3. TERMINAL — Mobile enhancements ───────────────────────── */
-@media (max-width: 768px) {
-  #termOverlay {
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -8px 40px rgba(0,0,0,.6);
-  }
-  /* Drag handle indicator */
-  .term-titlebar::before {
-    content: '';
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 32px;
-    height: 3px;
-    background: rgba(0,212,255,.25);
-    border-radius: 2px;
-  }
-  .term-titlebar {
-    position: relative;
-    padding-top: 14px;
-  }
-}
+
 
 /* ── 4. TERMINAL SEND BUTTON (injected by JS) ─────────────────── */
 #termSendBtn {
@@ -2303,297 +1627,43 @@ body.attacker-mode #attackerBadge { display: block; }
 }
 
 /* ── 8. RANGE SLIDER TOUCH TARGETS ───────────────────────────── */
-@media (hover: none) and (pointer: coarse) {
-  input[type="range"] {
-    /* Tall touch target */
-    height: 28px;
-    cursor: pointer;
-    /* Remove default appearance for consistent styling */
-    -webkit-appearance: none;
-    appearance: none;
-    background: transparent;
-  }
-  input[type="range"]::-webkit-slider-runnable-track {
-    height: 4px;
-    border-radius: 2px;
-    background: var(--border, #1a3a5c);
-  }
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--blue, #00d4ff);
-    box-shadow: 0 0 8px rgba(0,212,255,.4);
-    margin-top: -10px;
-    cursor: pointer;
-  }
-  input[type="range"]::-moz-range-track {
-    height: 4px;
-    border-radius: 2px;
-    background: var(--border, #1a3a5c);
-  }
-  input[type="range"]::-moz-range-thumb {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--blue, #00d4ff);
-    border: none;
-    box-shadow: 0 0 8px rgba(0,212,255,.4);
-    cursor: pointer;
-  }
-  /* Replay slider — purple accent */
-  #rpSlider::-webkit-slider-thumb {
-    background: var(--purple, #aa44ff);
-    box-shadow: 0 0 8px rgba(170,68,255,.4);
-  }
-  #rpSlider::-moz-range-thumb {
-    background: var(--purple, #aa44ff);
-  }
-}
+
 
 /* ── 9. WHAT-IF ROWS — Touch layout ──────────────────────────── */
-@media (max-width: 768px) {
-  .whatif-row {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 10px 12px;
-  }
-  .whatif-row .whatif-label {
-    font-size: 9px;
-    letter-spacing: 1.5px;
-  }
-  .whatif-row input[type="range"] {
-    width: 100%;
-  }
-  .whatif-val {
-    font-size: 11px;
-  }
-}
+
 
 /* ── 10. PHASE BAR — Touch-friendly ──────────────────────────── */
-@media (max-width: 768px) {
-  .phase-bar {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 2px;
-  }
-  .phase-cell {
-    min-height: var(--touch-min);
-    font-size: clamp(7px, 1.8vw, 9px);
-    padding: 4px 2px;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    touch-action: manipulation;
-    cursor: pointer;
-    letter-spacing: .5px;
-  }
-}
+
 
 /* ── 11. MODAL — Swipe-down indicator ────────────────────────── */
-@media (max-width: 768px) {
-  .modal {
-    position: relative;
-  }
-  .modal::before {
-    content: '';
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 36px;
-    height: 3px;
-    background: rgba(0,212,255,.25);
-    border-radius: 2px;
-    pointer-events: none;
-  }
-  /* Ensure modal has scroll room for swipe gesture */
-  .modal-body {
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-}
+
 
 /* ── 12. CYBAASH AI PANEL — Mobile fullscreen ─────────────────── */
-@media (max-width: 768px) {
-  #cybaash-ai-panel {
-    border-radius: 0 !important;
-    max-height: 100dvh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  #cybaash-ai-overlay {
-    padding: 0 !important;
-  }
-  .cyb-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: inherit;
-  }
-  .cyb-close {
-    min-height: var(--touch-min);
-    padding: 8px 16px;
-    display: flex;
-    align-items: center;
-    touch-action: manipulation;
-  }
-  .cyb-suggestions {
-    display: flex;
-    overflow-x: auto;
-    flex-wrap: nowrap !important;
-    gap: 8px;
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .cyb-suggestions::-webkit-scrollbar { display: none; }
-  .cyb-sug-btn {
-    flex-shrink: 0;
-    min-height: var(--touch-min);
-    white-space: nowrap;
-    touch-action: manipulation;
-  }
-  .cyb-tools {
-    display: flex;
-    overflow-x: auto;
-    flex-wrap: nowrap !important;
-    gap: 4px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .cyb-tools::-webkit-scrollbar { display: none; }
-  .cyb-tool-tab {
-    flex-shrink: 0;
-    min-height: var(--touch-min);
-    padding: 8px 12px;
-    touch-action: manipulation;
-    font-size: 10px;
-  }
-  /* Chat input area */
-  .cyb-input-row {
-    position: sticky;
-    bottom: max(0px, var(--sai-bottom));
-    background: inherit;
-  }
-  #cybaash-chat-input {
-    font-size: 16px !important;
-    min-height: var(--touch-min);
-  }
-}
+
 
 /* ── 13. SCORE RING ───────────────────────────────────────────── */
-@media (max-width: 480px) {
-  .score-ring-container {
-    overflow: hidden;
-  }
-  .score-ring-container svg {
-    max-width: min(180px, 50vw);
-    height: auto;
-  }
-}
+
 
 /* ── 14. RECRUITER MODE PANEL ─────────────────────────────────── */
-@media (max-width: 768px) {
-  #recruiterMode {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-  .recruiter-close {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    min-height: var(--touch-min);
-    display: flex;
-    align-items: center;
-    padding: 8px 16px;
-    background: var(--bg2, #060f18);
-    touch-action: manipulation;
-  }
-  .recruiter-grid {
-    grid-template-columns: 1fr !important;
-    gap: 12px;
-  }
-  .recruiter-card {
-    padding: 16px;
-  }
-}
+
 
 /* ── 15. SCAN LINE EFFECT — Reduce on mobile for perf ─────────── */
-@media (max-width: 768px) {
-  body::before {
-    /* Lighter scanlines on mobile = better performance */
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 3px,
-      rgba(0,0,0,.015) 3px,
-      rgba(0,0,0,.015) 6px
-    ) !important;
-  }
-}
+
 
 /* ── 16. DECISION ENGINE BOXES ────────────────────────────────── */
-@media (max-width: 768px) {
-  .decision-box {
-    margin: 6px 10px;
-    padding: 9px 11px;
-    touch-action: manipulation;
-  }
-  .decision-action { font-size: clamp(9px, 2.5vw, 11px); }
-  .decision-reason { font-size: clamp(10px, 2.8vw, 12px); line-height: 1.55; }
-  .decision-outcome { font-size: clamp(9px, 2.4vw, 10px); }
-}
+
 
 /* ── 17. SCENARIO CARDS ──────────────────────────────────────── */
-@media (max-width: 768px) {
-  .scenario-card {
-    padding: clamp(10px, 3vw, 14px);
-    touch-action: manipulation;
-  }
-  .scenario-title { font-size: clamp(11px, 3vw, 13px); }
-  .tag { font-size: 7px; padding: 2px 5px; }
-}
+
 
 /* ── 18. GLOBAL — Touch-active feedback for all clickable items ─ */
-@media (hover: none) and (pointer: coarse) {
-  .tab:active,
-  .btn:active,
-  .filter-btn:active,
-  .phase-cell:active,
-  .scenario-card:active,
-  .decision-box:active {
-    opacity: .8;
-    transform: scale(.98);
-    transition: opacity .1s, transform .1s;
-  }
-}
+
 
 /* ── 19. REPLAY PANEL ─────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .rp-ev {
-    min-height: 40px;
-    padding: 6px 0;
-    touch-action: manipulation;
-  }
-  .rp-ev-msg { font-size: clamp(9px, 2.5vw, 10px); }
-}
+
 
 /* ── 20. LOADING / BOOT SCREEN ────────────────────────────────── */
-@media (max-width: 480px) {
-  .sim-loading {
-    padding: max(24px, env(safe-area-inset-top, 24px)) 20px
-             max(24px, env(safe-area-inset-bottom, 24px)) 20px;
-  }
-  .loading-text {
-    font-size: clamp(10px, 3vw, 13px);
-    letter-spacing: clamp(2px, 1vw, 4px);
-  }
-}
+
 
 /* ── 21. PRINT — remove mobile additions ─────────────────────── */
 @media print {
@@ -2605,11 +1675,7 @@ body.attacker-mode #attackerBadge { display: block; }
 }
 
 /* ── 22. REDUCED MOTION ──────────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  #mobilePaletteBtn { animation: none !important; }
-  .slider-value-bubble { transition: none !important; }
-  .phase-cell { transition: none !important; }
-}
+
 
 </style>
 <link rel="manifest" href="/manifest.json">
@@ -2638,6 +1704,7 @@ body.attacker-mode #attackerBadge { display: block; }
 <link rel="stylesheet" href="mobile.css">
 </head>
 <body class="page-index">
+<script>document.body.classList.add("tab-range");</script>
 
 <!-- Attacker mode badge -->
 <div id="attackerBadge">⚠ ATTACKER MODE — RED TEAM ACTIVE ⚠</div>

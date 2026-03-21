@@ -515,6 +515,58 @@ textarea, input, select { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ── CYBERBOT MOBILE HEADER ── */
+#cyb-mobile-header {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 48px;
+  background: var(--bg2, #0d1117);
+  border-bottom: 1px solid var(--border, #21262d);
+  z-index: 100;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 max(12px, env(safe-area-inset-left)) 0 max(12px, env(safe-area-inset-right));
+  padding-top: env(safe-area-inset-top);
+  gap: 12px;
+}
+#cyb-back-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: transparent;
+  border: 1px solid rgba(0,212,255,0.3);
+  border-radius: 6px;
+  color: #00d4ff;
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  padding: 0 12px; height: 34px;
+  cursor: pointer; text-decoration: none;
+  font-family: 'Share Tech Mono', monospace;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; flex-shrink: 0;
+}
+#cyb-back-btn:active { background: rgba(0,212,255,0.12); }
+#cyb-mobile-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 12px; font-weight: 700; letter-spacing: 2px;
+  color: #00d4ff; flex: 1; text-align: center;
+}
+#cyb-sidebar-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px; color: #8b949e;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; flex-shrink: 0;
+}
+#cyb-sidebar-icon:active { background: rgba(255,255,255,0.08); }
+@media (max-width: 768px) {
+  #cyb-mobile-header { display: flex !important; }
+  .messages { padding-top: max(56px, calc(env(safe-area-inset-top) + 52px)) !important; }
+  .sidebar-toggle { display: none !important; }
+}
+
 </style>
 <link rel="stylesheet" href="../mobile.css">
 </head>
@@ -525,6 +577,24 @@ textarea, input, select { font: inherit; color: inherit; }
   <!-- ══════════════════════════════════════════
        SIDEBAR
   ══════════════════════════════════════════ -->
+  
+<!-- MOBILE HEADER -->
+<div id="cyb-mobile-header">
+  <a href="../" id="cyb-back-btn">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    BACK
+  </a>
+  <div id="cyb-mobile-title">CYBAASH AI</div>
+  <button id="cyb-sidebar-icon" onclick="toggleSidebar()" aria-label="History">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="3" width="5" height="10" rx="1" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M10 5h4M10 8h4M10 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+  </button>
+</div>
+
   <aside class="sidebar" id="sidebar">
 
     <div class="sidebar-header">
