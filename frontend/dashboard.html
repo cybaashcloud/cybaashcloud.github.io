@@ -277,77 +277,6 @@ body::before {
 .diff-btn.active-int { border-color:var(--blue);   color:var(--blue); }
 .diff-btn.active-adv { border-color:var(--yellow); color:var(--yellow); }
 .diff-btn.active-exp { border-color:var(--red);    color:var(--red); }
-
-/* ── CERTS ───────────────────────────────────────── */
-.certs-controls { margin-bottom:16px; display:flex; flex-direction:column; gap:10px; }
-.cert-search-row { display:flex; gap:8px; }
-.cert-search { flex:1; }
-.cert-count  { color:var(--dim); font-size:9px; align-self:center; white-space:nowrap; }
-.certs-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
-.cert-card {
-  background:var(--panel); border:1px solid var(--border);
-  border-radius:2px; padding:13px; transition:border-color .15s;
-  display:flex; flex-direction:column; gap:5px;
-}
-.cert-card:hover { border-color:var(--blue); }
-.cert-card-type { font-size:8px; letter-spacing:1px; }
-.cert-card-type.credly   { color:var(--yellow); }
-.cert-card-type.linkedin { color:var(--blue); }
-.cert-card-type.certificate { color:var(--green); }
-.cert-icon   { color:var(--blue); font-size:12px; }
-.cert-title  { font-family:'Rajdhani',sans-serif; font-size:13px; font-weight:600; line-height:1.3; }
-.cert-issuer { color:var(--dim); font-size:9px; }
-.cert-date   { color:var(--dim); font-size:8px; }
-.cert-tags   { display:flex; flex-wrap:wrap; gap:4px; margin-top:2px; }
-.cert-tag    { font-size:8px; padding:1px 5px; border:1px solid var(--border); color:var(--dim); border-radius:2px; }
-.cert-link   { color:var(--blue); font-size:9px; text-decoration:none; }
-.cert-link:hover { text-decoration:underline; }
-
-/* ── CERT UPLOAD ─────────────────────────────────── */
-.cert-upload-row {
-  display:flex; align-items:center; gap:6px; margin-top:auto; padding-top:6px;
-  border-top:1px solid rgba(26,58,92,.5);
-}
-.cert-upload-btn {
-  display:inline-flex; align-items:center; gap:4px;
-  background:none; border:1px solid var(--border); color:var(--dim);
-  font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:.5px;
-  padding:3px 8px; border-radius:2px; cursor:pointer;
-  transition:border-color .15s,color .15s;
-  white-space:nowrap; flex-shrink:0;
-}
-.cert-upload-btn:hover { border-color:var(--blue); color:var(--blue); }
-.cert-upload-btn.uploading { opacity:.5; pointer-events:none; }
-.cert-upload-btn.done { border-color:var(--green); color:var(--green); }
-.cert-pdf-link {
-  color:var(--green); font-size:9px; text-decoration:none;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;
-}
-.cert-pdf-link:hover { text-decoration:underline; }
-.cert-img-thumb {
-  width:100%; max-height:80px; object-fit:contain;
-  border:1px solid var(--border); border-radius:2px; margin-top:4px; display:block;
-}
-.cert-no-login { color:var(--dim); font-size:8px; margin-top:auto; padding-top:4px; }
-.cert-featured { position:relative; }
-.cert-featured::before {
-  content:'★'; position:absolute; top:8px; right:10px; color:var(--yellow);
-  font-size:10px; text-shadow:var(--glow-y);
-}
-/* Category badge in cert card */
-.cert-cat-badge {
-  display:inline-block; padding:1px 6px;
-  font-size:8px; letter-spacing:1px; border-radius:2px;
-  border:1px solid;
-}
-.cat-offensive    { color:var(--red);    border-color:var(--red);    }
-.cat-defensive    { color:var(--green);  border-color:var(--green);  }
-.cat-cloud        { color:var(--blue);   border-color:var(--blue);   }
-.cat-networking   { color:var(--orange); border-color:var(--orange); }
-.cat-systems      { color:#44ffaa;       border-color:#44ffaa;       }
-.cat-programming  { color:var(--purple); border-color:var(--purple); }
-.cat-data         { color:var(--yellow); border-color:var(--yellow); }
-.cat-professional { color:var(--dim);    border-color:var(--dim);    }
 .cat-other        { color:var(--border); border-color:var(--border); }
 
 /* ── PROFILE ─────────────────────────────────────── */
@@ -652,7 +581,7 @@ table {
 <meta name="apple-mobile-web-app-title" content="CYBAASH">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="CYBAASH">
-<meta name="description" content="Autonomous cyber range simulation platform with 334 verified credentials">
+<meta name="description" content="Autonomous cyber range simulation platform — operator dashboard">
 <meta property="og:title" content="CYBAASH // Autonomous Cyber Range">
 <meta property="og:description" content="The world's first portfolio that thinks like a threat actor">
 <meta property="og:type" content="website">
@@ -733,9 +662,6 @@ table {
       <button class="sb-tab" onclick="switchView('launch',this)">
         <span class="sb-icon">⊕</span> New Mission
       </button>
-      <button class="sb-tab" onclick="switchView('certs',this)">
-        <span class="sb-icon">◆</span> Credentials
-      </button>
       <button class="sb-tab" onclick="switchView('profile',this)">
         <span class="sb-icon">◉</span> Profile
       </button>
@@ -767,7 +693,7 @@ const GITHUB_USERNAME = 'cybaash'; // ← your GitHub username (for reading cert
 // STATE
 // ════════════════════════════════════════════════════════════
 let TOKEN = null, USER = null, PROFILE_DATA = null;
-let ALL_CERTS = [], ALL_MISSIONS = [];
+let ALL_MISSIONS = [];
 
 const LS = {
   get:    k => { try { return JSON.parse(localStorage.getItem('cydash_'+k)) } catch{ return null } },
@@ -992,7 +918,6 @@ function showApp() {
   document.body.offsetHeight;
 
   switchView('stats', document.querySelector('.sb-tab'));
-  loadCertsInBackground();
 }
 
 function switchView(view, btn) {
@@ -1000,7 +925,7 @@ function switchView(view, btn) {
   if (btn) btn.classList.add('active');
   const mc = document.getElementById('mainContent');
   mc.innerHTML = '';
-  const fns = { stats:renderStats, missions:renderMissions, launch:renderLaunch, certs:renderCerts, profile:renderProfile };
+  const fns = { stats:renderStats, missions:renderMissions, launch:renderLaunch, profile:renderProfile };
   if (fns[view]) fns[view](mc);
 }
 
@@ -1037,7 +962,7 @@ async function renderStats(mc) {
   }));
   const maxCount = Math.max(1,...byDiff.map(x=>x.count));
 
-  const catDist = buildCertCategoryStats();
+  const catDist = [];
 
   mc.innerHTML = `
     <div class="panel-header">
@@ -1068,12 +993,6 @@ async function renderStats(mc) {
       </div>
 
       <div class="stat-card">
-        <div class="stat-card-label">CREDENTIALS</div>
-        <div class="stat-big yellow">${ALL_CERTS.length||334}</div>
-        <div class="stat-sub">verified</div>
-      </div>
-
-      <div class="stat-card">
         <div class="stat-card-label">ACTIVE STREAK</div>
         <div class="stat-big red">${stats.streakDays||0}</div>
         <div class="stat-sub">days</div>
@@ -1093,7 +1012,7 @@ async function renderStats(mc) {
       </div>
 
       <div class="stat-card wide">
-        <div class="stat-card-label">SKILL PROFILE (from ${ALL_CERTS.length||334} credentials)</div>
+        <div class="stat-card-label">SKILL PROFILE</div>
         <div class="skill-radar">
           ${catDist.map(c=>`
             <div class="skill-row">
@@ -1122,36 +1041,6 @@ async function renderStats(mc) {
   `;
 }
 
-function buildCertCategoryStats() {
-  if (!ALL_CERTS.length) {
-    return [
-      {label:'Offensive',  pct:72, color:'var(--red)'},
-      {label:'Defensive',  pct:68, color:'var(--green)'},
-      {label:'Cloud',      pct:85, color:'var(--blue)'},
-      {label:'Networking', pct:55, color:'var(--orange)'},
-      {label:'Systems',    pct:60, color:'#44ffaa'},
-      {label:'Programming',pct:70, color:'var(--purple)'},
-      {label:'Data/AI',    pct:65, color:'var(--yellow)'},
-      {label:'Leadership', pct:40, color:'var(--dim)'},
-    ];
-  }
-  const catLabels = {
-    offensive:'Offensive', defensive:'Defensive', cloud:'Cloud',
-    networking:'Networking', systems:'Systems', programming:'Programming',
-    data:'Data/AI', professional:'Leadership', other:'Other',
-  };
-  const catColors = {
-    offensive:'var(--red)', defensive:'var(--green)', cloud:'var(--blue)',
-    networking:'var(--orange)', systems:'#44ffaa', programming:'var(--purple)',
-    data:'var(--yellow)', professional:'var(--dim)', other:'var(--border)',
-  };
-  const counts = {};
-  ALL_CERTS.forEach(c => { const k=c.category||'other'; counts[k]=(counts[k]||0)+1; });
-  const max = Math.max(1,...Object.values(counts));
-  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({
-    label: catLabels[k]||k, pct: Math.round(v/max*100), color: catColors[k]||'var(--dim)',
-  }));
-}
 
 // ════════════════════════════════════════════════════════════
 // MISSIONS VIEW
@@ -1366,264 +1255,6 @@ async function doLaunch() {
 
   window.location.href = `index.html?sim=${simId}&scenario=${launchSelected.id}&difficulty=${launchDiff}`;
 }
-
-// ════════════════════════════════════════════════════════════
-// CERT UPLOAD — stores file in public site repo under
-// certificates/{original-filename}, keeps original format.
-// URL saved to cybaash-data/cert_pdfs.json sidecar.
-// ════════════════════════════════════════════════════════════
-
-const CERT_PDF_MAP_PATH = 'cert_pdfs.json';
-const SITE_REPO = 'cybaashcloud.github.io';   // public repo where certs are served from
-const SITE_OWNER = 'cybaashcloud';             // repo owner
-
-let _certPdfMap = null;
-
-async function _loadCertPdfMap() {
-  if (_certPdfMap) return _certPdfMap;
-  if (!TOKEN || !USER) { _certPdfMap = {}; return _certPdfMap; }
-  try {
-    const m = await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${CERT_PDF_MAP_PATH}`);
-    _certPdfMap = m ? JSON.parse(atob(m.content.replace(/\n/g,''))) : {};
-  } catch(_) { _certPdfMap = {}; }
-  return _certPdfMap;
-}
-
-async function _saveCertPdfMap(map) {
-  const existing = await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${CERT_PDF_MAP_PATH}`).catch(()=>null);
-  const enc = btoa(unescape(encodeURIComponent(JSON.stringify(map, null, 2))));
-  await gh(`/repos/${USER.login}/${DATA_REPO}/contents/${CERT_PDF_MAP_PATH}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      message: 'cert: update pdf map',
-      content: enc,
-      ...(existing?.sha ? { sha: existing.sha } : {}),
-    }),
-  });
-}
-
-async function applyCertPdfMap() {
-  if (!TOKEN || !USER || !ALL_CERTS.length) return;
-  const map = await _loadCertPdfMap();
-  ALL_CERTS.forEach(c => { if (map[c.id]) c.pdf = map[c.id]; });
-}
-
-async function uploadCertFile(certId, btn) {
-  if (!TOKEN || !USER) {
-    alert('Please log in with your GitHub PAT first to upload certificate files.');
-    return;
-  }
-
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = '.pdf,.jpg,.jpeg,.png,.webp';
-  inp.style.display = 'none';
-  document.body.appendChild(inp);
-
-  inp.onchange = async () => {
-    const file = inp.files[0];
-    document.body.removeChild(inp);
-    if (!file) return;
-
-    if (file.size > 10 * 1024 * 1024) { alert('File too large. Max 10MB.'); return; }
-
-    btn.classList.add('uploading');
-    btn.textContent = '⟳ UPLOADING…';
-
-    try {
-      // 1. Read as base64 (keep original format — no conversion)
-      const b64 = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = e => res(e.target.result.split(',')[1]);
-        r.onerror = rej;
-        r.readAsDataURL(file);
-      });
-
-      // 2. Upload to public site repo: certificates/{original-filename}
-      //    Original filename preserved, folder is certificates/
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const ghPath   = `frontend/certificates/${safeName}`;
-
-      // Check if file already exists (need SHA to update)
-      const existing = await gh(`/repos/${SITE_OWNER}/${SITE_REPO}/contents/${ghPath}`).catch(()=>null);
-
-      const uploadRes = await gh(`/repos/${SITE_OWNER}/${SITE_REPO}/contents/${ghPath}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          message: `cert: upload ${safeName}`,
-          content: b64,
-          ...(existing?.sha ? { sha: existing.sha } : {}),
-        }),
-      });
-
-      // 3. Public GitHub Pages URL (served directly from the site)
-      const pageUrl = `https://${SITE_OWNER}.github.io/certificates/${safeName}`;
-
-      // 4. Save URL to sidecar cert_pdfs.json in cybaash-data (private)
-      const map = await _loadCertPdfMap();
-      map[certId] = pageUrl;
-      await _saveCertPdfMap(map);
-
-      // 5. Update in-memory cert
-      const mem = ALL_CERTS.findIndex(c => c.id === certId);
-      if (mem >= 0) ALL_CERTS[mem].pdf = pageUrl;
-
-      // 6. Update card UI
-      btn.classList.remove('uploading');
-      btn.classList.add('done');
-      btn.textContent = '✓ UPLOADED';
-
-      const row = btn.parentElement;
-      const old = row.querySelector('.cert-pdf-link');
-      if (old) old.remove();
-      const link = document.createElement('a');
-      link.className = 'cert-pdf-link';
-      link.href = pageUrl;
-      link.target = '_blank';
-      link.rel = 'noopener';
-      const ext = safeName.split('.').pop().toLowerCase();
-      link.textContent = ext === 'pdf' ? '↗ PDF' : '↗ IMAGE';
-      row.appendChild(link);
-
-      if (['jpg','jpeg','png','webp'].includes(ext)) {
-        const card = btn.closest('.cert-card');
-        let thumb = card.querySelector('.cert-img-thumb');
-        if (!thumb) {
-          thumb = document.createElement('img');
-          thumb.className = 'cert-img-thumb';
-          card.appendChild(thumb);
-        }
-        // Use raw URL for immediate preview (Pages may take a minute to deploy)
-        thumb.src = uploadRes?.content?.download_url || pageUrl;
-        thumb.alt = 'Certificate';
-      }
-
-    } catch(err) {
-      btn.classList.remove('uploading');
-      btn.textContent = '↑ UPLOAD CERT';
-      alert('Upload failed: ' + (err.message || err));
-    }
-  };
-
-  inp.click();
-}
-
-// ════════════════════════════════════════════════════════════
-// CREDENTIALS VIEW — reads from existing data_creds_*.json
-// ════════════════════════════════════════════════════════════
-let certsLoaded=false, certsSearch='', certsFilter='all';
-
-async function loadCertsInBackground() {
-  if (certsLoaded) return;
-  try {
-    const files = await Promise.allSettled([1,2,3,4].map(i =>
-      fetch(`portfolio/data_creds_${i}.json?v=${Date.now()}`,{cache:'no-store'})
-        .then(r=>r.ok?r.json():null)
-        .catch(()=>null)
-    ));
-    ALL_CERTS = files
-      .filter(r=>r.status==='fulfilled'&&r.value?.credentials)
-      .flatMap(r=>classifyCerts(r.value.credentials));
-    certsLoaded = true;
-  } catch(_){}
-}
-
-// Same classifier as admin/src/github.js
-const CAT_MAP = {
-  offensive:    ['ethical hacking','penetration','pentest','red team','exploit','kali','offensive','vulnerability','ctf'],
-  defensive:    ['blue team','soc','siem','incident response','threat hunting','malware','forensics','defensive','monitoring'],
-  cloud:        ['aws','azure','gcp','cloud','devops','docker','kubernetes','serverless','amazon','devsecops'],
-  networking:   ['network','cisco','ccna','tcp','routing','switching','vpn','wireshark'],
-  systems:      ['linux','bash','ubuntu','canonical','operating system','kernel'],
-  programming:  ['python','javascript','java','c++','coding','github','programming','jetbrains'],
-  data:         ['data','machine learning','ai','analytics','sql','knime','anaconda','statistics'],
-  professional: ['leadership','management','communication','marketing','linkedin learning','coursera'],
-};
-function classifyCerts(certs) {
-  return certs.map(c=>{
-    if (c.category) return c;
-    const hay = [...(c.tags||[]),c.title||'',c.issuer||''].join(' ').toLowerCase();
-    let best='professional', bestScore=0;
-    for (const [k,kws] of Object.entries(CAT_MAP)) {
-      const score = kws.filter(kw=>hay.includes(kw)).length;
-      if (score>bestScore){ bestScore=score; best=k; }
-    }
-    return {...c, category:best};
-  });
-}
-
-async function renderCerts(mc) {
-  mc.innerHTML = '<div class="loading-row"><span class="blink">▋</span> Loading credentials…</div>';
-  if (!certsLoaded) await loadCertsInBackground();
-  await applyCertPdfMap();
-  buildCertsUI(mc);
-}
-
-function buildCertsUI(mc, search=certsSearch, filter=certsFilter) {
-  certsSearch=search; certsFilter=filter;
-  const cats = ['all','offensive','defensive','cloud','networking','systems','programming','data','professional'];
-  const catLabel = {offensive:'Offensive',defensive:'Defensive',cloud:'Cloud',networking:'Networking',systems:'Systems',programming:'Programming',data:'Data/AI',professional:'Leadership'};
-
-  let list = ALL_CERTS;
-  if (filter!=='all') list = list.filter(c=>c.category===filter);
-  if (search) list = list.filter(c=>(c.title||'').toLowerCase().includes(search.toLowerCase())||(c.issuer||'').toLowerCase().includes(search.toLowerCase()));
-
-  mc.innerHTML = `
-    <div class="panel-header">
-      <span class="panel-title">// CREDENTIALS & CERTIFICATIONS</span>
-      <span class="cert-count">${list.length} / ${ALL_CERTS.length}</span>
-    </div>
-    <div class="certs-controls">
-      <div class="cert-search-row">
-        <input class="form-input cert-search" placeholder="Search credentials, issuers…"
-          value="${escHTML(search)}"
-          oninput="buildCertsUI(document.getElementById('mainContent'),this.value,'${filter}')">
-      </div>
-      <div class="filter-row">
-        ${cats.map(c=>`
-          <button class="filter-btn ${filter===c?'active':''}"
-            onclick="buildCertsUI(document.getElementById('mainContent'),'${escHTML(search)}','${c}')">
-            ${c==='all'?'ALL':catLabel[c]||c.toUpperCase()}
-          </button>
-        `).join('')}
-      </div>
-    </div>
-    ${!list.length ? `<div class="empty-state"><div class="empty-icon">◆</div><div>No credentials match.</div></div>` : `
-      <div class="certs-grid">
-        ${list.slice(0,200).map(c=>`
-          <div class="cert-card ${c.featured?'cert-featured':''}" id="cert-card-${escHTML(c.id||'')}">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span class="cert-icon">◆</span>
-              <span class="cert-card-type ${c.type||''}">${(c.type||'').toUpperCase()}</span>
-            </div>
-            <div class="cert-title">${escHTML(c.title||'Untitled')}</div>
-            <div class="cert-issuer">${escHTML(c.issuer||'')}</div>
-            ${c.date?`<div class="cert-date">${c.date}</div>`:''}
-            <div>
-              <span class="cert-cat-badge cat-${c.category||'other'}">${catLabel[c.category]||c.category||'OTHER'}</span>
-            </div>
-            ${(c.tags||[]).length?`
-              <div class="cert-tags">
-                ${c.tags.slice(0,4).map(t=>`<span class="cert-tag">${escHTML(t)}</span>`).join('')}
-              </div>
-            `:''}
-            ${c.url?`<a class="cert-link" href="${c.url}" target="_blank" rel="noopener">↗ VIEW CREDENTIAL</a>`:''}
-            <div class="cert-upload-row">
-              <button class="cert-upload-btn ${c.pdf?'done':''}"
-                onclick="uploadCertFile('${escHTML(c.id||'')}',this)">
-                ${c.pdf ? '✓ UPLOADED' : '↑ UPLOAD CERT'}
-              </button>
-              ${c.pdf ? `<a class="cert-pdf-link" href="${escHTML(c.pdf)}" target="_blank" rel="noopener">${c.pdf.endsWith('.pdf')?'↗ PDF':'↗ FILE'}</a>` : ''}
-            </div>
-            ${c.pdf && !c.pdf.endsWith('.pdf') ? `<img class="cert-img-thumb" src="${escHTML(c.pdf)}" alt="Certificate" loading="lazy">` : ''}
-          </div>
-        `).join('')}
-      </div>
-      ${list.length>200?`<div style="text-align:center;color:var(--dim);padding:16px;font-size:9px">Showing 200 of ${list.length}. Refine your search to see more.</div>`:''}
-    `}
-  `;
-}
-
 // ════════════════════════════════════════════════════════════
 // PROFILE VIEW
 // ════════════════════════════════════════════════════════════
