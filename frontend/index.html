@@ -4169,32 +4169,28 @@ function defCmd(name, fn) { TERM_COMMANDS[name] = fn; }
 // ── SYSTEM COMMANDS ──────────────────────────────────────────────
 
 // ═══════════════════════════════════════════════════════════════════════
-// REAL AI ASSISTANT — Powered by Claude (Anthropic API)
-// Injected context: simulation state, cert profile, node status
-// Falls back to AI_KB if API unavailable
+// REAL AI ASSISTANT — Powered by Gemini via Cloudflare Worker
+// No API keys in this file — all secrets stored in Cloudflare Worker
+// Worker URL: https://cybaash.mohamedaasiq07.workers.dev
 // ═══════════════════════════════════════════════════════════════════════
 
 const CYBAASH_AI = {
-  // ── FREE AI: Groq API ──────────────────────────────────────────────────
-  // Free tier: 14,400 req/day, no credit card required
-  // Get key at: console.groq.com (30 seconds, completely free)
-  // Supported models: llama-3.3-70b-versatile, mixtral-8x7b-32768
-  endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-  model: 'llama-3.3-70b-versatile',
-  loading: false,
+  workerUrl: 'https://cybaash.mohamedaasiq07.workers.dev',
+  model:     'gemini-2.5-flash-lite',
+  loading:   false,
 
   // Build system prompt with live simulation context
   buildContext() {
-    const certCount   = CERT_DATA?.total || 0;
-    const topCats     = (CERT_DATA?.categories || []).slice(0,4).map(c=>c.name).join(', ');
-    const nodeStates  = NODES.map(n=>`${n.id}:${n.status}`).join(', ');
-    const phase       = ['idle','recon','exploit','lateral','escalate'][state.phase] || 'idle';
-    const score       = state.scores?.total || 0;
-    const atk         = state.scores?.attackSuccess || 0;
-    const def         = state.scores?.detectionEfficiency || 0;
-    const scenario    = state.currentScenario || 'none';
-    const running     = state.running;
-    const certDNA     = (CERT_DATA?.categories || []).map(c=>`${c.name}:${c.count}`).join(', ');
+    const certCount  = CERT_DATA?.total || 0;
+    const topCats    = (CERT_DATA?.categories || []).slice(0,4).map(c=>c.name).join(', ');
+    const nodeStates = NODES.map(n=>`${n.id}:${n.status}`).join(', ');
+    const phase      = ['idle','recon','exploit','lateral','escalate'][state.phase] || 'idle';
+    const score      = state.scores?.total || 0;
+    const atk        = state.scores?.attackSuccess || 0;
+    const def        = state.scores?.detectionEfficiency || 0;
+    const scenario   = state.currentScenario || 'none';
+    const running    = state.running;
+    const certDNA    = (CERT_DATA?.categories || []).map(c=>`${c.name}:${c.count}`).join(', ');
 
     return `You are CYBAASH — an embedded AI security mentor inside an autonomous cyber range simulation platform. You are concise, technical, and cybersecurity-focused.
 
@@ -4225,56 +4221,36 @@ RULES:
       return;
     }
 
-    // Check if API key is configured
-    const apiKey = localStorage.getItem('cybaash_groq_key') || '';
-    if (!apiKey) {
-      termPrint([
-        { t:'t-warn', v:'[AI] No API key configured.' },
-        { t:'t-out',  v:'  Run: assistant key YOUR_GROQ_API_KEY' },
-        { t:'t-dim',  v:'  Free at: console.groq.com (no credit card)' },
-        { t:'t-dim',  v:'  Key stored locally, never sent anywhere else.' },
-      ]);
-      return;
-    }
-
     this.loading = true;
     const typingId = 'ai-typing-' + Date.now();
     termPrint({ t:'t-sys', v:'[AI] ▋ Thinking…', id: typingId });
 
     try {
-      const resp = await fetch(this.endpoint, {
+      const resp = await fetch(this.workerUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: this.model,
-          max_tokens: 300,
-          messages: [
-            { role: 'system', content: this.buildContext() },
-            { role: 'user',   content: userMessage }
-          ],
-          temperature: 0.7,
+          model:   this.model,
+          payload: {
+            contents: [
+              { role: 'user', parts: [{ text: this.buildContext() + '\n\nUser: ' + userMessage }] }
+            ],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
+          }
         }),
       });
 
-      // Remove typing indicator
       document.getElementById(typingId)?.remove();
 
       if (!resp.ok) {
-        const err = await resp.json().catch(()=>({}));
-        if (resp.status === 401) throw new Error('Invalid Groq API key — run: assistant key YOUR_KEY (get free at console.groq.com)');
         if (resp.status === 429) throw new Error('Rate limited — try again in a moment');
-        throw new Error(err.error?.message || `HTTP ${resp.status}`);
+        throw new Error('Worker error: HTTP ' + resp.status);
       }
 
       const data = await resp.json();
-      // Groq/OpenAI format: data.choices[0].message.content
-      const text = data.choices?.[0]?.message?.content || data.content?.[0]?.text || 'No response';
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
 
       termPrint({ t:'t-sys', v:'[CYBAASH AI] ──────────────────────────────' });
-      // Split response into lines for better terminal rendering
       text.split('\n').filter(l=>l.trim()).forEach(line => {
         termPrint({ t:'t-out', v:'  ' + line });
       });
@@ -4282,47 +4258,25 @@ RULES:
 
     } catch(err) {
       document.getElementById(typingId)?.remove();
-      termPrint({ t:'t-err', v:`[AI] Error: ${err.message}` });
+      termPrint({ t:'t-err', v:'[AI] Error: ' + err.message });
     } finally {
       this.loading = false;
     }
   }
 };
 
-// ── Override the static assistant command with real AI ─────────────────────
-// Re-register 'assistant' to use Claude API
-const _originalCmds = window.__TERM_CMDS__ || {};
+// ── Override the static assistant command with Gemini AI ───────────────────
 if (typeof TERM_COMMANDS !== 'undefined') {
   const orig = TERM_COMMANDS.get?.('assistant');
   TERM_COMMANDS.set?.('assistant', (args) => {
     const sub = args[0];
 
-    // Key management
-    if (sub === 'key') {
-      const key = args[1];
-      if (!key) {
-        const stored = localStorage.getItem('cybaash_groq_key');
-        termPrint({ t:'t-out', v: stored ? '[AI] API key: configured ✓' : '[AI] No key set. Run: assistant key YOUR_KEY' });
-        return;
-      }
-      localStorage.setItem('cybaash_groq_key', key);
-      termPrint({ t:'t-sys', v:'[AI] Groq API key saved. Free AI enabled (14,400 req/day).' });
-      return;
-    }
-
-    if (sub === 'clear-key') {
-      localStorage.removeItem('cybaash_groq_key');
-      termPrint({ t:'t-sys', v:'[AI] API key cleared.' });
-      return;
-    }
-
     if (sub === 'on' || sub === 'off' || sub === 'mode' || sub === 'status') {
-      // Let original handler run for mode switching
       if (orig) orig(args);
       return;
     }
 
-    // Everything else → real AI
+    // Everything else → Gemini AI via Worker
     const question = args.join(' ') || 'What should I do next in this simulation?';
     CYBAASH_AI.ask(question);
   });
@@ -8851,5 +8805,9 @@ Drop file or click to upload<br>
 
 })();
 </script>
+
+  <!-- ── CYBAASH SOC TRACKER — config loaded from Cloudflare Worker ── -->
+  <script src="/soc-tracker-v2.js"></script>
+  <!-- ───────────────────────────────────────────────────────────────── -->
 </body>
 </html>

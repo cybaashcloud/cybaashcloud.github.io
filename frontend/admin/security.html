@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYBAASH SOC — Security Operations Center</title>
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <meta http-equiv="X-Frame-Options" content="DENY" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="Referrer-Policy" content="no-referrer" />
+  <!-- COMPLETELY ISOLATED: No shared CSS/JS with main site -->
+  <link rel="stylesheet" href="security.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+  <script src="security.js" defer></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-bg-grid"></div>
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="shield-icon">🛡️</span>
+      <h1>CYBAASH SOC</h1>
+      <p>SECURITY OPERATIONS CENTER</p>
+    </div>
+
+    <form id="login-form" autocomplete="off">
+      <div class="login-field">
+        <label for="login-password">Admin Passphrase</label>
+        <div style="position:relative;">
+          <input type="password" id="login-password" placeholder="Enter secure passphrase" autocomplete="current-password" autofocus />
+          <button type="button" id="toggle-pw" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;">👁</button>
+        </div>
+      </div>
+      <div id="login-error" class="login-error">Invalid credentials. Access denied.</div>
+      <button type="submit" class="login-btn">AUTHENTICATE &rarr;</button>
+    </form>
+
+    <div class="login-footer">
+      RESTRICTED SYSTEM · AUTHORIZED PERSONNEL ONLY<br>
+      All access attempts are logged and monitored.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TOAST CONTAINER
+═══════════════════════════════════════════════════════════════ -->
+<div id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN SOC APP
+═══════════════════════════════════════════════════════════════ -->
+<div id="soc-app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="brand-icon">🛡️</span>
+      <div>
+        <h2>CYBAASH SOC</h2>
+        <span>SECURITY OPERATIONS CENTER</span>
+      </div>
+    </div>
+
+    <div class="topbar-status">
+      <div class="status-pill">
+        <div class="status-dot" id="api-status-dot"></div>
+        <span id="api-status-text">LIVE</span>
+      </div>
+      <div class="status-pill">
+        <span id="alert-count" style="color:var(--red);font-family:var(--font-display);font-weight:700;">0</span>
+        <span>&nbsp;ALERTS</span>
+      </div>
+      <span class="topbar-clock" id="topbar-clock">00:00:00 UTC</span>
+    </div>
+
+    <div class="topbar-actions">
+      <span id="last-updated" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);"></span>
+      <button class="btn btn-ghost btn-sm" id="refresh-btn">⟳ Refresh</button>
+      <button class="btn btn-red btn-sm" id="logout-btn">⏻ Logout</button>
+    </div>
+  </header>
+
+  <!-- NAV TABS -->
+  <nav class="nav-tabs">
+    <button class="nav-tab active" data-tab="dashboard">◈ Overview</button>
+    <button class="nav-tab" data-tab="logs">📋 Live Logs</button>
+    <button class="nav-tab" data-tab="threats">⚠ Threat Alerts</button>
+    <button class="nav-tab" data-tab="attackers">☠ Top Attackers</button>
+    <button class="nav-tab" data-tab="firewall">🔥 Firewall</button>
+    <button class="nav-tab" data-tab="terminal">⚡ Terminal</button>
+    <button class="nav-tab" data-tab="settings">⚙ Settings</button>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- ─── TAB: OVERVIEW DASHBOARD ────────────────────────────── -->
+    <div id="panel-dashboard" class="tab-panel active">
+
+      <!-- Stat Cards Row 1 -->
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Total Requests</span><span class="card-icon">🌐</span></div>
+          <div class="stat-value cyan" id="stat-total">0</div>
+          <div class="stat-label">All-time logged visits</div>
+        </div>
+        <div class="card danger">
+          <div class="card-header"><span class="card-title">IPs Blocked</span><span class="card-icon">🚫</span></div>
+          <div class="stat-value red" id="stat-blocked">0</div>
+          <div class="stat-label">Via Cloudflare WAF</div>
+        </div>
+        <div class="card warn">
+          <div class="card-header"><span class="card-title">SQLi Attempts</span><span class="card-icon">💉</span></div>
+          <div class="stat-value orange" id="stat-sqli">0</div>
+          <div class="stat-label">SQL injection detected</div>
+        </div>
+        <div class="card warn">
+          <div class="card-header"><span class="card-title">XSS Attempts</span><span class="card-icon">⚡</span></div>
+          <div class="stat-value orange" id="stat-xss">0</div>
+          <div class="stat-label">Cross-site scripting</div>
+        </div>
+      </div>
+
+      <!-- Stat Cards Row 2 -->
+      <div class="grid-4">
+        <div class="card danger">
+          <div class="card-header"><span class="card-title">Honeypot Hits</span><span class="card-icon">🍯</span></div>
+          <div class="stat-value red" id="stat-honeypot">0</div>
+          <div class="stat-label">Trap activations</div>
+        </div>
+        <div class="card warn">
+          <div class="card-header"><span class="card-title">Rate Abuse</span><span class="card-icon">🔄</span></div>
+          <div class="stat-value orange" id="stat-rate">0</div>
+          <div class="stat-label">Rapid request bursts</div>
+        </div>
+        <div class="card safe">
+          <div class="card-header"><span class="card-title">Defense Score</span><span class="card-icon">🛡️</span></div>
+          <div class="stat-value green">98%</div>
+          <div class="stat-label">System health</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Uptime</span><span class="card-icon">✅</span></div>
+          <div class="stat-value cyan">99.9%</div>
+          <div class="stat-label">Cloudflare protected</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid-2">
+        <div class="chart-container">
+          <div class="section-header">
+            <span class="section-title">Traffic Volume (Last 20 min)</span>
+          </div>
+          <canvas id="chart-traffic" height="200"></canvas>
+        </div>
+        <div class="chart-container">
+          <div class="section-header">
+            <span class="section-title">Attack Events (Last 20 min)</span>
+          </div>
+          <canvas id="chart-attacks" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Bottom Row -->
+      <div class="grid-3">
+
+        <!-- Attack Types Donut -->
+        <div class="chart-container">
+          <div class="section-header">
+            <span class="section-title">Attack Breakdown</span>
+          </div>
+          <canvas id="chart-types" height="220"></canvas>
+        </div>
+
+        <!-- Recent Alerts (mini) -->
+        <div class="card" style="padding:20px;">
+          <div class="section-header mb-16">
+            <span class="section-title">Recent Alerts</span>
+            <button class="btn btn-ghost btn-sm" onclick="switchTab('threats')">View All</button>
+          </div>
+          <div id="alert-feed" class="alert-feed" style="max-height:220px;"></div>
+        </div>
+
+        <!-- System Status -->
+        <div class="card" style="padding:20px;">
+          <div class="section-header mb-16">
+            <span class="section-title">System Status</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">Cloudflare WAF</span>
+              <span class="badge badge-green">● ACTIVE</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">Google Sheets Log</span>
+              <span class="badge badge-green">● ACTIVE</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">Apps Script API</span>
+              <span class="badge badge-cyan" id="api-badge">● DEMO</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">Email Alerts</span>
+              <span class="badge badge-green">● ENABLED</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">Honeypots</span>
+              <span class="badge badge-orange">● 3 ACTIVE</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">Rate Limiting</span>
+              <span class="badge badge-green">● ACTIVE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-dashboard -->
+
+
+    <!-- ─── TAB: LIVE LOGS ───────────────────────────────────────── -->
+    <div id="panel-logs" class="tab-panel">
+      <div class="section-header mb-16">
+        <span class="section-title">Live Request Logs</span>
+        <div class="flex gap-8">
+          <input type="text" id="log-search" class="ip-input" placeholder="Filter by IP, URL, attack type..." style="width:280px;padding:8px 12px;" />
+          <button class="btn btn-cyan btn-sm" onclick="exportLogs()">⬇ Export CSV</button>
+          <button class="btn btn-ghost btn-sm" onclick="refreshAll()">⟳ Refresh</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>IP Address</th>
+              <th>Country</th>
+              <th>URL</th>
+              <th>Attack Type</th>
+              <th>Risk Score</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="logs-tbody">
+            <tr><td colspan="7"><div class="empty-state"><span class="es-icon">⏳</span>Loading logs...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /panel-logs -->
+
+
+    <!-- ─── TAB: THREAT ALERTS ───────────────────────────────────── -->
+    <div id="panel-threats" class="tab-panel">
+      <div class="section-header mb-16">
+        <span class="section-title">Active Threat Alerts</span>
+        <div class="flex gap-8">
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">Auto-refreshes every 30s</span>
+        </div>
+      </div>
+
+      <!-- Alert Level Summary -->
+      <div class="grid-4">
+        <div class="card danger">
+          <div class="card-header"><span class="card-title">Critical</span><span>🔴</span></div>
+          <div class="stat-value red" id="count-critical">0</div>
+          <div class="stat-label">Immediate action required</div>
+        </div>
+        <div class="card warn">
+          <div class="card-header"><span class="card-title">High</span><span>🟠</span></div>
+          <div class="stat-value orange" id="count-high">0</div>
+          <div class="stat-label">Investigate now</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Medium</span><span>🟡</span></div>
+          <div class="stat-value" id="count-medium" style="color:var(--yellow)">0</div>
+          <div class="stat-label">Monitor closely</div>
+        </div>
+        <div class="card safe">
+          <div class="card-header"><span class="card-title">Low</span><span>🟢</span></div>
+          <div class="stat-value green" id="count-low">0</div>
+          <div class="stat-label">Informational</div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:20px;">
+        <div class="section-header mb-16">
+          <span class="section-title">Alert Feed</span>
+        </div>
+        <div id="alert-feed-full" class="alert-feed" style="max-height:500px;"></div>
+      </div>
+    </div><!-- /panel-threats -->
+
+
+    <!-- ─── TAB: TOP ATTACKERS ───────────────────────────────────── -->
+    <div id="panel-attackers" class="tab-panel">
+      <div class="section-header mb-16">
+        <span class="section-title">Top Threat Actors</span>
+        <button class="btn btn-ghost btn-sm" onclick="refreshAll()">⟳ Refresh</button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>IP Address</th>
+              <th>Country</th>
+              <th>Requests</th>
+              <th>Attacks</th>
+              <th>Risk Score</th>
+              <th>Last Seen</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="attackers-tbody">
+            <tr><td colspan="7"><div class="empty-state"><span class="es-icon">⏳</span>Loading...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div><!-- /panel-attackers -->
+
+
+    <!-- ─── TAB: FIREWALL ───────────────────────────────────────── -->
+    <div id="panel-firewall" class="tab-panel">
+      <div class="section-header mb-16">
+        <span class="section-title">Cloudflare Firewall Control</span>
+      </div>
+
+      <!-- Manual IP Control -->
+      <div class="card" style="padding:24px;margin-bottom:20px;">
+        <div class="section-header mb-16">
+          <span class="section-title">Manual IP Control</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:12px;align-items:end;">
+          <div>
+            <label style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--text-muted);display:block;margin-bottom:6px;">IP ADDRESS / CIDR</label>
+            <input type="text" id="manual-ip-input" class="ip-input" placeholder="e.g. 192.168.1.1 or 10.0.0.0/24" />
+          </div>
+          <div>
+            <label style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--text-muted);display:block;margin-bottom:6px;">REASON</label>
+            <input type="text" id="manual-reason-input" class="ip-input" placeholder="e.g. SQLi attempt, suspicious scan..." />
+          </div>
+          <button class="btn btn-red" onclick="blockManualIP()" style="white-space:nowrap;">🚫 Block IP</button>
+          <button class="btn btn-green" onclick="unblockManualIP()" style="white-space:nowrap;">✅ Unblock IP</button>
+        </div>
+      </div>
+
+      <!-- Blocked IPs Table -->
+      <div class="section-header mb-16">
+        <span class="section-title">Currently Blocked IPs</span>
+        <button class="btn btn-ghost btn-sm" onclick="refreshAll()">⟳ Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>IP Address</th>
+              <th>Reason</th>
+              <th>Blocked At</th>
+              <th>Method</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="blocked-tbody">
+            <tr><td colspan="5"><div class="empty-state"><span class="es-icon">⏳</span>Loading...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Cloudflare Rate Limit Info -->
+      <div class="card warn mt-20" style="padding:20px;">
+        <div class="section-header mb-16">
+          <span class="section-title">Rate Limiting Rules</span>
+          <span class="badge badge-orange">Configured in Cloudflare</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:8px;">RULE 1 — HIGH VOLUME</div>
+            <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">100 req/min → Block 1h</div>
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:8px;">RULE 2 — BOT PATHS</div>
+            <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">/wp-admin, /.env → Block</div>
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--text-muted);margin-bottom:8px;">RULE 3 — GEO BLOCK</div>
+            <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">High-risk ASNs → Challenge</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-firewall -->
+
+
+    <!-- ─── TAB: TERMINAL ───────────────────────────────────────── -->
+    <div id="panel-terminal" class="tab-panel">
+      <div class="section-header mb-16">
+        <span class="section-title">SOC Activity Terminal</span>
+        <div class="flex gap-8">
+          <button class="btn btn-ghost btn-sm" onclick="el('terminal-output').innerHTML='';STATE.terminalLines=[];">Clear</button>
+        </div>
+      </div>
+      <div class="terminal" id="terminal-output">
+        <div class="t-line"><span class="t-time">[BOOT]</span><span class="t-level-info">[INFO]</span><span class="t-msg">CYBAASH SOC Terminal ready. All actions logged.</span></div>
+      </div>
+    </div><!-- /panel-terminal -->
+
+
+    <!-- ─── TAB: SETTINGS ───────────────────────────────────────── -->
+    <div id="panel-settings" class="tab-panel">
+      <div class="section-header mb-16">
+        <span class="section-title">SOC Configuration</span>
+      </div>
+
+      <div class="config-section">
+        <h3>Backend Connection</h3>
+        <div class="config-field">
+          <label>Apps Script URL</label>
+          <input type="url" id="cfg-apps-script-url" placeholder="https://script.google.com/macros/s/.../exec" />
+        </div>
+        <div class="config-field">
+          <label>Connection Status</label>
+          <span id="cfg-status" class="badge badge-cyan">DEMO MODE</span>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <h3>Authentication</h3>
+        <div class="config-field">
+          <label>New Admin Password</label>
+          <input type="password" id="cfg-new-password" placeholder="Leave blank to keep current" />
+        </div>
+        <p style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:8px;grid-column:1/-1;">
+          ⚠ Password is hashed (SHA-256) before storage. Never stored in plaintext.
+        </p>
+      </div>
+
+      <div class="config-section">
+        <h3>Dashboard Behavior</h3>
+        <div class="config-field">
+          <label>Refresh Interval</label>
+          <select id="cfg-refresh" style="background:var(--bg-deep);border:1px solid var(--border-glow);border-radius:4px;padding:8px 12px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;outline:none;">
+            <option value="15">15 seconds</option>
+            <option value="30" selected>30 seconds</option>
+            <option value="60">1 minute</option>
+            <option value="300">5 minutes</option>
+          </select>
+        </div>
+        <div class="config-field">
+          <label>Session Timeout</label>
+          <select id="cfg-session" style="background:var(--bg-deep);border:1px solid var(--border-glow);border-radius:4px;padding:8px 12px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;outline:none;">
+            <option value="15">15 minutes</option>
+            <option value="30" selected>30 minutes</option>
+            <option value="60">1 hour</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <h3>Security Recommendations</h3>
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);line-height:2;">
+          <div>✅ Enable <strong style="color:var(--cyan)">Cloudflare Zero Trust</strong> to restrict access to this panel by email/identity</div>
+          <div>✅ Add <strong style="color:var(--cyan)">_redirects rule</strong>: <code style="color:var(--orange)">/admin/*  https://your-zero-trust-domain  302</code></div>
+          <div>✅ Store Cloudflare API token in <strong style="color:var(--cyan)">Apps Script Properties</strong>, never in frontend</div>
+          <div>✅ Set <strong style="color:var(--cyan)">X-Frame-Options: DENY</strong> header on this page (already set)</div>
+          <div>✅ Keep <strong style="color:var(--cyan)">robots.txt</strong> entry: <code style="color:var(--orange)">Disallow: /admin/</code></div>
+        </div>
+      </div>
+
+      <button class="btn btn-cyan" onclick="saveSettings()" style="margin-top:8px;">💾 Save Settings</button>
+
+    </div><!-- /panel-settings -->
+
+  </main>
+</div><!-- /#soc-app -->
+
+<script>
+  // Expose switchTab and el globally for inline onclick handlers
+  window.switchTab = switchTab;
+  window.el = el;
+  window.blockIPQuick = blockIPQuick;
+  window.unblockIP = unblockIP;
+  window.blockManualIP = blockManualIP;
+  window.unblockManualIP = unblockManualIP;
+  window.exportLogs = exportLogs;
+  window.refreshAll = refreshAll;
+  window.saveSettings = saveSettings;
+  window.STATE = STATE;
+
+  // Sync alert counts to threats tab after render
+  document.addEventListener('DOMContentLoaded', () => {
+    const origRenderAlerts = window.renderAlerts;
+    setInterval(() => {
+      if (STATE.alerts.length) {
+        const c = l => STATE.alerts.filter(a => a.level === l).length;
+        const crit = el('count-critical'); if (crit) crit.textContent = c('critical');
+        const high = el('count-high');     if (high) high.textContent = c('high');
+        const med  = el('count-medium');   if (med)  med.textContent = c('medium');
+        const low  = el('count-low');      if (low)  low.textContent = c('low');
+
+        const fullFeed = el('alert-feed-full');
+        if (fullFeed) fullFeed.innerHTML = el('alert-feed')?.innerHTML || '';
+      }
+    }, 2000);
+  });
+</script>
+
+</body>
+</html>
