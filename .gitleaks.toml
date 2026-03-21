@@ -1,0 +1,39 @@
+title = "CYBAASH Gitleaks Config — Military Grade"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "cybaash-worker-secret"
+description = "Cloudflare Worker secret hardcoded in code"
+regex = '''(SOC_API_KEY|SOC_WORKER_KEY|HMAC_SECRET)\s*=\s*["'][^"']{10,}["']'''
+tags = ["secret", "cloudflare"]
+
+[[rules]]
+id = "apps-script-url"
+description = "Apps Script exec URL hardcoded in code"
+regex = '''https://script\.google\.com/macros/s/[A-Za-z0-9_-]{20,}/exec'''
+tags = ["secret", "google"]
+
+[[rules]]
+id = "abuseipdb-key"
+description = "AbuseIPDB API key hardcoded"
+regex = '''ABUSEIPDB_KEY\s*=\s*["'][^"']{20,}["']'''
+tags = ["secret", "api"]
+
+[allowlist]
+paths = [
+  "frontend/certificates/",
+  "frontend/cert_logos/",
+  ".github/workflows/",
+  ".gitleaks.toml",
+]
+regexes = [
+  '''Utilities\.getUuid\(\)''',
+  '''cybaash\.mohamedaasiq07\.workers\.dev''',
+  '''env\.GEMINI_API_KEY''',
+  '''env\.SOC_API_KEY''',
+  '''env\.SOC_WORKER_KEY''',
+  '''env\.HMAC_SECRET''',
+  '''props\.getProperty\(''',
+]
