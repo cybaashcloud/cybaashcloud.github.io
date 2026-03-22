@@ -139,17 +139,19 @@ function saasLoginWithPat(pat) {
   if (btn) { btn.textContent = 'Connecting…'; btn.disabled = true; }
   SAAS.token = pat;
   ghRequest('/user').then(async ghUser => {
-    if (!ghUser?.login) throw new Error('Token accepted but could not read user info.');
-    LS.setTok(pat);
-    hidePatOverlay();
-    await finishLogin();
-  }).catch(err => {
-    SAAS.token = null;
-    if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
-    const msg = err.message || '';
-    setPatOverlayError(/401|403|Bad credentials/i.test(msg)
-      ? "Token rejected — check it has repo + read:user scopes and hasn't expired."
-      : msg || 'Connection failed');
+    try {
+      if (!ghUser?.login) throw new Error('Token accepted but could not read user info.');
+      LS.setTok(pat);
+      hidePatOverlay();
+      await finishLogin();
+    } catch (err) {
+      SAAS.token = null;
+      if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
+      const msg = err.message || '';
+      setPatOverlayError(/401|403|Bad credentials/i.test(msg)
+        ? "Token rejected — check it has repo + read:user scopes and hasn't expired."
+        : msg || 'Connection failed');
+    }
   });
 }
 

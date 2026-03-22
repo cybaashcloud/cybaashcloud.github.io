@@ -322,7 +322,16 @@ function analyzePasswordClient(pw) {
   const colors=['#ff2244','#ff6600','#ffd700','#00d4ff','#00ff88'];
   const idx = score>=80?4:score>=60?3:score>=40?2:score>=20?1:0;
   // prettier-ignore
-  return { score, strength:strengths[idx], color:colors[idx], length:len, has_lowercase:hasL, has_uppercase:hasU, has_digits:hasD, has_special:hasS, entropy_bits:Math.round(len*Math.log2([hasL?26:0,hasU?26:0,hasD?10:0,hasS?32:0].reduce((a,b)=>a+b,0)||1)), feedback:[!hasU&&'Add uppercase letters',!hasD&&'Add numbers',!hasS&&'Add special characters',len<12&&'Use at least 12 characters'].filter(Boolean) };
+  return { score,
+    strength:strengths[idx],
+    color:colors[idx],
+    length:len,
+    has_lowercase:hasL,
+    has_uppercase:hasU,
+    has_digits:hasD,
+    has_special:hasS,
+    entropy_bits:Math.round(len*Math.log2([hasL?26:0,hasU?26:0,hasD?10:0,hasS?32:0].reduce((a,b)=>a+b,0)||1)),
+    feedback:[!hasU&&'Add uppercase letters',!hasD&&'Add numbers',!hasS&&'Add special characters',len<12&&'Use at least 12 characters'].filter(Boolean) };
 }
 
 function renderPasswordResult(data, targetId) {
@@ -338,7 +347,14 @@ function renderPasswordResult(data, targetId) {
     {label:'12+ chars',pass:data.length>=12},
     {label:'16+ chars',pass:data.length>=16}].map(c=>`<li class="pw-check ${c.pass?'pass':'fail'}">${c.pass?'✓':'○'} ${c.label}</li>`).join('');
   // prettier-ignore
-  el.innerHTML=`<div class="result-card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span class="pw-score-label" style="color:${data.color}">${data.strength}</span><span style="font-family:var(--mono);font-size:20px;color:${data.color}">${data.score}/100</span></div><div class="pw-bars">${bars}</div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px">Length: ${data.length} · Entropy: ~${data.entropy_bits} bits</div><ul class="pw-checks">${checks}</ul>${data.feedback?.length?`<div style="margin-top:12px;padding:10px;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.2);border-radius:4px"><div style="font-size:10px;color:var(--yellow);margin-bottom:6px">// SUGGESTIONS</div>${data.feedback.map(f=>`<div style="font-size:11px;color:var(--text2);margin-bottom:3px">→ ${f}</div>`).join('')}</div>`:''}</div>`;
+  el.innerHTML=`<div class="result-card" style="margin-top:12px">\
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">\
+    <span class="pw-score-label" style="color:${data.color}">${data.strength}</span>\
+    <span style="font-family:var(--mono);font-size:20px;color:${data.color}">${data.score}/100</span></div>\
+    <div class="pw-bars">${bars}</div>\
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px">Length: ${data.length} · Entropy: ~${data.entropy_bits} bits</div>\
+    <ul class="pw-checks">${checks}</ul>${data.feedback?.length?`<div style="margin-top:12px;padding:10px;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.2);border-radius:4px">\
+    <div style="font-size:10px;color:var(--yellow);margin-bottom:6px">// SUGGESTIONS</div>${data.feedback.map(f=>`<div style="font-size:11px;color:var(--text2);margin-bottom:3px">→ ${f}</div>`).join('')}</div>`:''}</div>`;
 }
 
 function renderURLTool() {

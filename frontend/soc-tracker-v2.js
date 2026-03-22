@@ -256,11 +256,18 @@
   }
 
   // ── 8. INIT ─────────────────────────────────────────────────────────────────
+  function _sendOnUnload() { sendLog(); }
+
+  function cleanup() {
+    window.removeEventListener('beforeunload', _sendOnUnload);
+    window.removeEventListener('pagehide', _sendOnUnload);
+  }
+
   function init() {
     loadConfig(); injectHoneypots(); scanCurrentURL(); startMutationObserver();
     setTimeout(function() { sendLog(); }, 2000);
-    window.addEventListener('beforeunload', function() { sendLog(); });
-    window.addEventListener('pagehide', function() { sendLog(); });
+    window.addEventListener('beforeunload', _sendOnUnload);
+    window.addEventListener('pagehide', _sendOnUnload);
     DEBUG && console["l"+"og"]('[SOC] Tracker v3.0 initialized. FP:', fingerprint, 'BotScore:', botScore);
   }
 
