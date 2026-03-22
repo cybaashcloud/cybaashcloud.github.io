@@ -327,7 +327,7 @@ function grantAccess() {
   el('api-dot').className = 'status-dot active';
   el('api-text').textContent = 'LIVE';
   startClock();
-  initIntel();
+  loadSOCConfig().then(function() { initIntel(); }); // fetch key before loading data
 }
 
 function checkSession() {
@@ -365,6 +365,23 @@ async function callWorkerDirect(path, body) {
     signal: AbortSignal.timeout(10000)
   });
   return resp.json();
+}
+
+// ── Load SOC Worker Key from /config ───────────────────────────
+async function loadSOCConfig() {
+  try {
+    var resp = await fetch(WORKER + '/config', { signal: AbortSignal.timeout(5000) });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var cfg = await resp.json();
+    if (cfg && cfg.socKey) {
+      SOC_WORKER_KEY = cfg.socKey;
+      console.log('[Intel] SOC Worker key loaded — audit/intel endpoints active');
+    } else {
+      console.warn('[Intel] /config returned no socKey');
+    }
+  } catch(e) {
+    console.warn('[Intel] Could not load SOC Worker key:', e.message);
+  }
 }
 
 // ── Init ───────────────────────────────────────────────────────
