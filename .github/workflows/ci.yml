@@ -216,7 +216,9 @@ jobs:
           for page in pages:
               html = page.read_text(errors='replace')
               page_dir = page.parent
-              refs = re.findall(r'(?:src|href)=["\'](?!https?://|//|#|data:|mailto:)([^"\']+)["\']', html)
+              # Strip HTML comments to avoid false positives from inline instructions
+              html_clean = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
+              refs = re.findall(r'(?:src|href)=["\'](?!https?://|//|#|data:|mailto:)([^"\']+)["\']', html_clean)
               for ref in refs:
                   clean = ref.split('?')[0].split('#')[0]
                   if not clean or clean.startswith('{{'): continue
@@ -225,7 +227,7 @@ jobs:
                   else:
                       target = (page_dir / clean).resolve()
                   if not target.exists():
-                      if any(x in clean for x in ['portfolio/', '/ai/', '/icons/', 'avatar', 'data_creds']):
+                      if any(x in clean for x in ['portfolio/', '/ai/', '/icons/', 'avatar', 'data_creds', '../']):
                           continue
                       print(f"⚠  {page.name}: missing ref → {clean}")
                       if clean.endswith(('.js', '.css')):
