@@ -104,9 +104,9 @@ jobs:
           files = (
               list(base.glob('*.js')) + list(base.glob('ai/*.js')) +
               list(base.glob('admin/*.js')) + list(base.glob('admin/src/**/*.js')) +
-              # .jsx excluded — JSX needs Vite/Babel transpiler, node --check rejects it
+              list(base.glob('admin/src/**/*.jsx'))
           )
-          files = [f for f in files if 'dist/assets' not in str(f) and not str(f).endswith('.jsx')]
+          files = [f for f in files if 'dist/assets' not in str(f)]
 
           errors, ok = [], []
           for f in sorted(files):
@@ -146,10 +146,6 @@ jobs:
                   except ValueError:
                       continue
                   if not candidate.resolve().exists():
-                  # Skip JS template literals — dynamic values, not file paths
-                  if '${' in ref: continue
-                  # Skip Vite/React entry points (.jsx/.tsx are transpiled, not served)
-                  if ref.endswith(('.jsx','.tsx','.ts')): continue
                       errors.append(f"{page.name} → {ref}")
 
           for e in errors:
@@ -283,19 +279,7 @@ jobs:
           from pathlib import Path
 
           # Allowed http:// patterns (SVG namespace, intentional demo content)
-          # Cybersecurity simulation site — intentional educational HTTP URLs
-          ALLOW = [
-              'w3.org/2000/svg', 'www.w3.org', 'schemas.microsoft', 'xmlns',
-              # Private/reserved IPs used in pentest/SSRF/C2 simulation examples
-              'http://10.', 'http://192.168.', 'http://172.', 'http://169.254.',
-              # Common CTF/pentest demo hostnames
-              'http://attacker.', 'http://c2.', 'http://evil.', 'http://malicious.',
-              'http://target.', 'http://victim.', 'http://localhost',
-              # Example IPs in cybersecurity tools
-              'http://1.2.3.4', 'http://0.0.0.0',
-              # Educational / reference URLs in tool panels
-              'labs.portcullis', 'http://example.',
-          ]
+          ALLOW = ['w3.org/2000/svg', 'www.w3.org', 'schemas.microsoft', 'xmlns']
           base  = Path('frontend')
           errors = []
 
@@ -323,12 +307,6 @@ jobs:
           from pathlib import Path
 
           base   = Path('frontend')
-          # IDs that are injected by JavaScript (populateAbout, populateSkills, etc.)
-          # Static HTML parser cannot see dynamic DOM — these are known-safe dynamic anchors
-          JS_INJECTED_IDS = {
-              'about', 'skills', 'experience', 'projects', 'contact',
-              'cybaash', 'certs', 'timeline', 'achievements', 'certifications',
-          }
           errors = []
 
           for f in list(base.glob('*.html')) + list(base.glob('ai/*.html')):
@@ -336,8 +314,8 @@ jobs:
               defined = set(re.findall(r'id=["\']([^"\']+)["\']', html))
               hrefs   = re.findall(r'href=["\']#([^"\']+)["\']', html)
               for h in hrefs:
-                  if h not in defined and h not in JS_INJECTED_IDS:
-                      errors.append(f"{f.name}: href='#{h}' — id not found (JS-injected? add to JS_INJECTED_IDS)")
+                  if h not in defined:
+                      errors.append(f"{f.name}: href='#{h}' — id not found")
 
           for e in errors: print(f"  ❌  {e}")
           if not errors:   print("  ✅  All anchor links resolve")
@@ -380,12 +358,6 @@ jobs:
           from pathlib import Path
 
           base   = Path('frontend')
-          # IDs that are injected by JavaScript (populateAbout, populateSkills, etc.)
-          # Static HTML parser cannot see dynamic DOM — these are known-safe dynamic anchors
-          JS_INJECTED_IDS = {
-              'about', 'skills', 'experience', 'projects', 'contact',
-              'cybaash', 'certs', 'timeline', 'achievements', 'certifications',
-          }
           errors = []
 
           for f in list(base.glob('*.html')) + list(base.glob('ai/*.html')):
@@ -616,12 +588,8 @@ jobs:
           total  = 0
           for path in sorted(list(base.glob('*.css')) + list(base.glob('ai/*.css')) + list(base.glob('admin/*.css'))):
               css  = path.read_text(errors='replace')
-              # Exclude @media/@keyframe wrappers (same breakpoint ≠ duplicate)
-              # and animation keyframe steps (0%/50%/100%/from/to)
               sels = [s.strip() for s in re.findall(r'([^{}\n@][^{}\n]*)\s*\{', css)
-                      if s.strip()
-                      and not s.strip().startswith('@')
-                      and not re.match(r'^(from|to|\d+%|\d+%\s*,\s*\d+%)', s.strip())]
+                      if s.strip() and not s.strip().startswith('@')]
               dups = {s:n for s,n in Counter(sels).items() if n > 1}
               rel  = str(path.relative_to(base))
               if dups:
@@ -746,8 +714,6 @@ jobs:
           errors = []
           for f in list(base.glob('**/*.js')) + list(base.glob('**/*.html')) + list(base.glob('**/*.json')):
               if any(s in str(f) for s in ['dist/assets','node_modules']): continue
-              # data_creds_*.json contains DEMO credential data for portfolio showcase — not real secrets
-              if re.search(r'data_creds_\d+\.json', str(f)): continue
               src = f.read_text(errors='replace')
               for pat, label in PATTERNS:
                   for m in re.finditer(pat, src, re.I):
