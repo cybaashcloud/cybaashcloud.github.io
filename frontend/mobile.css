@@ -80,7 +80,7 @@
     flex-shrink: 0 !important;
   }
 .mob-fab-bar {
-    display: flex;
+    display: none !important;
     position: fixed;
     bottom: max(20px, calc(env(safe-area-inset-bottom) + 14px));
     left: max(14px, env(safe-area-inset-left));
@@ -590,7 +590,7 @@ body.page-index::before { display: none !important; }
 
 /* Hidden everywhere by default */
 .mob-menu-btn {
-  display: none;
+  display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -622,6 +622,22 @@ body.page-index::before { display: none !important; }
    3. HEADER DRAWER  (#mobHeaderDrawer)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 .mob-header-drawer { display: none; }
+.mob-header-drawer.open {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(3,10,18,0.98);
+  border-bottom: 1px solid var(--border,#1a3a5c);
+  z-index: 1200;
+  padding: 48px 16px 16px;
+  overflow-y: auto;
+  max-height: 85vh;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.8);
+}
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    4. SIDE DRAWERS — Attack Engine & Skill DNA

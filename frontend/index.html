@@ -2135,6 +2135,14 @@ body.attacker-mode #attackerBadge { display: block; }
 <script>
 // Forward declaration — real implementation is defined later in this page.
 // This stub ensures the function is always defined even during early execution.
+function mobToggleHeader() {
+  var d = document.getElementById('mobHeaderDrawer');
+  if (!d) return;
+  var isOpen = d.classList.contains('open');
+  d.classList.toggle('open', !isOpen);
+  var b = document.getElementById('mobMenuBtn');
+  if (b) b.textContent = isOpen ? '☰' : '✕';
+}
 function setAttackerTheme(on) {
   if (on) document.body.classList.add('attacker-mode');
   else document.body.classList.remove('attacker-mode');
@@ -10063,6 +10071,8 @@ Drop file or click to upload<br>
     var d = document.getElementById('mobHeaderDrawer');
     var b = document.getElementById('mobMenuBtn');
     if (!d) return;
+    // Sync headerOpen from actual DOM state (handles early-stub taps)
+    headerOpen = d.classList.contains('open');
     headerOpen = !headerOpen;
     d.classList.toggle('open', headerOpen);
     if (b) b.textContent = headerOpen ? '✕' : '☰';
