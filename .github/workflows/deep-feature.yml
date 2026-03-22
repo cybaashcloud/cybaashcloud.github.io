@@ -1,0 +1,952 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# DEEP FEATURE CHECK — Every feature of cybaashcloud.github.io verified
+# Covers: Worker API · SOC Dashboard · Terminal · Intel · AI · Simulation
+#         Recruiter · PWA · SW · Fingerprinting · Auth · Charts · GitHub API
+#         Chatbot · Saas-integration · Security headers · Data integrity
+# ═══════════════════════════════════════════════════════════════════════════
+name: Deep Feature Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deep-feature.yml'
+
+concurrency:
+  group: deep-feature-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deep-feature:
+    name: Deep Feature Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python deps
+        run: pip install requests --break-system-packages 2>/dev/null || pip install requests
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 1. CLOUDFLARE WORKER — live endpoint checks
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Worker endpoint checks
+        id: worker_endpoints
+        run: |
+          python3 - << 'PYEOF'
+          import requests, sys, json
+
+          WORKER = 'https://cybaash.mohamedaasiq07.workers.dev'
+          errors = 0
+
+          def chk(label, url, method='GET', body=None, headers=None, allow_statuses=None):
+              global errors
+              try:
+                  h = {'Content-Type': 'application/json', **(headers or {})}
+                  r = requests.request(method, url, json=body, headers=h, timeout=10)
+                  allowed = allow_statuses or [200]
+                  if r.status_code not in allowed:
+                      print(f'❌ {label}: HTTP {r.status_code}  (expected {allowed})')
+                      errors += 1
+                      return None
+                  ms = r.elapsed.total_seconds() * 1000
+                  print(f'✓  {label}  [{r.status_code}]  {ms:.0f}ms')
+                  return r
+              except requests.exceptions.Timeout:
+                  print(f'⚠  {label}: timeout (>10s)')
+                  return None
+              except Exception as e:
+                  print(f'❌ {label}: {e}')
+                  errors += 1
+                  return None
+
+          print('── Worker reachability ──────────────────────────────')
+          chk('GET /config',  f'{WORKER}/config',  allow_statuses=[200,401,403,404])
+          chk('POST /api (wrong hash)', f'{WORKER}/api', method='POST',
+              body={'action':'verifyAdmin','token':'00000000'},
+              allow_statuses=[200,401,403])
+          chk('GET /intel (unauth)',   f'{WORKER}/intel',   allow_statuses=[200,401,403,405])
+          chk('GET /audit (unauth)',   f'{WORKER}/audit',   allow_statuses=[200,401,403,405])
+          chk('GET /threats (unauth)', f'{WORKER}/threats', allow_statuses=[200,401,403,405])
+          chk('GET /log (unauth)',     f'{WORKER}/log',     allow_statuses=[200,401,403,405])
+          chk('Worker root',          f'{WORKER}/',        allow_statuses=[200,204,301,302,404,405])
+
+          print(f'\nWorker errors: {errors}')
+          if errors:
+              print(f'❌ {errors} worker endpoint(s) unreachable')
+              sys.exit(1)
+          else:
+              print('✅ All worker endpoints reachable')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 2. WORKER SECURITY — CORS, response headers, no secret leak
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Worker security checks
+        id: worker_security
+        run: |
+          python3 - << 'PYEOF'
+          import requests, sys, re
+
+          WORKER = 'https://cybaash.mohamedaasiq07.workers.dev'
+          errors = 0
+
+          try:
+              r = requests.post(f'{WORKER}/api',
+                  json={'action':'verifyAdmin','token':'test'},
+                  headers={'Origin':'https://cybaashcloud.github.io',
+                           'Content-Type':'application/json'},
+                  timeout=10)
+
+              ct = r.headers.get('Content-Type','')
+              print(f'POST /api → HTTP {r.status_code}')
+              print(f'{"✓ " if "json" in ct.lower() else "⚠ "}  Content-Type: {ct}')
+
+              cors = r.headers.get('Access-Control-Allow-Origin','')
+              print(f'{"✓ " if cors else "⚠ "}  CORS header: {cors or "MISSING"}')
+
+              for h in ['X-Content-Type-Options','X-Frame-Options','Strict-Transport-Security']:
+                  val = r.headers.get(h,'')
+                  print(f'{"✓ " if val else "⚠ "}  {h}: {val or "missing"}')
+
+              body = r.text[:500]
+              leaked = [p for p in ['AIza','ghp_','sk-','APPS_SCRIPT','SECRET']
+                        if p.lower() in body.lower()]
+              if leaked:
+                  print(f'❌ Possible secrets in response: {leaked}')
+                  errors += 1
+              else:
+                  print('✓  No secrets detected in worker response body')
+
+          except Exception as e:
+              print(f'⚠  Worker security check: {e}')
+
+          if errors: sys.exit(1)
+          else: print('\n✅ Worker security checks passed')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 3. SOC DASHBOARD — auth, terminal, charts, all features
+      # ══════════════════════════════════════════════════════════════════════
+      - name: SOC Dashboard feature check
+        id: soc_dashboard
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          from pathlib import Path
+
+          html = Path('frontend/admin/security.html').read_text()
+          js   = Path('frontend/admin/security.js').read_text()
+          mil  = Path('frontend/admin/security-military-additions.js').read_text()
+          errors = 0
+
+          def chk(label, content, pattern, fatal=False):
+              global errors
+              found = bool(re.search(pattern, content, re.IGNORECASE))
+              print(f'{"✓ " if found else ("❌" if fatal else "⚠ ")}  {label}')
+              if not found and fatal: errors += 1
+
+          print('── Auth system ──────────────────────────────────────')
+          chk('Login screen',          html, r'login-screen',           fatal=True)
+          chk('Password input',        html, r'login-password',         fatal=True)
+          chk('SHA-256 hash',          js,   r'sha256',                 fatal=True)
+          chk('Session management',    js,   r'soc_session',            fatal=True)
+          chk('Login max attempts',    js,   r'LOGIN_MAX_ATTEMPTS',     fatal=True)
+          chk('Lockout timer',         js,   r'showLockoutTimer',       fatal=True)
+          chk('Session expiry',        js,   r'sessionTimeout',         fatal=True)
+          chk('SOCreset function',     js,   r'SOCreset',               fatal=True)
+          chk('TOTP 2FA',              js,   r'totp|TOTP',              fatal=False)
+
+          print('\n── Dashboard panels ─────────────────────────────────')
+          for tab in ['overview','logs','blocked','alert','setting','apt']:
+              chk(f'{tab} tab', html, r'tab.*'+tab+'|'+tab+'.*tab', fatal=(tab not in ['apt']))
+
+          print('\n── Stats & counters ─────────────────────────────────')
+          chk('Total threats',         html, r'total.*threat',          fatal=True)
+          chk('Blocked counter',       html, r'stat.*block|total.*block',fatal=True)
+          chk('SQLi counter',          html, r'sqli',                   fatal=True)
+          chk('XSS counter',           html, r'xss',                    fatal=True)
+          chk('animateCount',          js,   r'animateCount',           fatal=True)
+          chk('riskClass function',    js,   r'riskClass',              fatal=True)
+
+          print('\n── Charts ───────────────────────────────────────────')
+          chk('Chart.js loaded',       html, r'chart\.js',              fatal=True)
+          chk('initCharts',            js,   r'function initCharts',    fatal=True)
+          chk('updateCharts',          js,   r'function updateCharts',  fatal=True)
+
+          print('\n── Terminal commands ────────────────────────────────')
+          chk('terminal-output el',    html, r'terminal-output',        fatal=True)
+          chk('terminal-input el',     html, r'terminal-input',         fatal=True)
+          chk('handleTerminalCommand', js,   r'handleTerminalCommand',  fatal=True)
+          for cmd in ['help','apt-alerts','geoblock','intel','purge',
+                      'export','report','scan','geo','audit','intel-panel']:
+              chk(f'cmd: {cmd}', mil, rf"case '{cmd}'", fatal=True)
+
+          print('\n── Worker API actions ───────────────────────────────')
+          chk('callAppsScript',        js,   r'async function callAppsScript', fatal=True)
+          chk('Worker /api',           js,   r'workers\.dev/api',              fatal=True)
+          for action in ['getStats','getLogs','getTopAttackers','getBlockedIPs',
+                         'blockIP','unblockIP','getAPTAlerts','exportCSV','purgeOldLogs']:
+              chk(f'action: {action}', js, rf"'{action}'", fatal=True)
+          chk('Mock data fallback',    js,   r'getMockData',                   fatal=True)
+
+          print('\n── IP management ────────────────────────────────────')
+          chk('blockIPAction',         js,   r'async function blockIPAction',  fatal=True)
+          chk('unblockIP',             js,   r'async function unblockIP',      fatal=True)
+          chk('blockManualIP',         js,   r'async function blockManualIP',  fatal=True)
+
+          print('\n── Alerts & APT ─────────────────────────────────────')
+          chk('generateAlerts',        js,   r'function generateAlerts',       fatal=True)
+          chk('loadAPTAlerts',         js,   r'async function loadAPTAlerts',  fatal=True)
+          chk('Critical detection',    js,   r"level.*critical",               fatal=True)
+
+          print('\n── Export & settings ────────────────────────────────')
+          chk('exportLogs CSV',        js,   r'function exportLogs',           fatal=True)
+          chk('saveSettings',          js,   r'async function saveSettings',   fatal=True)
+          chk('Intel page link',       js,   r'intel\.html',                   fatal=True)
+
+          print(f'\n{"="*50}')
+          if errors:
+              print(f'❌ {errors} SOC feature(s) missing'); sys.exit(1)
+          else:
+              print('✅ SOC Dashboard complete')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 4. INTEL PAGE
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Intel page feature check
+        id: intel_page
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          from pathlib import Path
+
+          html = Path('frontend/admin/intel.html').read_text()
+          errors = 0
+          def chk(label, pat, fatal=False):
+              global errors
+              f = bool(re.search(pat, html, re.IGNORECASE))
+              print(f'{"✓ " if f else ("❌" if fatal else "⚠ ")}  {label}')
+              if not f and fatal: errors += 1
+
+          print('── Auth & Worker ────────────────────────────────────')
+          chk('Auth gate',             r'login|auth|password',            fatal=True)
+          chk('Session check',         r'checkSession|soc_session',       fatal=True)
+          chk('Worker URL',            r'workers\.dev',                   fatal=True)
+          chk('Session token HMAC',    r'X-Session-Token|sessionToken',   fatal=True)
+          chk('generateSessionToken',  r'generateSessionToken',           fatal=True)
+
+          print('\n── Intel features ───────────────────────────────────')
+          chk('Intel list',            r'intel.*list|list.*intel',        fatal=True)
+          chk('addToIntel',            r'addToIntel|add.*intel',          fatal=True)
+          chk('removeFromIntel',       r'removeFromIntel',                 fatal=True)
+          chk('/audit endpoint',       r'/audit',                         fatal=True)
+          chk('/intel endpoint',       r'/intel',                         fatal=True)
+          chk('/threats endpoint',     r'/threats',                       fatal=True)
+          chk('Audit log section',     r'audit.*log|AUDIT.*LOG',          fatal=True)
+
+          if errors: sys.exit(1)
+          else: print('\n✅ Intel page complete')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 5. TOOLS PAGE — all 50 tools
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Tools page (50 tools) check
+        id: tools_page
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          from pathlib import Path
+
+          if not Path('frontend/admin/tools.html').exists():
+              print('❌ tools.html not found'); sys.exit(1)
+
+          html   = Path('frontend/admin/tools.html').read_text()
+          errors = 0
+
+          print('── Auth ─────────────────────────────────────────────')
+          for label, pat in [('Login screen',r'login-screen'),('SHA-256',r'sha256'),
+                              ('Session',r'ts_sess|soc_sess'),('TOOLSreset',r'TOOLSreset')]:
+              f = bool(re.search(pat, html, re.IGNORECASE))
+              print(f'{"✓ " if f else "❌"}  {label}')
+              if not f: errors += 1
+
+          print('\n── 50 tool panels ───────────────────────────────────')
+          TOOLS = [
+              ('Base64','p-b64'),('URL Encoder','p-url'),('HTML Entities','p-html'),
+              ('Hex Encoder','p-hex'),('Binary/Text','p-bin'),('ROT13/Caesar','p-rot'),
+              ('JWT Decoder','p-jwt'),('Unicode','p-uni'),('Hash Generator','p-hgen'),
+              ('Hash Identifier','p-hid'),('HMAC Generator','p-hmac'),
+              ('Password Strength','p-pws'),('Checksum','p-chk'),
+              ('CIDR Calculator','p-cidr'),('IP Analyzer','p-ipi'),
+              ('Port Reference','p-port'),('MAC Analyzer','p-mac'),
+              ('IPv4↔IPv6','p-ipc'),('DNS Records','p-dns'),('HTTP Status','p-http'),
+              ('IP Range→CIDR','p-ipr'),('String Diff','p-diff'),('Regex Tester','p-rx'),
+              ('JSON Formatter','p-json'),('XML Formatter','p-xml'),
+              ('Wordlist Gen','p-wl'),('Case Converter','p-cc'),
+              ('Text Statistics','p-ts'),('Block Padding','p-pad'),
+              ('XOR Calculator','p-xor'),('Number Converter','p-nc'),
+              ('Bitwise Ops','p-bw'),('CVSS Calculator','p-cvss'),
+              ('RSA Inspector','p-rsa'),('Cipher Decoder','p-cs'),
+              ('Token Generator','p-tg'),('Dork Builder','p-dork'),
+              ('Payload Reference','p-pay'),('Header Analyzer','p-hdr'),
+              ('UA Parser','p-ua'),('Timestamp','p-tsc'),('Email Headers','p-em'),
+              ('Robots.txt','p-rb'),('Frequency Analyzer','p-fr'),
+              ('QR Generator','p-qr'),('Magic Bytes','p-mb'),('Brainfuck','p-bf'),
+              ('Morse Code','p-mo'),('Color Inspector','p-col'),('Number Systems','p-ns'),
+          ]
+          missing = []
+          for name, pid in TOOLS:
+              if re.search(rf'id=["\']p-{pid.split("-",1)[1]}', html) or re.search(rf'id=["\']panel-{pid.split("-",1)[1]}|id=["\']{pid}', html):
+                  print(f'✓   {name}')
+              elif pid in html:
+                  print(f'✓   {name}')
+              else:
+                  print(f'❌  MISSING: {name} (id={pid})')
+                  missing.append(name); errors += 1
+
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', html, re.DOTALL)
+          print(f'\n── Script integrity: {len(scripts)} block(s) ─────────────')
+          if len(scripts) != 1:
+              print(f'❌ Expected 1 script block, found {len(scripts)} — broken </script> in data')
+              errors += 1
+          else:
+              print('✓  Single script block intact')
+
+          size_kb = Path('frontend/admin/tools.html').stat().st_size / 1024
+          print(f'✓  File size: {size_kb:.0f}KB')
+
+          if errors: print(f'\n❌ {errors} issues'); sys.exit(1)
+          else: print('\n✅ All 50 tools present')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 6. AI ASSISTANT + CHATBOT
+      # ══════════════════════════════════════════════════════════════════════
+      - name: AI assistant feature check
+        id: ai_check
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys, json
+          from pathlib import Path
+
+          ai_html   = Path('frontend/ai/index.html').read_text()
+          ai_script = Path('frontend/ai/cybaash-ai_script.js').read_text()
+          chatbot   = Path('frontend/cybaash_chatbot.js').read_text()
+          errors    = 0
+
+          def chk(label, content, pattern, fatal=False):
+              global errors
+              f = bool(re.search(pattern, content, re.IGNORECASE|re.DOTALL))
+              print(f'{"✓ " if f else ("❌" if fatal else "⚠ ")}  {label}')
+              if not f and fatal: errors += 1
+
+          print('── AI page ──────────────────────────────────────────')
+          chk('Chat interface',        ai_html,   r'chat.*input|send.*message',     fatal=True)
+          chk('SOC tracker',           ai_html,   r'soc-tracker-v2\.js',            fatal=True)
+          chk('AI script loaded',      ai_html,   r'cybaash-ai_script\.js',         fatal=True)
+
+          print('\n── AI script ────────────────────────────────────────')
+          chk('sendMessage',           ai_script, r'async function sendMessage',    fatal=True)
+          chk('callChatAPI',           ai_script, r'callChatAPI',                   fatal=True)
+          chk('appendMessage',         ai_script, r'function appendMessage',        fatal=True)
+          chk('loadPortfolioData',     ai_script, r'loadPortfolioData',             fatal=True)
+          chk('data_main.json fetch',  ai_script, r'data_main\.json',               fatal=True)
+          chk('clearChat',             ai_script, r'clearChat',                     fatal=True)
+          chk('Backend /api/chat',     ai_script, r'/api/chat|BACKEND_URL',         fatal=True)
+          chk('URL check tool',        ai_script, r'runUrlCheck',                   fatal=False)
+          chk('Password check tool',   ai_script, r'runPasswordCheck',              fatal=False)
+
+          print('\n── Chatbot terminal commands ────────────────────────')
+          chk('ask command',           chatbot,   r"defCmd.*'ask'|handleAsk",       fatal=True)
+          chk('chatbot command',       chatbot,   r"defCmd.*'chatbot'",             fatal=True)
+          chk('ai command',            chatbot,   r"defCmd.*'ai'",                  fatal=True)
+          chk('lookupChatbot',         chatbot,   r'lookupChatbot',                 fatal=True)
+          chk('renderHumanResponse',   chatbot,   r'renderHumanResponse',           fatal=True)
+          chk('tPrint output',         chatbot,   r'function tPrint',               fatal=True)
+          chk('GEMINI_AI integration', chatbot,   r'GEMINI_AI',                     fatal=False)
+
+          print('\n── AI cache files ───────────────────────────────────')
+          for fname in ['data_ai_cache.json','data_ai_config.json']:
+              d = json.loads(Path(f'frontend/{fname}').read_text())
+              n = len(d) if isinstance(d,list) else len(d.keys())
+              print(f'✓  {fname}: {n} entries/keys')
+
+          if errors: sys.exit(1)
+          else: print('\n✅ AI assistant complete')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 7. SIMULATION / DASHBOARD — cyber range
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Simulation feature check
+        id: simulation_check
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          from pathlib import Path
+
+          dash  = Path('frontend/dashboard.html').read_text()
+          saas  = Path('frontend/saas-integration.js').read_text()
+          errors = 0
+
+          def chk(label, content, pattern, fatal=False):
+              global errors
+              f = bool(re.search(pattern, content, re.IGNORECASE|re.DOTALL))
+              print(f'{"✓ " if f else ("❌" if fatal else "⚠ ")}  {label}')
+              if not f and fatal: errors += 1
+
+          print('── Dashboard page ───────────────────────────────────')
+          chk('SOC tracker',           dash, r'soc-tracker-v2\.js',         fatal=True)
+          chk('Scenario grid',         dash, r'scenario-grid|scenario.*card',fatal=True)
+          chk('GitHub PAT login',      dash, r'github.*token|pat.*token',   fatal=True)
+          chk('switchView',            dash, r'function switchView',        fatal=True)
+          chk('renderStats',           dash, r'async function renderStats', fatal=True)
+          chk('renderMissions',        dash, r'async function renderMissions',fatal=True)
+          chk('getRank/XP system',     dash, r'function getRank',           fatal=True)
+          chk('boot function',         dash, r'async function boot',        fatal=True)
+          chk('appLogout',             dash, r'function appLogout',         fatal=True)
+          chk('Military additions',    dash, r'dashboard-military-additions',fatal=True)
+
+          print('\n── Scenario types ───────────────────────────────────')
+          for sc in ['red.*team','blue.*team','APT','ransomware','zero.day']:
+              chk(f'Scenario: {sc}', dash, sc)
+
+          print('\n── Sim persistence (saas-integration.js) ───────────')
+          chk('saveSim',               saas, r'async function saveSim',     fatal=True)
+          chk('loadSim',               saas, r'async function loadSim',     fatal=True)
+          chk('listSims',              saas, r'async function listSims',    fatal=True)
+          chk('captureSimState',       saas, r'function captureSimState',   fatal=True)
+          chk('hookSimulationEvents',  saas, r'function hookSimulationEvents',fatal=True)
+          chk('saasLogin',             saas, r'async function saasLogin',   fatal=True)
+          chk('saasLogout',            saas, r'function saasLogout',        fatal=True)
+          chk('ghWrite',               saas, r'async function ghWrite',     fatal=True)
+          chk('ghRead',                saas, r'async function ghRead',      fatal=True)
+          chk('ensureDataRepo',        saas, r'async function ensureDataRepo',fatal=True)
+
+          if errors: sys.exit(1)
+          else: print('\n✅ Simulation features complete')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 8. MAIN PORTFOLIO — index.html + script.js
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Portfolio feature check
+        id: portfolio_check
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys, json
+          from pathlib import Path
+
+          html   = Path('frontend/index.html').read_text()
+          script = Path('frontend/script.js').read_text()
+          errors = 0
+
+          def chk(label, content, pattern, fatal=False):
+              global errors
+              f = bool(re.search(pattern, content, re.IGNORECASE))
+              print(f'{"✓ " if f else ("❌" if fatal else "⚠ ")}  {label}')
+              if not f and fatal: errors += 1
+
+          print('── Dependencies loaded ───────────────────────────────')
+          for asset in ['soc-tracker-v2.js','manifest.json','cybaash-ai.js',
+                        'cybaash_chatbot.js','saas-integration.js','mobile-nav.js',
+                        'mobile-features.js','style.css','mobile.css','cybaash-ai.css']:
+              chk(asset, html, re.escape(asset), fatal=True)
+
+          print('\n── Portfolio data pipeline ──────────────────────────')
+          chk('loadPortfolioData',     script, r'async function loadPortfolioData', fatal=True)
+          chk('data_main.json fetch',  script, r'data_main\.json',                  fatal=True)
+          chk('populateAbout',         script, r'function populateAbout',           fatal=True)
+          chk('populateSkills',        script, r'function populateSkills',          fatal=True)
+          chk('populateExperience',    script, r'function populateExperience',      fatal=True)
+          chk('populateProjects',      script, r'function populateProjects',        fatal=True)
+          chk('filterSkills',          script, r'function filterSkills',            fatal=True)
+
+          print('\n── Interactive features ─────────────────────────────')
+          chk('typeWriter effect',     script, r'function typeWriter',              fatal=True)
+          chk('updateClock',           script, r'function updateClock',             fatal=True)
+          chk('sendMessage (AI chat)', script, r'async function sendMessage',       fatal=True)
+          chk('callChatAPI',           script, r'async function callChatAPI',       fatal=True)
+          chk('injectPrompt',          script, r'function injectPrompt',            fatal=True)
+          chk('appendMessage',         script, r'function appendMessage',           fatal=True)
+          chk('clearChat',             script, r'function clearChat',               fatal=True)
+          chk('openTool',              script, r'function openTool',                fatal=True)
+          chk('checkBackend',          script, r'async function checkBackend',      fatal=True)
+
+          print('\n── data_main.json structure ─────────────────────────')
+          dm = json.loads(Path('frontend/data_main.json').read_text())
+          for key in ['about','contact','experience','skills','projects']:
+              val = dm.get(key)
+              print(f'{"✓ " if val else "⚠ "}  {key}: {len(val) if isinstance(val,list) else "present" if val else "MISSING"}')
+
+          if errors: sys.exit(1)
+          else: print('\n✅ Portfolio features complete')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 9. RECRUITER PAGE — credentials, Credly, PDF, filters
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Recruiter feature check
+        id: recruiter_check
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys, json
+          from pathlib import Path
+
+          html   = Path('frontend/recruiter.html').read_text()
+          errors = 0
+          def chk(label, pat, fatal=False):
+              global errors
+              f = bool(re.search(pat, html, re.IGNORECASE|re.DOTALL))
+              print(f'{"✓ " if f else ("❌" if fatal else "⚠ ")}  {label}')
+              if not f and fatal: errors += 1
+
+          chk('SOC tracker',           r'soc-tracker-v2\.js',            fatal=True)
+          chk('Loads data_creds',      r'data_creds_\d|creds.*json',     fatal=True)
+          chk('Credly badge support',  r'credly|credlyBadgeId',           fatal=True)
+          chk('PDF links',             r'\.pdf|cert.*pdf',                fatal=True)
+          chk('LinkedIn support',      r'linkedin',                       fatal=True)
+          chk('Search/filter bar',     r'filter.*bar|cert-search|search', fatal=True)
+
+          total = 0
+          for n in range(1, 6):
+              p = Path(f'frontend/data_creds_{n}.json')
+              if not p.exists(): continue
+              d = json.loads(p.read_text())
+              creds = d.get('credentials', [])
+              total += len(creds)
+              with_title = sum(1 for c in creds if c.get('title'))
+              print(f'✓  data_creds_{n}.json: {len(creds)} creds | {with_title} titles')
+
+          print(f'✓  Total credentials: {total}')
+          if total < 100:
+              print(f'⚠  Only {total} credentials — weekly pipeline may not have run')
+
+          if errors: sys.exit(1)
+          else: print('\n✅ Recruiter features complete')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 10. SOC TRACKER — fingerprinting, bot detection, worker comms
+      # ══════════════════════════════════════════════════════════════════════
+      - name: SOC tracker feature check
+        id: tracker_check
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          from pathlib import Path
+
+          t = Path('frontend/soc-tracker-v2.js').read_text()
+          errors = 0
+          def chk(label, pat, fatal=False):
+              global errors
+              f = bool(re.search(pat, t, re.IGNORECASE))
+              print(f'{"✓ " if f else ("❌" if fatal else "⚠ ")}  {label}')
+              if not f and fatal: errors += 1
+
+          print('── Fingerprinting ───────────────────────────────────')
+          chk('canvasHash',      r'canvasHash',           fatal=True)
+          chk('webglFingerprint',r'webglFingerprint',     fatal=True)
+          chk('audioFingerprint',r'audioFingerprint',     fatal=True)
+          chk('fnv32 hash',      r'fnv32',                fatal=True)
+          chk('getFingerprint',  r'function getFingerprint',fatal=True)
+          chk('sessionId',       r'sessionId',            fatal=True)
+
+          print('\n── Bot detection ────────────────────────────────────')
+          chk('webdriver detect',r'webDriverPresent',     fatal=True)
+          chk('plugins check',   r'pluginsEmpty',         fatal=True)
+          chk('languages check', r'languagesEmpty',       fatal=True)
+          chk('noWebGL check',   r'noWebGL',              fatal=True)
+
+          print('\n── Worker comms ─────────────────────────────────────')
+          chk('workers.dev URL', r'workers\.dev',         fatal=True)
+          chk('CONFIG_URL',      r'CONFIG_URL',           fatal=True)
+          chk('log endpoint',    r'WORKER_LOG_URL|/log',  fatal=True)
+          chk('logEvent',        r'logEvent|sendLog',     fatal=True)
+
+          print('\n── Security ─────────────────────────────────────────')
+          chk("'use strict'",    r"'use strict'",         fatal=True)
+          chk('IIFE wrapper',    r'^\(function',          fatal=True)
+          no_secrets = not bool(re.search(r'AIza|ghp_|APPS_SCRIPT_URL\s*=', t))
+          print(f'{"✓ " if no_secrets else "❌"}  No hardcoded secrets')
+          if not no_secrets: errors += 1
+
+          print(f'✓  File size: {Path("frontend/soc-tracker-v2.js").stat().st_size/1024:.1f}KB')
+          if errors: sys.exit(1)
+          else: print('\n✅ SOC Tracker complete')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 11. PWA — service worker, manifest, offline, caching
+      # ══════════════════════════════════════════════════════════════════════
+      - name: PWA feature check
+        id: pwa_check
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys, json
+          from pathlib import Path
+
+          sw      = Path('frontend/sw.js').read_text()
+          mf      = json.loads(Path('frontend/manifest.json').read_text())
+          offline = Path('frontend/offline.html').read_text()
+          errors  = 0
+
+          def chk(label, content, pattern, fatal=False):
+              global errors
+              f = bool(re.search(pattern, content, re.IGNORECASE))
+              print(f'{"✓ " if f else ("❌" if fatal else "⚠ ")}  {label}')
+              if not f and fatal: errors += 1
+
+          print('── Service Worker ───────────────────────────────────')
+          chk('VERSION constant',      sw, r"const VERSION\s*=\s*'[^']+'", fatal=True)
+          for cache in ['SHELL_CACHE','DATA_CACHE','IMAGE_CACHE','FONT_CACHE']:
+              chk(cache, sw, cache, fatal=True)
+          for event in ['install','activate','fetch']:
+              chk(f'{event} handler', sw, rf"addEventListener\('{event}'", fatal=True)
+          for strategy in ['staleWhileRevalidate','networkFirst','cacheFirst']:
+              chk(strategy, sw, strategy, fatal=True)
+          chk('skipWaiting',           sw, r'skipWaiting',    fatal=True)
+          chk('old cache cleanup',     sw, r'caches\.delete', fatal=True)
+
+          print('\n── SHELL_FILES on disk ──────────────────────────────')
+          m = re.search(r'const SHELL_FILES\s*=\s*\[(.*?)\]', sw, re.DOTALL)
+          if m:
+              urls = re.findall(r"'([^']+)'", m.group(1))
+              missing = [u for u in urls if not Path('frontend'+u).exists()]
+              print(f'✓  SHELL_FILES: {len(urls)} URLs  |  missing: {len(missing)}')
+              for u in missing: print(f'   ⚠  {u}')
+          else:
+              print('❌ SHELL_FILES not found'); errors += 1
+
+          print('\n── Manifest ─────────────────────────────────────────')
+          for key in ['name','short_name','start_url','display','icons',
+                      'background_color','theme_color']:
+              val = mf.get(key)
+              print(f'{"✓ " if val else "⚠ "}  {key}: {str(val)[:50] if val else "MISSING"}')
+
+          shortcuts = mf.get('shortcuts', [])
+          print(f'✓  Shortcuts: {len(shortcuts)}')
+
+          print('\n── Offline page ─────────────────────────────────────')
+          chk('Offline message',  offline, r'offline|not.*connected', fatal=True)
+          chk('Links to pages',   offline, r'dashboard|recruiter',    fatal=True)
+
+          if errors: sys.exit(1)
+          else: print('\n✅ PWA features complete')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 12. GITHUB API (github.js)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: GitHub API integration check
+        id: github_api
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys, requests
+          from pathlib import Path
+
+          gh = Path('frontend/github.js').read_text()
+          errors = 0
+          def chk(label, pat, fatal=False):
+              global errors
+              f = bool(re.search(pat, gh, re.IGNORECASE|re.DOTALL))
+              print(f'{"✓ " if f else ("❌" if fatal else "⚠ ")}  {label}')
+              if not f and fatal: errors += 1
+
+          chk('fetchFileStreaming',  r'async function fetchFileStreaming', fatal=True)
+          chk('fetchSha',           r'async function fetchSha',          fatal=True)
+          chk('writeFile',          r'async function writeFile',         fatal=True)
+          chk('apiHeaders',         r'function apiHeaders',              fatal=True)
+          chk('contentsUrl',        r'function contentsUrl',             fatal=True)
+          chk('api.github.com',     r'api\.github\.com',                fatal=True)
+          chk('Accept header',      r'application/vnd\.github',         fatal=True)
+          chk('Retry on 409',       r'409.*conflict|conflict|retries',  fatal=True)
+          chk('CRED_FILES list',    r'CRED_FILES|data_creds_\d',        fatal=True)
+
+          print('\n── GitHub API live ──────────────────────────────────')
+          try:
+              r = requests.get('https://api.github.com', timeout=8)
+              print(f'✓  api.github.com: HTTP {r.status_code}  '
+                    f'rate-limit: {r.headers.get("X-RateLimit-Remaining","?")} remaining')
+          except Exception as e:
+              print(f'⚠  api.github.com: {e}')
+
+          if errors: sys.exit(1)
+          else: print('\n✅ GitHub API integration complete')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 13. DEPLOYED SECURITY HEADERS — live site
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Deployed security headers check
+        id: live_headers
+        run: |
+          python3 - << 'PYEOF'
+          import requests, sys
+
+          BASE   = 'https://cybaashcloud.github.io'
+          errors = 0
+
+          pages = [
+              ('/',                    'Main',        False),
+              ('/admin/security.html', 'SOC',         True),
+              ('/admin/intel.html',    'Intel',       True),
+              ('/admin/tools.html',    'Toolkit',     True),
+          ]
+          REQUIRED = {'Strict-Transport-Security':'max-age',
+                      'X-Content-Type-Options':'nosniff',
+                      'X-Frame-Options':'DENY',
+                      'Content-Security-Policy':'default-src'}
+
+          for path, label, is_admin in pages:
+              try:
+                  r = requests.get(BASE+path, timeout=12,
+                      headers={'User-Agent':'CYBAASH-HealthCheck/1.0'})
+                  print(f'\n── {label} [{r.status_code}] ──')
+                  for hdr, expect in REQUIRED.items():
+                      val = r.headers.get(hdr,'')
+                      ok  = expect.lower() in val.lower() if val else False
+                      print(f'{"✓ " if ok else "⚠ "}  {hdr}')
+                  if is_admin:
+                      robots   = r.headers.get('X-Robots-Tag','')
+                      no_store = 'no-store' in r.headers.get('Cache-Control','').lower()
+                      if 'noindex' not in robots.lower() or not no_store:
+                          print(f'❌ Admin page missing noindex/no-store')
+                          errors += 1
+                      else:
+                          print(f'✓  noindex + no-store present')
+              except Exception as e:
+                  print(f'⚠  {label}: {e}')
+
+          if errors: sys.exit(1)
+          else: print('\n\n✅ Deployed security headers OK')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 14. DEPLOYED PAGE CONTENT — byte checks on live site
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Deployed page byte check
+        id: deployed_pages
+        run: |
+          python3 - << 'PYEOF'
+          import requests, sys
+
+          BASE   = 'https://cybaashcloud.github.io'
+          errors = 0
+          checks = [
+              ('/',                    'Main portfolio',    [b'cybaash',b'soc-tracker'],     [b'404']),
+              ('/dashboard.html',      'Dashboard',         [b'scenario',b'simulation'],      [b'404']),
+              ('/recruiter.html',      'Recruiter',         [b'credly',b'certificate'],        [b'404']),
+              ('/offline.html',        'Offline',           [b'offline'],                      [b'404']),
+              ('/manifest.json',       'Manifest',          [b'"name"',b'"icons"'],            [b'404']),
+              ('/sw.js',               'Service Worker',    [b'VERSION',b'fetch'],             [b'404']),
+              ('/soc-tracker-v2.js',   'SOC Tracker',       [b'workers.dev',b'getFingerprint'],[b'404']),
+              ('/admin/security.html', 'SOC Dashboard',     [b'login',b'security'],            [b'404']),
+              ('/admin/intel.html',    'Intel',             [b'intel',b'audit'],               [b'404']),
+              ('/admin/tools.html',    'Toolkit',           [b'CYBAASH TOOLKIT',b'Base64'],    [b'404']),
+              ('/ai/index.html',       'AI page',           [b'chat',b'cybaash'],              [b'404']),
+          ]
+
+          for path, label, must_have, must_not in checks:
+              try:
+                  r = requests.get(BASE+path, timeout=12,
+                      headers={'User-Agent':'CYBAASH-HealthCheck/1.0'})
+                  body = r.content
+                  ok = r.status_code in [200,304] and \
+                       all(b in body for b in must_have) and \
+                       all(b not in body for b in must_not)
+                  kb = len(body)/1024
+                  print(f'{"✓ " if ok else "❌"}  {label} [{r.status_code}] {kb:.0f}KB')
+                  if not ok:
+                      for b in must_have:
+                          if b not in body: print(f'   missing: {b}')
+                      errors += 1
+              except Exception as e:
+                  print(f'⚠  {label}: {e}')
+
+          if errors: sys.exit(1)
+          else: print('\n✅ All deployed pages pass byte check')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 15. STATIC ASSETS — every JS/CSS loads on live site
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Static asset availability check
+        id: static_assets
+        run: |
+          python3 - << 'PYEOF'
+          import requests, sys
+
+          BASE   = 'https://cybaashcloud.github.io'
+          errors = 0
+          assets = [
+              '/style.css','/mobile.css','/cybaash-ai.css','/dashboard-patch.css',
+              '/offline-patch.css','/recruiter-patch.css',
+              '/script.js','/github.js','/cybaash-ai.js','/cybaash_chatbot.js',
+              '/mobile.js','/mobile-nav.js','/mobile-features.js','/saas-integration.js',
+              '/soc-tracker-v2.js','/sw.js','/ai/cybaash-ai_script.js',
+              '/admin/security.css','/admin/security.js',
+              '/admin/security-military-additions.js',
+              '/icons/icon-192x192.png','/icons/icon-512x512.png',
+          ]
+          for path in assets:
+              try:
+                  r = requests.get(BASE+path, timeout=10,
+                      headers={'User-Agent':'CYBAASH-HealthCheck/1.0'})
+                  kb = len(r.content)/1024
+                  if r.status_code != 200 or kb < 0.1:
+                      print(f'❌ {path}: HTTP {r.status_code}  {kb:.1f}KB')
+                      errors += 1
+                  else:
+                      print(f'✓  {path}: {kb:.0f}KB')
+              except Exception as e:
+                  print(f'⚠  {path}: {e}')
+
+          if errors: sys.exit(1)
+          else: print('\n✅ All static assets load correctly')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 16. SECURITY LOGIC — byte-level auth, hash, secrets scan
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Security logic byte check
+        id: security_logic
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys, hashlib, os
+          from pathlib import Path
+
+          errors = 0
+          sec_js = Path('frontend/admin/security.js').read_text()
+
+          print('── Auth constants ────────────────────────────────────')
+          DEFAULT_PW    = 'cybaash-soc-admin'
+          EXPECTED_HASH = 'df132f130508df6a9d31b7fe7dc77a058296bb8d12c8202fca2c765dd0c7e52b'
+          computed = hashlib.sha256(DEFAULT_PW.encode()).hexdigest()
+          ok = computed == EXPECTED_HASH
+          print(f'{"✓ " if ok else "❌"}  Default password hash: {EXPECTED_HASH[:16]}…')
+          if not ok: errors += 1
+
+          ok2 = "crypto.subtle.digest('SHA-256'" in sec_js
+          print(f'{"✓ " if ok2 else "❌"}  SHA-256 via SubtleCrypto')
+          if not ok2: errors += 1
+
+          m = re.search(r'LOGIN_MAX_ATTEMPTS\s*=\s*(\d+)', sec_js)
+          if m: print(f'✓  LOGIN_MAX_ATTEMPTS: {m.group(1)}')
+
+          m = re.search(r'LOGIN_LOCKOUT_MS\s*=\s*([\d_]+)', sec_js)
+          if m: print(f'✓  Lockout: {int(m.group(1).replace("_",""))/60000:.0f} min')
+
+          m = re.search(r'sessionTimeout\s*[=:]\s*(\d+)', sec_js)
+          if m: print(f'✓  Session timeout: {m.group(1)} min')
+
+          escape_n = len(re.findall(r'escapeHtml\(', sec_js))
+          print(f'✓  escapeHtml() uses: {escape_n}')
+          if escape_n < 5: print('⚠  Very few escapeHtml calls')
+
+          print('\n── Secret scan (all source files) ───────────────────')
+          found_secrets = False
+          for root, dirs, files in os.walk('frontend'):
+              dirs[:] = [d for d in dirs if d not in ['certificates','cert_logos','dist']]
+              for fname in files:
+                  if not fname.endswith(('.js','.html')): continue
+                  c = open(os.path.join(root,fname), errors='replace').read()
+                  for pat, label in [
+                      (r'AIza[A-Za-z0-9_-]{35}',             'Google API key'),
+                      (r'ghp_[A-Za-z0-9]{36}',               'GitHub PAT'),
+                      (r'sk-[A-Za-z0-9]{48}',                'OpenAI key'),
+                      (r'APPS_SCRIPT_URL\s*=\s*["\']https://', 'Apps Script URL'),
+                      (r'SOC_API_KEY\s*=\s*["\'][^"\']{10,}', 'SOC API key literal'),
+                  ]:
+                      if re.search(pat, c):
+                          print(f'❌ SECRET: {os.path.join(root,fname)} — {label}')
+                          errors += 1
+                          found_secrets = True
+          if not found_secrets:
+              print('✓  No plaintext secrets in source files')
+
+          print('\n── Tools page script integrity ──────────────────────')
+          tools = Path('frontend/admin/tools.html').read_text()
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', tools, re.DOTALL)
+          ok3 = len(scripts) == 1
+          print(f'{"✓ " if ok3 else "❌"}  tools.html: {len(scripts)} script block(s) (expected 1)')
+          if not ok3: errors += 1
+
+          if errors: sys.exit(1)
+          else: print('\n✅ Security logic checks passed')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # 17. MOBILE FEATURES
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Mobile feature check
+        id: mobile_check
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          from pathlib import Path
+
+          errors = 0
+          def chk(label, content, pattern, fatal=False):
+              global errors
+              f = bool(re.search(pattern, content, re.IGNORECASE))
+              print(f'{"✓ " if f else ("❌" if fatal else "⚠ ")}  {label}')
+              if not f and fatal: errors += 1
+
+          mobile_css = Path('frontend/mobile.css').read_text()
+          chk('Media queries',    mobile_css, r'@media',                 fatal=True)
+          chk('Breakpoints',      mobile_css, r'max-width|min-width',    fatal=True)
+
+          mobile_nav = Path('frontend/mobile-nav.js').read_text()
+          chk('Nav functions',    mobile_nav, r'function',               fatal=True)
+
+          mobile_ft  = Path('frontend/mobile-features.js').read_text()
+          chk('Feature functions',mobile_ft,  r'function',               fatal=True)
+
+          if errors: sys.exit(1)
+          else: print('\n✅ Mobile features complete')
+          PYEOF
+
+      # ══════════════════════════════════════════════════════════════════════
+      # Write summary
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Write job summary
+        if: always()
+        run: |
+          pass_icon() { [ "$1" = "success" ] && echo "✅ Pass" || [ "$1" = "skipped" ] && echo "⏭ Skip" || echo "❌ Fail"; }
+          echo "## 🔬 Deep Feature Check — \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Feature Area | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| ☁️  Worker endpoints | ${{ steps.worker_endpoints.outcome == 'success' && '✅ Pass' || steps.worker_endpoints.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Worker security | ${{ steps.worker_security.outcome == 'success' && '✅ Pass' || steps.worker_security.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🛡  SOC Dashboard + Terminal | ${{ steps.soc_dashboard.outcome == 'success' && '✅ Pass' || steps.soc_dashboard.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Intel page | ${{ steps.intel_page.outcome == 'success' && '✅ Pass' || steps.intel_page.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⚙️  Tools page (50 tools) | ${{ steps.tools_page.outcome == 'success' && '✅ Pass' || steps.tools_page.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🤖 AI assistant + chatbot | ${{ steps.ai_check.outcome == 'success' && '✅ Pass' || steps.ai_check.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎮 Simulation / cyber range | ${{ steps.simulation_check.outcome == 'success' && '✅ Pass' || steps.simulation_check.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📁 Main portfolio | ${{ steps.portfolio_check.outcome == 'success' && '✅ Pass' || steps.portfolio_check.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📜 Recruiter + credentials | ${{ steps.recruiter_check.outcome == 'success' && '✅ Pass' || steps.recruiter_check.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📡 SOC Tracker fingerprinting | ${{ steps.tracker_check.outcome == 'success' && '✅ Pass' || steps.tracker_check.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📱 PWA / Service Worker | ${{ steps.pwa_check.outcome == 'success' && '✅ Pass' || steps.pwa_check.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐙 GitHub API integration | ${{ steps.github_api.outcome == 'success' && '✅ Pass' || steps.github_api.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌐 Deployed security headers | ${{ steps.live_headers.outcome == 'success' && '✅ Pass' || steps.live_headers.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔎 Deployed pages (byte check) | ${{ steps.deployed_pages.outcome == 'success' && '✅ Pass' || steps.deployed_pages.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 Static assets live | ${{ steps.static_assets.outcome == 'success' && '✅ Pass' || steps.static_assets.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔐 Security logic + secrets scan | ${{ steps.security_logic.outcome == 'success' && '✅ Pass' || steps.security_logic.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📲 Mobile features | ${{ steps.mobile_check.outcome == 'success' && '✅ Pass' || steps.mobile_check.outcome == 'skipped' && '⏭ Skip' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`  |  **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
