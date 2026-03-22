@@ -45,7 +45,7 @@ jobs:
         run: |
           set +e
           ERRORS=0
-          for f in frontend/*.js frontend/ai/*.js frontend/admin/security.js; do
+          for f in frontend/*.js frontend/ai/*.js frontend/admin/security.js frontend/admin/security-military-additions.js; do
             [ -f "$f" ] || continue
             node --check "$f" 2>/tmp/node_err_$(basename $f)
             if [ $? -ne 0 ]; then

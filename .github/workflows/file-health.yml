@@ -254,6 +254,60 @@ jobs:
               print('✅ All CSS files parse OK')
           PYEOF
 
+
+      # ── NEW: viewport-fit=cover check across all HTML pages ────────────
+      - name: Viewport-fit coverage check
+        run: |
+          python3 - <<PYEOF
+import re
+from pathlib import Path
+
+frontend = Path('frontend')
+pages = list(frontend.glob('*.html')) + list(frontend.glob('ai/*.html')) + list(frontend.glob('admin/*.html'))
+errors = 0
+for page in sorted(pages):
+    html = page.read_text(errors='replace')
+    if 'viewport-fit=cover' in html:
+        print(f"✓  {page}")
+    else:
+        print(f"❌ MISSING viewport-fit=cover: {page}")
+        errors += 1
+if errors:
+    print(f"\n❌ {errors} page(s) missing viewport-fit=cover")
+    exit(1)
+else:
+    print("\n✅ All pages have viewport-fit=cover")
+PYEOF
+
+
+      # ── NEW: mobile.js link present in all frontend HTML pages ─────────
+      - name: mobile.js inclusion check
+        run: |
+          python3 - <<PYEOF
+from pathlib import Path
+
+frontend = Path('frontend')
+pages = list(frontend.glob('*.html')) + list(frontend.glob('ai/*.html')) + list(frontend.glob('admin/*.html'))
+# Admin pages that are intentionally isolated from mobile.js
+# (admin/dist pages are build artefacts — skip them)
+SKIP = {'frontend/admin/dist/index.html'}
+errors = 0
+for page in sorted(pages):
+    if str(page) in SKIP:
+        continue
+    html = page.read_text(errors='replace')
+    if 'mobile.js' in html:
+        print(f"✓  {page}")
+    else:
+        print(f"❌ MISSING mobile.js: {page}")
+        errors += 1
+if errors:
+    print(f"\n❌ {errors} page(s) missing mobile.js")
+    exit(1)
+else:
+    print("\n✅ All pages include mobile.js")
+PYEOF
+
       # ── 5. HTML internal reference check ─────────────────────────────
       - name: HTML internal reference check
         id: html_refs
