@@ -317,6 +317,7 @@ function grantSession() {
   el('soc-app').classList.add('active');
   termLog('info', 'Admin session started');
   showToast('Authentication successful', 'success');
+  loadSOCConfig(); // fetch SOC_WORKER_KEY immediately after auth
   initDashboard();
 }
 
@@ -328,6 +329,7 @@ function checkSession() {
       STATE.sessionExpiry = sess.expiry;
       el('login-screen').style.display = 'none';
       el('soc-app').classList.add('active');
+      loadSOCConfig(); // fetch SOC_WORKER_KEY on session restore
       initDashboard();
       return true;
     }
@@ -985,8 +987,23 @@ function loadSettings() {
 // BOOT
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadSOCConfig() {
-  // All API calls now go through Worker /api — no direct Apps Script URL needed
-  console.log('[SOC] Config: all calls routed via Worker /api');
+  // Fetch SOC Worker key from Cloudflare Worker /config endpoint.
+  // The Worker reads env.SOC_KEY server-side — no secret ever touches this file.
+  try {
+    const resp = await fetch('https://cybaash.mohamedaasiq07.workers.dev/config', {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const cfg = await resp.json();
+    if (cfg && cfg.socKey) {
+      SOC_WORKER_KEY = cfg.socKey;
+      termLog('info', 'SOC Worker key loaded — audit/intel/threats endpoints active');
+    } else {
+      termLog('warn', 'Worker /config returned no socKey — audit log may show 401');
+    }
+  } catch (e) {
+    termLog('warn', 'Could not load SOC Worker key: ' + e.message);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1277,7 +1294,10 @@ function handleTerminalCommand(input) {
     case 'audit':
       termPrint('> Fetching worker audit log...');
       fetch(WORKER + '/audit', {
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          ...(SOC_WORKER_KEY ? { 'X-SOC-Key': SOC_WORKER_KEY } : {}),
+        }
       }).then(r => r.json()).then(d => {
         const entries = d.entries || [];
         if (!entries.length) { termPrint('  No audit entries (requires X-SOC-Key).'); return; }
