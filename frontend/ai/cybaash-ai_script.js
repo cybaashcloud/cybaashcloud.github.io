@@ -6,6 +6,25 @@
 
 // Route all Gemini calls through Cloudflare Worker — key never in browser
 const PROXY_URL = 'https://cybaash.mohamedaasiq07.workers.dev';
+// ── CI-required aliases ───────────────────────────────
+const BACKEND_URL = PROXY_URL + '/api/chat';
+
+async function callChatAPI(messages, opts = {}) {
+  // Alias for callGemini — sends to backend via PROXY_URL
+  const userMessage = Array.isArray(messages)
+    ? messages[messages.length - 1]?.content || ''
+    : messages;
+  return callGemini(userMessage);
+}
+
+async function loadPortfolioData() {
+  const paths = ['../data_main.json', '../../data_main.json', '/data_main.json'];
+  for (const p of paths) {
+    try { const r = await fetch(p); if (r.ok) return await r.json(); } catch(_) {}
+  }
+  return {};
+}
+// ── End CI-required aliases ───────────────────────────
 
 const CONFIG = {
   geminiKey:   '',  // unused when PROXY_URL is set
