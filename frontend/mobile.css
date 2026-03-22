@@ -197,7 +197,7 @@ html { height: auto; overflow-x: hidden; }
   /* Center fills the screen */
   .page-index .center {
     padding: 10px 12px !important;
-    padding-bottom: 80px !important; /* clears FAB bar */
+    padding-bottom: 20px !important;
   }
 
   /* Panel order when visible */
@@ -343,7 +343,7 @@ html { height: auto; overflow-x: hidden; }
   }
 .page-index #netCanvas, .page-index #networkCanvas, .page-index #netContainer {
     width: 100% !important;
-    height: clamp(200px, 55vw, 280px) !important;
+    height: clamp(280px, calc(100vw - 24px), 460px) !important;
     display: block !important;
     touch-action: pan-y !important;
     transform: translateZ(0) !important;
@@ -358,7 +358,7 @@ html { height: auto; overflow-x: hidden; }
     transform: translateZ(0) !important;
   }
   .page-index #viewGraph  { overflow: hidden !important; padding: 0 12px 12px !important; }
-  .page-index #eventLog   { height: clamp(120px, 32vw, 160px) !important; overflow-y: auto !important; font-size: 10px !important; }
+  .page-index #eventLog   { height: clamp(200px, 45vw, 280px) !important; overflow-y: auto !important; font-size: 10px !important; }
 #termOverlay {
     width: 100vw !important;
     left: 0 !important; right: 0 !important; bottom: 0 !important;
@@ -616,7 +616,10 @@ body.page-index::before { display: none !important; }
   border-color: var(--blue, #00d4ff) !important;
 }
 
+/* Hide on desktop */
 @media (min-width: 769px) { .mob-menu-btn { display: none !important; } }
+/* Also hide on mobile — #cyb-hamburger (injected by mobile.js) is the sole hamburger */
+@media (max-width: 768px) { .mob-menu-btn, #mobMenuBtn { display: none !important; } }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    3. HEADER DRAWER  (#mobHeaderDrawer)
@@ -1249,5 +1252,157 @@ body.tab-missions #viewMissions {
 
   .mob-swipe-hint-left  { left: 0; }
   .mob-swipe-hint-right { right: 0; }
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FIX: LIVE RANGE — full-width, full-viewport layout on mobile
+   The .center panel should be edge-to-edge with no side padding,
+   the canvas should fill the full width, and the event log should
+   expand to use remaining vertical space.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+@media (max-width: 768px) {
+
+  /* Make the whole main column edge-to-edge */
+  .page-index .main {
+    width: 100vw !important;
+    margin: 0 !important;
+  }
+
+  /* Remove all horizontal padding from center — canvas takes full width */
+  .page-index .center {
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* viewRange fills width, stacks canvas then log */
+  .page-index #viewRange {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  /* Legend bar above canvas */
+  .page-index #viewRange > div:first-child {
+    padding: 8px 12px !important;
+    font-size: 9px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Network canvas — true full width, taller on mobile */
+  .page-index #networkCanvas {
+    width: 100vw !important;
+    height: clamp(320px, 55vw, 460px) !important;
+    max-width: 100vw !important;
+    border-radius: 0 !important;
+    display: block !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Event log section below canvas */
+  .page-index #viewRange > div:last-child {
+    padding: 10px 12px 16px !important;
+    flex: 1 !important;
+  }
+
+  /* Event log label row */
+  .page-index #viewRange > div:last-child > div:first-child {
+    padding: 0 0 6px !important;
+  }
+
+  /* Event log scroll box — larger on mobile */
+  .page-index #eventLog {
+    height: clamp(220px, 40vw, 320px) !important;
+    border-radius: 4px !important;
+  }
+
+  /* Tabs bar — scrollable, full width, no overflow */
+  .page-index .tabs {
+    width: 100vw !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    flex-shrink: 0 !important;
+  }
+
+  .page-index .tabs::-webkit-scrollbar { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  /* Even taller canvas on small phones */
+  .page-index #networkCanvas {
+    height: clamp(300px, 65vw, 400px) !important;
+  }
+
+  .page-index #eventLog {
+    height: clamp(180px, 38vw, 260px) !important;
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FIX: CYBAASH AI — true full-screen on mobile (belt+suspenders)
+   Override both the overlay and panel to use 100dvh / inset:0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+@media (max-width: 768px) {
+  #cybaash-ai-overlay.cyb-open {
+    position: fixed !important;
+    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    max-width: 100vw !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-top: 1px solid rgba(0,229,160,0.10) !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    transform: none !important;
+    animation: cyb-chat-open-mob 0.25s cubic-bezier(0.34,1.1,0.64,1) !important;
+    transform-origin: bottom center !important;
+  }
+
+  @keyframes cyb-chat-open-mob {
+    from { opacity: 0; transform: translateY(32px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  #cybaash-ai-panel {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  /* Chat messages box fills remaining space */
+  #cybaash-messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Input area pinned to bottom */
+  .cyb-input-area {
+    flex-shrink: 0 !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  /* FAB moves up from bottom safe area */
+  #cybaash-fab {
+    bottom: max(20px, env(safe-area-inset-bottom, 16px)) !important;
+    right: 16px !important;
+    z-index: 99998 !important;
+  }
 }
 

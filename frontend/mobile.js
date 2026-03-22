@@ -33,7 +33,7 @@
     bd.id = 'cyb-backdrop';
     document.body.appendChild(bd);
 
-    /* Drawer — NO portfolio links */
+    /* Drawer — updated navigation */
     var dr = document.createElement('div');
     dr.id = 'cyb-drawer';
     dr.innerHTML =
@@ -50,10 +50,6 @@
 
       '<button class="cyb-drawer-btn" id="drw-launch">' +
         '<span class="icon">&#x25B6;</span>LAUNCH ATTACK' +
-      '</button>' +
-
-      '<button class="cyb-drawer-btn blue" id="drw-scenario">' +
-        '<span class="icon">&#x21BA;</span>NEW SCENARIO' +
       '</button>' +
 
       '<button class="cyb-drawer-btn yellow" id="drw-palette">' +
@@ -73,6 +69,24 @@
       '<a class="cyb-drawer-btn" href="dashboard.html" target="_blank" rel="noopener">' +
         '<span class="icon">&#x2261;</span>DASHBOARD' +
       '</a>' +
+
+      '<div class="cyb-drawer-section">ADMIN</div>' +
+
+      '<a class="cyb-drawer-btn blue" href="admin/security.html" target="_blank" rel="noopener">' +
+        '<span class="icon">&#x26E8;</span>SECURITY' +
+      '</a>' +
+
+      '<a class="cyb-drawer-btn blue" href="admin/intel.html" target="_blank" rel="noopener">' +
+        '<span class="icon">&#x25CF;</span>INTEL' +
+      '</a>' +
+
+      '<a class="cyb-drawer-btn blue" href="admin/tools.html" target="_blank" rel="noopener">' +
+        '<span class="icon">&#x2692;</span>TOOLS' +
+      '</a>' +
+
+      '<button class="cyb-drawer-btn" id="drw-signin" style="color:var(--blue,#00d4ff);border-top:1px solid rgba(0,212,255,0.15);margin-top:4px">' +
+        '<span class="icon">&#x2B21;</span>SIGN IN / ACCOUNT' +
+      '</button>' +
 
       '<div id="cyb-drawer-footer">' +
         '<span class="live-dot"></span>SYSTEMS ONLINE &nbsp; &copy; 2025 CYBAASH' +
@@ -141,8 +155,18 @@
     var la = document.getElementById('drw-launch');
     if (la) la.addEventListener('click', function () { closeDrawer(); setTimeout(function () { if (typeof launchAttack === 'function') launchAttack(); }, 220); });
 
-    var sc = document.getElementById('drw-scenario');
-    if (sc) sc.addEventListener('click', function () { closeDrawer(); setTimeout(function () { if (typeof generateScenario === 'function') generateScenario(); }, 220); });
+    var si = document.getElementById('drw-signin');
+    if (si) si.addEventListener('click', function () {
+      closeDrawer();
+      setTimeout(function () {
+        if (window.SAAS && typeof window.SAAS.login === 'function') {
+          window.SAAS.login();
+        } else {
+          var overlay = document.getElementById('cybaash-ai-overlay');
+          if (overlay) overlay.classList.add('cyb-open');
+        }
+      }, 220);
+    });
 
     var pal = document.getElementById('drw-palette');
     if (pal) pal.addEventListener('click', function () {
