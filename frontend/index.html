@@ -5502,7 +5502,1248 @@ defCmd('ping', (args) => {
   }, 4 * 220 + 80);
 });
 
-// ── TERMINAL DRAG-RESIZE ─────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CYBAASH TERMINAL v5.1 — KALI-CLASS COMMAND SUITE
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Shared state for stateful tools ──────────────────────────────────────────
+const FS = {
+  cwd: '/root',
+  dirs: {
+    '/root': ['Desktop', 'Documents', 'Downloads', 'tools', '.ssh', '.bashrc', '.profile'],
+    '/root/tools': ['nmap', 'gobuster', 'hydra', 'sqlmap', 'enum4linux', 'nikto', 'linpeas.sh'],
+    '/root/Documents': ['report.txt', 'notes.md', 'targets.txt', 'creds.txt'],
+    '/root/Downloads': ['payload.py', 'shell.php', 'exploit.c', 'wordlist.txt'],
+    '/root/.ssh': ['id_rsa', 'id_rsa.pub', 'known_hosts', 'authorized_keys'],
+    '/etc': ['passwd', 'shadow', 'hosts', 'hostname', 'resolv.conf', 'crontab', 'sudoers'],
+    '/var/log': ['auth.log', 'syslog', 'kern.log', 'apache2', 'nginx'],
+    '/tmp': ['tmux-0', '.ICE-unix', 'f3a9b2c1.tmp'],
+    '/proc': ['version', 'cpuinfo', 'meminfo', 'net'],
+  },
+  files: {
+    '/root/.bashrc': '# .bashrc\nexport PATH=$PATH:/usr/local/sbin:/usr/local/bin\nalias ll="ls -la"\nalias la="ls -A"\nexport TERM=xterm-256color\n',
+    '/root/Documents/notes.md': '# Engagement Notes\n## Target: CYBAASH Internal Network\n- WEB01: Apache 2.4.41 — CVE-2021-41773 possible\n- DC01: SMB open — check for EternalBlue\n- API01: JWT misconfiguration suspected\n',
+    '/root/Documents/targets.txt': '10.0.0.1  WEB01  web-server\n10.0.0.2  DB01   database\n10.0.0.3  DC01   domain-controller\n10.0.0.4  FW01   firewall\n10.0.0.5  API01  api-gateway\n',
+    '/etc/hosts': '127.0.0.1   localhost\n10.0.0.1    web01.cybaash.internal\n10.0.0.2    db01.cybaash.internal\n10.0.0.3    dc01.cybaash.internal\n10.0.0.100  kali.attacker\n',
+    '/etc/hostname': 'cybaash-kali\n',
+    '/proc/version': 'Linux version 6.1.0-kali9-amd64 (devel@kali.org) (gcc-12 12.2.0) #1 SMP PREEMPT_DYNAMIC Debian 6.1.27-1kali1\n',
+  },
+  sessions: {},   // active nc/ssh sessions
+};
+
+const NET = {
+  ifaces: [
+    { name:'eth0',   ip:'10.0.0.100', mac:'00:0c:29:a1:b2:c3', cidr:'/24', up:true  },
+    { name:'lo',     ip:'127.0.0.1',  mac:'00:00:00:00:00:00', cidr:'/8',  up:true  },
+    { name:'tun0',   ip:'10.10.14.42',mac:'00:ff:8a:3d:1e:7f', cidr:'/16', up:false },
+  ],
+  arp: {
+    '10.0.0.1':   { mac:'de:ad:be:ef:00:01', iface:'eth0' },
+    '10.0.0.2':   { mac:'de:ad:be:ef:00:02', iface:'eth0' },
+    '10.0.0.3':   { mac:'de:ad:be:ef:00:03', iface:'eth0' },
+  },
+  routes: [
+    '0.0.0.0/0     via 10.0.0.254  dev eth0  proto dhcp  metric 100',
+    '10.0.0.0/24   dev eth0        proto kernel scope link',
+    '127.0.0.0/8   dev lo          proto kernel scope link',
+  ],
+  listening: [
+    { proto:'tcp', laddr:'0.0.0.0:22',   state:'LISTEN', pid:'1012/sshd'    },
+    { proto:'tcp', laddr:'0.0.0.0:4444', state:'LISTEN', pid:'8821/nc'      },
+    { proto:'tcp', laddr:'127.0.0.1:631',state:'LISTEN', pid:'721/cupsd'    },
+    { proto:'udp', laddr:'0.0.0.0:68',   state:'',       pid:'844/dhclient' },
+  ],
+};
+
+const PRIV = {
+  level: 'user',   // user | sudo | root
+  sudoAttempts: 0,
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// WORKER API — real data from Cloudflare Worker endpoints
+// ══════════════════════════════════════════════════════════════════════════════
+const WORKER_BASE = 'https://cybaash.mohamedaasiq07.workers.dev';
+
+async function workerFetch(endpoint, params = {}) {
+  try {
+    const qs  = new URLSearchParams(params).toString();
+    const url = WORKER_BASE + endpoint + (qs ? '?' + qs : '');
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { error: err.error || `HTTP ${res.status}` };
+    }
+    return await res.json();
+  } catch(e) {
+    return { error: e.message === 'signal timed out' ? 'Request timed out' : e.message };
+  }
+}
+
+// ── Helper: random delay print ────────────────────────────────────────────────
+function asyncPrint(lines, delayMs) {
+  lines.forEach((l, i) => setTimeout(() => termPrint(l), i * delayMs));
+}
+
+// ── ls ────────────────────────────────────────────────────────────────────────
+defCmd('ls', (args) => {
+  const flag = args.find(a => a.startsWith('-')) || '';
+  const path = args.find(a => !a.startsWith('-')) || FS.cwd;
+  const entries = FS.dirs[path] || FS.dirs[FS.cwd] || [];
+  if (flag === '-la' || flag === '-al' || flag === '-l') {
+    termPrint({ t:'t-out', v:`total ${entries.length * 4 + 8}` });
+    termPrint({ t:'t-dim', v:`drwx------ 2 root root 4096 Mar 22 21:00 .` });
+    termPrint({ t:'t-dim', v:`drwxr-xr-x 3 root root 4096 Mar 22 20:00 ..` });
+    entries.forEach(e => {
+      const isDir = !!FS.dirs[FS.cwd + '/' + e];
+      const perm  = isDir ? 'drwxr-xr-x' : '-rw-r--r--';
+      const size  = Math.floor(Math.random() * 8192 + 512);
+      const color = isDir ? 'var(--blue)' : e.endsWith('.sh') || e.endsWith('.py') ? 'var(--green)' : 'var(--text)';
+      termPrint({ t:'t-out', v:`${perm} 1 root root ${String(size).padStart(6)} Mar 22 ${String(Math.floor(Math.random()*24)).padStart(2,'0')}:${String(Math.floor(Math.random()*60)).padStart(2,'0')} <span style="color:${color}">${e}</span>` });
+    });
+  } else {
+    const colored = entries.map(e => {
+      const isDir = !!FS.dirs[(path === FS.cwd ? FS.cwd : path) + '/' + e];
+      const color = isDir ? 'var(--blue)' : e.endsWith('.sh') || e.endsWith('.py') ? 'var(--green)' : 'var(--text)';
+      return `<span style="color:${color}">${e}</span>`;
+    });
+    termPrint({ t:'t-out', v: colored.join('  ') });
+  }
+});
+
+// ── cd ────────────────────────────────────────────────────────────────────────
+defCmd('cd', (args) => {
+  const target = args[0] || '/root';
+  const resolved = target.startsWith('/') ? target : FS.cwd + '/' + target;
+  const normalized = resolved.replace(/\/\//g, '/').replace(/\/\.$/, '').replace(/\/[^/]+\/\.\.$/, '');
+  if (FS.dirs[normalized] !== undefined) {
+    FS.cwd = normalized;
+    termUpdatePrompt();
+  } else {
+    termPrint({ t:'t-err', v:`bash: cd: ${target}: No such file or directory` });
+  }
+});
+
+// ── pwd ───────────────────────────────────────────────────────────────────────
+defCmd('pwd', () => termPrint({ t:'t-out', v: FS.cwd }));
+
+// ── cat ───────────────────────────────────────────────────────────────────────
+defCmd('cat', (args) => {
+  if (!args[0]) { termPrint({ t:'t-err', v:'cat: missing file operand' }); return; }
+  const path = args[0].startsWith('/') ? args[0] : FS.cwd + '/' + args[0];
+  const content = FS.files[path];
+  if (content) {
+    content.split('\n').forEach(l => termPrint({ t:'t-out', v: l }));
+  } else {
+    termPrint({ t:'t-err', v:`cat: ${args[0]}: No such file or directory` });
+  }
+});
+
+// ── echo ──────────────────────────────────────────────────────────────────────
+defCmd('echo', (args) => termPrint({ t:'t-out', v: args.join(' ') }));
+
+// ── whoami ────────────────────────────────────────────────────────────────────
+defCmd('whoami', () => termPrint({ t:'t-out', v: PRIV.level === 'root' ? 'root' : 'kali' }));
+
+// ── id ────────────────────────────────────────────────────────────────────────
+defCmd('id', () => {
+  if (PRIV.level === 'root') {
+    termPrint({ t:'t-out', v:'uid=0(root) gid=0(root) groups=0(root)' });
+  } else {
+    termPrint({ t:'t-out', v:'uid=1000(kali) gid=1000(kali) groups=1000(kali),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),109(netdev)' });
+  }
+});
+
+// ── sudo ──────────────────────────────────────────────────────────────────────
+defCmd('sudo', (args) => {
+  if (PRIV.level === 'root') {
+    if (args.length) { termExec(args.join(' ')); }
+    return;
+  }
+  if (args[0] === 'su' || (args[0] === '-' ) || (args[0] === 'bash') || (args[0] === 'sh')) {
+    PRIV.level = 'root';
+    termUpdatePrompt();
+    termPrint({ t:'t-def', v:'root@cybaash:~# ' });
+    return;
+  }
+  PRIV.sudoAttempts++;
+  if (PRIV.sudoAttempts >= 3) {
+    termPrint({ t:'t-err', v:'sudo: 3 incorrect password attempts' });
+    PRIV.sudoAttempts = 0;
+    return;
+  }
+  termPrint({ t:'t-out', v:'[sudo] password for kali: ' });
+  setTimeout(() => {
+    PRIV.level = 'sudo';
+    if (args.length) termExec(args.join(' '));
+    termUpdatePrompt();
+  }, 600);
+});
+
+// ── su ────────────────────────────────────────────────────────────────────────
+defCmd('su', (args) => {
+  const user = args[0] || 'root';
+  termPrint({ t:'t-out', v:`Password: ` });
+  setTimeout(() => {
+    PRIV.level = 'root';
+    termUpdatePrompt();
+    termPrint({ t:'t-def', v:`root@cybaash:/root#` });
+  }, 500);
+});
+
+// ── uname ─────────────────────────────────────────────────────────────────────
+defCmd('uname', (args) => {
+  if (args.includes('-a') || args.includes('--all')) {
+    termPrint({ t:'t-out', v:'Linux cybaash-kali 6.1.0-kali9-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.27-1kali1 x86_64 GNU/Linux' });
+  } else {
+    termPrint({ t:'t-out', v:'Linux' });
+  }
+});
+
+// ── hostname ──────────────────────────────────────────────────────────────────
+defCmd('hostname', (args) => {
+  if (args.includes('-I')) {
+    termPrint({ t:'t-out', v:'10.0.0.100 127.0.0.1 ' });
+  } else {
+    termPrint({ t:'t-out', v:'cybaash-kali' });
+  }
+});
+
+// ── ifconfig ──────────────────────────────────────────────────────────────────
+defCmd('ifconfig', (args) => {
+  const target = args[0];
+  const ifaces = target ? NET.ifaces.filter(i => i.name === target) : NET.ifaces;
+  ifaces.forEach(iface => {
+    termPrint({ t:'t-out', v:`<span style="color:var(--blue)">${iface.name}</span>: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500` });
+    termPrint({ t:'t-out', v:`        inet ${iface.ip}  netmask 255.255.255.0  broadcast ${iface.ip.replace(/\d+$/,'255')}` });
+    termPrint({ t:'t-out', v:`        ether ${iface.mac}  txqueuelen 1000  (Ethernet)` });
+    termPrint({ t:'t-out', v:`        RX packets ${Math.floor(Math.random()*50000+10000)}  bytes ${Math.floor(Math.random()*50000000+1000000)} (${(Math.random()*50+1).toFixed(1)} MiB)` });
+    termPrint({ t:'t-out', v:`        TX packets ${Math.floor(Math.random()*30000+5000)}  bytes ${Math.floor(Math.random()*30000000+500000)} (${(Math.random()*30+0.5).toFixed(1)} MiB)` });
+    termPrint({ t:'t-out', v:'' });
+  });
+});
+
+// ── ip ────────────────────────────────────────────────────────────────────────
+defCmd('ip', (args) => {
+  const sub = args[0];
+  if (sub === 'addr' || sub === 'a') {
+    NET.ifaces.forEach((iface, idx) => {
+      termPrint({ t:'t-out', v:`${idx+1}: <span style="color:var(--blue)">${iface.name}</span>: &lt;BROADCAST,MULTICAST,${iface.up?'UP,':''}LOWER_UP&gt; mtu 1500 qdisc fq_codel state ${iface.up?'UP':'DOWN'} group default qlen 1000` });
+      termPrint({ t:'t-out', v:`    link/ether ${iface.mac} brd ff:ff:ff:ff:ff:ff` });
+      termPrint({ t:'t-out', v:`    inet ${iface.ip}${iface.cidr} brd ${iface.ip.replace(/\d+$/,'255')} scope global dynamic noprefixroute ${iface.name}` });
+    });
+  } else if (sub === 'route' || sub === 'r') {
+    termPrint({ t:'t-out', v:'default via 10.0.0.254 dev eth0 proto dhcp metric 100' });
+    NET.routes.forEach(r => termPrint({ t:'t-out', v: r }));
+  } else if (sub === 'neigh' || sub === 'n') {
+    Object.entries(NET.arp).forEach(([ip, info]) => {
+      termPrint({ t:'t-out', v:`${ip} dev ${info.iface} lladdr ${info.mac} REACHABLE` });
+    });
+  } else {
+    termPrint({ t:'t-err', v:`ip: Command not found. Try: ip addr | ip route | ip neigh` });
+  }
+});
+
+// ── ss / netstat ──────────────────────────────────────────────────────────────
+defCmd('ss', (args) => {
+  const showAll = args.includes('-a') || args.includes('-tulpn') || args.includes('-tuln');
+  termPrint({ t:'t-out', v:'Netid  State    Recv-Q  Send-Q  Local Address:Port    Peer Address:Port  Process' });
+  NET.listening.forEach(s => {
+    termPrint({ t:'t-out', v:`<span style="color:var(--blue)">${s.proto.padEnd(6)}</span> <span style="color:var(--green)">${(s.state||'UNCONN').padEnd(8)}</span> 0       0       <span style="color:var(--yellow)">${s.laddr.padEnd(22)}</span> 0.0.0.0:*           ${s.pid}` });
+  });
+  if (showAll) {
+    termPrint({ t:'t-out', v:`tcp    ESTAB    0       0       10.0.0.100:22        10.0.0.1:54231      1012/sshd` });
+  }
+});
+defCmd('netstat', (args) => termExec('ss ' + args.join(' ')));
+
+// ── arp ───────────────────────────────────────────────────────────────────────
+defCmd('arp', (args) => {
+  termPrint({ t:'t-out', v:'Address                  HWtype  HWaddress           Flags Iface' });
+  Object.entries(NET.arp).forEach(([ip, info]) => {
+    termPrint({ t:'t-out', v:`${ip.padEnd(25)}ether   ${info.mac.padEnd(20)}C     ${info.iface}` });
+  });
+});
+
+// ── ps ────────────────────────────────────────────────────────────────────────
+defCmd('ps', (args) => {
+  const full = args.includes('aux') || args.includes('-ef') || args.includes('-aux');
+  const procs = [
+    { pid:1,    cpu:'0.0', mem:'0.1', stat:'Ss', cmd:'/sbin/init splash' },
+    { pid:721,  cpu:'0.0', mem:'0.2', stat:'Ss', cmd:'/usr/sbin/cupsd -l' },
+    { pid:844,  cpu:'0.0', mem:'0.1', stat:'Ss', cmd:'dhclient eth0' },
+    { pid:1012, cpu:'0.0', mem:'0.2', stat:'Ss', cmd:'sshd: /usr/sbin/sshd -D' },
+    { pid:2203, cpu:'0.1', mem:'0.3', stat:'Ss', cmd:'bash' },
+    { pid:3847, cpu:'0.0', mem:'0.1', stat:'S',  cmd:'python3 -m http.server 8080' },
+    { pid:4411, cpu:'0.2', mem:'0.4', stat:'Sl', cmd:'./exploit.py --target DC01' },
+    { pid:8821, cpu:'0.0', mem:'0.1', stat:'S',  cmd:'nc -lvnp 4444' },
+    { pid:9001, cpu:'1.2', mem:'1.4', stat:'Sl', cmd:'msfconsole' },
+    { pid:9234, cpu:'0.0', mem:'0.1', stat:'R+', cmd:'ps aux' },
+  ];
+  if (full) {
+    termPrint({ t:'t-out', v:'USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND' });
+    procs.forEach(p => {
+      termPrint({ t:'t-out', v:`root       ${String(p.pid).padEnd(6)} ${p.cpu.padEnd(5)} ${p.mem.padEnd(5)} ${String(Math.floor(Math.random()*100000+5000)).padEnd(7)} ${String(Math.floor(Math.random()*10000+500)).padEnd(5)} ?        ${p.stat.padEnd(5)}  21:00   0:00 <span style="color:var(--green)">${p.cmd}</span>` });
+    });
+  } else {
+    termPrint({ t:'t-out', v:'    PID TTY          TIME CMD' });
+    procs.slice(-4).forEach(p => termPrint({ t:'t-out', v:`  ${String(p.pid).padEnd(6)} pts/0    00:00:00 ${p.cmd.split(' ')[0]}` }));
+  }
+});
+
+// ── kill ──────────────────────────────────────────────────────────────────────
+defCmd('kill', (args) => {
+  const sig = args.find(a => a.startsWith('-')) || '-15';
+  const pid = args.find(a => !a.startsWith('-'));
+  if (!pid) { termPrint({ t:'t-err', v:'kill: usage: kill [-s sigspec] pid' }); return; }
+  termPrint({ t:'t-out', v:'' });
+  logEvent('SYS', `[TERM] kill ${sig} ${pid}`, 'sys');
+});
+
+// ── nmap ──────────────────────────────────────────────────────────────────────
+defCmd('nmap', (args) => {
+  if (!args.length) { termPrint({ t:'t-err', v:'NMAP: no target specified. Try: nmap 10.0.0.1 or nmap -sV -p- 10.0.0.0/24' }); return; }
+  const target = args[args.length-1];
+  const flags  = args.slice(0,-1).join(' ');
+  const isDeep = flags.includes('-sV') || flags.includes('-A') || flags.includes('-O');
+  const isFast = flags.includes('-F');
+  const ports  = isDeep
+    ? [22,80,443,445,3306,3389,5432,6379,8080,8443,9200,27017]
+    : isFast
+    ? [22,80,443,8080]
+    : [22,80,443,445,3306,8080,8443];
+  const svcs   = {22:'OpenSSH 8.9p1',80:'Apache httpd 2.4.54',443:'Apache httpd 2.4.54',445:'Samba 4.17',3306:'MySQL 8.0.32',3389:'xrdp 0.9.19',5432:'PostgreSQL 14.6',6379:'Redis 7.0.8',8080:'Jetty 9.4.50',8443:'nginx 1.23.2',9200:'Elasticsearch 8.5',27017:'MongoDB 6.0'};
+  const cves   = {80:'CVE-2021-41773',445:'CVE-2017-0144',3306:'CVE-2022-21417',6379:'CVE-2022-0543'};
+  const delay  = isDeep ? 180 : 80;
+  const lines  = [
+    { t:'t-out', v:`Starting Nmap 7.94 ( https://nmap.org ) at ${new Date().toISOString().replace('T',' ').slice(0,19)} AEST` },
+    { t:'t-out', v:`Nmap scan report for <span style="color:var(--yellow)">${sanitizeText(target)}</span>` },
+    { t:'t-out', v:`Host is up (0.0${Math.floor(Math.random()*9+1)}${Math.floor(Math.random()*9)}s latency).` },
+    { t:'t-dim', v:flags.includes('-sV') ? `Not shown: ${1000 - ports.length} closed tcp ports (conn-refused)` : '' },
+    { t:'t-out', v:`\nPORT      STATE SERVICE${isDeep ? '         VERSION' : ''}` },
+  ];
+  ports.forEach(p => {
+    const svc  = svcs[p] || 'unknown';
+    const cve  = cves[p] ? `<span style="color:var(--red)">  [${cves[p]}]</span>` : '';
+    lines.push({ t:'t-out', v:`${String(p+'/tcp').padEnd(10)}open  ${isDeep ? svc.padEnd(30) + cve : svc.split(' ')[0]}` });
+  });
+  if (isDeep) {
+    lines.push({ t:'t-warn', v:`\nOS detection: Linux 5.x / 6.x (96%)` });
+    lines.push({ t:'t-out',  v:`MAC Address: DE:AD:BE:EF:00:0${Math.floor(Math.random()*9)} (VMware)` });
+  }
+  lines.push({ t:'t-dim', v:`\nNmap done: 1 IP address (1 host up) scanned in ${(Math.random()*8+1).toFixed(2)} seconds` });
+  asyncPrint(lines, delay);
+  logEvent('ATK', `[NMAP] Scan ${target} — ${ports.length} ports found`, 'atk');
+});
+
+// ── gobuster ──────────────────────────────────────────────────────────────────
+defCmd('gobuster', (args) => {
+  const url = args.find(a => a.startsWith('http')) || 'http://10.0.0.1';
+  const paths = ['/admin','/login','/wp-admin','/api/v1','/backup','/config','/uploads','/phpmyadmin','/.env','/.git','/dashboard','/panel','/shell','/cmd','/exec','/console','/manager','/secret','/robots.txt','/sitemap.xml','/server-status'];
+  const found = paths.filter(() => Math.random() > 0.5).slice(0,8);
+  const lines = [
+    { t:'t-out', v:`===============================================================` },
+    { t:'t-out', v:`Gobuster v3.6  by OJ Reeves & Christian Mehlmauer` },
+    { t:'t-out', v:`===============================================================` },
+    { t:'t-out', v:`[+] Url:                     ${sanitizeText(url)}` },
+    { t:'t-out', v:`[+] Method:                  GET` },
+    { t:'t-out', v:`[+] Threads:                 10` },
+    { t:'t-out', v:`[+] Wordlist:                /usr/share/wordlists/dirb/big.txt` },
+    { t:'t-out', v:`[+] Status codes:            200,301,302,403,405,500` },
+    { t:'t-out', v:`===============================================================` },
+    { t:'t-out', v:`Starting gobuster in directory enumeration mode` },
+    { t:'t-out', v:`===============================================================` },
+  ];
+  found.forEach(p => {
+    const code = [200,301,302,403][Math.floor(Math.random()*4)];
+    const col  = code === 200 ? 'var(--green)' : code === 403 ? 'var(--yellow)' : 'var(--blue)';
+    lines.push({ t:'t-out', v:`<span style="color:${col}">/${p.replace('/','').padEnd(20)} (Status: ${code}) [Size: ${Math.floor(Math.random()*5000+200)}]</span>` });
+  });
+  lines.push({ t:'t-dim', v:`\n===============================================================\nFinished in ${(Math.random()*30+5).toFixed(3)}s` });
+  asyncPrint(lines, 120);
+  logEvent('ATK', `[GOBUSTER] Dir enum ${url} — ${found.length} paths found`, 'atk');
+});
+
+// ── nikto ─────────────────────────────────────────────────────────────────────
+defCmd('nikto', (args) => {
+  const target = args.find(a => !a.startsWith('-')) || '10.0.0.1';
+  const vulns = [
+    'X-Frame-Options header not present',
+    'X-Content-Type-Options header not set',
+    'Server may leak inodes via ETags',
+    'The anti-clickjacking X-Frame-Options header is not present',
+    'DEBUG HTTP verb may show server diagnostics',
+    '/backup/ directory found, may contain sensitive files',
+    'PHP/8.1.0 appears to be outdated',
+    'Apache/2.4.41 appears to be outdated',
+    '/admin/config.php accessible',
+    'Cookie without HttpOnly flag',
+    'Cross-Site Request Forgery (CSRF) vulnerability detected',
+  ];
+  const found = vulns.filter(() => Math.random() > 0.4);
+  const lines = [
+    { t:'t-out', v:`- Nikto v2.1.6` },
+    { t:'t-out', v:`---------------------------------------------------------------------------` },
+    { t:'t-out', v:`+ Target IP:          ${sanitizeText(target)}` },
+    { t:'t-out', v:`+ Target Hostname:    ${sanitizeText(target)}` },
+    { t:'t-out', v:`+ Target Port:        80` },
+    { t:'t-out', v:`+ Start Time:         ${new Date().toISOString().slice(0,19)}` },
+    { t:'t-out', v:`---------------------------------------------------------------------------` },
+    { t:'t-out', v:`+ Server: Apache/2.4.54 (Debian)` },
+  ];
+  found.forEach(v => lines.push({ t:'t-warn', v:`+ <span style="color:var(--yellow)">${v}</span>` }));
+  lines.push({ t:'t-dim', v:`+ ${found.length} host(s) tested — ${found.length} item(s) reported on remote host` });
+  lines.push({ t:'t-dim', v:`+ End Time: ${new Date().toISOString().slice(0,19)} (${Math.floor(Math.random()*60+15)} seconds)` });
+  asyncPrint(lines, 100);
+  logEvent('ATK', `[NIKTO] Web scan ${target} — ${found.length} vulns`, 'atk');
+});
+
+// ── hydra ─────────────────────────────────────────────────────────────────────
+defCmd('hydra', (args) => {
+  const target = args.find(a => !a.startsWith('-') && !a.includes('/')) || '10.0.0.1';
+  const service = args.find(a => ['ssh','ftp','http','rdp','smb','mysql','telnet','vnc'].includes(a)) || 'ssh';
+  const wordlist = args.find(a => a.includes('/')) || '/usr/share/wordlists/rockyou.txt';
+  const attempts = Math.floor(Math.random() * 2000 + 500);
+  const cracked  = Math.random() > 0.4;
+  const user     = ['admin','root','kali','operator','service'][Math.floor(Math.random()*5)];
+  const pass     = ['Password123!','admin','toor','letmein','!QAZ2wsx'][Math.floor(Math.random()*5)];
+  const lines = [
+    { t:'t-out', v:`Hydra v9.4 (c) 2022 by van Hauser/THC & David Maciejak` },
+    { t:'t-out', v:`Hydra (https://github.com/vanhauser-thc/thc-hydra)` },
+    { t:'t-out', v:`[DATA] max 16 tasks per 1 server, overall 16 tasks, ${attempts} login tries` },
+    { t:'t-out', v:`[DATA] attacking ${service}://${sanitizeText(target)}:${service==='ssh'?22:service==='rdp'?3389:service==='ftp'?21:80}/` },
+    { t:'t-dim', v:`[STATUS] ${Math.floor(attempts*0.3)} of ${attempts} tried — ${(Math.random()*200+100).toFixed(0)}/min` },
+    { t:'t-dim', v:`[STATUS] ${Math.floor(attempts*0.7)} of ${attempts} tried — ${(Math.random()*200+100).toFixed(0)}/min` },
+  ];
+  if (cracked) {
+    lines.push({ t:'t-atk', v:`<span style="color:var(--green)">[${service.toUpperCase()}][${sanitizeText(target)}] host: ${sanitizeText(target)}   login: ${user}   password: ${pass}</span>` });
+    lines.push({ t:'t-out', v:`1 of 1 target successfully completed, 1 valid password found` });
+  } else {
+    lines.push({ t:'t-warn', v:`0 of 1 target completed, 0 valid passwords found` });
+  }
+  asyncPrint(lines, 200);
+  logEvent('ATK', `[HYDRA] Brute-force ${service}://${target} — ${cracked ? 'CRACKED: ' + user + ':' + pass : 'FAILED'}`, 'atk');
+});
+
+// ── sqlmap ────────────────────────────────────────────────────────────────────
+defCmd('sqlmap', (args) => {
+  const url = args.find(a => a.startsWith('http')) || 'http://10.0.0.1/login?id=1';
+  const dbs = ['information_schema','mysql','cybaash_prod','users_db','admin_panel'];
+  const tables = ['users','sessions','credentials','admin_users','logs','config'];
+  const dump  = args.includes('--dump') || args.includes('--tables');
+  const lines = [
+    { t:'t-out', v:`        ___\n       __H__\n ___ ___[)]_____ ___ ___  {1.7.10#stable}\n|_ -| . [(]     | .'| . |\n|___|_  ["]_|_|_|__,|  _|\n      |_|V...       |_|   https://sqlmap.org` },
+    { t:'t-out', v:`` },
+    { t:'t-out', v:`[*] starting @ ${new Date().toISOString().slice(0,19)}` },
+    { t:'t-dim', v:`[INFO] testing connection to the target URL` },
+    { t:'t-dim', v:`[INFO] testing if the target URL content is stable` },
+    { t:'t-dim', v:`[INFO] target URL content is stable` },
+    { t:'t-warn', v:`[INFO] GET parameter 'id' appears to be 'MySQL >= 5.6 AND error-based' injectable` },
+    { t:'t-warn', v:`[INFO] GET parameter 'id' is 'MySQL >= 5.0.12 AND time-based blind (query SLEEP)' injectable` },
+    { t:'t-atk',  v:`<span style="color:var(--red)">[CRITICAL] GET parameter 'id' is vulnerable!</span>` },
+  ];
+  if (dump) {
+    lines.push({ t:'t-out', v:`available databases [${dbs.length}]:` });
+    dbs.forEach(db => lines.push({ t:'t-out', v:`[*] ${db}` }));
+    lines.push({ t:'t-out', v:`\nDatabase: cybaash_prod — Tables [${tables.length}]:` });
+    tables.forEach(t => lines.push({ t:'t-out', v:`| ${t} |` }));
+    lines.push({ t:'t-atk', v:`\nDumping table: users\n+----+----------+-------------------------------+\n| id | username | password_hash                 |\n+----+----------+-------------------------------+\n| 1  | admin    | \$2y\$10\$abc123xyz... (bcrypt) |\n| 2  | operator | \$2y\$10\$def456uvw... (bcrypt) |\n+----+----------+-------------------------------+` });
+  }
+  asyncPrint(lines, 150);
+  logEvent('ATK', `[SQLMAP] SQL injection test on ${url} — vulnerable`, 'atk');
+});
+
+// ── msfconsole ────────────────────────────────────────────────────────────────
+const MSF = { module: null, opts: {}, sessions: [] };
+defCmd('msfconsole', (args) => {
+  termPrint({ t:'t-out', v:`<span style="color:var(--red)">
+       =[ metasploit v6.3.25-dev                          ]
++ -- --=[ 2331 exploits - 1218 auxiliary - 413 post       ]
++ -- --=[ 1381 payloads - 46 encoders - 11 nops            ]
++ -- --=[ 9 evasion                                        ]
+</span>` });
+  termPrint({ t:'t-out', v:`Metasploit tip: Use <tab> to complete commands. Type 'help' for command list.` });
+  termPrint({ t:'t-out', v:`msf6 > ` });
+  termPrint({ t:'t-dim', v:`(Use 'search', 'use', 'set', 'run' — e.g: search ms17-010)` });
+});
+defCmd('search', (args) => {
+  const q = args.join(' ').toLowerCase();
+  const modules = [
+    { name:'exploit/windows/smb/ms17_010_eternalblue', rank:'excellent', desc:'MS17-010 EternalBlue SMB RCE' },
+    { name:'exploit/multi/handler',                    rank:'normal',    desc:'Generic Payload Handler' },
+    { name:'exploit/unix/webapp/php_include',          rank:'excellent', desc:'PHP Remote File Inclusion' },
+    { name:'exploit/multi/script/web_delivery',        rank:'manual',    desc:'Script Web Delivery' },
+    { name:'auxiliary/scanner/smb/smb_ms17_010',       rank:'normal',    desc:'MS17-010 SMB RCE Detection' },
+    { name:'auxiliary/scanner/portscan/tcp',           rank:'normal',    desc:'TCP Port Scanner' },
+    { name:'post/multi/recon/local_exploit_suggester', rank:'normal',    desc:'Multi Recon Local Exploit Suggester' },
+    { name:'exploit/linux/http/apache_normalize_path', rank:'excellent', desc:'Apache Path Traversal RCE CVE-2021-41773' },
+  ].filter(m => !q || m.name.includes(q) || m.desc.toLowerCase().includes(q));
+  termPrint({ t:'t-out', v:`\nMatching Modules\n================\n` });
+  termPrint({ t:'t-out', v:`   #  Name                                            Rank        Description` });
+  termPrint({ t:'t-out', v:`   -  ----                                            ----        -----------` });
+  modules.forEach((m,i) => {
+    const col = m.rank === 'excellent' ? 'var(--green)' : m.rank === 'manual' ? 'var(--yellow)' : 'var(--text)';
+    termPrint({ t:'t-out', v:`   ${i}  <span style="color:${col}">${m.name.padEnd(48)}</span> ${m.rank.padEnd(12)} ${m.desc}` });
+  });
+});
+defCmd('use', (args) => {
+  MSF.module = args.join(' ');
+  MSF.opts = {};
+  termPrint({ t:'t-out', v:`msf6 exploit(<span style="color:var(--blue)">${MSF.module}</span>) > ` });
+  termPrint({ t:'t-dim', v:`Module loaded. Use 'show options' then 'set RHOSTS <target>' then 'run'` });
+});
+defCmd('run', () => {
+  if (!MSF.module) { termPrint({ t:'t-err', v:'No module loaded. Use: use exploit/...' }); return; }
+  const rhost = MSF.opts['RHOSTS'] || MSF.opts['RHOST'] || '10.0.0.1';
+  const lines = [
+    { t:'t-out', v:`[*] Started reverse TCP handler on 10.0.0.100:4444` },
+    { t:'t-dim', v:`[*] ${sanitizeText(rhost)}:445 - Connecting to target for exploitation.` },
+    { t:'t-dim', v:`[+] ${sanitizeText(rhost)}:445 - Connection established for exploitation.` },
+    { t:'t-dim', v:`[*] ${sanitizeText(rhost)}:445 - Sending stage (175174 bytes) to ${rhost}` },
+  ];
+  const success = Math.random() > 0.3;
+  if (success) {
+    lines.push({ t:'t-atk',  v:`[*] Meterpreter session 1 opened (10.0.0.100:4444 → ${rhost}:49156)` });
+    lines.push({ t:'t-def',  v:`\nmeterpreter > ` });
+    lines.push({ t:'t-dim',  v:`(Type: sysinfo, getuid, getsystem, hashdump, shell)` });
+    MSF.sessions.push({ id:MSF.sessions.length+1, type:'meterpreter', target:rhost });
+    logEvent('ATK', `[MSF] ${MSF.module} → ${rhost} — SESSION OPENED`, 'atk');
+  } else {
+    lines.push({ t:'t-warn', v:`[-] Exploit failed: Connection reset by peer` });
+    lines.push({ t:'t-err',  v:`[*] Exploit completed, but no session was created.` });
+  }
+  asyncPrint(lines, 300);
+});
+defCmd('exploit', (args) => termExec('run'));
+defCmd('sessions', (args) => {
+  if (!MSF.sessions.length) { termPrint({ t:'t-warn', v:'No active sessions.' }); return; }
+  termPrint({ t:'t-out', v:'Active sessions\n===============\n  Id  Name  Type         Information  Connection' });
+  MSF.sessions.forEach(s => termPrint({ t:'t-out', v:`  ${s.id}         ${s.type.padEnd(13)} root @ ${s.target}  10.0.0.100:4444 → ${s.target}:49156` }));
+});
+defCmd('sysinfo', () => {
+  const t = MSF.opts['RHOSTS'] || '10.0.0.3';
+  termPrint({ t:'t-out', v:`Computer        : ${sanitizeText(t)}\nOS              : Windows Server 2019 (Build 17763)\nArchitecture    : x64\nSystem Language : en_US\nDomain          : CYBAASH\nLogged On Users : 3\nMeterpreter     : x64/windows` });
+});
+defCmd('getsystem', () => {
+  const ok = Math.random() > 0.3;
+  if (ok) { PRIV.level = 'root'; termPrint({ t:'t-atk', v:'...got system via technique 1 (Named Pipe Impersonation (In Memory/Admin)).' }); }
+  else termPrint({ t:'t-warn', v:'...failed to get system.' });
+});
+defCmd('hashdump', () => {
+  if (PRIV.level !== 'root') { termPrint({ t:'t-err', v:'hashdump: insufficient privileges — run getsystem first' }); return; }
+  termPrint({ t:'t-atk', v:`Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:aef7d7d94f5d1d5e91aaef8e74551567:::
+operator:1001:aad3b435b51404eeaad3b435b51404ee:d0bded2db7f5c1b4a4e7d4a3c2f1e9b8:::` });
+  logEvent('ATK', '[TERM] hashdump — NTLM hashes extracted', 'atk');
+});
+defCmd('show', (args) => {
+  if (args[0] === 'options') {
+    termPrint({ t:'t-out', v:`\nModule options (${MSF.module || 'none'}):\n\n   Name     Current Setting  Required  Description\n   ----     ---------------  --------  -----------\n   RHOSTS   ${(MSF.opts['RHOSTS']||'').padEnd(16)} yes       Target host\n   RPORT    445              yes       Target port\n   LHOST    10.0.0.100       yes       Listener host\n   LPORT    4444             yes       Listener port\n   VERBOSE  false            no        Verbose output` });
+  } else if (args[0] === 'sessions') {
+    termExec('sessions');
+  }
+});
+defCmd('set', (args) => {
+  if (args.length < 2) { termPrint({ t:'t-err', v:'Usage: set <OPTION> <value>' }); return; }
+  MSF.opts[args[0].toUpperCase()] = args.slice(1).join(' ');
+  termPrint({ t:'t-out', v:`${args[0].toUpperCase()} => ${args.slice(1).join(' ')}` });
+});
+
+// ── netcat / nc ───────────────────────────────────────────────────────────────
+defCmd('nc', (args) => {
+  const listen = args.includes('-l') || args.includes('-lvnp') || args.includes('-lvp');
+  const port   = args.find(a => /^\d{2,5}$/.test(a)) || '4444';
+  const host   = args.find(a => /^\d{1,3}\.\d/.test(a)) || '';
+  if (listen) {
+    termPrint({ t:'t-def', v:`Listening on [0.0.0.0] (family 0, port ${port})` });
+    setTimeout(() => {
+      const src = '10.0.0.' + Math.floor(Math.random()*50+1);
+      termPrint({ t:'t-def', v:`Connection received on ${src} ${Math.floor(Math.random()*50000+30000)}` });
+      termPrint({ t:'t-out', v:`<span style="color:var(--green)">reverse shell connected — type commands below</span>` });
+      logEvent('ATK', `[NC] Reverse shell received from ${src}:${port}`, 'atk');
+    }, Math.random() * 2000 + 1000);
+  } else {
+    termPrint({ t:'t-out', v:`Connection to ${sanitizeText(host)} ${port} port [tcp/*] succeeded!` });
+  }
+});
+defCmd('netcat', (args) => termExec('nc ' + args.join(' ')));
+
+// ── hashcat / john ─────────────────────────────────────────────────────────────
+defCmd('hashcat', (args) => {
+  const hash  = args.find(a => a.length > 20) || 'd0bded2db7f5c1b4a4e7d4a3c2f1e9b8';
+  const wl    = args.find(a => a.includes('/')) || '/usr/share/wordlists/rockyou.txt';
+  const cracked = Math.random() > 0.35;
+  const pass    = ['Password123!','Winter2024!','Cyb3r@dmin','P@ssw0rd','Letmein123'][Math.floor(Math.random()*5)];
+  const lines = [
+    { t:'t-out', v:`hashcat (v6.2.6) starting...` },
+    { t:'t-dim', v:`* Device #1: NVIDIA GeForce RTX 3090, 24268/24268 MB, 82MCU` },
+    { t:'t-dim', v:`Minimum password length supported: 0, Maximum password length: 256` },
+    { t:'t-dim', v:`\nHashes: 1 digests; 1 unique digests, 1 unique salts` },
+    { t:'t-dim', v:`Applicable optimizers: Zero-Byte, Not-Iterated` },
+    { t:'t-dim', v:`\n[s]tatus [p]ause [b]ypass [c]heckpoint [f]inish [q]uit =>` },
+    { t:'t-dim', v:`Session.............: hashcat\nStatus...............: ${cracked ? 'Cracked' : 'Exhausted'}\nHash.Mode............: 0 (MD5)` },
+  ];
+  if (cracked) {
+    lines.push({ t:'t-atk', v:`<span style="color:var(--green)">${hash}:${pass}</span>` });
+    lines.push({ t:'t-out', v:`\nSession..........: hashcat\nStatus...........: Cracked\nRecover..........: 1/1 (100.00%) Digests` });
+  } else {
+    lines.push({ t:'t-warn', v:`Exhausted — password not in wordlist. Try larger wordlist.` });
+  }
+  asyncPrint(lines, 200);
+  logEvent('ATK', `[HASHCAT] Hash crack ${hash.slice(0,16)}... — ${cracked ? 'CRACKED: ' + pass : 'FAILED'}`, 'atk');
+});
+defCmd('john', (args) => {
+  const file  = args.find(a => !a.startsWith('--')) || 'hashes.txt';
+  const wl    = args.find(a => a.includes('wordlist')) || '';
+  const cracked = Math.random() > 0.4;
+  const user  = ['admin','root','operator','service'][Math.floor(Math.random()*4)];
+  const pass  = ['abc123','letmein','password','admin123','qwerty'][Math.floor(Math.random()*5)];
+  termPrint({ t:'t-out', v:`Using default input encoding: UTF-8\nLoaded 4 password hashes with 4 different salts (sha512crypt [$6$] [SHA512 128/128 SSE2 2x])` });
+  setTimeout(() => {
+    if (cracked) termPrint({ t:'t-atk', v:`<span style="color:var(--green)">${pass}            (${user})</span>\nSession completed.` });
+    else termPrint({ t:'t-warn', v:`Session completed — no passwords cracked.` });
+  }, 1500);
+  logEvent('ATK', `[JOHN] Cracking ${file} — ${cracked ? user+':'+pass : 'no results'}`, 'atk');
+});
+
+// ── openssl ───────────────────────────────────────────────────────────────────
+defCmd('openssl', (args) => {
+  const sub = args[0];
+  if (sub === 'genrsa') {
+    const bits = args.find(a => /^\d+$/.test(a)) || '2048';
+    termPrint({ t:'t-out', v:`Generating RSA private key, ${bits} bit long modulus\n............................................+++++\n..+++++\ne is 65537 (0x010001)` });
+    termPrint({ t:'t-dim', v:`-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA1234...TRUNCATED...\n-----END RSA PRIVATE KEY-----` });
+  } else if (sub === 'enc') {
+    const input = args.find(a => a.startsWith('-in')) ? 'file' : 'stdin';
+    termPrint({ t:'t-out', v:`Encrypted — output written to ${args.find(a => a.startsWith('-out'))?.replace('-out','') || 'encrypted.bin'}` });
+  } else if (sub === 's_client') {
+    const host = args.find(a => a.includes(':')) || '10.0.0.1:443';
+    termPrint({ t:'t-out', v:`CONNECTED(00000003)\ndepth=2 CN = DigiCert Global Root CA\ndepth=1 CN = DigiCert TLS RSA SHA256 2020 CA1\ndepth=0 CN = ${host.split(':')[0]}\n---\nCertificate chain\n 0 s:CN=${host.split(':')[0]}\n   i:CN=DigiCert TLS RSA SHA256 2020 CA1\n---\nSSL-Session:\n    Protocol  : TLSv1.3\n    Cipher    : TLS_AES_128_GCM_SHA256\n---` });
+  } else if (sub === 'passwd') {
+    const pw = args[args.length-1] || 'password';
+    const hash = '$6$' + Math.random().toString(36).slice(2,12) + '$' + Array.from({length:86},()=>'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./'.charAt(Math.floor(Math.random()*64))).join('');
+    termPrint({ t:'t-out', v: hash });
+  } else {
+    termPrint({ t:'t-out', v:`OpenSSL 3.1.0 14 Mar 2023\nUsage: openssl [genrsa|enc|s_client|passwd|x509|req|dgst|rand|...] [options]` });
+  }
+});
+
+// ── base64 ────────────────────────────────────────────────────────────────────
+defCmd('base64', (args) => {
+  const decode = args.includes('-d') || args.includes('--decode');
+  const input  = args.find(a => !a.startsWith('-')) || '';
+  if (!input) { termPrint({ t:'t-err', v:'base64: no input. Usage: base64 <string> or base64 -d <encoded>' }); return; }
+  try {
+    const result = decode ? atob(input) : btoa(unescape(encodeURIComponent(input)));
+    termPrint({ t:'t-out', v: result });
+  } catch(e) {
+    termPrint({ t:'t-err', v:`base64: invalid input` });
+  }
+});
+
+// ── curl ──────────────────────────────────────────────────────────────────────
+defCmd('curl', (args) => {
+  const url  = args.find(a => a.startsWith('http') || a.startsWith('//')) || args[0] || '';
+  const verbose = args.includes('-v') || args.includes('--verbose');
+  const head    = args.includes('-I') || args.includes('--head');
+  if (!url) { termPrint({ t:'t-err', v:'curl: no URL specified!' }); return; }
+  if (verbose) {
+    termPrint({ t:'t-dim', v:`*   Trying ${sanitizeText(url.replace(/https?:\/\//,'').split('/')[0])}...` });
+    termPrint({ t:'t-dim', v:`* Connected to ${sanitizeText(url)} (10.0.0.1) port 443 (#0)` });
+    termPrint({ t:'t-dim', v:`* TLSv1.3 (IN), TLS handshake, Server hello (2):\n* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384` });
+    termPrint({ t:'t-out', v:`> GET / HTTP/2\n> Host: ${sanitizeText(url)}\n> User-Agent: curl/7.88.1` });
+  }
+  if (head) {
+    termPrint({ t:'t-dim', v:`[CURL] Fetching real headers for ${sanitizeText(url)}...` });
+    workerFetch('/headers', { url: sanitizeText(url) }).then(data => {
+      if (data.error) { termPrint({ t:'t-err', v:`curl: ${data.error}` }); return; }
+      termPrint({ t:'t-out', v:`HTTP/${data.headers?.['connection'] ? '1.1' : '2'} ${data.status} ${data.statusText}` });
+      Object.entries(data.headers || {}).forEach(([k,v]) => termPrint({ t:'t-out', v:`${k}: ${v}` }));
+      // Security analysis
+      const hdrs = data.headers || {};
+      const missing = [];
+      if (!hdrs['strict-transport-security']) missing.push('HSTS missing');
+      if (!hdrs['x-frame-options'] && !hdrs['content-security-policy']) missing.push('Clickjacking protection missing');
+      if (!hdrs['x-content-type-options']) missing.push('X-Content-Type-Options missing');
+      if (!hdrs['content-security-policy']) missing.push('CSP missing');
+      if (missing.length) termPrint({ t:'t-warn', v:`[!] Security headers missing: ${missing.join(', ')}` });
+    });
+  } else {
+    termPrint({ t:'t-dim', v:`< HTTP/2 200\n< server: nginx/1.23.2` });
+    termPrint({ t:'t-out', v:`<!DOCTYPE html><html><head><title>Target</title></head><body>...</body></html>` });
+  }
+});
+
+// ── wget ──────────────────────────────────────────────────────────────────────
+defCmd('wget', (args) => {
+  const url  = args.find(a => a.startsWith('http')) || 'http://10.0.0.1/file';
+  const file = url.split('/').pop() || 'index.html';
+  termPrint({ t:'t-out', v:`--${new Date().toISOString().slice(0,19)}--  ${sanitizeText(url)}\nResolving ${url.split('/')[2]}... 10.0.0.1\nConnecting to ${url.split('/')[2]}... connected.` });
+  setTimeout(() => {
+    const size = Math.floor(Math.random()*500+50);
+    termPrint({ t:'t-out', v:`HTTP request sent, awaiting response... 200 OK\nLength: ${size*1024} (${size}K) [application/octet-stream]\nSaving to: '${file}'\n\n${file}            100%[===================>]  ${size}K  --.-KB/s    in 0.${Math.floor(Math.random()*9)+1}s\n\n'${file}' saved [${size*1024}/${size*1024}]` });
+    FS.dirs[FS.cwd] = [...(FS.dirs[FS.cwd]||[]), file];
+  }, 800);
+});
+
+// ── tcpdump ───────────────────────────────────────────────────────────────────
+defCmd('tcpdump', (args) => {
+  if (PRIV.level === 'user') { termPrint({ t:'t-err', v:'tcpdump: eth0: You don\'t have permission to capture on that device (socket: Operation not permitted). Use sudo.' }); return; }
+  const iface  = args.find(a => args[args.indexOf(a)-1] === '-i') || 'eth0';
+  const filter = args.find(a => ['tcp','udp','icmp','port','host','net'].some(k => a.startsWith(k))) || '';
+  termPrint({ t:'t-out', v:`tcpdump: verbose output suppressed, use -v[v]... for full protocol decode\nlistening on ${iface}, link-type EN10MB (Ethernet), snapshot length 262144 bytes` });
+  const packets = ['SYN','SYN-ACK','ACK','PSH-ACK','RST','FIN-ACK'];
+  let count = 0;
+  const timer = setInterval(() => {
+    if (count >= 8) { clearInterval(timer); termPrint({ t:'t-dim', v:`8 packets captured\n8 packets received by filter\n0 packets dropped by kernel` }); return; }
+    const src = `10.0.0.${Math.floor(Math.random()*200+1)}.${Math.floor(Math.random()*60000+1024)}`;
+    const dst = `10.0.0.100.${[22,80,443,4444][Math.floor(Math.random()*4)]}`;
+    const flag = packets[Math.floor(Math.random()*packets.length)];
+    termPrint({ t:'t-dim', v:`${new Date().toISOString().slice(11,23)} IP ${src} > ${dst}: Flags [${flag}], seq ${Math.floor(Math.random()*2e9)}, win 64240, length ${Math.floor(Math.random()*1500)}` });
+    count++;
+  }, 400);
+});
+
+// ── iptables ──────────────────────────────────────────────────────────────────
+defCmd('iptables', (args) => {
+  if (PRIV.level === 'user') { termPrint({ t:'t-err', v:'iptables: Operation not permitted. Use sudo.' }); return; }
+  const flag = args[0];
+  if (flag === '-L' || flag === '--list') {
+    termPrint({ t:'t-out', v:`Chain INPUT (policy ACCEPT)\ntarget     prot opt source               destination\nACCEPT     all  --  anywhere             anywhere             state RELATED,ESTABLISHED\nACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh\nDROP       tcp  --  10.0.0.0/24          anywhere             tcp dpt:4444\n\nChain FORWARD (policy DROP)\n\nChain OUTPUT (policy ACCEPT)` });
+  } else if (flag === '-A' || flag === '-I' || flag === '-D') {
+    const rule = args.slice(1).join(' ');
+    termPrint({ t:'t-out', v:'' });
+    termPrint({ t:'t-def', v:`[FIREWALL] Rule applied: iptables ${flag} ${rule}` });
+    logEvent('DEF', `[TERM] iptables rule: ${args.join(' ')}`, 'def');
+  } else if (flag === '-F' || flag === '--flush') {
+    termPrint({ t:'t-warn', v:'All iptables rules flushed — firewall OPEN' });
+  } else {
+    termPrint({ t:'t-out', v:`iptables v1.8.9 (legacy)\nUsage: iptables -L | -A INPUT ... | -D | -F | -P <chain> <policy>` });
+  }
+});
+
+// ── systemctl ─────────────────────────────────────────────────────────────────
+defCmd('systemctl', (args) => {
+  if (PRIV.level === 'user' && ['start','stop','restart','enable','disable'].includes(args[0])) {
+    termPrint({ t:'t-err', v:`Failed to ${args[0]} ${args[1] || 'service'}.service: Interactive authentication required.\nSee system logs and 'systemctl status' for details. Use sudo.` }); return;
+  }
+  const sub  = args[0];
+  const svc  = args[1] || 'sshd';
+  const svcs = { sshd:'active (running)',  nginx:'active (running)', mysql:'active (running)', 'apache2':'active (running)', ufw:'active (exited)', 'metasploit':'inactive (dead)' };
+  if (sub === 'status') {
+    const state = svcs[svc] || 'active (running)';
+    const active = state.startsWith('active');
+    termPrint({ t:'t-out', v:`● ${svc}.service - ${svc.charAt(0).toUpperCase()+svc.slice(1)} Service\n     Loaded: loaded (/lib/systemd/system/${svc}.service; enabled; vendor preset: enabled)\n     Active: <span style="color:var(--${active?'green':'red'})">${state}</span> since ${new Date().toISOString().slice(0,10)} 00:00:00 UTC; 6h ago\n    Process: ExecStart=/usr/sbin/${svc} (code=exited, status=0/SUCCESS)\n   Main PID: ${Math.floor(Math.random()*2000+1000)} (${svc})` });
+  } else if (['start','stop','restart'].includes(sub)) {
+    termPrint({ t:'t-out', v:'' });
+    termPrint({ t:'t-def', v:`[SYS] ${svc} ${sub}ed successfully` });
+  } else if (sub === 'list-units' || sub === 'list') {
+    ['sshd','nginx','cron','ufw','mysql','networking','rsyslog'].forEach(s => {
+      termPrint({ t:'t-out', v:`  ${(s+'.service').padEnd(30)} loaded active running   ${s.charAt(0).toUpperCase()+s.slice(1)}` });
+    });
+  }
+});
+
+// ── crontab ───────────────────────────────────────────────────────────────────
+defCmd('crontab', (args) => {
+  if (args.includes('-l')) {
+    termPrint({ t:'t-out', v:`# Crontab for root\n*/5 * * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1\n0 2 * * * /root/tools/scan_internal.py -q\n@reboot /root/.hidden/persist.sh &` });
+    termPrint({ t:'t-warn', v:`[!] Suspicious: /root/.hidden/persist.sh runs at reboot — possible persistence mechanism` });
+  } else if (args.includes('-e')) {
+    termPrint({ t:'t-dim', v:`Opening crontab in vi... (use ':wq' to save)` });
+  } else {
+    termPrint({ t:'t-out', v:`crontab: usage: crontab [-l] [-e] [-r] [file]` });
+  }
+});
+
+// ── find ──────────────────────────────────────────────────────────────────────
+defCmd('find', (args) => {
+  const path = args[0] || '/';
+  const name = args.find((a,i) => args[i-1] === '-name') || '';
+  const perm = args.find((a,i) => args[i-1] === '-perm') || '';
+  if (perm === '/4000' || perm === '-4000' || perm === '-u=s') {
+    const suid = ['/usr/bin/sudo','/usr/bin/passwd','/usr/bin/su','/usr/bin/newgrp','/usr/sbin/exim4','/usr/bin/find','/usr/bin/nmap','/bin/bash','/usr/bin/python3'];
+    termPrint({ t:'t-warn', v:`SUID binaries (potential privilege escalation):` });
+    suid.filter(() => Math.random()>0.3).forEach(f => termPrint({ t:'t-atk', v:`  <span style="color:var(--yellow)">${f}</span>` }));
+    logEvent('ATK', '[TERM] find SUID — potential privesc vectors found', 'atk');
+  } else {
+    const results = (FS.dirs[path] || []).filter(f => !name || f.includes(name.replace('*','').replace('.',''))).slice(0,6);
+    results.forEach(f => termPrint({ t:'t-out', v:`${path}/${f}` }));
+    if (!results.length) termPrint({ t:'t-dim', v:`find: no results for ${sanitizeText(path)}` });
+  }
+});
+
+// ── grep ──────────────────────────────────────────────────────────────────────
+defCmd('grep', (args) => {
+  const pattern = args.find(a => !a.startsWith('-') && !a.includes('/')) || '';
+  const file    = args.find(a => a.includes('/')) || '';
+  if (!pattern) { termPrint({ t:'t-err', v:'grep: missing pattern' }); return; }
+  const content = file ? (FS.files[file] || '') : '';
+  if (content) {
+    content.split('\n').filter(l => l.includes(pattern)).forEach(l => {
+      termPrint({ t:'t-out', v: l.replace(pattern, `<span style="color:var(--red)">${pattern}</span>`) });
+    });
+  } else {
+    const matches = Math.floor(Math.random()*5+1);
+    for (let i=0; i<matches; i++) {
+      termPrint({ t:'t-out', v:`result_line_${i+1}: ...context... <span style="color:var(--red)">${sanitizeText(pattern)}</span> ...more context...` });
+    }
+  }
+});
+
+// ── env ───────────────────────────────────────────────────────────────────────
+defCmd('env', () => {
+  termPrint({ t:'t-out', v:`SHELL=/bin/bash\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\nHOME=/root\nUSER=${PRIV.level==='root'?'root':'kali'}\nTERM=xterm-256color\nLANG=en_US.UTF-8\nSHLVL=1\nLOGNAME=${PRIV.level==='root'?'root':'kali'}\nDISPLAY=:0.0` });
+});
+
+// ── history (enhanced) ─────────────────────────────────────────────────────────
+// already exists, just supplement with full bash history feel
+defCmd('clear', () => {
+  document.getElementById('termOutput').innerHTML = '';
+});
+
+// ── enum4linux ────────────────────────────────────────────────────────────────
+defCmd('enum4linux', (args) => {
+  const target = args.find(a => !a.startsWith('-')) || '10.0.0.3';
+  const lines = [
+    { t:'t-out', v:`Starting enum4linux v0.9.1 ( http://labs.portcullis.co.uk/application/enum4linux/ )` },
+    { t:'t-dim', v:`\n ========================== \n|    Target Information    |\n ========================== \nTarget ........... ${sanitizeText(target)}\nRID Range ........ 500-550,1000-1050\nUsername ......... ''` },
+    { t:'t-dim', v:`\n ============================== \n|    OS information on ${sanitizeText(target)}    |\n ============================== \nOS: Windows Server 2019 Standard 17763\nOS Build: 17763\nNative LAN Manager: Windows Server 2019 Standard 6.3` },
+    { t:'t-warn', v:`\n[+] Got domain/workgroup name: CYBAASH` },
+    { t:'t-warn', v:`[+] Server ${sanitizeText(target)} allows sessions using username '', password ''` },
+    { t:'t-out', v:`\nUser enumeration:\n  index: 0x1 RID: 0x1f4 acb: 0x00000210 Account: Administrator  Desc: Built-in account for administering the computer/domain\n  index: 0x2 RID: 0x1f5 acb: 0x00000215 Account: Guest         Desc: Built-in account for guest access\n  index: 0x3 RID: 0x3e8 acb: 0x00000210 Account: operator      Desc: \n  index: 0x4 RID: 0x3ea acb: 0x00000210 Account: svc_backup    Desc: Backup service account` },
+    { t:'t-atk', v:`\n[+] Password Info for Domain: CYBAASH\n\t[+] Minimum password length: 7\n\t[+] Password history length: 24\n\t[+] Maximum password age: Not Set\n\t[-] Lockout threshold: 0 — BRUTE FORCE POSSIBLE` },
+  ];
+  asyncPrint(lines, 200);
+  logEvent('ATK', `[ENUM4LINUX] SMB enumeration ${target} — users exposed`, 'atk');
+});
+
+// ── linpeas ───────────────────────────────────────────────────────────────────
+defCmd('linpeas', (args) => {
+  const lines = [
+    { t:'t-out', v:`<span style="color:var(--red)">╔══════════╗\n║ linPEAS  ║  Local Privilege Escalation Awesome Script\n╚══════════╝\n</span>` },
+    { t:'t-warn', v:`[+] Checking sudo version...` },
+    { t:'t-atk',  v:`  Sudo version 1.9.5p2  <-- CVE-2021-3156 (Heap-Based Buffer Overflow)` },
+    { t:'t-warn', v:`[+] SUID files:` },
+    { t:'t-atk',  v:`  /usr/bin/find  /usr/bin/python3  /usr/sbin/exim4  /bin/bash` },
+    { t:'t-warn', v:`[+] Writable directories in PATH:` },
+    { t:'t-atk',  v:`  /tmp  /dev/shm  (writable by world)` },
+    { t:'t-warn', v:`[+] Crontab:` },
+    { t:'t-atk',  v:`  @reboot /root/.hidden/persist.sh — PERSISTENCE MECHANISM DETECTED` },
+    { t:'t-warn', v:`[+] Network services listening internally:` },
+    { t:'t-out',  v:`  127.0.0.1:3306 (MySQL — no auth?)  127.0.0.1:6379 (Redis — no auth?)` },
+    { t:'t-warn', v:`[+] Interesting files:` },
+    { t:'t-atk',  v:`  /root/.ssh/id_rsa (600 — readable)  /etc/shadow (readable — bad permissions!)` },
+    { t:'t-atk',  v:`  /var/www/html/config.php — contains DB_PASSWORD in plaintext` },
+    { t:'t-warn', v:`[+] Writable /etc/passwd: NO\n[+] Writable /etc/sudoers: NO` },
+  ];
+  asyncPrint(lines, 150);
+  logEvent('ATK', '[LINPEAS] Local priv-esc check — multiple vectors found', 'atk');
+});
+
+// ── ssh ───────────────────────────────────────────────────────────────────────
+defCmd('ssh', (args) => {
+  const target = args.find(a => a.includes('@') || /^\d/.test(a)) || '10.0.0.1';
+  const port   = args.find((a,i) => args[i-1] === '-p') || '22';
+  const key    = args.find((a,i) => args[i-1] === '-i');
+  termPrint({ t:'t-out', v:`SSH ${sanitizeText(target)} -p ${port}${key?' -i '+key:''}` });
+  setTimeout(() => {
+    const ok = Math.random() > 0.3;
+    if (ok) {
+      termPrint({ t:'t-out', v:`The authenticity of host '${sanitizeText(target)} (${sanitizeText(target)})' can't be established.\nED25519 key fingerprint is SHA256:${Array.from({length:43},()=>'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.charAt(Math.floor(Math.random()*64))).join('')}.\nAre you sure you want to continue connecting (yes/no/[fingerprint])? yes\n\nWarning: Permanently added '${sanitizeText(target)}' to the list of known hosts.` });
+      setTimeout(() => {
+        termPrint({ t:'t-def', v:`root@${sanitizeText(target.split('@').pop())}:~# ` });
+        termPrint({ t:'t-dim', v:`(SSH session opened — type commands normally)` });
+        logEvent('ATK', `[SSH] Session opened to ${target}`, 'atk');
+      }, 800);
+    } else {
+      termPrint({ t:'t-err', v:`ssh: connect to host ${sanitizeText(target)} port ${port}: Connection refused` });
+    }
+  }, 600);
+});
+
+// ── whois ─────────────────────────────────────────────────────────────────────
+defCmd('whois', (args) => {
+  const target = args[0] || 'cybaash.github.io';
+  termPrint({ t:'t-dim', v:`[WHOIS] Querying RDAP for ${sanitizeText(target)}...` });
+  workerFetch('/whois', { domain: sanitizeText(target) }).then(data => {
+    if (data.error) { termPrint({ t:'t-err', v:`whois: ${data.error}` }); return; }
+    termPrint({ t:'t-out', v:`Domain Name      : ${(data.domain||'').toUpperCase()}` });
+    termPrint({ t:'t-out', v:`Registrar        : ${data.registrar || 'N/A'}` });
+    termPrint({ t:'t-out', v:`Creation Date    : ${data.created || 'N/A'}` });
+    termPrint({ t:'t-out', v:`Updated Date     : ${data.updated || 'N/A'}` });
+    termPrint({ t:'t-out', v:`Registry Expiry  : ${data.expires || 'N/A'}` });
+    termPrint({ t:'t-out', v:`Domain Status    : ${data.status || 'N/A'}` });
+    (data.nameservers || []).forEach(ns => termPrint({ t:'t-out', v:`Name Server      : ${ns}` }));
+    termPrint({ t:'t-dim', v:`Source: ${data.source || 'RDAP'} — Real-time lookup` });
+  });
+});
+
+// ── dig / nslookup ────────────────────────────────────────────────────────────
+defCmd('dig', (args) => {
+  const target = args.find(a => !a.startsWith('@') && !a.startsWith('+') && !a.startsWith('-') && a.includes('.')) || 'cybaash.github.io';
+  const type   = args.find(a => ['A','AAAA','MX','NS','TXT','SOA','CNAME'].includes(a.toUpperCase()))?.toUpperCase() || 'A';
+  termPrint({ t:'t-dim', v:`; <<>> DiG 9.18.12 <<>> ${sanitizeText(target)} ${type}` });
+  termPrint({ t:'t-dim', v:`;; Querying Cloudflare DoH 1.1.1.1...` });
+  workerFetch('/dns', { domain: sanitizeText(target), type }).then(data => {
+    if (data.error) { termPrint({ t:'t-err', v:`dig: ${data.error}` }); return; }
+    termPrint({ t:'t-out', v:`;; ANSWER SECTION:` });
+    if (!data.answers || !data.answers.length) {
+      termPrint({ t:'t-warn', v:`;; status: ${data.status || 'NXDOMAIN'} — no records found` });
+    } else {
+      data.answers.forEach(a => termPrint({ t:'t-out', v:`${(a.name||'').padEnd(40)} ${a.ttl || ''}	IN	${type}	${a.data}` }));
+    }
+    termPrint({ t:'t-dim', v:`\n;; Query time: ${Math.floor(Math.random()*30+5)} msec\n;; SERVER: 1.1.1.1#53 (Cloudflare DoH)\n;; WHEN: ${new Date().toUTCString()}\n;; MSG SIZE rcvd: ${Math.floor(Math.random()*200+60)}` });
+  });
+});
+defCmd('nslookup', (args) => termExec('dig ' + args.join(' ')));
+
+// ── traceroute ────────────────────────────────────────────────────────────────
+
+
+defCmd('cve', (args) => {
+  const id = args[0] || '';
+  if (!id.toUpperCase().match(/^CVE-\d{4}-\d+$/)) {
+    termPrint({ t:'t-err', v:`Usage: cve CVE-YYYY-NNNNN  (e.g. cve CVE-2021-44228)` }); return;
+  }
+  termPrint({ t:'t-dim', v:`[CVE] Querying NVD for ${id.toUpperCase()}...` });
+  workerFetch('/cve', { id: id.toUpperCase() }).then(data => {
+    if (data.error) { termPrint({ t:'t-err', v:`cve: ${data.error}` }); return; }
+    const col = !data.cvss ? 'var(--dim)' : data.cvss.score >= 9 ? 'var(--red)' : data.cvss.score >= 7 ? 'var(--orange)' : data.cvss.score >= 4 ? 'var(--yellow)' : 'var(--green)';
+    termPrint({ t:'t-sep', v:'╔══════════════════════════════════════════════════════╗' });
+    termPrint({ t:'t-out', v:`  <span style="color:var(--red)">${data.id}</span>  —  Status: ${data.status}` });
+    termPrint({ t:'t-sep', v:'╠══════════════════════════════════════════════════════╣' });
+    if (data.cvss) {
+      termPrint({ t:'t-out', v:`  CVSS ${data.cvss.version} Score : <span style="color:${col}">${data.cvss.score} ${data.cvss.severity || ''}</span>` });
+      termPrint({ t:'t-out', v:`  Vector        : ${data.cvss.vector}` });
+      if (data.cvss.attackVector)   termPrint({ t:'t-out', v:`  Attack Vector  : ${data.cvss.attackVector}` });
+      if (data.cvss.complexity)     termPrint({ t:'t-out', v:`  Complexity     : ${data.cvss.complexity}` });
+      if (data.cvss.privRequired)   termPrint({ t:'t-out', v:`  Privileges Req : ${data.cvss.privRequired}` });
+      if (data.cvss.scope)          termPrint({ t:'t-out', v:`  Scope          : ${data.cvss.scope}` });
+    }
+    termPrint({ t:'t-out', v:`  Published      : ${data.published?.slice(0,10)}  |  Modified: ${data.modified?.slice(0,10)}` });
+    termPrint({ t:'t-sep', v:'  ──────────────────────────────────────────────────────' });
+    termPrint({ t:'t-out', v:`  ${data.description}` });
+    if (data.weaknesses?.length) termPrint({ t:'t-warn', v:`  CWE: ${data.weaknesses.join(', ')}` });
+    if (data.references?.length) {
+      termPrint({ t:'t-sep', v:'  ──────────────────────────────────────────────────────' });
+      data.references.forEach(r => termPrint({ t:'t-dim', v:`  ${r}` }));
+    }
+    termPrint({ t:'t-sep', v:'╚══════════════════════════════════════════════════════╝' });
+  });
+});
+
+defCmd('searchcve', (args) => {
+  const q     = args.filter(a => !a.startsWith('-')).join(' ');
+  const limit = parseInt(args.find(a => /^\d+$/.test(a))) || 5;
+  if (!q) { termPrint({ t:'t-err', v:`Usage: searchcve <keyword> [limit]  (e.g. searchcve apache 5)` }); return; }
+  termPrint({ t:'t-dim', v:`[NVD] Searching for "${q}"...` });
+  workerFetch('/cves', { q, limit }).then(data => {
+    if (data.error) { termPrint({ t:'t-err', v:`searchcve: ${data.error}` }); return; }
+    termPrint({ t:'t-out', v:`Found ${data.total} CVEs matching "${data.query}" — showing ${data.results?.length || 0}:` });
+    termPrint({ t:'t-sep', v:'──────────────────────────────────────────────────────' });
+    (data.results || []).forEach(v => {
+      const col = !v.score ? 'var(--dim)' : v.score >= 9 ? 'var(--red)' : v.score >= 7 ? 'var(--orange)' : v.score >= 4 ? 'var(--yellow)' : 'var(--green)';
+      termPrint({ t:'t-out', v:`<span style="color:var(--red)">${v.id}</span>  <span style="color:${col}">${v.score ? v.score + ' ' + v.severity : 'N/A'}</span>  ${v.published}` });
+      termPrint({ t:'t-dim', v:`  ${v.description}` });
+    });
+    termPrint({ t:'t-dim', v:`Source: NVD — National Vulnerability Database` });
+  });
+});
+
+defCmd('livefeeds', (args) => {
+  termPrint({ t:'t-dim', v:`[THREAT] Fetching live critical CVEs from NVD...` });
+  workerFetch('/threats').then(data => {
+    if (data.error) { termPrint({ t:'t-err', v:`livefeeds: ${data.error}` }); return; }
+    termPrint({ t:'t-sep', v:'╔══════════════════════════════════════════════════════╗' });
+    termPrint({ t:'t-header', v:`  LIVE THREAT FEED — ${data.threats?.length || 0} CRITICAL CVEs` });
+    termPrint({ t:'t-sep', v:'╠══════════════════════════════════════════════════════╣' });
+    (data.threats || []).forEach(t => {
+      termPrint({ t:'t-atk', v:`  <span style="color:var(--red)">${t.id}</span>  CVSS ${t.score}  [${t.vector || 'N/A'}]  ${t.published}` });
+      termPrint({ t:'t-dim', v:`  ${t.description}` });
+    });
+    termPrint({ t:'t-sep', v:'╠══════════════════════════════════════════════════════╣' });
+    termPrint({ t:'t-dim', v:`  Source: ${data.source}  |  Updated: ${data.updated?.slice(0,19)}` });
+    termPrint({ t:'t-sep', v:'╚══════════════════════════════════════════════════════╝' });
+  });
+});
+
+defCmd('geoip', (args) => {
+  const target = args[0] || '';
+  termPrint({ t:'t-dim', v:`[GEO] Looking up ${sanitizeText(target) || 'your IP'}...` });
+  workerFetch('/ip', target ? { ip: sanitizeText(target) } : {}).then(data => {
+    if (data.error) { termPrint({ t:'t-err', v:`geoip: ${data.error}` }); return; }
+    const proxyFlag = data.proxy ? '<span style="color:var(--red)"> [PROXY/VPN DETECTED]</span>' : '';
+    const hostFlag  = data.hosting ? '<span style="color:var(--yellow)"> [HOSTING/DATACENTER]</span>' : '';
+    termPrint({ t:'t-out', v:`IP Address  : <span style="color:var(--blue)">${data.ip}</span>${proxyFlag}${hostFlag}` });
+    termPrint({ t:'t-out', v:`Location    : ${data.city}, ${data.region}, ${data.country} (${data.countryCode})` });
+    termPrint({ t:'t-out', v:`Coordinates : ${data.lat}, ${data.lon}` });
+    termPrint({ t:'t-out', v:`Timezone    : ${data.timezone}` });
+    termPrint({ t:'t-out', v:`ISP         : ${data.isp}` });
+    termPrint({ t:'t-out', v:`Org         : ${data.org}` });
+    termPrint({ t:'t-out', v:`ASN         : ${data.as}  (${data.asname})` });
+    termPrint({ t:'t-dim', v:`Source: ip-api.com — Real-time geolocation` });
+    logEvent('ATK', `[GEOIP] ${data.ip} → ${data.city}, ${data.country} (${data.isp})`, 'atk');
+  });
+});
+
+
+// ── geoip — REAL IP geolocation via Worker ────────────────────────────────────
+defCmd('geoip', (args) => {
+  const target = args[0] || '';
+  const display = sanitizeText(target) || 'your IP';
+  termPrint({ t:'t-dim', v:`[GEOIP] Locating ${display}...` });
+  workerFetch('/ip', target ? { ip: sanitizeText(target) } : {}).then(data => {
+    if (data.error) { termPrint({ t:'t-err', v:`geoip: ${data.error}` }); return; }
+    const proxyCol = data.proxy || data.hosting ? 'var(--yellow)' : 'var(--green)';
+    termPrint({ t:'t-sep', v:'─── IP GEOLOCATION ──────────────────────────────────────' });
+    termPrint({ t:'t-out', v:`  IP Address    : <span style="color:var(--blue)">${data.ip}</span>` });
+    termPrint({ t:'t-out', v:`  Country       : ${data.country} (${data.countryCode})` });
+    termPrint({ t:'t-out', v:`  Region        : ${data.region}` });
+    termPrint({ t:'t-out', v:`  City          : ${data.city} ${data.zip}` });
+    termPrint({ t:'t-out', v:`  Coordinates   : ${data.lat}, ${data.lon}` });
+    termPrint({ t:'t-out', v:`  Timezone      : ${data.timezone}` });
+    termPrint({ t:'t-out', v:`  ISP           : ${data.isp}` });
+    termPrint({ t:'t-out', v:`  Organization  : ${data.org}` });
+    termPrint({ t:'t-out', v:`  ASN           : ${data.as}` });
+    termPrint({ t:'t-warn', v:`  Proxy/VPN     : <span style="color:${proxyCol}">${data.proxy ? 'YES — ANONYMIZED' : 'NO'}</span>` });
+    termPrint({ t:'t-warn', v:`  Hosting       : <span style="color:${proxyCol}">${data.hosting ? 'YES — DATACENTER/CDN' : 'NO'}</span>` });
+    termPrint({ t:'t-sep', v:'─────────────────────────────────────────────────────────' });
+    logEvent('ATK', `[GEOIP] ${data.ip} → ${data.city}, ${data.country} | ISP: ${data.isp}`, 'atk');
+  });
+});
+
+// ── cves — REAL CVE search via NVD ───────────────────────────────────────────
+defCmd('cves', (args) => {
+  const q     = args.filter(a => !a.startsWith('-')).join(' ');
+  const limit = parseInt(args.find(a => a.startsWith('-n'))?.replace('-n','')) || 5;
+  if (!q) { termPrint({ t:'t-err', v:`Usage: cves <keyword>  (e.g. cves apache rce)` }); return; }
+  termPrint({ t:'t-dim', v:`[NVD] Searching CVEs for "${sanitizeText(q)}"...` });
+  workerFetch('/cves', { q: sanitizeText(q), limit: Math.min(limit, 10) }).then(data => {
+    if (data.error) { termPrint({ t:'t-err', v:`cves: ${data.error}` }); return; }
+    termPrint({ t:'t-sep', v:`─── CVE SEARCH: "${sanitizeText(q)}" — ${data.total} total results ──────────` });
+    if (!data.results?.length) { termPrint({ t:'t-warn', v:'No CVEs found.' }); return; }
+    data.results.forEach(cve => {
+      const score = cve.score || 'N/A';
+      const col   = typeof score === 'number' && score >= 9 ? 'var(--red)' : score >= 7 ? 'var(--orange)' : score >= 4 ? 'var(--yellow)' : 'var(--green)';
+      termPrint({ t:'t-out', v:`\n  <span style="color:var(--red)">${cve.id}</span>  <span style="color:${col}">[CVSS ${score} ${cve.severity}]</span>  ${cve.published}` });
+      termPrint({ t:'t-dim', v:`  ${cve.description.slice(0,120)}...` });
+      termPrint({ t:'t-dim', v:`  Run: cve ${cve.id}` });
+    });
+    termPrint({ t:'t-sep', v:'─────────────────────────────────────────────────────────' });
+  });
+});
+
+// ── threatfeed — REAL live critical CVEs from NVD ────────────────────────────
+defCmd('threatfeed', (args) => {
+  termPrint({ t:'t-dim', v:`[NVD] Fetching live CRITICAL CVEs...` });
+  workerFetch('/threats').then(data => {
+    if (data.error && !data.threats) { termPrint({ t:'t-err', v:`threatfeed: ${data.error}` }); return; }
+    termPrint({ t:'t-sep', v:'╔══════════════════════════════════════════════════════╗' });
+    termPrint({ t:'t-header', v:'  LIVE THREAT FEED — NVD CRITICAL CVEs' });
+    termPrint({ t:'t-sep', v:`╠══ Updated: ${new Date(data.updated).toLocaleString()} ═══════════════╣` });
+    (data.threats || []).forEach((t, i) => {
+      const col = t.score >= 9.5 ? 'var(--red)' : 'var(--orange)';
+      termPrint({ t:'t-out', v:`\n  ${i+1}. <span style="color:${col}">${t.id}</span>  CVSS: <span style="color:${col}">${t.score}</span>  Vector: ${t.vector || 'N/A'}` });
+      termPrint({ t:'t-dim', v:`     ${(t.description||'').slice(0,100)}...` });
+      termPrint({ t:'t-dim', v:`     Published: ${t.published}  |  Run: cve ${t.id}` });
+    });
+    termPrint({ t:'t-sep', v:'╚══════════════════════════════════════════════════════╝' });
+    logEvent('SYS', `[THREATFEED] ${data.threats?.length} live CRITICAL CVEs loaded from NVD`, 'sys');
+  });
+});
+
+// ── osint — aggregate real WHOIS + DNS + GeoIP on one target ─────────────────
+defCmd('osint', (args) => {
+  const target = args[0];
+  if (!target) { termPrint({ t:'t-err', v:`Usage: osint <domain|ip>  (e.g. osint github.com)` }); return; }
+  const isIP = /^\d{1,3}(\.\d{1,3}){3}$/.test(target);
+  termPrint({ t:'t-sep', v:'╔══════════════════════════════════════════════════════╗' });
+  termPrint({ t:'t-header', v:`  OSINT RECON — ${sanitizeText(target).toUpperCase()}` });
+  termPrint({ t:'t-sep', v:'╠══════════════════════════════════════════════════════╣' });
+  termPrint({ t:'t-dim', v:`  Running: WHOIS · DNS (A/MX/NS) · GeoIP · Headers` });
+  termPrint({ t:'t-sep', v:'╠══════════════════════════════════════════════════════╣' });
+
+  const results = {};
+  let done = 0;
+  const total = isIP ? 1 : 4;
+
+  function tryFinish() {
+    done++;
+    if (done < total) return;
+    // Print consolidated results
+    if (results.whois && !results.whois.error) {
+      const w = results.whois;
+      termPrint({ t:'t-out', v:`\n  [WHOIS]` });
+      termPrint({ t:'t-out', v:`    Registrar  : ${w.registrar || 'N/A'}` });
+      termPrint({ t:'t-out', v:`    Created    : ${w.created || 'N/A'}` });
+      termPrint({ t:'t-out', v:`    Expires    : ${w.expires || 'N/A'}` });
+      termPrint({ t:'t-out', v:`    Status     : ${w.status || 'N/A'}` });
+      (w.nameservers || []).slice(0,3).forEach(ns => termPrint({ t:'t-out', v:`    Nameserver : ${ns}` }));
+    }
+    if (results.dns && !results.dns.error && results.dns.answers?.length) {
+      termPrint({ t:'t-out', v:`\n  [DNS — A Records]` });
+      results.dns.answers.forEach(a => termPrint({ t:'t-out', v:`    ${a.data.padEnd(20)} TTL:${a.ttl}` }));
+    }
+    if (results.mx && !results.mx.error && results.mx.answers?.length) {
+      termPrint({ t:'t-out', v:`\n  [DNS — MX Records]` });
+      results.mx.answers.forEach(a => termPrint({ t:'t-out', v:`    ${a.data}` }));
+    }
+    if (results.ns && !results.ns.error && results.ns.answers?.length) {
+      termPrint({ t:'t-out', v:`\n  [DNS — NS Records]` });
+      results.ns.answers.slice(0,4).forEach(a => termPrint({ t:'t-out', v:`    ${a.data}` }));
+    }
+    if (results.geo && !results.geo.error) {
+      const g = results.geo;
+      const proxyFlag = g.proxy ? '<span style="color:var(--red)"> [PROXY/VPN]</span>' : '';
+      const hostFlag  = g.hosting ? '<span style="color:var(--yellow)"> [DATACENTER]</span>' : '';
+      termPrint({ t:'t-out', v:`\n  [GeoIP]` });
+      termPrint({ t:'t-out', v:`    IP         : ${g.ip}${proxyFlag}${hostFlag}` });
+      termPrint({ t:'t-out', v:`    Location   : ${g.city}, ${g.region}, ${g.country}` });
+      termPrint({ t:'t-out', v:`    ISP / ASN  : ${g.isp} / ${g.as}` });
+    }
+    if (results.headers && !results.headers.error) {
+      const hdrs = results.headers.headers || {};
+      const server = hdrs['server'] || hdrs['x-powered-by'] || 'Unknown';
+      const missing = [];
+      if (!hdrs['strict-transport-security'])                            missing.push('HSTS');
+      if (!hdrs['x-frame-options'] && !hdrs['content-security-policy']) missing.push('X-Frame-Options');
+      if (!hdrs['x-content-type-options'])                              missing.push('X-Content-Type-Options');
+      if (!hdrs['content-security-policy'])                             missing.push('CSP');
+      termPrint({ t:'t-out', v:`\n  [HTTP Headers]` });
+      termPrint({ t:'t-out', v:`    Status     : ${results.headers.status} ${results.headers.statusText}` });
+      termPrint({ t:'t-out', v:`    Server     : ${server}` });
+      if (missing.length) termPrint({ t:'t-warn', v:`    Missing    : <span style="color:var(--red)">${missing.join(', ')}</span>` });
+      else                termPrint({ t:'t-def',  v:`    Security   : All major headers present ✓` });
+    }
+    termPrint({ t:'t-sep', v:'\n╚══════════════════════════════════════════════════════╝' });
+    logEvent('ATK', `[OSINT] Full recon on ${target}`, 'atk');
+  }
+
+  if (isIP) {
+    workerFetch('/ip', { ip: sanitizeText(target) }).then(d => { results.geo = d; tryFinish(); });
+  } else {
+    const domain = sanitizeText(target);
+    const proto  = 'https://';
+    workerFetch('/whois',   { domain }).then(d => { results.whois = d; tryFinish(); });
+    workerFetch('/dns',     { domain, type:'A'  }).then(d => { results.dns = d; tryFinish(); });
+    workerFetch('/dns',     { domain, type:'MX' }).then(d => { results.mx  = d; tryFinish(); });
+    workerFetch('/dns',     { domain, type:'NS' }).then(d => { results.ns  = d; tryFinish(); });
+  }
+});
+
+// ── myip — show your real public IP ──────────────────────────────────────────
+defCmd('myip', () => {
+  termPrint({ t:'t-dim', v:'[GEOIP] Fetching your public IP...' });
+  workerFetch('/ip', {}).then(data => {
+    if (data.error) { termPrint({ t:'t-err', v:`myip: ${data.error}` }); return; }
+    const flag = data.proxy ? '<span style="color:var(--yellow)"> (Proxy/VPN detected)</span>' : data.hosting ? '<span style="color:var(--blue)"> (Datacenter)</span>' : '';
+    termPrint({ t:'t-out', v:`Your public IP: <span style="color:var(--blue)">${data.ip}</span>${flag}` });
+    termPrint({ t:'t-dim', v:`Location: ${data.city}, ${data.region}, ${data.country} | ISP: ${data.isp}` });
+  });
+});
+
+defCmd('traceroute', (args) => {
+  const target = args[0] || '10.0.0.1';
+  termPrint({ t:'t-out', v:`traceroute to ${sanitizeText(target)} (${sanitizeText(target)}), 30 hops max, 60 byte packets` });
+  const hops = Math.floor(Math.random()*5+3);
+  for(let i=1; i<=hops; i++) {
+    const ip = i===hops ? sanitizeText(target) : `10.0.${Math.floor(Math.random()*5)}.${Math.floor(Math.random()*254)+1}`;
+    const t1 = (Math.random()*10+0.5).toFixed(3), t2 = (parseFloat(t1)+Math.random()*2).toFixed(3), t3 = (parseFloat(t2)+Math.random()*2).toFixed(3);
+    setTimeout(() => termPrint({ t:'t-out', v:` ${String(i).padStart(2)}  ${ip.padEnd(20)}  ${t1} ms  ${t2} ms  ${t3} ms` }), i * 200);
+  }
+});
+
+// ── xxd / hexdump ─────────────────────────────────────────────────────────────
+defCmd('xxd', (args) => {
+  const input = args.find(a => !a.startsWith('-')) || 'test';
+  const bytes = Array.from(input.slice(0,32)).map(c => c.charCodeAt(0).toString(16).padStart(2,'0'));
+  const ascii = Array.from(input.slice(0,32)).map(c => c.charCodeAt(0) > 31 && c.charCodeAt(0) < 127 ? c : '.').join('');
+  const hex   = bytes.join(' ').padEnd(47);
+  termPrint({ t:'t-out', v:`00000000: ${hex}  ${ascii}` });
+});
+
+// ── strings ───────────────────────────────────────────────────────────────────
+defCmd('strings', (args) => {
+  const file = args.find(a => !a.startsWith('-')) || '';
+  const interesting = ['/bin/sh','/etc/passwd','GLIBC_2.34','__libc_start_main','flag{','password','admin','secret','api_key','bearer'];
+  interesting.filter(() => Math.random()>0.4).forEach(s => termPrint({ t:'t-out', v: s }));
+});
+
+// ── file ──────────────────────────────────────────────────────────────────────
+defCmd('file', (args) => {
+  const f = args[0] || '';
+  const types = {'.py':'Python script, ASCII text executable','.sh':'Bourne-Again shell script, ASCII text executable','.txt':'ASCII text','.php':'PHP script, ASCII text','.bin':'ELF 64-bit LSB executable, x86-64','.c':'C source, ASCII text','.jpg':'JPEG image data, JFIF standard 1.01'};
+  const ext   = '.' + (f.split('.').pop() || 'bin');
+  termPrint({ t:'t-out', v:`${sanitizeText(f)}: ${types[ext] || 'ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked'}` });
+});
+
+// ── strace ────────────────────────────────────────────────────────────────────
+defCmd('strace', (args) => {
+  if (PRIV.level === 'user') { termPrint({ t:'t-err', v:'strace: Permission denied. Use sudo.' }); return; }
+  const prog = args.find(a => !a.startsWith('-')) || 'ls';
+  const calls = ['execve','read','write','open','close','stat','fstat','mmap','mprotect','munmap','brk','rt_sigaction','ioctl'];
+  termPrint({ t:'t-dim', v:`execve("${sanitizeText(prog)}", ["${sanitizeText(prog)}"], 0x7ffe... /* 23 vars */) = 0` });
+  calls.filter(() => Math.random()>0.3).forEach(c => {
+    const ret = Math.random()>0.15 ? Math.floor(Math.random()*100) : -1;
+    termPrint({ t:'t-dim', v:`${c}(${Math.floor(Math.random()*10)}, "${Math.random().toString(36).slice(2,8)}", ${Math.floor(Math.random()*4096)}) = ${ret}` });
+  });
+  termPrint({ t:'t-dim', v:`+++ exited with 0 +++` });
+});
+
+// ── update help menu ──────────────────────────────────────────────────────────
+const _origHelpFull = TERM_COMMANDS['help'];
+TERM_COMMANDS['help'] = (args) => {
+  if (args.length) { if (_origHelpFull) _origHelpFull(args); return; }
+  termPrint([
+    { t:'t-sep',    v:'╔══════════════════════════════════════════════════════╗' },
+    { t:'t-header', v:'  CYBAASH // CYBER OPS TERMINAL v5.1' },
+    { t:'t-sep',    v:'╠══════════════════════════════════════════════════════╣' },
+    { t:'t-out',    v:'  SIMULATION' },
+    { t:'t-dim',    v:'  launch / pause / stop / scenario / nodes / map / threat' },
+    { t:'t-dim',    v:'  score / export [timeline|score] / replay / whatif' },
+    { t:'t-sep',    v:'  ──────────────────────────────────────────────────────' },
+    { t:'t-out',    v:'  RED TEAM (attacker_1)' },
+    { t:'t-dim',    v:'  scan <node>       nmap <ip> [-sV -A -p-]   gobuster <url>' },
+    { t:'t-dim',    v:'  exploit <node>    sqlmap <url> [--dump]     nikto <ip>' },
+    { t:'t-dim',    v:'  lateral <src> <dst>   escalate <node>       phish <node>' },
+    { t:'t-dim',    v:'  hydra <ip> ssh    enum4linux <ip>           ssh <user@ip>' },
+    { t:'t-dim',    v:'  msfconsole        search <module>           use <module>' },
+    { t:'t-dim',    v:'  set RHOSTS <ip>   run / exploit             sessions' },
+    { t:'t-dim',    v:'  hashdump          getsystem                 sysinfo' },
+    { t:'t-dim',    v:'  nc -lvnp <port>   hashcat <hash>            john <file>' },
+    { t:'t-dim',    v:'  linpeas           find / -perm /4000        strace <prog>' },
+    { t:'t-sep',    v:'  ──────────────────────────────────────────────────────' },
+    { t:'t-out',    v:'  BLUE TEAM (defender_1)' },
+    { t:'t-dim',    v:'  isolate <node>    block <node>              patch <node>' },
+    { t:'t-dim',    v:'  rotate <node>     honeypot <node>           respond' },
+    { t:'t-dim',    v:'  iptables -L       iptables -A INPUT ...     tcpdump -i eth0' },
+    { t:'t-dim',    v:'  systemctl status  crontab -l                logwatch' },
+    { t:'t-sep',    v:'  ──────────────────────────────────────────────────────' },
+    { t:'t-out',    v:'  RECON & OSINT' },
+    { t:'t-dim',    v:'  whois <domain>    dig <domain> [A|MX|NS]    traceroute <ip>' },
+    { t:'t-dim',    v:'  geoip <ip>        cve CVE-YYYY-NNNN          cves <keyword>' },
+    { t:'t-dim',    v:'  osint <domain|ip> threatfeed                 myip' },
+    { t:'t-dim',    v:'  curl -v <url>     curl -I <url>              wget <url>' },
+    { t:'t-dim',    v:'  nslookup <host>                                           ' },
+    { t:'t-sep',    v:'  ──────────────────────────────────────────────────────' },
+    { t:'t-out',    v:'  SYSTEM' },
+    { t:'t-dim',    v:'  ls [-la] / cd / pwd / cat / echo / grep / find / env' },
+    { t:'t-dim',    v:'  ifconfig / ip addr / ss -tulpn / arp / netstat / ps aux' },
+    { t:'t-dim',    v:'  uname -a / hostname / whoami / id / sudo / su' },
+    { t:'t-dim',    v:'  openssl / base64 / xxd / strings / file / strace' },
+    { t:'t-dim',    v:'  systemctl / iptables / tcpdump / nc / kill / clear' },
+    { t:'t-sep',    v:'  ──────────────────────────────────────────────────────' },
+    { t:'t-out',    v:'  AI' },
+    { t:'t-dim',    v:'  ask <question>    gemini <question>         cyber <topic>' },
+    { t:'t-sep',    v:'╚══════════════════════════════════════════════════════╝' },
+    { t:'t-dim',    v:'  Tab autocomplete  ↑↓ history  Ctrl+C cancel  Ctrl+K palette' },
+  ]);
+};
+
+// ── TERMINAL DRAG-RESIZE ─────────────────────────────────────────────────────
 function termInitResize() {
   const overlay = document.getElementById('termOverlay');
   const handle  = document.getElementById('termDragHandle');
