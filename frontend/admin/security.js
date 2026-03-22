@@ -1636,7 +1636,3 @@ function checkForNewAlerts(newLogs, prevCount) {
     if (tabId === 'apt') loadAPTAlerts();
   };
 })();
-<div id="stat-total-threats" class="stat-card">
-  <span class="stat-label">Total Threats</span>
-  <span class="stat-val" id="total-threats-count">0</span>
-</div>
