@@ -14,9 +14,6 @@ on:
       - 'frontend/**'
       - '.github/workflows/deep-feature.yml'
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 concurrency:
   group: deep-feature-${{ github.ref }}
   cancel-in-progress: true
@@ -320,14 +317,13 @@ jobs:
                   print(f'❌  MISSING: {name} (id={pid})')
                   missing.append(name); errors += 1
 
-          # Only count INLINE script blocks — exclude external <script src=...> tags
-          scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', html, re.DOTALL)
-          print(f'\n── Script integrity: {len(scripts)} inline block(s) ─────────────')
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', html, re.DOTALL)
+          print(f'\n── Script integrity: {len(scripts)} block(s) ─────────────')
           if len(scripts) != 1:
-              print(f'❌ Expected 1 inline script block, found {len(scripts)} — broken </script> in data string')
+              print(f'❌ Expected 1 script block, found {len(scripts)} — broken </script> in data')
               errors += 1
           else:
-              print('✓  Single inline script block intact')
+              print('✓  Single script block intact')
 
           size_kb = Path('frontend/admin/tools.html').stat().st_size / 1024
           print(f'✓  File size: {size_kb:.0f}KB')
@@ -904,10 +900,9 @@ jobs:
 
           print('\n── Tools page script integrity ──────────────────────')
           tools = Path('frontend/admin/tools.html').read_text()
-          # Exclude external <script src=...> — count only inline blocks
-          scripts = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', tools, re.DOTALL)
+          scripts = re.findall(r'<script[^>]*>(.*?)</script>', tools, re.DOTALL)
           ok3 = len(scripts) == 1
-          print(f'{"✓ " if ok3 else "❌"}  tools.html: {len(scripts)} inline script block(s) (expected 1)')
+          print(f'{"✓ " if ok3 else "❌"}  tools.html: {len(scripts)} script block(s) (expected 1)')
           if not ok3: errors += 1
 
           if errors: sys.exit(1)
