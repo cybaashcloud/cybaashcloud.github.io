@@ -304,6 +304,8 @@ async function handleLogin(e) {
   el('login-password').value = '';
 }
 
+// FIX: Single canonical grantSession declaration.
+// The TOTP wrapper below will reassign this via _originalGrantSession.
 function grantSession() {
   STATE.authenticated = true;
   STATE.sessionExpiry = Date.now() + SOC_CONFIG.sessionTimeout * 60 * 1000;
@@ -454,7 +456,6 @@ function getMockData(action, params) {
   if (action === 'verifyAdmin') {
     return { ok: false }; // Falls back to local hash
   }
-
 
   if (action === 'getAPTAlerts') {
     return {
@@ -983,18 +984,14 @@ function loadSettings() {
 // ─────────────────────────────────────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────────────────────────────────────
-// ── Load appsScriptUrl from Cloudflare Worker at startup ──────────────────
 async function loadSOCConfig() {
   // All API calls now go through Worker /api — no direct Apps Script URL needed
-  // Worker handles CORS, auth injection, and forwarding server-side
   console.log('[SOC] Config: all calls routed via Worker /api');
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EMERGENCY RESET — run in browser console if locked out:
 //   SOCreset()
-// This clears stored password hash and lets you log in with default password
 // ─────────────────────────────────────────────────────────────────────────────
 window.SOCreset = function() {
   localStorage.removeItem('soc_pw_hash');
@@ -1004,6 +1001,10 @@ window.SOCreset = function() {
   location.reload();
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DOMContentLoaded — single consolidated handler
+// FIX: Merged the two separate DOMContentLoaded listeners into one.
+// ─────────────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   loadSOCConfig(); // async — non-blocking
   loadSettings();
@@ -1035,27 +1036,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const inp = el('login-password');
     inp.type = inp.type === 'password' ? 'text' : 'password';
   });
+
+  // Terminal input — Enter key
+  const inp = el('terminal-input');
+  if (inp) {
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') runTerminalCommand();
+    });
+  }
+
+  // APT tab click handler
+  const aptTab = document.querySelector('.nav-tab[data-tab="apt"]');
+  if (aptTab) {
+    aptTab.addEventListener('click', () => loadAPTAlerts());
+  }
+
+  // Intel Panel link
+  const intelLink = el('intel-panel-link');
+  if (intelLink) {
+    intelLink.addEventListener('click', () => window.open('/admin/intel.html', '_blank'));
+  }
+
+  // Request push notification permission on first user gesture
+  document.addEventListener('click', requestNotificationPermission, { once: true });
 });
 
-
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- *  CYBAASH SOC — security.js MILITARY ADDITIONS v2.0
- *
- *  HOW TO APPLY:
- *  Paste this entire block at the BOTTOM of your existing security.js,
- *  just before the closing line (or at end of file).
- *
- *  Also add to security.html (see HTML ADDITIONS section at bottom):
- *   - APT Alerts nav tab button
- *   - APT Alerts panel div
- *   - TOTP login step overlay
- *
- *  All existing functions are preserved. This file only ADDS new ones.
- * ═══════════════════════════════════════════════════════════════════════════
- */
-
-'use strict';
+// ═══════════════════════════════════════════════════════════════════════════
+//  MILITARY ADDITIONS v2.0
+// ═══════════════════════════════════════════════════════════════════════════
+// FIX: Removed duplicate 'use strict' — already declared at top of file.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UPGRADE 5A — APT ALERTS TAB
@@ -1147,8 +1156,7 @@ async function loadAPTAlerts() {
 // UPGRADE 5B — ADMIN TERMINAL UPGRADE
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Override/extend the existing handleTerminalCommand function
-// Store ref to original if it exists
+// Store ref to original handler if it exists
 const _originalHandleTerminalCommand = (typeof handleTerminalCommand === 'function')
   ? handleTerminalCommand
   : null;
@@ -1159,7 +1167,6 @@ function handleTerminalCommand(input) {
   const args    = parts.slice(1);
   const WORKER  = 'https://cybaash.mohamedaasiq07.workers.dev';
 
-  // ── NEW v2.0 commands ──────────────────────────────────────────────
   switch (cmd) {
 
     case 'apt-alerts':
@@ -1220,7 +1227,7 @@ function handleTerminalCommand(input) {
       }
       return;
 
-    case 'purge':
+    case 'purge': {
       const days = parseInt(args[0]) || 30;
       if (!confirm(`Delete SOC logs older than ${days} days?`)) { termPrint('  Aborted.'); return; }
       termPrint(`> Purging logs older than ${days} days...`);
@@ -1228,8 +1235,9 @@ function handleTerminalCommand(input) {
         termPrint(d.success ? `  ✅ Deleted ${d.deleted} rows (kept last ${days} days)` : `  ❌ ${d.error}`);
       }).catch(e => termPrint('  ❌ ' + e.message));
       return;
+    }
 
-    case 'export':
+    case 'export': {
       const limit = parseInt(args[1]) || 1000;
       termPrint(`> Exporting ${limit} logs as CSV...`);
       callAppsScript('exportCSV', { limit }).then(d => {
@@ -1242,6 +1250,7 @@ function handleTerminalCommand(input) {
         termPrint(`  ✅ Exported ${d.rows} rows`);
       }).catch(e => termPrint('  ❌ ' + e.message));
       return;
+    }
 
     case 'report':
       termPrint('> Sending daily intel briefing...');
@@ -1284,7 +1293,6 @@ function handleTerminalCommand(input) {
       return;
 
     case 'help':
-      // Extend existing help
       if (_originalHandleTerminalCommand) {
         _originalHandleTerminalCommand(input);
       }
@@ -1305,7 +1313,6 @@ function handleTerminalCommand(input) {
       return;
 
     default:
-      // Fall through to original handler
       if (_originalHandleTerminalCommand) {
         _originalHandleTerminalCommand(input);
       } else {
@@ -1314,7 +1321,7 @@ function handleTerminalCommand(input) {
   }
 }
 
-// Terminal print helper (works with existing termLog)
+// Terminal print helper
 function termPrint(line) {
   const term = el('terminal-output');
   if (!term) return;
@@ -1344,42 +1351,51 @@ async function quickPassiveScan(url) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// UPGRADE 5C — TWO-FACTOR TOTP LOGIN
-// ─────────────────────────────────────────────────────────────────────────────
-let _totpPending = false;
-
-// Patch the existing grantSession to add optional TOTP step
-// We wrap it rather than redeclare to avoid duplicate identifier errors
-const _originalGrantSession = grantSession;
-
-async function grantSessionWithTOTP() {
-  // Check if TOTP is enabled
-  try {
-    const cfg = await callAppsScript('verifyAdmin', { token: 'check_totp_enabled' });
-    if (cfg && cfg.totpEnabled) {
-      await startTOTPFlow();
-      return;
-    }
-  } catch(_) {}
-  // TOTP not enabled or error — grant session directly
-  _originalGrantSession();
+// Terminal run — called by Run button and Enter key
+function runTerminalCommand() {
+  const input = el('terminal-input');
+  if (!input) return;
+  const cmd = input.value.trim();
+  if (!cmd) return;
+  termLog('info', '$ ' + cmd);
+  input.value = '';
+  handleTerminalCommand(cmd);
 }
 
-// Override: future calls to login flow use the TOTP version
-// handleLogin calls grantSession() — patch it at the call site via the form submit
-document.addEventListener('DOMContentLoaded', function() {
-  var loginForm = document.getElementById('login-form');
-  if (loginForm) {
-    loginForm.addEventListener('submit', function() {
-      // After original handler runs, if authenticated, intercept with TOTP
-      // This is handled by startTOTPFlow being called from within handleLogin
-    }, { capture: true });
+// ─────────────────────────────────────────────────────────────────────────────
+// UPGRADE 5C — TWO-FACTOR TOTP LOGIN
+//
+// How it works:
+//   1. After password auth succeeds, handleLogin calls grantSession().
+//   2. grantSession is reassigned below to an async wrapper.
+//   3. The wrapper checks a SOC_CONFIG flag (or localStorage override)
+//      to decide whether TOTP is required — no extra network call needed.
+//   4. If TOTP is required → startTOTPFlow() shows the overlay; on success
+//      it calls _originalGrantSession() to complete the login.
+//   5. If TOTP is disabled → falls straight through to _originalGrantSession().
+//
+// To ENABLE TOTP:  set  localStorage.setItem('soc_totp_enabled', '1')
+//                  or   SOC_CONFIG.totpEnabled = true  in the config block.
+// To DISABLE TOTP: localStorage.removeItem('soc_totp_enabled')
+// ─────────────────────────────────────────────────────────────────────────────
+const _originalGrantSession = grantSession;
+
+grantSession = async function() {
+  // Check if TOTP is enabled via config or localStorage override
+  const totpEnabled = SOC_CONFIG.totpEnabled ||
+                      localStorage.getItem('soc_totp_enabled') === '1';
+
+  if (totpEnabled) {
+    // startTOTPFlow will call _originalGrantSession() on success
+    await startTOTPFlow();
+    return;
   }
-});
+
+  // TOTP not enabled — grant session immediately
+  _originalGrantSession();
+};
 
 async function startTOTPFlow() {
-  // Request TOTP code to be emailed
   termLog('info', '2FA required — sending code to alert email...');
 
   const overlay = document.createElement('div');
@@ -1408,11 +1424,8 @@ async function startTOTPFlow() {
   `;
 
   document.body.appendChild(overlay);
-
-  // Auto-focus the input
   setTimeout(() => document.getElementById('totp-input')?.focus(), 100);
 
-  // Send the TOTP code
   try {
     await callAppsScript('generateTOTP');
     termLog('info', 'TOTP code sent to alert email');
@@ -1420,7 +1433,6 @@ async function startTOTPFlow() {
     termLog('warn', 'TOTP send failed: ' + e.message);
   }
 
-  // Countdown timer
   let seconds = 120;
   const countdown = setInterval(() => {
     seconds--;
@@ -1434,7 +1446,6 @@ async function startTOTPFlow() {
     }
   }, 1000);
 
-  // Verify button
   document.getElementById('totp-verify-btn').addEventListener('click', async () => {
     const code = (document.getElementById('totp-input').value || '').trim();
     if (!code || code.length < 6) {
@@ -1449,7 +1460,7 @@ async function startTOTPFlow() {
         clearInterval(countdown);
         overlay.remove();
         termLog('info', '2FA verified — session granted');
-        if (_originalGrantSession) _originalGrantSession();
+        _originalGrantSession();
       } else {
         const err = document.getElementById('totp-error');
         err.textContent = 'Invalid code. ' + (result.reason || 'Try again.');
@@ -1462,12 +1473,10 @@ async function startTOTPFlow() {
     }
   });
 
-  // Enter key on input
   document.getElementById('totp-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('totp-verify-btn').click();
   });
 
-  // Cancel
   document.getElementById('totp-cancel-btn').addEventListener('click', () => {
     clearInterval(countdown);
     overlay.remove();
@@ -1489,13 +1498,11 @@ function playAlertSound(level) {
     gain.connect(ctx.destination);
 
     if (level === 'critical') {
-      // Two-tone alarm for critical
       osc.frequency.value = 880;
       gain.gain.setValueAtTime(0.3, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.5);
-      // Second beep
       setTimeout(() => {
         try {
           const ctx2 = new AudioCtx();
@@ -1509,19 +1516,15 @@ function playAlertSound(level) {
         } catch(_) {}
       }, 600);
     } else {
-      // Single soft beep for high
       osc.frequency.value = 440;
       gain.gain.setValueAtTime(0.1, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.2);
     }
-  } catch(_) {
-    // Audio unavailable — fail silently
-  }
+  } catch(_) {}
 }
 
-// Request push notification permission on first interaction
 function requestNotificationPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission().then(perm => {
@@ -1530,7 +1533,6 @@ function requestNotificationPermission() {
   }
 }
 
-// Check for new high-risk events after each data refresh
 let _prevLogCount = 0;
 
 function checkForNewAlerts(newLogs, prevCount) {
@@ -1546,7 +1548,6 @@ function checkForNewAlerts(newLogs, prevCount) {
     playAlertSound('critical');
     showToast(`🔴 CRITICAL: ${target.attackType} from ${target.ip}`, 'error', 8000);
 
-    // Browser push notification
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
         new Notification('CYBAASH SOC — CRITICAL ALERT', {
@@ -1566,9 +1567,7 @@ function checkForNewAlerts(newLogs, prevCount) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // PATCH: Extend refreshAll to call checkForNewAlerts after each data refresh
-// Achieved by monkey-patching — avoids duplicate function declaration
 (function() {
   var _origRefreshAll = refreshAll;
   refreshAll = async function() {
@@ -1589,96 +1588,3 @@ function checkForNewAlerts(newLogs, prevCount) {
     if (tabId === 'apt') loadAPTAlerts();
   };
 })();
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH: Hook into DOMContentLoaded to add APT tab and request permissions
-// ─────────────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  // Request notification permission when authenticated
-  const origInit = window._socAuthHook;
-
-  // Add APT tab click handler if element exists
-  const aptTab = document.querySelector('.nav-tab[data-tab="apt"]');
-  if (aptTab) {
-    aptTab.addEventListener('click', () => loadAPTAlerts());
-  }
-
-  // Add Intel Panel link click handler
-  const intelLink = el('intel-panel-link');
-  if (intelLink) {
-    intelLink.addEventListener('click', () => window.open('/admin/intel.html', '_blank'));
-  }
-
-  // Request notifications on first user gesture
-  document.addEventListener('click', requestNotificationPermission, { once: true });
-});
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   SECURITY.HTML ADDITIONS — paste these HTML snippets into security.html
-   ═══════════════════════════════════════════════════════════════════════════
-
-   1. ADD APT ALERTS NAV TAB — in the nav tabs list next to existing tabs:
-   ─────────────────────────────────────────────────────────────────────────
-   <button class="nav-tab" data-tab="apt">
-     🔴 APT Alerts
-     <span id="apt-badge" style="background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;margin-left:6px;display:none">0</span>
-   </button>
-
-   2. ADD APT ALERTS PANEL — after the last existing tab-panel div:
-   ─────────────────────────────────────────────────────────────────────────
-   <div id="panel-apt" class="tab-panel">
-     <div class="panel-header">
-       <h3 style="color:var(--red);letter-spacing:3px">🔴 APT &amp; CRITICAL THREAT ALERTS</h3>
-       <div style="display:flex;gap:8px;align-items:center">
-         <button class="btn btn-ghost btn-sm" onclick="loadAPTAlerts()">⟳ Refresh</button>
-         <a id="intel-panel-link" href="/admin/intel.html" target="_blank" class="btn btn-ghost btn-sm">🔍 Intel Panel</a>
-       </div>
-     </div>
-     <div id="apt-alerts-list">
-       <div class="empty-state"><span class="es-icon">🛡️</span>Click Refresh to load APT alerts.</div>
-     </div>
-   </div>
-
-   3. ADD APT ALERTS MOCK DATA — in getMockData() function, add:
-   ─────────────────────────────────────────────────────────────────────────
-   if (action === 'getAPTAlerts') {
-     return {
-       alerts: [
-         { timestamp: new Date().toISOString(), ip: '185.220.101.47', country: 'RU',
-           attackType: 'APT', risk: 95, ttps: ['T1190','T1595.002','T1046'],
-           summary: 'Coordinated multi-vector attack with APT-like persistence indicators',
-           action: 'EMERGENCY_BLOCK', resolved: false },
-         { timestamp: new Date(Date.now()-3600000).toISOString(), ip: '45.142.212.100', country: 'NL',
-           attackType: 'HONEYPOT', risk: 88, ttps: ['T1595.001'],
-           summary: 'Honeypot triggered — likely automated scanner', action: 'BLOCK', resolved: true }
-       ]
-     };
-   }
-   ═══════════════════════════════════════════════════════════════════════════
-*/
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TERMINAL INPUT HANDLER — called by input keydown + Run button
-// ─────────────────────────────────────────────────────────────────────────────
-function runTerminalCommand() {
-  const input = el('terminal-input');
-  if (!input) return;
-  const cmd = input.value.trim();
-  if (!cmd) return;
-  termLog('info', '$ ' + cmd);
-  input.value = '';
-  handleTerminalCommand(cmd);
-}
-
-// Enter key on terminal input
-document.addEventListener('DOMContentLoaded', () => {
-  const inp = el('terminal-input');
-  if (inp) {
-    inp.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') runTerminalCommand();
-    });
-  }
-  // Notification permission on first click
-  document.addEventListener('click', requestNotificationPermission, { once: true });
-});
