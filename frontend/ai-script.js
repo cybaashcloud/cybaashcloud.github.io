@@ -142,7 +142,17 @@ function fillAndSend(message) {
 }
 
 function renderWelcome() {
-  appendMessage('bot', `## CYBAASH AI ⚡\n\nYour cybersecurity assistant. Ask me about:\n\n- **Vulnerabilities** — SQLi, XSS, CSRF, buffer overflows\n- **Secure coding** — best practices, code review\n- **Pen testing** — concepts and methodology (CTF/lab only)\n- **Tools** — use the sidebar to analyze passwords, URLs, and code\n\n*Educational use only. Never target real systems without permission.*`, [], null, true);
+  const welcomeMsg = [
+    '## CYBAASH AI ⚡',
+    'Your cybersecurity assistant. Ask me about:',
+    '- **Vulnerabilities** — SQLi, XSS, CSRF, buffer overflows',
+    '- **Secure coding** — best practices, code review',
+    '- **Pen testing** — concepts and methodology (CTF/lab only)',
+    '- **Tools** — use the sidebar to analyze passwords, URLs, and code',
+    '',
+    '*Educational use only. Never target real systems without permission.*',
+  ].join('\n\n');
+  appendMessage('bot', welcomeMsg, [], null, true);
 }
 
 function appendMessage(role, text, flags = [], tokens = null, isFirst = false, isError = false) {
@@ -155,7 +165,10 @@ function appendMessage(role, text, flags = [], tokens = null, isFirst = false, i
     : `<span>👤</span>`;
   const flagsHTML = flags?.length ? `<div class="msg-flags">${flags.map(f => `<span class="msg-flag">⚠ ${f}</span>`).join('')}</div>` : '';
   const tokenHTML = tokens ? `<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${tokens} tokens</span>` : '';
-  div.innerHTML = `<div class="msg-avatar">${avatarContent}</div><div class="msg-content"><div class="msg-bubble ${isError ? 'error-bubble' : ''}">${renderMarkdown(text)}</div>${flagsHTML}<div class="msg-time" style="display:flex;gap:8px;align-items:center"><span>${time}</span>${tokenHTML}</div></div>`;
+  div.innerHTML = `<div class="msg-avatar">${avatarContent}</div>\
+    <div class="msg-content">\
+    <div class="msg-bubble ${isError ? 'error-bubble' : ''}">${renderMarkdown(text)}</div>${flagsHTML}<div class="msg-time" style="display:flex;gap:8px;align-items:center">\
+    <span>${time}</span>${tokenHTML}</div></div>`;
   container.appendChild(div);
   scrollToBottom();
   state.messageCount++;
@@ -196,7 +209,12 @@ function showTyping() {
   const div = document.createElement('div');
   div.id = 'typingMsg';
   div.className = 'message bot';
-  div.innerHTML = `<div class="msg-avatar"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L1.5 4v3.5C1.5 10 3.75 12.2 7 13c3.25-.8 5.5-3 5.5-5.5V4L7 1z" stroke="var(--cyan)" stroke-width="1.2" fill="none"/><circle cx="7" cy="7" r="1.8" fill="var(--cyan)"/></svg></div><div class="msg-content"><div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>`;
+  div.innerHTML = `<div class="msg-avatar">\
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">\
+    <path d="M7 1L1.5 4v3.5C1.5 10 3.75 12.2 7 13c3.25-.8 5.5-3 5.5-5.5V4L7 1z" stroke="var(--cyan)" stroke-width="1.2" fill="none"/>\
+    <circle cx="7" cy="7" r="1.8" fill="var(--cyan)"/></svg></div>\
+    <div class="msg-content">\
+    <div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>`;
   container.appendChild(div);
   document.getElementById('typingStatus').textContent = 'Thinking…';
   scrollToBottom();
@@ -236,7 +254,11 @@ function renderSessionList() {
   if (!el) return;
   el.innerHTML = state.sessions.map(s => {
     const isActive = s.id === state.sessionId;
-    return `<div class="session-item ${isActive?'active':''}" onclick="switchSession('${escapeHtml(String(s.id))}')"><span>💬</span><div style="min-width:0"><div style="font-size:11px;color:${isActive?'var(--cyan)':'var(--text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(String(s.label||'Session'))}</div><div style="font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(String(s.preview||''))}</div></div></div>`;
+    return `<div class="session-item ${isActive?'active':''}" onclick="switchSession('${escapeHtml(String(s.id))}')">\
+      <span>💬</span>\
+      <div style="min-width:0">\
+      <div style="font-size:11px;color:${isActive?'var(--cyan)':'var(--text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(String(s.label||'Session'))}</div>\
+      <div style="font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(String(s.preview||''))}</div></div></div>`;
   }).join('');
 }
 
@@ -271,7 +293,12 @@ function closeModal() { document.getElementById('modalOverlay').classList.remove
 function closeTool()  { document.getElementById('modalOverlay').classList.remove('open'); }
 
 function renderPasswordTool() {
-  return `<div class="tool-form"><label class="tool-label">Enter password to analyze</label><input type="password" class="tool-input" id="pwInput" placeholder="Enter password..." oninput="livePasswordCheck(this.value)"><div id="pwResult"></div><button class="tool-btn" onclick="checkPassword()">Analyze Password</button><p style="font-size:10px;color:var(--text3);text-align:center">🔒 Password never sent anywhere. Analysis is 100% local.</p></div>`;
+  return `<div class="tool-form">\
+    <label class="tool-label">Enter password to analyze</label>\
+    <input type="password" class="tool-input" id="pwInput" placeholder="Enter password..." oninput="livePasswordCheck(this.value)">\
+    <div id="pwResult"></div>\
+    <button class="tool-btn" onclick="checkPassword()">Analyze Password</button>\
+    <p style="font-size:10px;color:var(--text3);text-align:center">🔒 Password never sent anywhere. Analysis is 100% local.</p></div>`;
 }
 
 function livePasswordCheck(pw) {
@@ -294,6 +321,7 @@ function analyzePasswordClient(pw) {
   const strengths=['VERY WEAK','WEAK','MODERATE','STRONG','VERY STRONG'];
   const colors=['#ff2244','#ff6600','#ffd700','#00d4ff','#00ff88'];
   const idx = score>=80?4:score>=60?3:score>=40?2:score>=20?1:0;
+  // prettier-ignore
   return { score, strength:strengths[idx], color:colors[idx], length:len, has_lowercase:hasL, has_uppercase:hasU, has_digits:hasD, has_special:hasS, entropy_bits:Math.round(len*Math.log2([hasL?26:0,hasU?26:0,hasD?10:0,hasS?32:0].reduce((a,b)=>a+b,0)||1)), feedback:[!hasU&&'Add uppercase letters',!hasD&&'Add numbers',!hasS&&'Add special characters',len<12&&'Use at least 12 characters'].filter(Boolean) };
 }
 
@@ -303,12 +331,22 @@ function renderPasswordResult(data, targetId) {
   const filled = Math.round(data.score/20);
   const bc=['#ff2244','#ff6600','#ffd700','#00d4ff','#00ff88'];
   const bars=Array(5).fill(0).map((_,i)=>`<div class="pw-bar" style="background:${i<filled?(bc[filled-1]||'#00ff88'):'var(--border)'}"></div>`).join('');
-  const checks=[{label:'Lowercase',pass:data.has_lowercase},{label:'Uppercase',pass:data.has_uppercase},{label:'Numbers',pass:data.has_digits},{label:'Special chars',pass:data.has_special},{label:'12+ chars',pass:data.length>=12},{label:'16+ chars',pass:data.length>=16}].map(c=>`<li class="pw-check ${c.pass?'pass':'fail'}">${c.pass?'✓':'○'} ${c.label}</li>`).join('');
+  const checks=[{label:'Lowercase',pass:data.has_lowercase},
+    {label:'Uppercase',pass:data.has_uppercase},
+    {label:'Numbers',pass:data.has_digits},
+    {label:'Special chars',pass:data.has_special},
+    {label:'12+ chars',pass:data.length>=12},
+    {label:'16+ chars',pass:data.length>=16}].map(c=>`<li class="pw-check ${c.pass?'pass':'fail'}">${c.pass?'✓':'○'} ${c.label}</li>`).join('');
+  // prettier-ignore
   el.innerHTML=`<div class="result-card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span class="pw-score-label" style="color:${data.color}">${data.strength}</span><span style="font-family:var(--mono);font-size:20px;color:${data.color}">${data.score}/100</span></div><div class="pw-bars">${bars}</div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px">Length: ${data.length} · Entropy: ~${data.entropy_bits} bits</div><ul class="pw-checks">${checks}</ul>${data.feedback?.length?`<div style="margin-top:12px;padding:10px;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.2);border-radius:4px"><div style="font-size:10px;color:var(--yellow);margin-bottom:6px">// SUGGESTIONS</div>${data.feedback.map(f=>`<div style="font-size:11px;color:var(--text2);margin-bottom:3px">→ ${f}</div>`).join('')}</div>`:''}</div>`;
 }
 
 function renderURLTool() {
-  return `<div class="tool-form"><label class="tool-label">URL to analyze</label><input type="url" class="tool-input" id="urlInput" placeholder="https://example.com" onkeydown="if(event.key==='Enter')checkURL()"><button class="tool-btn" onclick="checkURL()">Analyze URL</button><div id="urlResult"></div></div>`;
+  return `<div class="tool-form">\
+    <label class="tool-label">URL to analyze</label>\
+    <input type="url" class="tool-input" id="urlInput" placeholder="https://example.com" onkeydown="if(event.key==='Enter')checkURL()">\
+    <button class="tool-btn" onclick="checkURL()">Analyze URL</button>\
+    <div id="urlResult"></div></div>`;
 }
 
 async function checkURL() {
@@ -331,10 +369,12 @@ async function checkURL() {
   if(CONFIG.geminiKey){
     try { aiInsight=await callGeminiAnalyze(`Analyze this URL for security risks in 2-3 sentences. URL: ${url}\nRespond concisely, no markdown.`)||''; } catch{}
   }
+  // prettier-ignore
   el.innerHTML=`<div class="result-card" style="margin-top:12px"><span style="color:${color};font-family:var(--mono);font-size:12px;font-weight:bold">${risk} RISK — Score: ${Math.min(score,100)}/100</span>${flags.length?`<ul style="margin-top:10px">${flags.map(f=>`<li class="result-flag-item">⚠ ${escapeHtml(f)}</li>`).join('')}</ul>`:'<p style="font-size:11px;color:var(--green);margin-top:8px">✓ No suspicious patterns detected</p>'}${aiInsight?`<div style="margin-top:12px;padding:10px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:4px;font-size:11px;color:var(--text2);line-height:1.6">${escapeHtml(aiInsight)}</div>`:''}</div>`;
 }
 
 function renderCodeTool() {
+  // prettier-ignore
   return `<div class="tool-form"><label class="tool-label">Language</label><select class="tool-select tool-input" id="codeLang"><option value="auto">Auto-detect</option><option value="python">Python</option><option value="javascript">JavaScript</option><option value="php">PHP</option><option value="html">HTML</option></select><label class="tool-label">Paste code to scan</label><textarea class="tool-textarea" id="codeInput" placeholder="# Paste your code here..."></textarea><button class="tool-btn" onclick="scanCode()">Scan for Vulnerabilities</button><div id="codeResult"></div></div>`;
 }
 
@@ -347,11 +387,14 @@ async function scanCode() {
   if(!CONFIG.geminiKey){el.innerHTML='<div style="color:var(--yellow);font-size:11px;margin-top:10px">⚠ Set a Gemini API key in Admin → Settings to enable AI code scanning.</div>';return;}
   try {
     const result=await callGeminiAnalyze(`Security scan this ${lang} code for vulnerabilities. List each issue as: SEVERITY | Line | Description | Fix. If clean say "✓ No security issues detected".\n\`\`\`${lang}\n${code.slice(0,3000)}\n\`\`\``);
-    el.innerHTML=`<div class="result-card" style="margin-top:12px"><div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px">AI Security Scan — ${lang}</div><div style="font-size:12px;color:var(--text);line-height:1.7">${renderMarkdown(result||'No response')}</div></div>`;
+    el.innerHTML=`<div class="result-card" style="margin-top:12px">\
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px">AI Security Scan — ${lang}</div>\
+      <div style="font-size:12px;color:var(--text);line-height:1.7">${renderMarkdown(result||'No response')}</div></div>`;
   } catch(err){el.innerHTML=`<div style="color:var(--red);font-size:11px;margin-top:10px">Error: ${escapeHtml(err.message)}</div>`;}
 }
 
 function renderFileTool() {
+  // prettier-ignore
   return `<div class="tool-form"><label class="tool-label">Upload file for security analysis</label><div style="border:2px dashed var(--border);border-radius:var(--radius);padding:28px;text-align:center;cursor:pointer" onclick="document.getElementById('modalFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--cyan)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleFileDrop(event)"><div style="font-size:28px;margin-bottom:8px">📁</div><div style="font-size:13px;color:var(--text2)">Drop file here or click to browse</div><div style="font-size:10px;color:var(--text3);margin-top:6px">.py .js .php .html .txt .log .sh .json .yaml — Max 500KB</div></div><input type="file" id="modalFileInput" accept=".txt,.log,.py,.js,.php,.html,.sh,.json,.yaml" onchange="analyzeUploadedFile(this)" hidden><div id="fileResult"></div></div>`;
 }
 
@@ -366,7 +409,9 @@ async function analyzeFile(file,targetId){
   try {
     const text=await file.text();
     const result=await callGeminiAnalyze(`Security scan file "${escapeHtml(file.name)}". Find vulnerabilities, hardcoded secrets, dangerous patterns. List: SEVERITY | Line | Description | Fix. If clean say "✓ No issues found".\n${text.slice(0,3000)}`);
-    el.innerHTML=`<div class="result-card" style="margin-top:12px"><div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px">AI Scan — ${escapeHtml(file.name)}</div><div style="font-size:12px;color:var(--text);line-height:1.7">${renderMarkdown(result||'No response')}</div></div>`;
+    el.innerHTML=`<div class="result-card" style="margin-top:12px">\
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:10px">AI Scan — ${escapeHtml(file.name)}</div>\
+      <div style="font-size:12px;color:var(--text);line-height:1.7">${renderMarkdown(result||'No response')}</div></div>`;
   } catch(err){el.innerHTML=`<div style="color:var(--red);font-size:11px;margin-top:10px">Error: ${escapeHtml(err.message)}</div>`;}
 }
 
@@ -402,7 +447,7 @@ function animateTerminalPreview(){
     {cls:'cmd',text:'$ ai --check-password "hunter2"'},
     {cls:'warn',text:'[WEAK] Score: 22/100 — common password'},
     {cls:'good',text:'[TIP]  Use 16+ chars with mixed types'},
-    {cls:'cmd',text:'$ ai --scan-url http://1.2.3.4/login'},
+    {cls:'cmd',text:'$ ai --scan-url https://1.2.3.4/login'},
     {cls:'err',text:'[HIGH] IP-based URL — possible phishing'},
     {cls:'err',text:'[HIGH] Non-HTTPS connection detected'},
     {cls:'cmd',text:'$ _'},

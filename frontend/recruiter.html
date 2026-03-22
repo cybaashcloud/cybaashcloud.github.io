@@ -872,7 +872,7 @@ input[placeholder*="search"] {
         </div>
         <input class="cf-input" id="cfSubject" placeholder="Subject / Role / Opportunity">
         <textarea class="cf-textarea" id="cfMessage" placeholder="Your message…" rows="4"></textarea>
-        <button class="cf-submit" id="cfSubmit" onclick="submitContactForm()">
+        <button class="cf-submit" id="cfSubmit" aria-label="Submit contact form" onclick="submitContactForm()">
           ▶ SEND MESSAGE
         </button>
         <div class="cf-status" id="cfStatus"></div>
@@ -888,7 +888,7 @@ input[placeholder*="search"] {
   <div class="cred-stats" id="csBar"></div>
   <div class="filter-bar" id="fBar"></div>
   <div class="cred-grid" id="crGrid"></div>
-  <button class="more-btn" id="moreBtn" style="display:none" onclick="moreCreds()">
+  <button class="more-btn" id="moreBtn" aria-label="Load more certifications" style="display:none" onclick="moreCreds()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     SHOW MORE
   </button>
@@ -1319,7 +1319,7 @@ function rCreds(){
 
   g('fBar').innerHTML=SUBSECTIONS
     .filter(s=>grouped[s.id]?.length)
-    .map(s=>`<button class="fb${ACTIVE_SUB===s.id?' on':''}" style="${ACTIVE_SUB===s.id?'border-color:'+s.col+';color:'+s.col:''}" onclick="setSubSec('${s.id}')">${s.lbl} <span style="opacity:.6;font-size:8px">${grouped[s.id].length}</span></button>`).join('');
+    .map(s=>`<button class="fb${ACTIVE_SUB===s.id?' on':''}" style="${ACTIVE_SUB===s.id?'border-color:'+s.col+';color:'+s.col:''}" aria-label="Filter by ${s.lbl}" onclick="setSubSec('${s.id}')">${s.lbl} <span style="opacity:.6;font-size:8px">${grouped[s.id].length}</span></button>`).join('');
 
   rCredGrid(grouped);
 }
@@ -1634,7 +1634,7 @@ function showInstallBanner() {
       <strong>INSTALL CYBAASH</strong>
       <span>Add to home screen for offline access &amp; faster load</span>
     </div>
-    <button id="pwa-install-btn" onclick="installPWA()">⬇ INSTALL</button>
+    <button id="pwa-install-btn" aria-label="Install as app" onclick="installPWA()">⬇ INSTALL</button>
     <button aria-label="Dismiss" id="pwa-dismiss-btn" onclick="hideInstallBanner()" title="Dismiss">×</button>
   `;
   document.body.appendChild(banner);
@@ -1671,6 +1671,7 @@ function showUpdateBanner() {
     <span>⬡ UPDATE AVAILABLE — New version of CYBAASH ready</span>
     <button style="background:none;border:1px solid #00ff88;color:#00ff88;font-family:'Share Tech Mono',monospace;
       font-size:9px;letter-spacing:.2em;padding:6px 14px;cursor:pointer;text-transform:uppercase;min-height:36px"
+      aria-label="Reload to update app"
       onclick="updateApp()">↺ RELOAD</button>
     <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:16px;min-height:36px;padding:0 6px" aria-label="Close">×</button>
   `;
@@ -2434,7 +2435,7 @@ function buildHackView() {
           <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:900;letter-spacing:.3em;color:#ff2244;margin-bottom:4px">⚠ ATTACKER VIEW — RECON COMPLETE</div>
           <div style="font-size:9px;color:#5a7a9a;letter-spacing:.15em">Performing OSINT on target: Mohamed Aasiq · cybaash.github.io</div>
         </div>
-        <button onclick="exitHackMode()" style="background:none;border:1px solid rgba(255,34,68,.3);color:#ff2244;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.2em;padding:8px 16px;cursor:pointer;text-transform:uppercase;min-height:44px">✕ EXIT</button>
+        <button aria-label="Exit hack mode" onclick="exitHackMode()" style="background:none;border:1px solid rgba(255,34,68,.3);color:#ff2244;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.2em;padding:8px 16px;cursor:pointer;text-transform:uppercase;min-height:44px">✕ EXIT</button>
       </div>
 
       <!-- OSINT Summary -->
@@ -2504,7 +2505,7 @@ function buildHackView() {
           but <strong style="color:#00ff88">intentional transparency</strong>. Skill breadth reduces single-point
           vulnerabilities. <span style="color:#ff2244">Recommend: hire before a competitor does.</span>
         </div>
-        <button onclick="exitHackMode()" style="margin-top:16px;background:none;border:1px solid #00ff88;color:#00ff88;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.2em;padding:10px 24px;cursor:pointer;text-transform:uppercase;min-height:44px">
+        <button aria-label="Exit hack mode" onclick="exitHackMode()" style="margin-top:16px;background:none;border:1px solid #00ff88;color:#00ff88;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.2em;padding:10px 24px;cursor:pointer;text-transform:uppercase;min-height:44px">
           RETURN TO NORMAL VIEW
         </button>
       </div>

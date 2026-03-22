@@ -118,6 +118,9 @@
     initScrollAnimations();
   }
 
+  if (window.__mobileFeaturesBoot) return;
+  window.__mobileFeaturesBoot = true;
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
   } else {

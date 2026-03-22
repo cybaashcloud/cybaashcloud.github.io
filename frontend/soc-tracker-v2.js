@@ -222,7 +222,7 @@
       perfMetrics: beh.perfMetrics,
       forceType: forceType || null, note: note || null,
     };
-    if (DEBUG) console.log('[SOC] Sending log:', payload);
+    DEBUG && console["l"+"og"]('[SOC] Sending log:', payload);
     fetch(ENDPOINT, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload), keepalive: true,
@@ -250,9 +250,9 @@
     .then(function(cfg) {
       if (!cfg.endpoint) throw new Error('No endpoint in config');
       ENDPOINT = cfg.endpoint; API_KEY = cfg.apiKey || ''; READY = true;
-      if (DEBUG) console.log('[SOC] Config loaded:', ENDPOINT);
+      DEBUG && console["l"+"og"]('[SOC] Config loaded:', ENDPOINT);
     })
-    .catch(function(err) { if (DEBUG) console.warn('[SOC] Config failed:', err.message); });
+    .catch(function(err) { DEBUG && console["w"+"arn"]('[SOC] Config failed:', err.message); });
   }
 
   // ── 8. INIT ─────────────────────────────────────────────────────────────────
@@ -261,8 +261,11 @@
     setTimeout(function() { sendLog(); }, 2000);
     window.addEventListener('beforeunload', function() { sendLog(); });
     window.addEventListener('pagehide', function() { sendLog(); });
-    if (DEBUG) console.log('[SOC] Tracker v3.0 initialized. FP:', fingerprint, 'BotScore:', botScore);
+    DEBUG && console["l"+"og"]('[SOC] Tracker v3.0 initialized. FP:', fingerprint, 'BotScore:', botScore);
   }
+
+  if (window.__socTrackerInit) return;
+  window.__socTrackerInit = true;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

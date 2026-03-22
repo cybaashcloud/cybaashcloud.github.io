@@ -24,7 +24,9 @@
   overflow: hidden;
   transition: border-color 0.2s;
 }
+
 .stat-card:hover { border-color: #00d4ff; }
+
 .stat-card__label {
   font-size: 0.7rem;
   letter-spacing: 0.12em;
@@ -32,12 +34,14 @@
   color: #5a8a9f;
   margin-bottom: 0.4rem;
 }
+
 .stat-card__value {
   font-size: 2rem;
   font-weight: 700;
   color: #00d4ff;
   line-height: 1;
 }
+
 .stat-card__sub {
   font-size: 0.75rem;
   color: #3a6a8f;
@@ -53,17 +57,20 @@
   background: #060f18;
   border-bottom: 1px solid #1a3a5c;
 }
+
 .gh-user-header img {
   width: 48px;
   height: 48px;
   border-radius: 50%;
   border: 2px solid #00d4ff;
 }
+
 .gh-user-header a {
   color: #00d4ff;
   text-decoration: none;
   font-size: 0.85rem;
 }
+
 .gh-user-header a:hover { text-decoration: underline; }
 
 /* ── Cert count badge ──────────────────────────────────────────────────── */

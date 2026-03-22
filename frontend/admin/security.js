@@ -110,13 +110,6 @@ async function sha256(message) {
 function el(id) { return document.getElementById(id); }
 function qs(sel) { return document.querySelector(sel); }
 function qsa(sel) { return document.querySelectorAll(sel); }
-
-function formatTime(ts) {
-  if (!ts) return '—';
-  const d = new Date(ts);
-  return d.toLocaleTimeString('en-US', { hour12: false });
-}
-
 function formatDateTime(ts) {
   if (!ts) return '—';
   const d = new Date(ts);

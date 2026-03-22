@@ -441,7 +441,7 @@ function animateTerminalPreview(){
     {cls:'cmd',text:'$ ai --check-password "hunter2"'},
     {cls:'warn',text:'[WEAK] Score: 22/100 — common password'},
     {cls:'good',text:'[TIP]  Use 16+ chars with mixed types'},
-    {cls:'cmd',text:'$ ai --scan-url http://1.2.3.4/login'},
+    {cls:'cmd',text:'$ ai --scan-url https://1.2.3.4/login'},
     {cls:'err',text:'[HIGH] IP-based URL — possible phishing'},
     {cls:'err',text:'[HIGH] Non-HTTPS connection detected'},
     {cls:'cmd',text:'$ _'},

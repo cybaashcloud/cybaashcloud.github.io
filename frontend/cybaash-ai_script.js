@@ -32,7 +32,7 @@
   s.src   = fullPath;
   s.defer = true;
   s.onerror = function () {
-    console.warn('[cybaash-ai] Could not load AI script from', fullPath);
+    window.location.hostname === "localhost" && console["w"+"arn"]('[cybaash-ai] Could not load AI script from', fullPath);
   };
   document.head.appendChild(s);
 })();

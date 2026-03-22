@@ -632,7 +632,7 @@ table {
         <input id="patInput" type="password" placeholder="ghp_xxxxxxxxxxxxxxxx or github_pat_xxx"
           style="width:100%;padding:12px 14px;background:#0a1520;border:1px solid #1a3a5c;border-radius:4px;color:#c8e0f4;font-family:inherit;font-size:max(16px,13px);outline:none;margin-bottom:12px;-webkit-appearance:none;min-height:44px;box-sizing:border-box"
           onkeydown="if(event.key==='Enter')appLogin()" autocomplete="off" spellcheck="false">
-        <button class="btn-gh" onclick="appLogin()">
+        <button class="btn-gh" aria-label="Login with GitHub" onclick="appLogin()">
           <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" fill="currentColor"/></svg>
           Connect with Token
         </button>
@@ -664,20 +664,20 @@ table {
   <div class="body-wrap">
     <nav class="sidebar">
       <div class="sb-label">// NAVIGATION</div>
-      <button class="sb-tab active" onclick="switchView('stats',this)">
+      <button class="sb-tab active" aria-label="Stats view" onclick="switchView('stats',this)">
         <span class="sb-icon">◎</span> Statistics
       </button>
-      <button class="sb-tab" onclick="switchView('missions',this)">
+      <button class="sb-tab" aria-label="Missions view" onclick="switchView('missions',this)">
         <span class="sb-icon">◈</span> Missions
       </button>
-      <button class="sb-tab" onclick="switchView('launch',this)">
+      <button class="sb-tab" aria-label="Launch view" onclick="switchView('launch',this)">
         <span class="sb-icon">⊕</span> New Mission
       </button>
 
-      <button class="sb-tab" onclick="switchView('tools',this)">
+      <button class="sb-tab" aria-label="Tools view" onclick="switchView('tools',this)">
         <span>⚙</span>TOOLS
       </button>
-      <button class="sb-tab" onclick="switchView('profile',this)">
+      <button class="sb-tab" aria-label="Profile view" onclick="switchView('profile',this)">
         <span class="sb-icon">◉</span> Profile
       </button>
       <div class="sb-spacer"></div>
@@ -1090,7 +1090,7 @@ function buildMissionsUI(mc, filter='all') {
       <span class="panel-title">// SAVED MISSIONS</span>
       <div class="filter-row">
         ${['all','active','paused','completed'].map(f=>`
-          <button class="filter-btn ${filter===f?'active':''}" onclick="refiltMissions('${f}')">${f.toUpperCase()}</button>
+          <button class="filter-btn ${filter===f?'active':''}" aria-label="Filter missions by ${f}" onclick="refiltMissions('${f}')">${f.toUpperCase()}</button>
         `).join('')}
       </div>
     </div>
@@ -1121,7 +1121,7 @@ function buildMissionsUI(mc, filter='all') {
               <a href="index.html?sim=${encodeURIComponent(m.id)}" class="btn-primary" style="text-decoration:none;display:inline-block">
                 ${m.status==='paused'||m.status==='active'?'RESUME':'OPEN'}
               </a>
-              <button class="btn-danger" onclick="deleteMission('${m.id}',this)">✕ DEL</button>
+              <button class="btn-danger" aria-label="Delete mission" onclick="deleteMission('${m.id}',this)">✕ DEL</button>
             </div>
           </div>
         `).join('')}
@@ -1195,7 +1195,7 @@ function renderLaunch(mc) {
           <div class="diff-row" id="diffRow"></div>
         </div>
         <div id="lcError" class="form-error" style="display:none"></div>
-        <button class="btn-launch" id="launchBtn" onclick="doLaunch()">⊕ LAUNCH MISSION</button>
+        <button class="btn-launch" id="launchBtn" aria-label="Launch mission" onclick="doLaunch()">⊕ LAUNCH MISSION</button>
       </div>
     </div>
   `;
@@ -1217,6 +1217,7 @@ function selectScenario(id) {
   launchDiff = s.diffs[0];
   document.getElementById('diffRow').innerHTML = s.diffs.map(d=>`
     <button class="diff-btn ${d===launchDiff?'active-'+d.substring(0,3):''}"
+             aria-label="Set difficulty to ${d}"
       onclick="setDiff('${d}',this)">${d.toUpperCase()}</button>
   `).join('');
 }
@@ -1298,10 +1299,10 @@ function renderProfile(mc) {
         <div class="form-row">
           <label class="form-label">OPERATOR ROLE</label>
           <div class="role-selector">
-            <button class="role-btn ${p.role==='attacker'?'active-att':''}" id="roleAtt" onclick="setProfRole('attacker')">
+            <button class="role-btn ${p.role==='attacker'?'active-att':''}" id="roleAtt" aria-label="Set role to attacker" onclick="setProfRole('attacker')">
               <span class="role-btn-icon">⚔</span> ATTACKER
             </button>
-            <button class="role-btn ${p.role!=='attacker'?'active-def':''}" id="roleDef" onclick="setProfRole('defender')">
+            <button class="role-btn ${p.role!=='attacker'?'active-def':''}" id="roleDef" aria-label="Set role to defender" onclick="setProfRole('defender')">
               <span class="role-btn-icon">⛨</span> DEFENDER
             </button>
           </div>
@@ -1323,7 +1324,7 @@ function renderProfile(mc) {
         <div id="profError"   class="form-error"   style="display:none"></div>
         <div id="profSuccess" class="form-success" style="display:none"></div>
 
-        <button class="btn-save" onclick="saveProfile()" style="width:100%;margin-top:4px">⊕ SAVE PROFILE</button>
+        <button class="btn-save" aria-label="Save profile" onclick="saveProfile()" style="width:100%;margin-top:4px">⊕ SAVE PROFILE</button>
 
         <div style="color:var(--dim);font-size:9px;margin-top:10px;text-align:center">
           Stored in your private <code style="color:var(--blue)">cybaash-data</code> GitHub repository.
@@ -1491,7 +1492,7 @@ function showInstallBanner() {
       <strong>INSTALL CYBAASH</strong>
       <span>Add to home screen for offline access &amp; faster load</span>
     </div>
-    <button id="pwa-install-btn" onclick="installPWA()">⬇ INSTALL</button>
+    <button id="pwa-install-btn" aria-label="Install as app" onclick="installPWA()">⬇ INSTALL</button>
     <button aria-label="Dismiss" id="pwa-dismiss-btn" onclick="hideInstallBanner()" title="Dismiss">×</button>
   `;
   document.body.appendChild(banner);
@@ -1528,6 +1529,7 @@ function showUpdateBanner() {
     <span>⬡ UPDATE AVAILABLE — New version of CYBAASH ready</span>
     <button style="background:none;border:1px solid #00ff88;color:#00ff88;font-family:'Share Tech Mono',monospace;
       font-size:9px;letter-spacing:.2em;padding:6px 14px;cursor:pointer;text-transform:uppercase;min-height:36px"
+      aria-label="Reload to update app"
       onclick="updateApp()">↺ RELOAD</button>
     <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:16px;min-height:36px;padding:0 6px" aria-label="Close">×</button>
   `;

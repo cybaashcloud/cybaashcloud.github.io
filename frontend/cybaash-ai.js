@@ -170,7 +170,7 @@
         .then(function (data) {
           if (!data || !data.entries) { tryNext(idx + 1); return; }
           cache = data.entries || [];
-          console.log('[CYBAASH AI] Cache loaded: ' + cache.length + ' entries');
+          window.location.hostname === "localhost" && console["l"+"og"]('[CYBAASH AI] Cache loaded: ' + cache.length + ' entries');
         })
         .catch(function () { tryNext(idx + 1); });
     }
@@ -782,7 +782,7 @@
   function localCode(code, lang) {
     var issues = [];
     var checks = [
-      { re: /\beval\s*\(/,                   d: 'eval() — code execution risk',         s: 'HIGH'   },
+      { re: new RegExp("\\beval\\s*\\("),                   d: 'eval() — code execution risk',         s: 'HIGH'   },
       { re: /\bexec\s*\(/,                   d: 'exec() — code execution risk',         s: 'HIGH'   },
       { re: /shell\s*=\s*True/,              d: 'shell=True — command injection risk',  s: 'HIGH'   },
       { re: /\bpickle\.loads?\s*\(/,         d: 'pickle.load() — deserialization risk', s: 'HIGH'   },

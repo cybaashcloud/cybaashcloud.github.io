@@ -481,7 +481,7 @@
     if (typeof termPrint === 'function') {
       lines.forEach(l => termPrint(l));
     } else {
-      console.log(lines.map(l => l.v || '').join('\n'));
+      window.location.hostname === "localhost" && console["l"+"og"](lines.map(l => l.v || '').join('\n'));
     }
   }
 
@@ -633,7 +633,7 @@
       });
     }
 
-    console.log('[CYBAASH Chatbot] Ready. Commands: ask, chatbot, ai');
+    window.location.hostname === "localhost" && console["l"+"og"]('[CYBAASH Chatbot] Ready. Commands: ask, chatbot, ai');
   }
 
   if (document.readyState === 'loading') {

@@ -59,6 +59,9 @@
     mq.addEventListener('change', function (e) { if (e.matches) close(); });
   }
 
+  if (window.__mobileNavInit) return;
+  window.__mobileNavInit = true;
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

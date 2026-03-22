@@ -26,6 +26,10 @@
 // SECTION 1 — CONFIG & AUTH  (unchanged from v3)
 // ══════════════════════════════════════════════════════════════════════════════
 
+const _GH_DEBUG = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const _log  = (...a) => { if (_GH_DEBUG) _log(...a); };
+const _warn = (...a) => { if (_GH_DEBUG) _warn(...a); };
+
 const CONFIG_KEY = 'portfolio_github_config'
 
 export function getGithubConfig() {
@@ -137,7 +141,7 @@ async function writeFile(cfg, path, data, sha, _retries = 2) {
     body:    JSON.stringify(body),
   })
   if (r.status === 409 && _retries > 0) {
-    console.warn(`[GitHub] 409 conflict on ${path} — re-fetching SHA and retrying (${_retries} left)`)
+    _warn(`[GitHub] 409 conflict on ${path} — re-fetching SHA and retrying (${_retries} left)`)
     const freshSha = await fetchSha(cfg, path)
     return writeFile(cfg, path, data, freshSha, _retries - 1)
   }
@@ -197,7 +201,7 @@ export function stripLargeBase64(obj) {
   for (const [k, v] of Object.entries(obj)) {
     if (typeof v === 'string' && v.startsWith('data:image/') && v.length > MAX_INLINE_B64_CHARS) {
       out[k] = ''
-      console.warn(`[GitHub] stripLargeBase64: dropped inline image for key "${k}" (${(v.length/1024).toFixed(0)}KB). Use uploadImage() instead.`)
+      _warn(`[GitHub] stripLargeBase64: dropped inline image for key "${k}" (${(v.length/1024).toFixed(0)}KB). Use uploadImage() instead.`)
     } else {
       out[k] = stripLargeBase64(v)
     }
@@ -230,7 +234,7 @@ function _stripCredentialBlobs(cred) {
 
     if (isCredly || tooBig) {
       out[field] = ''
-      console.warn(
+      _warn(
         `[GitHub] _stripCredentialBlobs: cleared ${field} on cred[${cred.id}]` +
         ` (${(v.length / 1024).toFixed(0)}KB, type=${type})`
       )
@@ -265,7 +269,7 @@ export async function uploadImage(filename, base64) {
     const err = await r.json().catch(() => ({}))
     throw new Error(`Image upload failed (${filename}): ${err.message || r.status}`)
   }
-  console.info(`[GitHub] Uploaded image: ${path}`)
+  _log(`[GitHub] Uploaded image: ${path}`)
   return path
 }
 
@@ -595,12 +599,12 @@ export async function loadAndAnalyzeData({ forceRefresh = false } = {}) {
   if (!forceRefresh) {
     const cached = getCachedData(CACHE_KEYS.PIPELINE)
     if (cached) {
-      console.info('[Pipeline] Serving from cache.')
+      _log('[Pipeline] Serving from cache.')
       return cached
     }
   }
 
-  console.info('[Pipeline] Starting full analysis run…')
+  _log('[Pipeline] Starting full analysis run…')
   const t0 = performance.now()
 
   // Fetch raw credentials (reuse cached raw data if available)
@@ -645,7 +649,7 @@ export async function loadAndAnalyzeData({ forceRefresh = false } = {}) {
   }
 
   setCachedData(CACHE_KEYS.PIPELINE, result)
-  console.info(`[Pipeline] Done in ${result.meta.elapsedMs}ms — ${rawCreds.length} certs analysed.`)
+  _log(`[Pipeline] Done in ${result.meta.elapsedMs}ms — ${rawCreds.length} certs analysed.`)
   return result
 }
 

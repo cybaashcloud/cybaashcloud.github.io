@@ -22,7 +22,10 @@
 // Paste immediately after: <div id="app">
 // ════════════════════════════════════════════════════════════════
 /*
-<div id="threatBanner" style="display:none;background:linear-gradient(90deg,rgba(255,34,68,.15),rgba(255,34,68,.05));border-bottom:1px solid var(--red);padding:6px 20px;font-size:10px;letter-spacing:2px;color:var(--red);text-align:center;position:sticky;top:0;z-index:200;animation:blink-red 2s ease-in-out infinite;">
+<div id="threatBanner" style="display:none;background:linear-gradient(90deg,rgba(255,34,68,.15),rgba(255,34,68,.05));
+       border-bottom:1px solid var(--red);padding:6px 20px;font-size:10px;letter-spacing:2px;
+       color:var(--red);text-align:center;position:sticky;top:0;z-index:200;
+       animation:blink-red 2s ease-in-out infinite;">
   <span>⚠</span>
   <span id="threatBannerText">ELEVATED THREAT LEVEL — MONITORING ACTIVE</span>
   <button onclick="document.getElementById('threatBanner').style.display='none'" style="float:right;background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;margin-top:-1px;">✕</button>

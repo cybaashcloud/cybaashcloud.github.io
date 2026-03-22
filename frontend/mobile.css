@@ -3,7 +3,6 @@
    Desktop: completely untouched — every rule inside @media
    ═══════════════════════════════════════════════════════════════ */
 
-
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    0. GLOBAL RESETS & BASE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -50,7 +49,6 @@
   }
 }
 
-
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    1. HEADER — clean logo + hamburger only
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -81,322 +79,7 @@
     white-space: nowrap !important;
     flex-shrink: 0 !important;
   }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   2. HAMBURGER BUTTON  (#mobMenuBtn)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* Hidden everywhere by default */
-.mob-menu-btn {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
-  width: 40px;
-  height: 40px;
-  background: rgba(0,212,255,0.06);
-  border: 1px solid rgba(0,212,255,0.3);
-  border-radius: 4px;
-  flex-shrink: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  font-size: 15px;
-  color: var(--blue, #00d4ff);
-  font-family: monospace;
-  margin-left: auto;
-  transition: background 0.15s, border-color 0.15s;
-}
-.mob-menu-btn:active {
-  background: rgba(0,212,255,0.14) !important;
-  border-color: var(--blue, #00d4ff) !important;
-}
-
-@media (max-width: 768px) { .mob-menu-btn { display: flex; } }
-@media (min-width: 769px) { .mob-menu-btn { display: none !important; } }
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   3. HEADER DRAWER  (#mobHeaderDrawer)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-.mob-header-drawer { display: none; }
-
-@media (max-width: 768px) {
-  .mob-header-drawer {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    /* FIX: solid background — no transparency bleed */
-    background: var(--panel, #0a1520);
-    opacity: 1;
-    border-bottom: 1px solid rgba(0,212,255,0.2);
-    z-index: 1200;
-    transform: translateY(-110%);
-    transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.7);
-    /* FIX: respect notch on all phones */
-    padding-top: max(48px, calc(env(safe-area-inset-top) + 48px));
-  }
-  .mob-header-drawer.open { transform: translateY(0); }
-
-  /* Stats pills row */
-  .mob-hd-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border, #1a3a5c);
-    background: var(--panel2, #0d1e2e);
-  }
-  .mob-hd-stats .stat-pill {
-    font-size: 8px;
-    padding: 7px 6px;
-    border: 1px solid var(--border, #1a3a5c);
-    background: var(--bg, #030a0f);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    white-space: nowrap;
-    border-radius: 2px;
-    letter-spacing: 0.5px;
-  }
-
-  /* Action buttons */
-  .mob-hd-btns {
-    display: flex;
-    flex-direction: column;
-  }
-  .mob-hd-btns button {
-    width: 100%;
-    border: none;
-    border-bottom: 1px solid rgba(26,58,92,0.4);
-    text-align: left;
-    padding: 0 18px;
-    min-height: 52px;
-    font-size: 10px;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: transparent;
-    color: var(--text, #c8e0f4);
-    font-family: 'Share Tech Mono', monospace;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    transition: background 0.12s;
-    border-radius: 0;
-  }
-  .mob-hd-btns button:active { background: rgba(0,212,255,0.07); }
-  .mob-hd-btns .btn-green { color: var(--green,  #00ff88); }
-  .mob-hd-btns .btn-red   { color: var(--red,    #ff2244); }
-  .mob-hd-icon {
-    width: 22px;
-    text-align: center;
-    flex-shrink: 0;
-    font-size: 14px;
-    opacity: 0.8;
-  }
-
-  /* FIX: lock body scroll when header drawer is open */
-  body.nav-open {
-    overflow: hidden !important;
-    position: fixed !important;
-    width: 100% !important;
-  }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   4. SIDE DRAWERS — Attack Engine & Skill DNA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-/* Hidden on desktop */
-.mob-drawer-overlay,
-.mob-drawer { display: none; }
-
-@media (max-width: 768px) {
-  /* Dark overlay behind drawer */
-  .mob-drawer-overlay {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 1100;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    opacity: 0;
-    pointer-events: none;
-    /* FIX: visibility:hidden while closed so it cannot intercept touches */
-    visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
-  }
-  .mob-drawer-overlay.open {
-    opacity: 1;
-    pointer-events: auto;
-    visibility: visible;
-    transition: opacity 0.2s ease, visibility 0s linear 0s;
-  }
-
-  /* Slide-in panels */
-  .mob-drawer {
-    display: flex;
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    width: 88vw;
-    max-width: 340px;
-    background: var(--bg, #030a0f);
-    z-index: 1101;
-    flex-direction: column;
-    overflow: hidden;
-    border: 1px solid var(--border, #1a3a5c);
-    /* FIX: visibility hidden when off-screen so DNA panel cannot bleed through */
-    visibility: hidden;
-    pointer-events: none;
-    will-change: transform;
-  }
-  .mob-drawer.open {
-    visibility: visible;
-    pointer-events: auto;
-  }
-
-  /* FIX: Left drawer — individual ID transitions with visibility delay */
-  #mobLeftDrawer {
-    left: 0;
-    border-left: none;
-    transform: translateX(-100%);
-    transition: transform 0.24s cubic-bezier(0.4,0,0.2,1),
-                visibility 0s linear 0.24s;
-  }
-  #mobLeftDrawer.open {
-    transform: translateX(0);
-    transition: transform 0.24s cubic-bezier(0.4,0,0.2,1),
-                visibility 0s linear 0s;
-  }
-
-  /* FIX: Right drawer (Skill DNA) — same pattern */
-  #mobRightDrawer {
-    right: 0;
-    border-right: none;
-    transform: translateX(100%);
-    transition: transform 0.24s cubic-bezier(0.4,0,0.2,1),
-                visibility 0s linear 0.24s;
-  }
-  #mobRightDrawer.open {
-    transform: translateX(0);
-    transition: transform 0.24s cubic-bezier(0.4,0,0.2,1),
-                visibility 0s linear 0s;
-  }
-
-  /* Sticky drawer header */
-  .mob-drawer-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-    height: 48px;
-    min-height: 48px;
-    border-bottom: 1px solid var(--border, #1a3a5c);
-    background: var(--panel2, #0d1e2e);
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-  }
-  .mob-drawer-head-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--blue, #00d4ff);
-  }
-  /* FIX: bigger tap target on close button */
-  .mob-drawer-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-    background: rgba(255,34,68,0.06);
-    border: 1px solid rgba(255,34,68,0.25);
-    color: var(--red, #ff2244);
-    font-size: 18px;
-    cursor: pointer;
-    border-radius: 2px;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    font-family: monospace;
-  }
-  .mob-drawer-close:active { background: rgba(255,34,68,0.18); }
-
-  /* Scrollable content area — locked until drawer is open */
-  .mob-drawer-body {
-    flex: 1;
-    overflow: hidden;
-    overscroll-behavior: contain;
-  }
-  .mob-drawer.open .mob-drawer-body {
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-
-  /* The real panel inside the drawer */
-  .mob-drawer-body .panel {
-    display: block !important;
-    max-height: none !important;
-    overflow: visible !important;
-    border: none !important;
-    height: auto !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-  }
-  .mob-drawer-body .panel-title {
-    cursor: default !important;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background: var(--panel, #0a1520);
-    padding: 10px 14px !important;
-    font-size: 9px !important;
-    letter-spacing: 2px !important;
-    border-bottom: 1px solid rgba(26,58,92,0.4) !important;
-  }
-
-  /* FIX: clamp content inside closed drawer so it can't ghost */
-  #mobLeftBody,
-  #mobRightBody {
-    min-height: 0;
-    overflow: hidden;
-  }
-  #mobLeftDrawer.open  #mobLeftBody,
-  #mobRightDrawer.open #mobRightBody {
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    min-height: unset;
-  }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   5. FAB BAR — ⚔ ATTACK  ◆ DNA  (bottom-left, clear of AI button)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-.mob-fab-bar { display: none; }
-
-@media (max-width: 768px) {
-  .mob-fab-bar {
+.mob-fab-bar {
     display: flex;
     position: fixed;
     bottom: max(20px, calc(env(safe-area-inset-bottom) + 14px));
@@ -455,14 +138,7 @@
     flex-shrink: 0;
     animation: pulse 2s infinite;
   }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   6. TABS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  .page-index .tabs {
+.page-index .tabs {
     display: flex !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
@@ -492,19 +168,7 @@
     color: var(--blue, #00d4ff) !important;
     border-bottom-color: var(--blue, #00d4ff) !important;
   }
-}
-@media (max-width: 480px) {
-  .page-index .tab { font-size: 7.5px !important; padding: 0 8px !important; }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   7. MAIN LAYOUT + SCROLL FIX
-   The inline <style> sets .main { height: 100vh; overflow: hidden }
-   which locks the page. Override here.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  html { height: auto; overflow-x: hidden; }
+html { height: auto; overflow-x: hidden; }
   body { overflow-x: hidden !important; height: auto; min-height: 100vh; }
   body:not(.nav-open) { overflow-y: auto; }
 
@@ -553,27 +217,7 @@
   }
 
   .page-index .panel > * { max-height: none !important; }
-}
-
-@media (max-width: 860px) {
-  .page-index .main { display: flex !important; flex-direction: column !important; height: auto !important; overflow: visible !important; }
-  .page-index .panel { border-right: none !important; border-left: none !important; border-top: 1px solid var(--border, #1a3a5c); max-height: none; overflow-y: visible; }
-  .page-index .panel:last-child { display: none; }
-  .page-index .header-stats { display: none; }
-  .page-index .logo small { display: none; }
-}
-
-@media (max-width: 1024px) {
-  .page-index .main { grid-template-columns: 200px 1fr 200px; }
-  .page-index .stat-pill { display: none; }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   8. PANEL INTERNALS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  .page-index .panel-title {
+.page-index .panel-title {
     font-size: 8px !important;
     letter-spacing: 2px !important;
     padding: 6px 12px !important;
@@ -697,14 +341,7 @@
     font-size: 9px !important;
     letter-spacing: 1px !important;
   }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   9. CANVASES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  .page-index #netCanvas, .page-index #networkCanvas, .page-index #netContainer {
+.page-index #netCanvas, .page-index #networkCanvas, .page-index #netContainer {
     width: 100% !important;
     height: clamp(200px, 55vw, 280px) !important;
     display: block !important;
@@ -722,17 +359,7 @@
   }
   .page-index #viewGraph  { overflow: hidden !important; padding: 0 12px 12px !important; }
   .page-index #eventLog   { height: clamp(120px, 32vw, 160px) !important; overflow-y: auto !important; font-size: 10px !important; }
-}
-@media (max-width: 480px) {
-  .page-index #netCanvas, .page-index #networkCanvas, .page-index #netContainer { height: 200px !important; }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   10. TERMINAL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  #termOverlay {
+#termOverlay {
     width: 100vw !important;
     left: 0 !important; right: 0 !important; bottom: 0 !important;
     border-radius: 14px 14px 0 0 !important;
@@ -825,14 +452,7 @@
   body.term-resizing { pointer-events: auto !important; }
   #termOverlay, #termOverlay * { pointer-events: auto !important; }
   #termOverlay::before { display: none !important; }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   11. MODALS & COMMAND PALETTE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  .page-index .modal {
+.page-index .modal {
     width: 100vw !important; max-width: 100vw !important;
     max-height: 88dvh !important;
     position: fixed !important;
@@ -851,31 +471,14 @@
     padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
   }
   #cmdSearch { font-size: 16px !important; min-height: 52px !important; padding: 16px !important; }
-}
-@media (max-width: 640px) {
-  .page-index .modal { width: 100vw !important; max-width: 100vw !important; max-height: 88dvh !important; }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   12. INLINE GRID OVERRIDES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  .page-index [style*="grid-template-columns:280px"],
+.page-index [style*="grid-template-columns:280px"],
   .page-index [style*="grid-template-columns: 280px"] { grid-template-columns: 1fr !important; }
   .page-index [style*="grid-template-columns:repeat(3"],
   .page-index [style*="grid-template-columns:repeat(4"],
   .page-index [style*="grid-template-columns:1fr 1fr 1fr"] { grid-template-columns: 1fr 1fr !important; }
   .page-index #gapAnalysis { grid-template-columns: 1fr !important; }
   .page-index #rpStats, .page-index #rpStateSnap { grid-template-columns: 1fr 1fr !important; }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   13. SCORING / SCENARIOS / WHAT-IF / REPLAY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  .page-index .score-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+.page-index .score-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
   .page-index .score-card { padding: 12px !important; }
   .page-index .score-val  { font-size: clamp(20px, 8vw, 32px) !important; text-shadow: none !important; }
   .page-index .score-card:last-child:nth-child(odd) { grid-column: 1/-1 !important; }
@@ -888,14 +491,7 @@
   .page-index .rp-ev { min-height: 40px !important; padding: 6px 0 !important; }
   .page-index #eventLog { height: clamp(120px,32vw,160px) !important; }
   .page-index .event-item { padding: 6px 10px !important; font-size: 10px !important; }
-}
-
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   14. CYBAASH AI PANEL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  #cybaash-ai-panel  { border-radius: 0 !important; max-height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#cybaash-ai-panel  { border-radius: 0 !important; max-height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   #cybaash-ai-overlay { padding: 0 !important; }
   .cyb-header { position: sticky; top: 0; z-index: 10; background: inherit; }
   .cyb-close  { min-height: 44px; padding: 8px 16px; display: flex; align-items: center; touch-action: manipulation; }
@@ -927,7 +523,173 @@
   /* Kill any injected strips */
   #mobileHeaderActions { display: none !important; }
   #mobilePaletteBtn    { display: none !important; }
+.page-recruiter .hdr { padding-top: max(10px, env(safe-area-inset-top)); padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); flex-wrap: wrap; gap: 8px; min-height: 52px; height: auto; }
+  .page-recruiter .cred-grid, .page-recruiter .sk-grid, .page-recruiter .proj-grid { grid-template-columns: 1fr !important; gap: 10px; }
+  .page-recruiter .ctf-grid   { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+  .page-recruiter .cred-stats { grid-template-columns: repeat(3,1fr) !important; gap: 2px; }
+  .page-recruiter .ov-grid    { grid-template-columns: 1fr 1fr !important; }
+  .page-recruiter .ov-wide    { grid-template-columns: 1fr !important; }
+  .page-recruiter .cband-grid { grid-template-columns: repeat(3,1fr) !important; gap: 2px; }
+  .page-recruiter .bdg-grid   { grid-template-columns: 1fr 1fr !important; }
+  .page-recruiter .hero-inner { grid-template-columns: 1fr !important; gap: 16px; }
+  .page-recruiter .hero-name  { font-size: clamp(1.2rem, 6vw, 1.8rem); text-shadow: none; }
+  .page-recruiter .kpi-row    { display: none; }
+  .page-recruiter .btn        { min-height: 44px; }
+  .page-recruiter .sub-tabs   { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+.page-dashboard .sidebar { width: 100% !important; height: 56px; min-height: 56px; flex-direction: row !important; align-items: center; justify-content: space-around; padding: 0 !important; border-right: none !important; border-top: 1px solid var(--border, #1a3a5c); order: 3; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); z-index: 200; }
+  .page-dashboard .sb-tab { flex: 1; flex-direction: column !important; justify-content: center; align-items: center; height: 56px; min-height: 44px; border-left: none !important; border-bottom: 2px solid transparent; gap: 3px; font-size: 7px; padding: 0 !important; }
+  .page-dashboard .sb-tab.active { border-left: none !important; border-bottom-color: var(--blue, #00d4ff); }
+  .page-dashboard .sb-icon { font-size: 18px; display: block; }
+  .page-dashboard .main { order: 2; padding: 14px; overflow-y: auto; flex: 1; padding-bottom: calc(56px + env(safe-area-inset-bottom) + 14px); }
+  .page-dashboard .hdr  { order: 1; padding: 8px 14px; flex-shrink: 0; }
+  .page-dashboard .hdr-logo { font-size: 15px; letter-spacing: 2px; }
+  .page-dashboard .hdr-tag, .page-dashboard .hdr-user { display: none; }
+  .page-dashboard .stats-grid, .page-dashboard .stat-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px; }
+  .page-dashboard .section-grid, .page-dashboard .dash-grid-2 { grid-template-columns: 1fr !important; gap: 12px; }
+  .page-dashboard .login-card { width: min(420px, 92vw); padding: clamp(18px,5vw,28px) clamp(14px,4vw,22px); border-radius: 12px; }
+  .page-dashboard #patInput { font-size: 16px; min-height: 48px; -webkit-appearance: none; }
+  .page-dashboard .btn-gh { width: 100%; justify-content: center; min-height: 48px; }
+.shell { flex-direction: column !important; height: 100dvh !important; overflow: hidden !important; }
+  .shell .topbar { height: 48px !important; padding: 0 max(12px, env(safe-area-inset-left)) !important; padding-right: max(12px, env(safe-area-inset-right)) !important; flex-shrink: 0 !important; display: flex !important; align-items: center !important; }
+  .shell .topbar-title { font-size: 12px !important; letter-spacing: 2px !important; }
+  .shell .topbar-breadcrumb, .shell .topbar-time { display: none !important; }
+  .shell .content { flex: 1 !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; padding: 12px !important; padding-bottom: calc(56px + env(safe-area-inset-bottom) + 12px) !important; overscroll-behavior: contain !important; }
+  .shell .card { padding: 14px !important; border-radius: 8px !important; margin-bottom: 10px !important; }
+  .shell .stat-grid { grid-template-columns: repeat(2,1fr) !important; gap: 8px !important; }
+  .shell .form-row-2, .shell .form-row-3, .shell .grid-2, .shell .grid-3 { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .shell .form-input, .shell .form-textarea, .shell .form-select { font-size: 16px !important; min-height: 48px !important; padding: 10px 12px !important; border-radius: 6px !important; -webkit-appearance: none !important; width: 100% !important; }
+  .shell .form-textarea { min-height: 96px !important; }
+  .shell .btn { min-height: 44px !important; padding: 10px 14px !important; border-radius: 6px !important; }
+  .shell .nav-item { font-size: 7px !important; min-height: 48px !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; gap: 2px !important; flex: 1 !important; border-left: none !important; border-bottom: 2px solid transparent !important; padding: 4px !important; }
+  .shell .nav-item.active { border-left: none !important; border-bottom-color: var(--blue, #00d4ff) !important; }
+  .shell .nav-icon { font-size: 16px !important; }
+  .shell .section-header { flex-direction: column !important; gap: 8px !important; margin-bottom: 12px !important; }
+  .shell .modal { width: 100vw !important; max-width: 100vw !important; max-height: 88dvh !important; border-radius: 14px 14px 0 0 !important; position: fixed !important; left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important; transform: none !important; overflow-y: auto !important; padding-bottom: max(20px, env(safe-area-inset-bottom)) !important; }
+  .shell .auth-box { padding: 24px 16px !important; border-radius: 14px !important; width: min(92vw, 360px) !important; }
+  .shell .sync-toast { right: 8px !important; left: 8px !important; max-width: none !important; border-radius: 8px !important; bottom: calc(56px + env(safe-area-inset-bottom) + 8px) !important; }
+  .shell .sub-grid { grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); }
+body.page-index::before { display: none !important; }
+  .page-index .ring-1 { animation-duration: 80s !important; }
+  .page-index .ring-2 { animation-duration: 60s !important; }
+  .page-index .ring-3 { animation-duration: 40s !important; }
+#mobHeaderDrawer            { z-index: 1200 !important; }
+  #mobLeftDrawer,
+  #mobRightDrawer             { z-index: 1101 !important; }
+  #mobOverlay                 { z-index: 1100 !important; }
+  #termOverlay                { z-index:  500 !important; }
+  #mobFabBar, .mob-fab-bar    { z-index:  480 !important; }
+  .page-index .header,
+  .page-index .tabs           { z-index:  200 !important; }
+  #cybaash-fab                { z-index: 8000 !important; }
+  #cybaash-ai-overlay         { z-index: 7000 !important; }
 }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   2. HAMBURGER BUTTON  (#mobMenuBtn)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Hidden everywhere by default */
+.mob-menu-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.3);
+  border-radius: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  font-size: 15px;
+  color: var(--blue, #00d4ff);
+  font-family: monospace;
+  margin-left: auto;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.mob-menu-btn:active {
+  background: rgba(0,212,255,0.14) !important;
+  border-color: var(--blue, #00d4ff) !important;
+}
+
+@media (min-width: 769px) { .mob-menu-btn { display: none !important; } }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   3. HEADER DRAWER  (#mobHeaderDrawer)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.mob-header-drawer { display: none; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   4. SIDE DRAWERS — Attack Engine & Skill DNA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Hidden on desktop */
+.mob-drawer-overlay,
+.mob-drawer { display: none; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   5. FAB BAR — ⚔ ATTACK  ◆ DNA  (bottom-left, clear of AI button)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.mob-fab-bar { display: none; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   6. TABS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   7. MAIN LAYOUT + SCROLL FIX
+   The inline <style> sets .main { height: 100vh; overflow: hidden }
+   which locks the page. Override here.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+@media (max-width: 860px) {
+  .page-index .main { display: flex !important; flex-direction: column !important; height: auto !important; overflow: visible !important; }
+  .page-index .panel { border-right: none !important; border-left: none !important; border-top: 1px solid var(--border, #1a3a5c); max-height: none; overflow-y: visible; }
+  .page-index .panel:last-child { display: none; }
+  .page-index .header-stats { display: none; }
+  .page-index .logo small { display: none; }
+}
+
+@media (max-width: 1024px) {
+  .page-index .main { grid-template-columns: 200px 1fr 200px; }
+  .page-index .stat-pill { display: none; }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   8. PANEL INTERNALS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   9. CANVASES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   10. TERMINAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   11. MODALS & COMMAND PALETTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+@media (max-width: 640px) {
+  .page-index .modal { width: 100vw !important; max-width: 100vw !important; max-height: 88dvh !important; }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   12. INLINE GRID OVERRIDES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   13. SCORING / SCENARIOS / WHAT-IF / REPLAY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   14. CYBAASH AI PANEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 /* FIX: AI overlay on small screens — full-width bottom sheet, SOLID background */
 @media (max-width: 480px) {
@@ -1016,6 +778,7 @@
     background: #111115 !important;
     flex-shrink: 0 !important;
   }
+.msg-box { padding: 20px 16px; width: min(500px,96vw); border-radius: 12px; }
 }
 
 /* FIX: floating panel mode on medium mobile (481–768px) */
@@ -1038,86 +801,17 @@
   }
 }
 
-
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    15. RECRUITER PAGE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  .page-recruiter .hdr { padding-top: max(10px, env(safe-area-inset-top)); padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); flex-wrap: wrap; gap: 8px; min-height: 52px; height: auto; }
-  .page-recruiter .cred-grid, .page-recruiter .sk-grid, .page-recruiter .proj-grid { grid-template-columns: 1fr !important; gap: 10px; }
-  .page-recruiter .ctf-grid   { grid-template-columns: 1fr 1fr !important; gap: 8px; }
-  .page-recruiter .cred-stats { grid-template-columns: repeat(3,1fr) !important; gap: 2px; }
-  .page-recruiter .ov-grid    { grid-template-columns: 1fr 1fr !important; }
-  .page-recruiter .ov-wide    { grid-template-columns: 1fr !important; }
-  .page-recruiter .cband-grid { grid-template-columns: repeat(3,1fr) !important; gap: 2px; }
-  .page-recruiter .bdg-grid   { grid-template-columns: 1fr 1fr !important; }
-  .page-recruiter .hero-inner { grid-template-columns: 1fr !important; gap: 16px; }
-  .page-recruiter .hero-name  { font-size: clamp(1.2rem, 6vw, 1.8rem); text-shadow: none; }
-  .page-recruiter .kpi-row    { display: none; }
-  .page-recruiter .btn        { min-height: 44px; }
-  .page-recruiter .sub-tabs   { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
-}
-@media (max-width: 480px) {
-  .page-recruiter .cred-grid  { grid-template-columns: 1fr !important; }
-  .page-recruiter .ctf-grid   { grid-template-columns: 1fr !important; }
-  .page-recruiter .cband-grid { grid-template-columns: 1fr 1fr !important; }
-  .page-recruiter .cred-stats { grid-template-columns: repeat(2,1fr) !important; }
-  .page-recruiter .ov-grid    { grid-template-columns: 1fr !important; }
-}
-
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    16. DASHBOARD PAGE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  .page-dashboard .sidebar { width: 100% !important; height: 56px; min-height: 56px; flex-direction: row !important; align-items: center; justify-content: space-around; padding: 0 !important; border-right: none !important; border-top: 1px solid var(--border, #1a3a5c); order: 3; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); z-index: 200; }
-  .page-dashboard .sb-tab { flex: 1; flex-direction: column !important; justify-content: center; align-items: center; height: 56px; min-height: 44px; border-left: none !important; border-bottom: 2px solid transparent; gap: 3px; font-size: 7px; padding: 0 !important; }
-  .page-dashboard .sb-tab.active { border-left: none !important; border-bottom-color: var(--blue, #00d4ff); }
-  .page-dashboard .sb-icon { font-size: 18px; display: block; }
-  .page-dashboard .main { order: 2; padding: 14px; overflow-y: auto; flex: 1; padding-bottom: calc(56px + env(safe-area-inset-bottom) + 14px); }
-  .page-dashboard .hdr  { order: 1; padding: 8px 14px; flex-shrink: 0; }
-  .page-dashboard .hdr-logo { font-size: 15px; letter-spacing: 2px; }
-  .page-dashboard .hdr-tag, .page-dashboard .hdr-user { display: none; }
-  .page-dashboard .stats-grid, .page-dashboard .stat-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px; }
-  .page-dashboard .section-grid, .page-dashboard .dash-grid-2 { grid-template-columns: 1fr !important; gap: 12px; }
-  .page-dashboard .login-card { width: min(420px, 92vw); padding: clamp(18px,5vw,28px) clamp(14px,4vw,22px); border-radius: 12px; }
-  .page-dashboard #patInput { font-size: 16px; min-height: 48px; -webkit-appearance: none; }
-  .page-dashboard .btn-gh { width: 100%; justify-content: center; min-height: 48px; }
-}
-@media (max-width: 480px) {
-  .page-dashboard .main { padding: 10px; padding-bottom: calc(56px + env(safe-area-inset-bottom) + 10px); }
-}
-
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    17. ADMIN SHELL
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  .shell { flex-direction: column !important; height: 100dvh !important; overflow: hidden !important; }
-  .shell .topbar { height: 48px !important; padding: 0 max(12px, env(safe-area-inset-left)) !important; padding-right: max(12px, env(safe-area-inset-right)) !important; flex-shrink: 0 !important; display: flex !important; align-items: center !important; }
-  .shell .topbar-title { font-size: 12px !important; letter-spacing: 2px !important; }
-  .shell .topbar-breadcrumb, .shell .topbar-time { display: none !important; }
-  .shell .content { flex: 1 !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; padding: 12px !important; padding-bottom: calc(56px + env(safe-area-inset-bottom) + 12px) !important; overscroll-behavior: contain !important; }
-  .shell .card { padding: 14px !important; border-radius: 8px !important; margin-bottom: 10px !important; }
-  .shell .stat-grid { grid-template-columns: repeat(2,1fr) !important; gap: 8px !important; }
-  .shell .form-row-2, .shell .form-row-3, .shell .grid-2, .shell .grid-3 { grid-template-columns: 1fr !important; gap: 10px !important; }
-  .shell .form-input, .shell .form-textarea, .shell .form-select { font-size: 16px !important; min-height: 48px !important; padding: 10px 12px !important; border-radius: 6px !important; -webkit-appearance: none !important; width: 100% !important; }
-  .shell .form-textarea { min-height: 96px !important; }
-  .shell .btn { min-height: 44px !important; padding: 10px 14px !important; border-radius: 6px !important; }
-  .shell .nav-item { font-size: 7px !important; min-height: 48px !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; gap: 2px !important; flex: 1 !important; border-left: none !important; border-bottom: 2px solid transparent !important; padding: 4px !important; }
-  .shell .nav-item.active { border-left: none !important; border-bottom-color: var(--blue, #00d4ff) !important; }
-  .shell .nav-icon { font-size: 16px !important; }
-  .shell .section-header { flex-direction: column !important; gap: 8px !important; margin-bottom: 12px !important; }
-  .shell .modal { width: 100vw !important; max-width: 100vw !important; max-height: 88dvh !important; border-radius: 14px 14px 0 0 !important; position: fixed !important; left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important; transform: none !important; overflow-y: auto !important; padding-bottom: max(20px, env(safe-area-inset-bottom)) !important; }
-  .shell .auth-box { padding: 24px 16px !important; border-radius: 14px !important; width: min(92vw, 360px) !important; }
-  .shell .sync-toast { right: 8px !important; left: 8px !important; max-width: none !important; border-radius: 8px !important; bottom: calc(56px + env(safe-area-inset-bottom) + 8px) !important; }
-  .shell .sub-grid { grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); }
-}
-@media (max-width: 480px) {
-  .shell .content { padding: 10px !important; padding-bottom: calc(56px + env(safe-area-inset-bottom) + 10px) !important; }
-  .shell .card { padding: 12px !important; }
-}
-
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    18. RANGE SLIDERS (touch)
@@ -1128,21 +822,9 @@
   input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--blue, #00d4ff); margin-top: -9px; cursor: pointer; }
 }
 
-
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    19. PERFORMANCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  body.page-index::before { display: none !important; }
-  .page-index .ring-1 { animation-duration: 80s !important; }
-  .page-index .ring-2 { animation-duration: 60s !important; }
-  .page-index .ring-3 { animation-duration: 40s !important; }
-}
-
-@media (max-width: 480px) {
-  .msg-box { padding: 20px 16px; width: min(500px,96vw); border-radius: 12px; }
-}
-
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    20. Z-INDEX MASTER TABLE (all mobile layers, zero conflicts)
@@ -1157,15 +839,4 @@
      480  → .mob-fab-bar          FAB bar (below terminal)
      200  → .header / .tabs       sticky nav chrome
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media (max-width: 768px) {
-  #mobHeaderDrawer            { z-index: 1200 !important; }
-  #mobLeftDrawer,
-  #mobRightDrawer             { z-index: 1101 !important; }
-  #mobOverlay                 { z-index: 1100 !important; }
-  #termOverlay                { z-index:  500 !important; }
-  #mobFabBar, .mob-fab-bar    { z-index:  480 !important; }
-  .page-index .header,
-  .page-index .tabs           { z-index:  200 !important; }
-  #cybaash-fab                { z-index: 8000 !important; }
-  #cybaash-ai-overlay         { z-index: 7000 !important; }
-}
+

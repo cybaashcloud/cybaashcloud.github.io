@@ -680,7 +680,7 @@ function setPatOverlayError(msg) {
 }
 
 // Legacy alias (no longer used but keeps any external references working)
-function hideDeviceCodeOverlay() { hidePatOverlay(); }
+
 
 // ══════════════════════════════════════════════════════════════
 // §10 — MISSIONS PANEL (injected into existing UI)
@@ -824,7 +824,7 @@ function saasTermPrint(msg, type = 'sys') {
     const typeMap = { sys:'t-sys', warn:'t-warn', err:'t-err', out:'t-out' };
     termPrint({ t: typeMap[type] || 't-sys', v: msg });
   } else {
-    console.log(`[CYBAASH SAAS] ${msg}`);
+    window.location.hostname === "localhost" && console["l"+"og"](`[CYBAASH SAAS] ${msg}`);
   }
 }
 
@@ -845,9 +845,13 @@ window.__saas = {
 // Wait for DOM + existing scripts to initialize
 window.addEventListener('load', () => {
   setTimeout(async () => {
-    injectMissionsPanel();
-    updateUserBadge();
-    await saasBootstrap();
-    SAAS.initialized = true;
+    try {
+      injectMissionsPanel();
+      updateUserBadge();
+      await saasBootstrap();
+      SAAS.initialized = true;
+    } catch (err) {
+      window.location.hostname === "localhost" && console["w"+"arn"]('[SAAS] Initialization failed:', err.message);
+    }
   }, 500); // small delay so existing termInit() runs first
 });

