@@ -1,0 +1,1319 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# CYBAASH — Full Codebase Audit  v2.0  (God Level)
+# ───────────────────────────────────────────────────────────────────────────
+#  BLOCK A  — Broken Code (hard failures)
+#    1   JS syntax errors            node --check every .js/.jsx
+#    2   Broken HTML references      <script>/<link>/<img> → missing files
+#    3   Broken Python scripts       py_compile all .py
+#    4   Broken SW cache entries     SHELL_FILES vs actual disk
+#    5   Empty files                 zero-byte / whitespace-only
+#    6   Circular imports            ES module cycles in admin/src
+#    7   Mixed HTTP/HTTPS content    http:// in production assets
+#    8   Broken anchor links         href="#id" with no matching id=""
+#    9   Broken JSON                 malformed data_*.json / manifest.json
+#   10   Script load blocking        render-blocking <script> without defer/async
+#
+#  BLOCK B  — Dead Code (warnings)
+#   11   Unused JS files             .js never <script src>'d or imported
+#   12   Unused CSS files            .css never <link href>'d
+#   13   Unused CSS classes          classes defined, never used in HTML/JS
+#   14   Dead JS functions           declared, never called cross-file
+#   15   Dead JSON keys              config keys never read in JS/HTML
+#   16   Orphan assets               images/icons referenced nowhere
+#   17   Duplicate CSS rules         same selector defined 2+ times
+#   18   Console.log leaks           debug logs left in production JS
+#   19   TODO / FIXME tracker        every TODO/FIXME/HACK/BUG/XXX mapped
+#   20   Long lines (unminified)     lines > 300 chars in non-minified JS
+#
+#  BLOCK C  — Security & Quality
+#   21   Hardcoded secrets scan      API keys, tokens, passwords in source
+#   22   Dangerous JS patterns       eval(), innerHTML, new Function(), etc.
+#   23   Missing error handling      async functions with no try/catch
+#   24   Event listener leaks        addEventListener with no removeEventListener
+#   25   Workflow permissions audit  write permissions audit on all workflows
+#   26   Dependency version pinning  unpinned ^/~ versions in package.json
+#   27   Gitleaks config health      .gitleaks.toml rules check
+#
+#  BLOCK D  — SEO & Accessibility
+#   28   Missing meta tags           og:title / og:image / description
+#   29   Accessibility audit         img alt, button aria-label, input labels
+#   30   Font preconnect             Google Fonts without <link rel=preconnect>
+#   31   PWA manifest completeness   required manifest.json fields
+#   32   Undefined CSS variables     var(--x) used but --x never defined
+#   33   File size budget            each core asset vs KB limit
+#
+# Outputs:  GitHub Actions job summary · PR comment · exit 1 on hard errors
+# Triggers: workflow_dispatch · push to main (frontend/**) · weekly Monday
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: Full Codebase Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      fail_on_warnings:
+        description: 'Also fail on warnings (not just hard errors)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/full-audit.yml'
+  schedule:
+    - cron: '0 8 * * 1'
+
+concurrency:
+  group: full-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Full Codebase Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python deps
+        run: pip install pyyaml --break-system-packages -q
+
+      # ══════════════════════════════════════════════════════════════════════
+      # BLOCK A — BROKEN CODE
+      # ══════════════════════════════════════════════════════════════════════
+
+      - name: 'A01 · JS Syntax Errors'
+        id: a01
+        run: |
+          python3 - <<'PYEOF'
+          import subprocess, json
+          from pathlib import Path
+
+          base = Path('frontend')
+          files = (
+              list(base.glob('*.js')) + list(base.glob('ai/*.js')) +
+              list(base.glob('admin/*.js')) + list(base.glob('admin/src/**/*.js')) +
+              list(base.glob('admin/src/**/*.jsx'))
+          )
+          files = [f for f in files if 'dist/assets' not in str(f)]
+
+          errors, ok = [], []
+          for f in sorted(files):
+              r = subprocess.run(['node', '--check', str(f)], capture_output=True, text=True)
+              if r.returncode != 0:
+                  errors.append({'file': str(f), 'error': r.stderr.strip().splitlines()[0]})
+              else:
+                  ok.append(str(f))
+
+          for e in errors:
+              print(f"  ❌  {e['file']}\n      {e['error']}")
+          for f in ok:
+              print(f"  ✓   {f}")
+          print(f"\n  {'❌' if errors else '✅'}  {len(errors)} error(s) in {len(files)} JS files")
+          open('a01.txt','w').write(str(len(errors)))
+          PYEOF
+          echo "count=$(cat a01.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'A02 · Broken HTML References'
+        id: a02
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base = Path('frontend')
+          pages = list(base.glob('*.html')) + list(base.glob('ai/*.html')) + list(base.glob('admin/*.html'))
+          errors = []
+
+          for page in sorted(pages):
+              html = re.sub(r'<!--.*?-->', '', page.read_text(errors='replace'), flags=re.DOTALL)
+              src_dir = page.parent
+              for ref in re.findall(r'(?:src|href|action)=["\'](?!https?://|//|#|data:|mailto:|javascript:)([^"\'?#\s]+)', html):
+                  candidate = (base / ref.lstrip('/')) if ref.startswith('/') else (src_dir / ref)
+                  try:
+                      candidate.resolve().relative_to(base.resolve())
+                  except ValueError:
+                      continue
+                  if not candidate.resolve().exists():
+                      errors.append(f"{page.name} → {ref}")
+
+          for e in errors:
+              print(f"  ❌  {e}")
+          if not errors:
+              print(f"  ✅  No broken HTML references")
+          open('a02.txt','w').write(str(len(errors)))
+          PYEOF
+          echo "count=$(cat a02.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'A03 · Broken Python Scripts'
+        id: a03
+        run: |
+          python3 - <<'PYEOF'
+          import py_compile
+          from pathlib import Path
+
+          files = (
+              list(Path('frontend').glob('**/*.py')) +
+              list(Path('scripts').glob('**/*.py')) +
+              list(Path('.github').glob('**/*.py')) +
+              [Path('verify_data.py')]
+          )
+          errors = []
+          for f in sorted(set(files)):
+              if not f.exists(): continue
+              try:
+                  py_compile.compile(str(f), doraise=True)
+                  print(f"  ✓   {f}")
+              except py_compile.PyCompileError as e:
+                  errors.append(f"{f}: {e}")
+                  print(f"  ❌  {f}\n      {e}")
+          if not errors:
+              print("  ✅  All Python scripts compile")
+          open('a03.txt','w').write(str(len(errors)))
+          PYEOF
+          echo "count=$(cat a03.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'A04 · Broken SW Cache Entries'
+        id: a04
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          sw   = Path('frontend/sw.js').read_text()
+          base = Path('frontend')
+          m    = re.search(r'const SHELL_FILES\s*=\s*\[([^\]]+)\]', sw, re.DOTALL)
+          if not m:
+              print("  ⚠  Cannot parse SHELL_FILES")
+              open('a04.txt','w').write('0')
+              exit(0)
+
+          entries = re.findall(r"'(/[^']+)'", m.group(1))
+          errors, ok = [], []
+          for e in entries:
+              p = base / e.lstrip('/')
+              (ok if p.exists() else errors).append(e)
+
+          for e in errors: print(f"  ❌  sw.js lists {e} — file missing")
+          for e in ok:     print(f"  ✓   {e}")
+          print(f"\n  {'❌' if errors else '✅'}  {len(errors)} broken / {len(ok)} OK")
+          open('a04.txt','w').write(str(len(errors)))
+          PYEOF
+          echo "count=$(cat a04.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'A05 · Empty Files'
+        id: a05
+        run: |
+          python3 - <<'PYEOF'
+          from pathlib import Path
+
+          SKIP = {'node_modules','.git','dist','certificates/auto','certificates/aws','cert_logos'}
+          TEXT_EXT = {'.html','.css','.js','.jsx','.py','.json','.yml','.yaml','.md','.txt','.sh'}
+          empties = []
+          for d in [Path('frontend'), Path('scripts'), Path('.github')]:
+              for f in d.rglob('*'):
+                  if not f.is_file() or f.suffix not in TEXT_EXT: continue
+                  if any(s in str(f) for s in SKIP): continue
+                  if not f.read_text(errors='replace').strip():
+                      empties.append(str(f))
+
+          for e in empties: print(f"  ❌  {e}")
+          if not empties:   print("  ✅  No empty files")
+          open('a05.txt','w').write(str(len(empties)))
+          PYEOF
+          echo "count=$(cat a05.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'A06 · Circular Imports (admin/src)'
+        id: a06
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+          from collections import defaultdict
+
+          src_dir = Path('frontend/admin/src')
+          if not src_dir.exists():
+              print("  ℹ   admin/src not present — skipped")
+              open('a06.txt','w').write('0')
+              exit(0)
+
+          graph = defaultdict(set)
+          for f in list(src_dir.rglob('*.js')) + list(src_dir.rglob('*.jsx')):
+              stem = f.stem
+              for imp in re.findall(r"""(?:import|from)\s+['"]([^'"]+)['"]""", f.read_text(errors='replace')):
+                  if imp.startswith('.'):
+                      graph[stem].add(imp.split('/')[-1].replace('.js','').replace('.jsx',''))
+
+          def has_cycle(node, visited, stack):
+              visited.add(node); stack.add(node)
+              for nb in graph.get(node, []):
+                  if nb not in visited:
+                      if has_cycle(nb, visited, stack): return True
+                  elif nb in stack: return True
+              stack.discard(node)
+              return False
+
+          cycles = [n for n in graph if has_cycle(n, set(), set())]
+          for c in cycles: print(f"  ❌  Circular: {c}")
+          if not cycles:   print("  ✅  No circular imports")
+          open('a06.txt','w').write(str(len(cycles)))
+          PYEOF
+          echo "count=$(cat a06.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'A07 · Mixed HTTP/HTTPS Content'
+        id: a07
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          # Allowed http:// patterns (SVG namespace, intentional demo content)
+          ALLOW = ['w3.org/2000/svg', 'www.w3.org', 'schemas.microsoft', 'xmlns']
+          base  = Path('frontend')
+          errors = []
+
+          for f in list(base.glob('*.js')) + list(base.glob('*.html')) + list(base.glob('ai/*.js')):
+              if 'dist/assets' in str(f): continue
+              src = f.read_text(errors='replace')
+              for m in re.finditer(r'http://(?!localhost)([^\s"\'`>]+)', src):
+                  url = m.group(0)
+                  if not any(a in url for a in ALLOW):
+                      # Get line number
+                      line_no = src[:m.start()].count('\n') + 1
+                      errors.append(f"{f.relative_to(base)} L{line_no}: {url[:70]}")
+
+          for e in errors: print(f"  ❌  {e}")
+          if not errors:   print("  ✅  No mixed HTTP/HTTPS content")
+          open('a07.txt','w').write(str(len(errors)))
+          PYEOF
+          echo "count=$(cat a07.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'A08 · Broken Anchor Links'
+        id: a08
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base   = Path('frontend')
+          errors = []
+
+          for f in list(base.glob('*.html')) + list(base.glob('ai/*.html')):
+              html    = f.read_text(errors='replace')
+              defined = set(re.findall(r'id=["\']([^"\']+)["\']', html))
+              hrefs   = re.findall(r'href=["\']#([^"\']+)["\']', html)
+              for h in hrefs:
+                  if h not in defined:
+                      errors.append(f"{f.name}: href='#{h}' — id not found")
+
+          for e in errors: print(f"  ❌  {e}")
+          if not errors:   print("  ✅  All anchor links resolve")
+          open('a08.txt','w').write(str(len(errors)))
+          PYEOF
+          echo "count=$(cat a08.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'A09 · Broken JSON Files'
+        id: a09
+        run: |
+          python3 - <<'PYEOF'
+          import json
+          from pathlib import Path
+
+          files = (
+              list(Path('frontend').glob('data_*.json')) +
+              [Path('frontend/manifest.json'), Path('frontend/data_ai_config.json'),
+               Path('frontend/data_meta.json'), Path('frontend/admin/package.json')]
+          )
+          errors = []
+          for f in sorted(set(files)):
+              if not f.exists(): continue
+              try:
+                  json.loads(f.read_text())
+                  print(f"  ✓   {f}")
+              except json.JSONDecodeError as e:
+                  errors.append(f"{f}: {e}")
+                  print(f"  ❌  {f}: {e}")
+          if not errors:
+              print("  ✅  All JSON files valid")
+          open('a09.txt','w').write(str(len(errors)))
+          PYEOF
+          echo "count=$(cat a09.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'A10 · Render-Blocking Scripts'
+        id: a10
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base   = Path('frontend')
+          errors = []
+
+          for f in list(base.glob('*.html')) + list(base.glob('ai/*.html')):
+              html  = f.read_text(errors='replace')
+              head  = re.search(r'<head.*?</head>', html, re.DOTALL | re.I)
+              if not head: continue
+              head_html = head.group(0)
+              # Find <script src=> without defer or async, not from CDN
+              scripts = re.findall(r'<script([^>]*)>', head_html, re.I)
+              for attrs in scripts:
+                  has_src    = 'src=' in attrs
+                  has_defer  = 'defer' in attrs
+                  has_async  = 'async' in attrs
+                  is_external = 'https://' in attrs or 'http://' in attrs
+                  if has_src and not has_defer and not has_async and not is_external:
+                      src_val = re.search(r'src=["\']([^"\']+)["\']', attrs)
+                      src_val = src_val.group(1) if src_val else '?'
+                      errors.append(f"{f.name}: blocking script → {src_val}")
+
+          for e in errors: print(f"  ⚠   {e}")
+          if not errors:   print("  ✅  No render-blocking scripts in <head>")
+          open('a10.txt','w').write(str(len(errors)))
+          PYEOF
+          echo "count=$(cat a10.txt)" >> $GITHUB_OUTPUT
+
+      # ══════════════════════════════════════════════════════════════════════
+      # BLOCK B — DEAD CODE
+      # ══════════════════════════════════════════════════════════════════════
+
+      - name: 'B11 · Unused JS Files'
+        id: b11
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base    = Path('frontend')
+          EXEMPT  = {'sw.js'}  # registered via navigator.serviceWorker
+          files   = [f for f in base.glob('*.js') if f.name not in EXEMPT]
+
+          corpus  = '\n'.join(
+              f.read_text(errors='replace') for f in
+              list(base.glob('**/*.html')) + list(base.glob('**/*.js'))
+              if 'dist' not in str(f)
+          )
+          corpus += '\n'.join(f.read_text(errors='replace') for f in Path('.github').glob('**/*.yml'))
+
+          unused, used = [], []
+          for f in sorted(files):
+              (used if (f.name in corpus or '/'+f.name in corpus) else unused).append(f.name)
+
+          for f in used:   print(f"  ✓   {f}")
+          for f in unused: print(f"  ⚠   UNUSED: {f}  ({(base/f).stat().st_size} bytes)")
+          if not unused:   print("  ✅  All JS files referenced")
+          open('b11.txt','w').write(str(len(unused)))
+          PYEOF
+          echo "count=$(cat b11.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'B12 · Unused CSS Files'
+        id: b12
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base   = Path('frontend')
+          files  = list(base.glob('*.css')) + list(base.glob('ai/*.css')) + list(base.glob('admin/*.css'))
+          corpus = '\n'.join(
+              f.read_text(errors='replace')
+              for f in list(base.glob('**/*.html')) + list(base.glob('**/*.js'))
+              if 'dist' not in str(f)
+          )
+
+          unused = []
+          for f in sorted(files):
+              name = f.name
+              if name not in corpus:
+                  unused.append(str(f.relative_to(base)))
+                  print(f"  ⚠   UNUSED: {f.relative_to(base)}")
+              else:
+                  print(f"  ✓   {f.relative_to(base)}")
+          if not unused: print("  ✅  All CSS files referenced")
+          open('b12.txt','w').write(str(len(unused)))
+          PYEOF
+          echo "count=$(cat b12.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'B13 · Unused CSS Classes'
+        id: b13
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base   = Path('frontend')
+          corpus = ''.join(
+              f.read_text(errors='replace')
+              for f in list(base.glob('**/*.html')) + list(base.glob('**/*.js'))
+              if 'dist' not in str(f)
+          )
+          # Prefixes that are dynamic/state-driven — never literal in HTML
+          DYNA = ('page-','is-','has-','nav-','tab-','term-','mob-','cyb-','shell',
+                  'btn-','btn ','active','open','hidden','show','hide')
+
+          total = 0
+          for css_path in sorted(list(base.glob('*.css')) + list(base.glob('ai/*.css')) + list(base.glob('admin/*.css'))):
+              css     = css_path.read_text(errors='replace')
+              classes = list(set(re.findall(r'\.([a-zA-Z][a-zA-Z0-9_-]+)\s*[\{,:\[\s]', css)))
+              unused  = [c for c in sorted(classes)
+                         if c not in corpus and not any(c.startswith(p) for p in DYNA)]
+              rel = str(css_path.relative_to(base))
+              if unused:
+                  total += len(unused)
+                  print(f"\n  ⚠   {rel} — {len(unused)} unused class(es):")
+                  for c in unused[:25]: print(f"       .{c}")
+                  if len(unused) > 25: print(f"       ... +{len(unused)-25} more")
+              else:
+                  print(f"  ✅  {rel}")
+          open('b13.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat b13.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'B14 · Dead JS Functions'
+        id: b14
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base   = Path('frontend')
+          corpus = ''.join(
+              f.read_text(errors='replace')
+              for f in list(base.glob('**/*.js')) + list(base.glob('**/*.html'))
+              if 'dist' not in str(f)
+          )
+
+          total = 0
+          check_files = list(base.glob('*.js')) + list(base.glob('admin/*.js'))
+          for path in sorted(check_files):
+              src     = path.read_text(errors='replace')
+              named   = set(re.findall(r'\bfunction\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\(', src))
+              exports = set(re.findall(r'window\.([A-Za-z_$][A-Za-z0-9_$]*)\s*=', src))
+              dead    = []
+              for fn in sorted(named - exports):
+                  if len(re.findall(r'\b' + re.escape(fn) + r'\b', corpus)) <= 1:
+                      for i, line in enumerate(src.splitlines(), 1):
+                          if re.search(r'\bfunction\s+' + re.escape(fn) + r'\b', line):
+                              dead.append((fn, i))
+                              break
+              if dead:
+                  total += len(dead)
+                  print(f"\n  ⚠   {path.name}: {len(dead)} possibly dead function(s):")
+                  for fn, ln in dead: print(f"       L{ln:<5} {fn}()")
+              else:
+                  print(f"  ✓   {path.name}")
+          open('b14.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat b14.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'B15 · Dead JSON Keys'
+        id: b15
+        run: |
+          python3 - <<'PYEOF'
+          import json, re
+          from pathlib import Path
+
+          base   = Path('frontend')
+          corpus = ''.join(
+              f.read_text(errors='replace')
+              for f in list(base.glob('**/*.js')) + list(base.glob('**/*.html'))
+              if 'dist' not in str(f)
+          )
+          total = 0
+          for jf in [base/'data_ai_config.json', base/'data_meta.json']:
+              if not jf.exists(): continue
+              data = json.loads(jf.read_text())
+              if not isinstance(data, dict): continue
+              dead = [k for k in data if k not in corpus]
+              print(f"\n  {jf.name}:")
+              for k in sorted(data):
+                  icon = '⚠  UNUSED' if k in dead else '✓ '
+                  print(f"    {icon}  {k}")
+              total += len(dead)
+          open('b15.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat b15.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'B16 · Orphan Assets'
+        id: b16
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base   = Path('frontend')
+          SKIP   = {'certificates/auto','certificates/aws','cert_logos','dist','node_modules'}
+          IMG_EXT= {'.png','.jpg','.jpeg','.gif','.webp','.svg','.ico'}
+          corpus = ''.join(
+              f.read_text(errors='replace')
+              for f in list(base.glob('**/*.html')) + list(base.glob('**/*.js')) + list(base.glob('**/*.css'))
+              if 'dist' not in str(f)
+          )
+          orphans, checked = [], 0
+          for f in base.rglob('*'):
+              if not f.is_file() or f.suffix.lower() not in IMG_EXT: continue
+              rel = str(f.relative_to(base))
+              if any(s in rel for s in SKIP): continue
+              checked += 1
+              if f.name not in corpus and f.stem not in corpus:
+                  orphans.append(rel)
+
+          print(f"  Checked {checked} image/icon files")
+          for o in sorted(orphans):
+              print(f"  ⚠   ORPHAN: {o}  ({(base/o).stat().st_size//1024}KB)")
+          if not orphans: print("  ✅  No orphan assets")
+          open('b16.txt','w').write(str(len(orphans)))
+          PYEOF
+          echo "count=$(cat b16.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'B17 · Duplicate CSS Rules'
+        id: b17
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+          from collections import Counter
+
+          base   = Path('frontend')
+          total  = 0
+          for path in sorted(list(base.glob('*.css')) + list(base.glob('ai/*.css')) + list(base.glob('admin/*.css'))):
+              css  = path.read_text(errors='replace')
+              sels = [s.strip() for s in re.findall(r'([^{}\n@][^{}\n]*)\s*\{', css)
+                      if s.strip() and not s.strip().startswith('@')]
+              dups = {s:n for s,n in Counter(sels).items() if n > 1}
+              rel  = str(path.relative_to(base))
+              if dups:
+                  total += len(dups)
+                  print(f"\n  ⚠   {rel}: {len(dups)} duplicate rule(s):")
+                  for sel, n in sorted(dups.items(), key=lambda x:-x[1])[:15]:
+                      print(f"       x{n}  {sel[:70]}")
+              else:
+                  print(f"  ✅  {rel}")
+          open('b17.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat b17.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'B18 · Console.log Leaks'
+        id: b18
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base    = Path('frontend')
+          ALLOWED = {'sw.js', 'mobile.js'}    # intentional logging
+          total   = 0
+          for path in sorted(base.glob('*.js')):
+              if path.name in ALLOWED: continue
+              src   = path.read_text(errors='replace')
+              lines = src.splitlines()
+              leaks = [(i+1, l.strip()[:80]) for i,l in enumerate(lines)
+                       if re.search(r'\bconsole\.(log|warn|debug|info)\b', l)
+                       and not l.strip().startswith('//')]
+              if leaks:
+                  total += len(leaks)
+                  print(f"\n  ⚠   {path.name}: {len(leaks)} console statement(s):")
+                  for ln, text in leaks[:8]: print(f"       L{ln:<5} {text}")
+                  if len(leaks) > 8: print(f"       ... +{len(leaks)-8} more")
+              else:
+                  print(f"  ✓   {path.name}")
+          if total == 0: print("  ✅  No console.log leaks")
+          open('b18.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat b18.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'B19 · TODO / FIXME Tracker'
+        id: b19
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+          from collections import defaultdict
+
+          base    = Path('frontend')
+          TAGS    = ['FIXME','BUG','HACK','XXX','TODO','NOSONAR']
+          pattern = re.compile(r'\b(' + '|'.join(TAGS) + r')\b[:\s]*(.*)')
+          by_tag  = defaultdict(list)
+
+          for path in sorted(list(base.glob('*.js')) + list(base.glob('*.css')) +
+                              list(base.glob('ai/*.js')) + list(base.glob('admin/*.js')) +
+                              list(base.glob('admin/src/**/*.js')) + list(base.glob('admin/src/**/*.jsx'))):
+              if 'dist/assets' in str(path): continue
+              for i, line in enumerate(path.read_text(errors='replace').splitlines(), 1):
+                  m = pattern.search(line)
+                  if m:
+                      by_tag[m.group(1)].append(f"{path.relative_to(base)}  L{i}  {m.group(2).strip()[:70]}")
+
+          total = sum(len(v) for v in by_tag.values())
+          for tag in TAGS:
+              items = by_tag.get(tag, [])
+              if items:
+                  print(f"\n  [{tag}] ({len(items)}):")
+                  for item in items: print(f"    {item}")
+          if total == 0: print("  ✅  No TODO/FIXME annotations")
+          open('b19.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat b19.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'B20 · Long Unminified Lines (>300 chars)'
+        id: b20
+        run: |
+          python3 - <<'PYEOF'
+          from pathlib import Path
+
+          base  = Path('frontend')
+          total = 0
+          for path in sorted(base.glob('*.js')):
+              if 'dist/assets' in str(path): continue
+              lines = path.read_text(errors='replace').splitlines()
+              long  = [(i+1, len(l)) for i,l in enumerate(lines) if len(l) > 300]
+              if long:
+                  total += len(long)
+                  mx = max(n for _,n in long)
+                  print(f"  ⚠   {path.name}: {len(long)} line(s) > 300 chars  (max={mx})")
+              else:
+                  print(f"  ✓   {path.name}")
+          open('b20.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat b20.txt)" >> $GITHUB_OUTPUT
+
+      # ══════════════════════════════════════════════════════════════════════
+      # BLOCK C — SECURITY & QUALITY
+      # ══════════════════════════════════════════════════════════════════════
+
+      - name: 'C21 · Hardcoded Secrets Scan'
+        id: c21
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base = Path('frontend')
+          PATTERNS = [
+              (r'AIza[0-9A-Za-z\-_]{35}',                                   'Google API Key'),
+              (r'sk-[A-Za-z0-9]{40,}',                                       'OpenAI Key'),
+              (r'(?i)api[_-]?key\s*[=:]\s*["\']([A-Za-z0-9_\-]{20,})["\']', 'Generic API Key'),
+              (r'(?i)(password|passwd)\s*[=:]\s*["\'](?!.*\{)([^"\']{8,})["\']', 'Hardcoded Password'),
+              (r'eyJ[A-Za-z0-9_\-]{30,}',                                    'JWT Token'),
+              (r'ghp_[A-Za-z0-9]{36}',                                       'GitHub PAT'),
+              (r'(?i)private[_-]?key\s*[=:]\s*["\']([^"\']{20,})["\']',     'Private Key'),
+          ]
+          # Values that are obviously placeholders / examples — not real secrets
+          SAFE_VALUES = {'YOUR_KEY','your-key','INSERT','PLACEHOLDER','example','demo','test','xxx','yyy'}
+
+          errors = []
+          for f in list(base.glob('**/*.js')) + list(base.glob('**/*.html')) + list(base.glob('**/*.json')):
+              if any(s in str(f) for s in ['dist/assets','node_modules']): continue
+              src = f.read_text(errors='replace')
+              for pat, label in PATTERNS:
+                  for m in re.finditer(pat, src, re.I):
+                      val = m.group(0)[:40]
+                      if not any(sv.lower() in val.lower() for sv in SAFE_VALUES):
+                          ln = src[:m.start()].count('\n') + 1
+                          errors.append(f"{f.relative_to(base)} L{ln}: [{label}] {val}")
+
+          for e in errors: print(f"  ❌  {e}")
+          if not errors:   print("  ✅  No hardcoded secrets detected")
+          open('c21.txt','w').write(str(len(errors)))
+          PYEOF
+          echo "count=$(cat c21.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'C22 · Dangerous JS Patterns'
+        id: c22
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base = Path('frontend')
+          PATTERNS = [
+              (r'\beval\s*\(',                          'eval()',              'HIGH'),
+              (r'\bnew\s+Function\s*\(',                'new Function()',      'HIGH'),
+              (r'setTimeout\s*\(\s*["\`]',              'setTimeout(string)', 'MED'),
+              (r'setInterval\s*\(\s*["\`]',             'setInterval(string)','MED'),
+              (r'document\.write\s*\(',                 'document.write()',   'MED'),
+              (r'innerHTML\s*\+?=(?!=)',                'innerHTML=',         'LOW'),
+              (r'outerHTML\s*\+?=(?!=)',                'outerHTML=',         'LOW'),
+              (r'insertAdjacentHTML\s*\(',              'insertAdjacentHTML', 'LOW'),
+          ]
+          # Files where these are expected (template engine, simulator)
+          EXEMPT_FILES = {'index.html'}  # simulation output uses innerHTML intentionally
+
+          by_severity = {'HIGH':[], 'MED':[], 'LOW':[]}
+          for f in sorted(list(base.glob('*.js')) + list(base.glob('ai/*.js')) + list(base.glob('admin/*.js'))):
+              if f.name in EXEMPT_FILES or 'dist/assets' in str(f): continue
+              src   = f.read_text(errors='replace')
+              lines = src.splitlines()
+              for pat, label, sev in PATTERNS:
+                  hits = [(i+1, lines[i].strip()[:70]) for i, l in enumerate(lines)
+                          if re.search(pat, l) and not lines[i].strip().startswith('//')]
+                  if hits:
+                      by_severity[sev].append((f.name, label, hits))
+
+          total = 0
+          for sev, icon in [('HIGH','❌'),('MED','⚠ '),('LOW','ℹ ')]:
+              for fname, label, hits in by_severity[sev]:
+                  total += len(hits)
+                  print(f"  {icon}  [{sev}] {fname} — {label} x{len(hits)}")
+                  for ln, text in hits[:3]: print(f"       L{ln:<5} {text}")
+          if total == 0: print("  ✅  No dangerous JS patterns")
+          open('c22.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat c22.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'C23 · Missing Async Error Handling'
+        id: c23
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base  = Path('frontend')
+          total = 0
+          for path in sorted(list(base.glob('*.js')) + list(base.glob('ai/*.js'))):
+              src     = path.read_text(errors='replace')
+              # Find async function bodies
+              async_bodies = re.findall(
+                  r'async\s+(?:function\s+\w+|(?:\w+\s*=\s*)?(?:\([^)]*\)|\w+)\s*=>)\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}',
+                  src, re.DOTALL
+              )
+              uncaught = [b for b in async_bodies if 'try' not in b and '.catch' not in b and len(b.strip()) > 50]
+              if uncaught:
+                  total += len(uncaught)
+                  print(f"  ⚠   {path.name}: {len(uncaught)} async block(s) with no error handling")
+              else:
+                  print(f"  ✓   {path.name}")
+          open('c23.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat c23.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'C24 · Event Listener Leak Risk'
+        id: c24
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base  = Path('frontend')
+          # SW event listeners are by design permanent — exclude
+          EXEMPT = {'sw.js'}
+          total  = 0
+          for path in sorted(base.glob('*.js')):
+              if path.name in EXEMPT: continue
+              src   = path.read_text(errors='replace')
+              adds  = len(re.findall(r'addEventListener\s*\(', src))
+              rems  = len(re.findall(r'removeEventListener\s*\(', src))
+              if adds > 5 and rems == 0:
+                  total += 1
+                  print(f"  ⚠   {path.name}: {adds} addEventListener, {rems} removeEventListener")
+              else:
+                  print(f"  ✓   {path.name}  (add={adds}, remove={rems})")
+          if total == 0: print("  ✅  No obvious listener leaks")
+          open('c24.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat c24.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'C25 · Workflow Permissions Audit'
+        id: c25
+        run: |
+          python3 - <<'PYEOF'
+          import yaml, re
+          from pathlib import Path
+
+          # Permissions legitimately needed by this repo's workflows
+          JUSTIFIED = {
+              'pull-requests': 'write',   # CI posts PR comments
+              'pages': 'write',           # deploy workflow
+              'id-token': 'write',        # OIDC deploy
+              'contents': 'write',        # weekly cert sync
+          }
+          issues = []
+          for wf in sorted(Path('.github/workflows').glob('*.yml')):
+              try:
+                  data = yaml.safe_load(wf.read_text())
+              except:
+                  continue
+              for job_name, job in data.get('jobs', {}).items():
+                  perms = job.get('permissions', {})
+                  if not isinstance(perms, dict): continue
+                  for perm, level in perms.items():
+                      if level == 'write':
+                          justified = JUSTIFIED.get(perm) == 'write'
+                          icon = '✓ ' if justified else '⚠ '
+                          note = '' if justified else ' ← REVIEW'
+                          print(f"  {icon}  {wf.name}/{job_name}: {perm}={level}{note}")
+                          if not justified:
+                              issues.append(f"{wf.name}/{job_name}: {perm}=write")
+
+          if not issues: print("  ✅  All write permissions are justified")
+          open('c25.txt','w').write(str(len(issues)))
+          PYEOF
+          echo "count=$(cat c25.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'C26 · Dependency Version Pinning'
+        id: c26
+        run: |
+          python3 - <<'PYEOF'
+          import json
+          from pathlib import Path
+
+          pkg_file = Path('frontend/admin/package.json')
+          if not pkg_file.exists():
+              print("  ℹ   package.json not found")
+              open('c26.txt','w').write('0')
+              exit(0)
+
+          pkg  = json.loads(pkg_file.read_text())
+          deps = {**pkg.get('dependencies',{}), **pkg.get('devDependencies',{})}
+
+          unpinned = {k:v for k,v in deps.items() if v.startswith('^') or v.startswith('~') or v == '*'}
+          pinned   = {k:v for k,v in deps.items() if k not in unpinned}
+
+          print(f"  Pinned ({len(pinned)}):   " + ', '.join(f"{k}@{v}" for k,v in sorted(pinned.items())))
+          print(f"\n  Unpinned ({len(unpinned)}):")
+          for k, v in sorted(unpinned.items()):
+              print(f"    ⚠   {k}: {v}  ← consider pinning to exact version")
+          if not unpinned: print("  ✅  All dependencies pinned")
+          open('c26.txt','w').write(str(len(unpinned)))
+          PYEOF
+          echo "count=$(cat c26.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'C27 · Gitleaks Config Health'
+        id: c27
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          gl_path = Path('.gitleaks.toml')
+          if not gl_path.exists():
+              print("  ❌  .gitleaks.toml not found — secrets may not be scanned")
+              open('c27.txt','w').write('1')
+              exit(0)
+
+          gl       = gl_path.read_text()
+          rules    = re.findall(r'\[\[rules\]\]', gl)
+          allow    = 'allowlist' in gl
+          has_desc = re.findall(r'description\s*=', gl)
+          print(f"  Rules defined:   {len(rules)}")
+          print(f"  Has allowlist:   {allow}")
+          print(f"  Rule descriptions: {len(has_desc)}")
+          issues = 0
+          if len(rules) == 0:
+              print("  ❌  No rules defined in .gitleaks.toml")
+              issues += 1
+          else:
+              print(f"  ✅  {len(rules)} rule(s) configured")
+          open('c27.txt','w').write(str(issues))
+          PYEOF
+          echo "count=$(cat c27.txt)" >> $GITHUB_OUTPUT
+
+      # ══════════════════════════════════════════════════════════════════════
+      # BLOCK D — SEO & ACCESSIBILITY
+      # ══════════════════════════════════════════════════════════════════════
+
+      - name: 'D28 · Missing Meta Tags'
+        id: d28
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base  = Path('frontend')
+          PAGES = ['index.html', 'recruiter.html', 'dashboard.html', 'ai/index.html']
+          METAS = [
+              ('charset',        r'charset='),
+              ('description',    r'name=["\']description["\']'),
+              ('og:title',       r'property=["\']og:title["\']'),
+              ('og:description', r'property=["\']og:description["\']'),
+              ('og:image',       r'property=["\']og:image["\']'),
+              ('twitter:card',   r'name=["\']twitter:card["\']'),
+              ('canonical',      r'rel=["\']canonical["\']'),
+          ]
+          total = 0
+          for p in PAGES:
+              f = base / p
+              if not f.exists(): continue
+              html    = f.read_text(errors='replace')
+              missing = [name for name, pat in METAS if not re.search(pat, html, re.I)]
+              total  += len(missing)
+              if missing:
+                  print(f"  ⚠   {p}: missing: {', '.join(missing)}")
+              else:
+                  print(f"  ✅  {p}")
+          open('d28.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat d28.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'D29 · Accessibility Audit'
+        id: d29
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base  = Path('frontend')
+          total = 0
+          for f in sorted(list(base.glob('*.html')) + list(base.glob('ai/*.html'))):
+              html = f.read_text(errors='replace')
+              issues = []
+              # img without alt
+              imgs = re.findall(r'<img(?![^>]*\balt=)[^>]*/?>',  html, re.I|re.S)
+              if imgs: issues.append(f"{len(imgs)} <img> without alt")
+              # button without accessible label
+              btns = re.findall(r'<button(?![^>]*(?:aria-label|title))[^>]*>\s*[<&]', html, re.I)
+              if btns: issues.append(f"{len(btns)} <button> without aria-label/title")
+              # input without label association
+              inputs = re.findall(r'<input(?![^>]*(?:aria-label|aria-labelledby|id=))[^>]*/?>',  html, re.I)
+              inputs = [i for i in inputs if 'type="hidden"' not in i.lower() and 'type=hidden' not in i.lower()]
+              if inputs: issues.append(f"{len(inputs)} <input> without label")
+              # links with no text
+              empty_links = re.findall(r'<a[^>]*>\s*</a>', html, re.I)
+              if empty_links: issues.append(f"{len(empty_links)} empty <a> links")
+
+              if issues:
+                  total += sum(int(re.search(r'\d+',i).group()) for i in issues)
+                  print(f"  ⚠   {f.name}:")
+                  for i in issues: print(f"       {i}")
+              else:
+                  print(f"  ✅  {f.name}")
+          open('d29.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat d29.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'D30 · Font Preconnect Check'
+        id: d30
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base   = Path('frontend')
+          issues = []
+          for f in sorted(list(base.glob('*.html')) + list(base.glob('ai/*.html'))):
+              html = f.read_text(errors='replace')
+              if 'fonts.googleapis.com' not in html: continue
+              has_pc_gapi  = bool(re.search(r'preconnect[^>]+fonts\.googleapis\.com', html, re.I))
+              has_pc_gstc  = bool(re.search(r'preconnect[^>]+fonts\.gstatic\.com', html, re.I))
+              if not has_pc_gapi or not has_pc_gstc:
+                  missing = []
+                  if not has_pc_gapi: missing.append('fonts.googleapis.com')
+                  if not has_pc_gstc: missing.append('fonts.gstatic.com (crossorigin)')
+                  issues.append(f.name)
+                  print(f"  ⚠   {f.name}: missing preconnect for: {', '.join(missing)}")
+                  print(f"       Add: <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">")
+                  print(f"            <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>")
+              else:
+                  print(f"  ✅  {f.name}")
+          open('d30.txt','w').write(str(len(issues)))
+          PYEOF
+          echo "count=$(cat d30.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'D31 · PWA Manifest Completeness'
+        id: d31
+        run: |
+          python3 - <<'PYEOF'
+          import json, re
+          from pathlib import Path
+
+          mf_path = Path('frontend/manifest.json')
+          if not mf_path.exists():
+              print("  ❌  manifest.json missing")
+              open('d31.txt','w').write('1')
+              exit(0)
+
+          mf = json.loads(mf_path.read_text())
+          REQUIRED   = ['name','short_name','start_url','display','icons','theme_color','background_color']
+          ICON_SIZES  = ['192x192','512x512']
+          MASK_ICON   = 'maskable'
+
+          issues = 0
+          for f in REQUIRED:
+              if f not in mf:
+                  print(f"  ❌  Missing required field: {f}")
+                  issues += 1
+              else:
+                  print(f"  ✓   {f}: {str(mf[f])[:50]}")
+
+          # Check icon sizes
+          icon_sizes = [i.get('sizes','') for i in mf.get('icons', [])]
+          for sz in ICON_SIZES:
+              if sz in str(icon_sizes): print(f"  ✓   icon {sz}")
+              else: print(f"  ⚠   icon {sz} missing"); issues += 1
+
+          # Check maskable icon
+          purposes = [i.get('purpose','') for i in mf.get('icons', [])]
+          if MASK_ICON in str(purposes): print(f"  ✓   maskable icon")
+          else: print(f"  ⚠   no maskable icon (needed for Android adaptive icons)")
+
+          open('d31.txt','w').write(str(issues))
+          PYEOF
+          echo "count=$(cat d31.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'D32 · Undefined CSS Variables'
+        id: d32
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          from pathlib import Path
+
+          base  = Path('frontend')
+          # Read style.css as the global variable source
+          global_vars = set()
+          for css_path in [base/'style.css', base/'cybaash-ai.css']:
+              if css_path.exists():
+                  global_vars |= set(re.findall(r'--([a-zA-Z][\w-]+)\s*:', css_path.read_text()))
+
+          total = 0
+          for css_path in sorted(list(base.glob('*.css')) + list(base.glob('ai/*.css')) + list(base.glob('admin/*.css'))):
+              css      = css_path.read_text(errors='replace')
+              defined  = set(re.findall(r'--([a-zA-Z][\w-]+)\s*:', css))
+              used     = set(re.findall(r'var\(--([a-zA-Z][\w-]+)', css))
+              all_defined = defined | global_vars
+              undef    = sorted(used - all_defined)
+              rel      = str(css_path.relative_to(base))
+              if undef:
+                  total += len(undef)
+                  print(f"  ⚠   {rel}: {len(undef)} undefined var(s): {undef[:8]}")
+              else:
+                  print(f"  ✅  {rel}")
+          open('d32.txt','w').write(str(total))
+          PYEOF
+          echo "count=$(cat d32.txt)" >> $GITHUB_OUTPUT
+
+      - name: 'D33 · File Size Budget'
+        id: d33
+        run: |
+          python3 - <<'PYEOF'
+          from pathlib import Path
+
+          base = Path('frontend')
+          # (file, soft_limit_KB, hard_limit_KB)
+          BUDGETS = [
+              ('style.css',             150, 300),
+              ('mobile.css',             80, 150),
+              ('cybaash-ai.css',        100, 200),
+              ('script.js',             400, 600),
+              ('mobile.js',              50, 100),
+              ('cybaash-ai.js',         200, 400),
+              ('cybaash_chatbot.js',    200, 400),
+              ('saas-integration.js',   200, 400),
+              ('sw.js',                  20,  40),
+              ('ai/style.css',           80, 150),
+              ('admin/security.css',    150, 300),
+              ('admin/security.js',     200, 400),
+          ]
+          total_over = 0
+          for rel, soft, hard in BUDGETS:
+              f = base / rel
+              if not f.exists(): continue
+              kb = f.stat().st_size / 1024
+              if kb > hard:
+                  print(f"  ❌  {rel}: {kb:.1f}KB — OVER HARD LIMIT ({hard}KB)")
+                  total_over += 1
+              elif kb > soft:
+                  print(f"  ⚠   {rel}: {kb:.1f}KB — over soft limit ({soft}KB)")
+              else:
+                  print(f"  ✓   {rel}: {kb:.1f}KB  /{soft}KB")
+          open('d33.txt','w').write(str(total_over))
+          PYEOF
+          echo "count=$(cat d33.txt)" >> $GITHUB_OUTPUT
+
+      # ══════════════════════════════════════════════════════════════════════
+      # FINAL REPORT
+      # ══════════════════════════════════════════════════════════════════════
+
+      - name: '📊 Full Audit Report'
+        if: always()
+        run: |
+          python3 - <<'PYEOF'
+          import os
+
+          def r(f):
+              try: return int(open(f).read().strip())
+              except: return 0
+
+          # (id, label, count, is_hard_error)
+          results = [
+            # Block A — Broken Code
+            ('A01','JS Syntax Errors',             r('a01.txt'), True),
+            ('A02','Broken HTML References',        r('a02.txt'), True),
+            ('A03','Broken Python Scripts',         r('a03.txt'), True),
+            ('A04','Broken SW Cache Entries',       r('a04.txt'), True),
+            ('A05','Empty Files',                   r('a05.txt'), True),
+            ('A06','Circular Imports',              r('a06.txt'), True),
+            ('A07','Mixed HTTP/HTTPS Content',      r('a07.txt'), True),
+            ('A08','Broken Anchor Links',           r('a08.txt'), True),
+            ('A09','Broken JSON Files',             r('a09.txt'), True),
+            ('A10','Render-Blocking Scripts',       r('a10.txt'), True),
+            # Block B — Dead Code
+            ('B11','Unused JS Files',               r('b11.txt'), False),
+            ('B12','Unused CSS Files',              r('b12.txt'), False),
+            ('B13','Unused CSS Classes',            r('b13.txt'), False),
+            ('B14','Dead JS Functions',             r('b14.txt'), False),
+            ('B15','Dead JSON Keys',                r('b15.txt'), False),
+            ('B16','Orphan Assets',                 r('b16.txt'), False),
+            ('B17','Duplicate CSS Rules',           r('b17.txt'), False),
+            ('B18','Console.log Leaks',             r('b18.txt'), False),
+            ('B19','TODO/FIXME Annotations',        r('b19.txt'), False),
+            ('B20','Long Unminified Lines',         r('b20.txt'), False),
+            # Block C — Security & Quality
+            ('C21','Hardcoded Secrets',             r('c21.txt'), True),
+            ('C22','Dangerous JS Patterns',         r('c22.txt'), False),
+            ('C23','Missing Async Error Handling',  r('c23.txt'), False),
+            ('C24','Event Listener Leak Risk',      r('c24.txt'), False),
+            ('C25','Unjustified Write Permissions', r('c25.txt'), False),
+            ('C26','Unpinned Dependencies',         r('c26.txt'), False),
+            ('C27','Gitleaks Config Issues',        r('c27.txt'), True),
+            # Block D — SEO & Accessibility
+            ('D28','Missing Meta Tags',             r('d28.txt'), False),
+            ('D29','Accessibility Issues',          r('d29.txt'), False),
+            ('D30','Missing Font Preconnect',       r('d30.txt'), False),
+            ('D31','Manifest Issues',               r('d31.txt'), False),
+            ('D32','Undefined CSS Variables',       r('d32.txt'), False),
+            ('D33','File Size Budget Exceeded',     r('d33.txt'), True),
+          ]
+
+          hard_errors = [(id,l,c) for id,l,c,h in results if h and c > 0]
+          warnings    = [(id,l,c) for id,l,c,h in results if not h and c > 0]
+          clean       = [(id,l,c) for id,l,c,h in results if c == 0]
+
+          lines = []
+          lines.append("# 🔍 CYBAASH Full Codebase Audit")
+          lines.append("")
+          lines.append(f"> **Commit:** `{os.environ.get('GITHUB_SHA','local')[:8]}`")
+          lines.append(f"> **Branch:** `{os.environ.get('GITHUB_REF_NAME','local')}`")
+          lines.append("")
+
+          if hard_errors:
+              lines.append("## ❌ Block A+C · Hard Errors (must fix before merge)")
+              lines.append("| ID | Check | Issues |")
+              lines.append("|----|-------|--------|")
+              for id,l,c in hard_errors:
+                  lines.append(f"| `{id}` | {l} | **{c}** |")
+              lines.append("")
+
+          if warnings:
+              lines.append("## ⚠️ Block B+C+D · Warnings (should clean up)")
+              lines.append("| ID | Check | Issues |")
+              lines.append("|----|-------|--------|")
+              for id,l,c in warnings:
+                  lines.append(f"| `{id}` | {l} | {c} |")
+              lines.append("")
+
+          lines.append(f"## ✅ Clean ({len(clean)}/{len(results)} checks)")
+          lines.append("| ID | Check |")
+          lines.append("|----|-------|")
+          for id,l,_ in clean:
+              lines.append(f"| `{id}` | {l} |")
+          lines.append("")
+
+          total_hard = sum(c for _,_,c,h in results if h)
+          total_warn = sum(c for _,_,c,h in results if not h)
+          grade = "A+" if total_hard==0 and total_warn==0 else \
+                  "A"  if total_hard==0 and total_warn<10  else \
+                  "B"  if total_hard==0 and total_warn<30  else \
+                  "C"  if total_hard==0 else "F"
+          lines.append(f"---")
+          lines.append(f"**Grade: {grade}** | Hard errors: {total_hard} | Warnings: {total_warn} | Checks: {len(results)}")
+
+          report = '\n'.join(lines)
+          print(report)
+
+          with open(os.environ.get('GITHUB_STEP_SUMMARY', '/dev/null'), 'a') as f:
+              f.write(report)
+
+          fail_on_warn = os.environ.get('INPUT_FAIL_ON_WARNINGS','false').lower() == 'true'
+          if total_hard > 0:
+              print(f"\n❌ Failing: {total_hard} hard error(s) found")
+              exit(1)
+          elif fail_on_warn and total_warn > 0:
+              print(f"\n❌ Failing: {total_warn} warning(s) found (fail_on_warnings=true)")
+              exit(1)
+          elif total_hard > 0 or total_warn > 0:
+              print(f"\n⚠  Audit complete — {total_hard} error(s), {total_warn} warning(s)")
+          else:
+              print(f"\n✅ Perfect score — codebase is clean")
+          PYEOF
+        env:
+          INPUT_FAIL_ON_WARNINGS: ${{ inputs.fail_on_warnings || 'false' }}
+
+      - name: Post PR Comment
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const rd = f => { try { return parseInt(fs.readFileSync(f,'utf8').trim()||'0'); } catch { return 0; } };
+
+            const res = [
+              ['A01','JS Syntax Errors',rd('a01.txt'),true],
+              ['A02','Broken HTML References',rd('a02.txt'),true],
+              ['A03','Broken Python Scripts',rd('a03.txt'),true],
+              ['A04','Broken SW Cache',rd('a04.txt'),true],
+              ['A05','Empty Files',rd('a05.txt'),true],
+              ['A06','Circular Imports',rd('a06.txt'),true],
+              ['A07','Mixed HTTP/HTTPS',rd('a07.txt'),true],
+              ['A08','Broken Anchors',rd('a08.txt'),true],
+              ['A09','Broken JSON',rd('a09.txt'),true],
+              ['A10','Blocking Scripts',rd('a10.txt'),true],
+              ['B11','Unused JS',rd('b11.txt'),false],
+              ['B12','Unused CSS',rd('b12.txt'),false],
+              ['B13','Unused Classes',rd('b13.txt'),false],
+              ['B14','Dead Functions',rd('b14.txt'),false],
+              ['B15','Dead JSON Keys',rd('b15.txt'),false],
+              ['B16','Orphan Assets',rd('b16.txt'),false],
+              ['B17','Duplicate CSS',rd('b17.txt'),false],
+              ['B18','Console Leaks',rd('b18.txt'),false],
+              ['B19','TODO/FIXME',rd('b19.txt'),false],
+              ['B20','Long Lines',rd('b20.txt'),false],
+              ['C21','Hardcoded Secrets',rd('c21.txt'),true],
+              ['C22','Dangerous JS',rd('c22.txt'),false],
+              ['C23','No Error Handling',rd('c23.txt'),false],
+              ['C24','Listener Leaks',rd('c24.txt'),false],
+              ['C25','Write Permissions',rd('c25.txt'),false],
+              ['C26','Unpinned Deps',rd('c26.txt'),false],
+              ['C27','Gitleaks Config',rd('c27.txt'),true],
+              ['D28','Missing Meta',rd('d28.txt'),false],
+              ['D29','Accessibility',rd('d29.txt'),false],
+              ['D30','Font Preconnect',rd('d30.txt'),false],
+              ['D31','Manifest Issues',rd('d31.txt'),false],
+              ['D32','Undefined CSS Vars',rd('d32.txt'),false],
+              ['D33','Size Budget',rd('d33.txt'),true],
+            ];
+
+            const hard = res.filter(([,,c,h]) => h && c > 0);
+            const warn = res.filter(([,,c,h]) => !h && c > 0);
+            const ok   = res.filter(([,,c]) => c === 0).length;
+            const grade = hard.length===0 && warn.length===0 ? 'A+' :
+                          hard.length===0 && warn.length<10  ? 'A'  :
+                          hard.length===0 && warn.length<30  ? 'B'  :
+                          hard.length===0                    ? 'C'  : 'F';
+
+            let body = `## 🔍 Full Codebase Audit — Grade: **${grade}**\n\n`;
+            if (hard.length) {
+              body += `### ❌ Hard Errors\n| ID | Check | # |\n|---|---|---|\n`;
+              hard.forEach(([id,l,c]) => body += `| \`${id}\` | ${l} | **${c}** |\n`);
+              body += '\n';
+            }
+            if (warn.length) {
+              body += `### ⚠️ Warnings\n| ID | Check | # |\n|---|---|---|\n`;
+              warn.forEach(([id,l,c]) => body += `| \`${id}\` | ${l} | ${c} |\n`);
+              body += '\n';
+            }
+            body += `### ✅ ${ok}/${res.length} checks passed\n`;
+            body += `\n_[Full details →](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})_`;
+
+            await github.rest.issues.createComment({
+              ...context.repo, issue_number: context.issue.number, body
+            });
