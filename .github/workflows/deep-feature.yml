@@ -696,7 +696,7 @@ jobs:
         continue-on-error: true
         run: |
           python3 - << 'PYEOF'
-          import requests, sys
+          import requests, sys, re
 
           BASE   = 'https://cybaashcloud.github.io'
           errors = 0
@@ -722,10 +722,19 @@ jobs:
                       ok  = expect.lower() in val.lower() if val else False
                       print(f'{"✓ " if ok else "⚠ "}  {hdr}')
                   if is_admin:
-                      robots   = r.headers.get('X-Robots-Tag','')
-                      no_store = 'no-store' in r.headers.get('Cache-Control','').lower()
-                      if 'noindex' not in robots.lower() or not no_store:
-                          print(f'❌ Admin page missing noindex/no-store')
+                      # Check HTTP header first, then fall back to meta tag in body
+                      robots_hdr  = r.headers.get('X-Robots-Tag','')
+                      robots_meta = re.search(rb'<meta[^>]+name=["\'](robots)["\'"][^>]+content=["\'"]([^"\']*noindex[^"\']*)["\'"]', r.content, re.IGNORECASE)
+                      has_noindex = 'noindex' in robots_hdr.lower() or bool(robots_meta)
+                      # Check Cache-Control header, or meta http-equiv
+                      cc_hdr      = r.headers.get('Cache-Control','')
+                      cc_meta     = re.search(rb'<meta[^>]+http-equiv=["\'"]cache-control["\'"][^>]+content=["\'"]([^"\']*no-store[^"\']*)["\'"]', r.content, re.IGNORECASE)
+                      has_nostore = 'no-store' in cc_hdr.lower() or bool(cc_meta)
+                      if not has_noindex or not has_nostore:
+                          missing = []
+                          if not has_noindex: missing.append('noindex')
+                          if not has_nostore: missing.append('no-store')
+                          print(f'❌ Admin page missing: {", ".join(missing)}')
                           errors += 1
                       else:
                           print(f'✓  noindex + no-store present')
