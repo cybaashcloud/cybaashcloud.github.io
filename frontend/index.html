@@ -2876,7 +2876,7 @@ function startSimulation() {
   document.getElementById('btnPauseAtk').disabled = false;
 
   logEvent('SYS', 'Autonomous simulation started. Red Team engaged. Blue Team on standby.', 'sys');
-  logEvent('INFO', `Cert profile loaded: ${CERT_DATA.total} certs → EXPERT difficulty. Security bias: ${(DIFFICULTY.securityBoost*100).toFixed(0)}%. AI augmentation: ${(DIFFICULTY.aiBoost*100).toFixed(0)}%.`, 'info');
+  logEvent('INFO', `Difficulty calibrated — Security bias: ${(DIFFICULTY.securityBoost*100).toFixed(0)}% · AI augmentation: ${(DIFFICULTY.aiBoost*100).toFixed(0)}% · Cloud resilience: ${(DIFFICULTY.cloudBoost*100).toFixed(0)}%`, 'info');
 
   standbyActive = false; // pause standbyAnim — animLoop takes over
   state.tickInterval = setInterval(tick, 600);
