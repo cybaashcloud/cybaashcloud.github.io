@@ -1,7 +1,7 @@
 /**
  * mobile-features.js — Mobile-specific UX enhancements
  * AASIQ OS Portfolio v4.4
- *
+ * 
  * Features:
  *  - Tap-to-reveal tooltips on touch devices
  *  - Swipe gesture support for section carousel / tabs
