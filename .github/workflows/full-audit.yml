@@ -101,10 +101,10 @@ jobs:
           from pathlib import Path
 
           base = Path('frontend')
+          # .jsx excluded — JSX needs Vite/Babel transpiler, node --check rejects it
           files = (
               list(base.glob('*.js')) + list(base.glob('ai/*.js')) +
-              list(base.glob('admin/*.js')) + list(base.glob('admin/src/**/*.js')) +
-              # .jsx excluded — JSX needs Vite/Babel transpiler, node --check rejects it
+              list(base.glob('admin/*.js')) + list(base.glob('admin/src/**/*.js'))
           )
           files = [f for f in files if 'dist/assets' not in str(f) and not str(f).endswith('.jsx')]
 
@@ -140,16 +140,16 @@ jobs:
               html = re.sub(r'<!--.*?-->', '', page.read_text(errors='replace'), flags=re.DOTALL)
               src_dir = page.parent
               for ref in re.findall(r'(?:src|href|action)=["\'](?!https?://|//|#|data:|mailto:|javascript:)([^"\'?#\s]+)', html):
+                  # Skip JS template literals — dynamic values, not file paths
+                  if '${' in ref: continue
+                  # Skip Vite/React entry points (.jsx/.tsx are transpiled, not served)
+                  if ref.endswith(('.jsx','.tsx','.ts')): continue
                   candidate = (base / ref.lstrip('/')) if ref.startswith('/') else (src_dir / ref)
                   try:
                       candidate.resolve().relative_to(base.resolve())
                   except ValueError:
                       continue
                   if not candidate.resolve().exists():
-                  # Skip JS template literals — dynamic values, not file paths
-                  if '${' in ref: continue
-                  # Skip Vite/React entry points (.jsx/.tsx are transpiled, not served)
-                  if ref.endswith(('.jsx','.tsx','.ts')): continue
                       errors.append(f"{page.name} → {ref}")
 
           for e in errors:
