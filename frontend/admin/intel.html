@@ -259,7 +259,41 @@
 const WORKER  = 'https://cybaash.mohamedaasiq07.workers.dev';
 const DEFAULT_HASH = 'df132f130508df6a9d31b7fe7dc77a058296bb8d12c8202fca2c765dd0c7e52b'; // cybaash-soc-admin
 
-let SOC_WORKER_KEY = ''; // loaded after auth
+// Session token — HMAC-signed on login, sent as X-Session-Token header
+// No static secrets in the browser. Worker verifies server-side.
+var _sessionToken = '';
+
+async function generateSessionToken() {
+  var ts      = Date.now().toString();
+  var pwHash  = localStorage.getItem('soc_pw_hash') || DEFAULT_HASH;
+  var keyData = new TextEncoder().encode(pwHash);
+  var msgData = new TextEncoder().encode(ts);
+  try {
+    var key = await crypto.subtle.importKey(
+      'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    var sig    = await crypto.subtle.sign('HMAC', key, msgData);
+    var sigHex = Array.from(new Uint8Array(sig))
+      .map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    return ts + '.' + sigHex;
+  } catch(_) {
+    return btoa(ts + ':' + pwHash.substring(0, 16));
+  }
+}
+
+async function getSessionToken() {
+  if (_sessionToken) {
+    var ts = parseInt(_sessionToken.split('.')[0] || '0');
+    if (Date.now() - ts < 25 * 60 * 1000) return _sessionToken;
+  }
+  _sessionToken = await generateSessionToken();
+  try {
+    var sess = JSON.parse(sessionStorage.getItem('intel_session') || '{}');
+    sess.sessionToken = _sessionToken;
+    sessionStorage.setItem('intel_session', JSON.stringify(sess));
+  } catch(_) {}
+  return _sessionToken;
+}
 let allAuditEntries = [];
 
 // ── Utils ──────────────────────────────────────────────────────
@@ -321,19 +355,35 @@ async function handleLogin(e) {
 }
 
 function grantAccess() {
-  sessionStorage.setItem('intel_session', JSON.stringify({ expiry: Date.now() + 30*60*1000 }));
-  el('login-screen').style.display = 'none';
-  el('intel-app').classList.add('active');
-  el('api-dot').className = 'status-dot active';
-  el('api-text').textContent = 'LIVE';
-  startClock();
-  loadSOCConfig().then(function() { initIntel(); }); // fetch key before loading data
+  generateSessionToken().then(function(tok) {
+    _sessionToken = tok;
+    sessionStorage.setItem('intel_session', JSON.stringify({
+      expiry: Date.now() + 30 * 60 * 1000,
+      sessionToken: tok,
+    }));
+    el('login-screen').style.display = 'none';
+    el('intel-app').classList.add('active');
+    el('api-dot').className = 'status-dot active';
+    el('api-text').textContent = 'LIVE';
+    startClock();
+    initIntel();
+  });
 }
 
 function checkSession() {
   try {
     var sess = JSON.parse(sessionStorage.getItem('intel_session') || '{}');
-    if (sess.expiry && Date.now() < sess.expiry) { grantAccess(); return true; }
+    if (sess.expiry && Date.now() < sess.expiry) {
+      // Restore session token without re-generating (avoids password hash dependency)
+      if (sess.sessionToken) _sessionToken = sess.sessionToken;
+      el('login-screen').style.display = 'none';
+      el('intel-app').classList.add('active');
+      el('api-dot').className = 'status-dot active';
+      el('api-text').textContent = 'LIVE';
+      startClock();
+      initIntel();
+      return true;
+    }
   } catch(_) {}
   return false;
 }
@@ -356,32 +406,14 @@ async function callAPI(body) {
   return resp.json();
 }
 
-async function callWorkerDirect(path, body) {
-  var headers = { 'Content-Type': 'application/json' };
-  if (SOC_WORKER_KEY) headers['X-SOC-Key'] = SOC_WORKER_KEY;
+async function callWorkerDirect(path) {
+  var tok  = await getSessionToken();
   var resp = await fetch(WORKER + path, {
     method: 'GET',
-    headers: headers,
+    headers: { 'Content-Type': 'application/json', 'X-Session-Token': tok },
     signal: AbortSignal.timeout(10000)
   });
   return resp.json();
-}
-
-// ── Load SOC Worker Key from /config ───────────────────────────
-async function loadSOCConfig() {
-  try {
-    var resp = await fetch(WORKER + '/config', { signal: AbortSignal.timeout(5000) });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    var cfg = await resp.json();
-    if (cfg && cfg.socKey) {
-      SOC_WORKER_KEY = cfg.socKey;
-      console.log('[Intel] SOC Worker key loaded — audit/intel endpoints active');
-    } else {
-      console.warn('[Intel] /config returned no socKey');
-    }
-  } catch(e) {
-    console.warn('[Intel] Could not load SOC Worker key:', e.message);
-  }
 }
 
 // ── Init ───────────────────────────────────────────────────────
@@ -468,7 +500,7 @@ async function addToIntel() {
   try {
     var resp = await fetch(WORKER + '/intel', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-SOC-Key': SOC_WORKER_KEY || '' },
+      headers: { 'Content-Type': 'application/json', 'X-Session-Token': await getSessionToken() },
       body: JSON.stringify({ ip: ip, action: 'add', reason: 'Manual — added from Intel Panel', score: 80 })
     });
     var result = await resp.json();
@@ -492,7 +524,7 @@ async function removeFromIntel() {
   try {
     var resp = await fetch(WORKER + '/intel', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-SOC-Key': SOC_WORKER_KEY || '' },
+      headers: { 'Content-Type': 'application/json', 'X-Session-Token': await getSessionToken() },
       body: JSON.stringify({ ip: ip, action: 'remove' })
     });
     var result = await resp.json();

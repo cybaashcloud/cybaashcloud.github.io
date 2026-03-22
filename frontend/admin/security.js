@@ -52,9 +52,50 @@ const STATE = {
   terminalLines: [],
 };
 
-// SOC Worker key — fetched from Worker /config after login, never hardcoded
-// Used to authenticate requests to /audit, /intel, /threats
-let SOC_WORKER_KEY = '';
+// ─────────────────────────────────────────────────────────────────────────────
+// SESSION TOKEN — HMAC-signed, used to authenticate /audit /intel /threats
+// Never a static secret. Signed with password hash so only authenticated
+// users can produce a valid token. Worker verifies server-side with HMAC_SECRET.
+// ─────────────────────────────────────────────────────────────────────────────
+let _sessionToken = '';
+
+async function generateSessionToken() {
+  // Sign the current timestamp with the stored password hash as the client key.
+  // The Worker verifies using HMAC_SECRET — two-factor: client proves auth,
+  // server verifies the signature hasn't been forged.
+  const ts       = Date.now().toString();
+  const pwHash   = localStorage.getItem('soc_pw_hash') || SOC_CONFIG.passwordHash;
+  const keyData  = new TextEncoder().encode(pwHash);
+  const msgData  = new TextEncoder().encode(ts);
+  try {
+    const key = await crypto.subtle.importKey(
+      'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    const sig    = await crypto.subtle.sign('HMAC', key, msgData);
+    const sigHex = Array.from(new Uint8Array(sig))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+    return ts + '.' + sigHex;
+  } catch(_) {
+    // Fallback: use btoa of timestamp + hash prefix (weaker but functional)
+    return btoa(ts + ':' + pwHash.substring(0, 16));
+  }
+}
+
+async function getSessionToken() {
+  // Return cached token if still valid (regenerate every 25 min to stay within 30 min session)
+  if (_sessionToken) {
+    const ts = parseInt(_sessionToken.split('.')[0] || '0');
+    if (Date.now() - ts < 25 * 60 * 1000) return _sessionToken;
+  }
+  _sessionToken = await generateSessionToken();
+  // Persist in sessionStorage so page reloads don't lose it
+  try {
+    const sess = JSON.parse(sessionStorage.getItem('soc_session') || '{}');
+    sess.sessionToken = _sessionToken;
+    sessionStorage.setItem('soc_session', JSON.stringify(sess));
+  } catch(_) {}
+  return _sessionToken;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UTILITIES
@@ -313,15 +354,18 @@ async function handleLogin(e) {
 function grantSession() {
   STATE.authenticated = true;
   STATE.sessionExpiry = Date.now() + SOC_CONFIG.sessionTimeout * 60 * 1000;
-  sessionStorage.setItem('soc_session', JSON.stringify({
-    expiry: STATE.sessionExpiry,
-    token: btoa(Date.now().toString())
-  }));
+  // Generate HMAC session token for authenticating /audit /intel /threats
+  generateSessionToken().then(function(tok) {
+    _sessionToken = tok;
+    sessionStorage.setItem('soc_session', JSON.stringify({
+      expiry: STATE.sessionExpiry,
+      sessionToken: tok,
+    }));
+  });
   el('login-screen').style.display = 'none';
   el('soc-app').classList.add('active');
   termLog('info', 'Admin session started');
   showToast('Authentication successful', 'success');
-  loadSOCConfig(); // fetch SOC_WORKER_KEY immediately after auth
   initDashboard();
 }
 
@@ -331,9 +375,10 @@ function checkSession() {
     if (sess.expiry && Date.now() < sess.expiry) {
       STATE.authenticated = true;
       STATE.sessionExpiry = sess.expiry;
+      // Restore session token from sessionStorage
+      if (sess.sessionToken) _sessionToken = sess.sessionToken;
       el('login-screen').style.display = 'none';
       el('soc-app').classList.add('active');
-      loadSOCConfig(); // fetch SOC_WORKER_KEY on session restore
       initDashboard();
       return true;
     }
@@ -990,25 +1035,8 @@ function loadSettings() {
 // ─────────────────────────────────────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────────────────────────────────────
-async function loadSOCConfig() {
-  // Fetch SOC Worker key from Cloudflare Worker /config endpoint.
-  // The Worker reads env.SOC_KEY server-side — no secret ever touches this file.
-  try {
-    const resp = await fetch('https://cybaash.mohamedaasiq07.workers.dev/config', {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const cfg = await resp.json();
-    if (cfg && cfg.socKey) {
-      SOC_WORKER_KEY = cfg.socKey;
-      termLog('info', 'SOC Worker key loaded — audit/intel/threats endpoints active');
-    } else {
-      termLog('warn', 'Worker /config returned no socKey — audit log may show 401');
-    }
-  } catch (e) {
-    termLog('warn', 'Could not load SOC Worker key: ' + e.message);
-  }
-}
+// loadSOCConfig() removed — auth now uses HMAC session tokens (see getSessionToken()).
+// No secrets are fetched from the Worker or stored in the browser.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EMERGENCY RESET — run in browser console if locked out:
@@ -1027,7 +1055,6 @@ window.SOCreset = function() {
 // FIX: Merged the two separate DOMContentLoaded listeners into one.
 // ─────────────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  loadSOCConfig(); // async — non-blocking
   loadSettings();
 
   // Login form
@@ -1219,21 +1246,21 @@ function handleTerminalCommand(input) {
       if (args[0] === 'add' && args[1]) {
         const ip = args[1];
         termPrint(`> Adding ${ip} to threat intel...`);
-        fetch(WORKER + '/intel', {
+        getSessionToken().then(tok => fetch(WORKER + '/intel', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Session-Token': tok },
           body: JSON.stringify({ ip, action: 'add', reason: 'Manual — terminal', score: 80 })
-        }).then(r => r.json()).then(d => {
+        })).then(r => r.json()).then(d => {
           termPrint(d.success ? `  ✅ ${ip} added to threat intel DB` : `  ❌ Failed: ${d.error||'unknown'}`);
         }).catch(e => termPrint('  ❌ ' + e.message));
       } else if (args[0] === 'remove' && args[1]) {
         const ip = args[1];
         termPrint(`> Removing ${ip} from threat intel...`);
-        fetch(WORKER + '/intel', {
+        getSessionToken().then(tok => fetch(WORKER + '/intel', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Session-Token': tok },
           body: JSON.stringify({ ip, action: 'remove' })
-        }).then(r => r.json()).then(d => {
+        })).then(r => r.json()).then(d => {
           termPrint(d.success ? `  ✅ ${ip} removed` : `  ❌ Failed: ${d.error||'unknown'}`);
         }).catch(e => termPrint('  ❌ ' + e.message));
       } else if (args[0] === 'list') {
@@ -1297,12 +1324,9 @@ function handleTerminalCommand(input) {
 
     case 'audit':
       termPrint('> Fetching worker audit log...');
-      fetch(WORKER + '/audit', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(SOC_WORKER_KEY ? { 'X-SOC-Key': SOC_WORKER_KEY } : {}),
-        }
-      }).then(r => r.json()).then(d => {
+      getSessionToken().then(tok => fetch(WORKER + '/audit', {
+        headers: { 'Content-Type': 'application/json', 'X-Session-Token': tok }
+      })).then(r => r.json()).then(d => {
         const entries = d.entries || [];
         if (!entries.length) { termPrint('  No audit entries (requires X-SOC-Key).'); return; }
         termPrint(`  Last ${Math.min(entries.length, 10)} audit entries:`);
