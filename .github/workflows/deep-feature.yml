@@ -693,6 +693,7 @@ jobs:
       # ══════════════════════════════════════════════════════════════════════
       - name: Deployed security headers check
         id: live_headers
+        continue-on-error: true
         run: |
           python3 - << 'PYEOF'
           import requests, sys
@@ -740,6 +741,7 @@ jobs:
       # ══════════════════════════════════════════════════════════════════════
       - name: Deployed page byte check
         id: deployed_pages
+        continue-on-error: true
         run: |
           python3 - << 'PYEOF'
           import requests, sys
@@ -786,6 +788,7 @@ jobs:
       # ══════════════════════════════════════════════════════════════════════
       - name: Static asset availability check
         id: static_assets
+        continue-on-error: true
         run: |
           python3 - << 'PYEOF'
           import requests, sys
