@@ -52,6 +52,10 @@ const STATE = {
   terminalLines: [],
 };
 
+// SOC Worker key — fetched from Worker /config after login, never hardcoded
+// Used to authenticate requests to /audit, /intel, /threats
+let SOC_WORKER_KEY = '';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // UTILITIES
 // ─────────────────────────────────────────────────────────────────────────────
