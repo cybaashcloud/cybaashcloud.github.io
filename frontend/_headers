@@ -28,6 +28,24 @@
 /sw.js
   Cache-Control: no-cache, no-store
 
+/portfolio/data_creds_1.json
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/portfolio/data_creds_2.json
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/portfolio/data_creds_3.json
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/portfolio/data_creds_4.json
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/portfolio/data_creds_5.json
+  Cache-Control: no-store, no-cache, must-revalidate
+
+/portfolio/data_main.json
+  Cache-Control: no-store, no-cache, must-revalidate
+
 /mobile.css
   Cache-Control: public, max-age=3600, stale-while-revalidate=86400
 
