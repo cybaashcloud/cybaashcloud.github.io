@@ -3,7 +3,7 @@
 secret_scan.py — Basic secret pattern scanner for CYBAASH repo
 Used as fallback when Gitleaks Docker is unavailable in CI
 """
-import re
+import re 
 import os
 import sys
 
