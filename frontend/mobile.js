@@ -3,7 +3,7 @@
  * Hamburger + drawer + tab body classes + all touch fixes
  * Desktop: returns immediately
  */
-(function () {
+(function () { 
   'use strict';
 
   var IS_MOBILE = window.innerWidth <= 768 || ('ontouchstart' in window);
