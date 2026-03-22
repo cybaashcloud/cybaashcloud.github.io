@@ -69,7 +69,9 @@ jobs:
           # ── JS / CSS ──────────────────────────────────────────────────
           for f in cybaash-ai.js cybaash-ai.css script.js github.js \
                    saas-integration.js style.css mobile.css mobile.js \
-                   ai-script.js cybaash_chatbot.js; do
+                   ai-script.js cybaash_chatbot.js \
+                   mobile-nav.js mobile-features.js \
+                   dashboard-patch.css offline-patch.css recruiter-patch.css; do
             [ -f "frontend/$f" ] && cp "frontend/$f" "_site/$f" && echo "OK $f" || echo "SKIP $f"
           done
 
