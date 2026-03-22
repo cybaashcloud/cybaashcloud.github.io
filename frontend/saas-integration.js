@@ -707,7 +707,9 @@ function injectMissionsPanel() {
 
   const view = document.createElement('div');
   view.id    = 'viewMissions';
+  // Keep display:none — only shown when body.tab-missions is active (via switchToMissionsView)
   view.style.display = 'none';
+  view.style.cssText = 'display:none';
   view.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div style="font-size:11px;color:var(--blue);letter-spacing:2px">// SAVED MISSIONS</div>
@@ -721,9 +723,8 @@ function injectMissionsPanel() {
     </div>
   `;
 
-  // Insert before the last child of center panel
-  const centerInner = center.querySelector('#viewRange')?.parentElement || center;
-  centerInner.appendChild(view);
+  // Insert inside centerPanel alongside other views
+  center.appendChild(view);
 }
 
 async function saasRefreshMissions() {
@@ -809,6 +810,11 @@ function switchToMissionsView(tab) {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
+  // Remove all tab-* classes, add tab-missions
+  Array.from(document.body.classList)
+    .filter(c => c.startsWith('tab-'))
+    .forEach(c => document.body.classList.remove(c));
+  document.body.classList.add('tab-missions');
   // Deactivate all tabs
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   tab.classList.add('active');

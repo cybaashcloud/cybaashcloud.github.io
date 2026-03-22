@@ -1789,11 +1789,17 @@ body.attacker-mode #attackerBadge { display: block; }
     <button aria-label="Dismiss" class="btn" onclick="mobCloseHeader()" style="color:var(--dim);border-bottom:none">
       <span class="mob-hd-icon">✕</span> CLOSE
     </button>
+    <button class="mob-hd-signin" onclick="handleMobSignIn();mobCloseHeader()">
+      <span class="mob-hd-icon">⬡</span> SIGN IN / ACCOUNT
+    </button>
   </div>
 </div>
 
 <!-- MOBILE LEFT DRAWER (Attack Engine) -->
 <div class="mob-drawer-overlay" id="mobOverlay" onclick="mobCloseAll()"></div>
+<!-- Swipe edge hint bars — subtle visual affordance for gesture zones -->
+<div class="mob-swipe-hint-left"  id="mobSwipeHintL" aria-hidden="true"></div>
+<div class="mob-swipe-hint-right" id="mobSwipeHintR" aria-hidden="true"></div>
 <div class="mob-drawer left" id="mobLeftDrawer" role="complementary" aria-label="Attack Engine">
   <div class="mob-drawer-head">
     <span class="mob-drawer-head-title">⚔ ATTACK ENGINE</span>
@@ -8430,9 +8436,7 @@ function printReport() {
     '<meta charset="UTF-8">',
     '<meta name="viewport" content="width=device-width,initial-scale=1">',
     '<title>Mohamed_Aasiq_SimReport_' + new Date().toISOString().slice(0,10) + '</title>',
-    '<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">',
+    '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">',
     '<style>' + reportCSS + '</style>',
     '</head><body>\n\n<!-- Attacker mode badge -->\n<div id=\"attackerBadge\">⚠ ATTACKER MODE — RED TEAM ACTIVE ⚠</div>\n',
     '<div id="reportBody">' + bodyHTML + '</div>',
@@ -10128,6 +10132,83 @@ Drop file or click to upload<br>
     if (headerOpen) syncStats();
     requestAnimationFrame(loop);
   })();
+
+})();
+</script>
+
+<!-- ── MOBILE FIXES: sign-in handler + swipe gestures ───────── -->
+<script>
+(function () {
+  'use strict';
+
+  /* ─── handleMobSignIn ─────────────────────────────────────── */
+  window.handleMobSignIn = function () {
+    // If SAAS module has an auth flow, use it; otherwise open AI panel
+    if (window.SAAS && typeof window.SAAS.login === 'function') {
+      window.SAAS.login();
+    } else {
+      // Fallback: open CYBAASH AI chat (where auth lives)
+      var overlay = document.getElementById('cybaash-ai-overlay');
+      if (overlay) overlay.classList.add('cyb-open');
+    }
+  };
+
+  /* ─── Edge-swipe to open side drawers ─────────────────────── *
+   *  Swipe RIGHT from left edge  → Attack Engine (left drawer)   *
+   *  Swipe LEFT  from right edge → Skill DNA     (right drawer)  *
+   * ─────────────────────────────────────────────────────────── */
+  var EDGE_THRESHOLD = 28;   // px from screen edge to start tracking
+  var SWIPE_MIN_DIST  = 60;  // px of horizontal travel to trigger
+  var swipeStartX = null;
+  var swipeStartY = null;
+  var swipeTracking = null;  // 'left-edge' | 'right-edge' | null
+
+  document.addEventListener('touchstart', function (e) {
+    if (!e.touches || e.touches.length !== 1) { swipeTracking = null; return; }
+    var t = e.touches[0];
+    swipeStartX = t.clientX;
+    swipeStartY = t.clientY;
+
+    if (t.clientX <= EDGE_THRESHOLD) {
+      swipeTracking = 'left-edge';   // may open left drawer (Attack Engine)
+    } else if (t.clientX >= window.innerWidth - EDGE_THRESHOLD) {
+      swipeTracking = 'right-edge';  // may open right drawer (Skill DNA)
+    } else {
+      swipeTracking = null;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', function (e) {
+    if (!swipeTracking || swipeStartX === null) return;
+    if (!e.changedTouches || e.changedTouches.length !== 1) { swipeTracking = null; return; }
+
+    var t   = e.changedTouches[0];
+    var dx  = t.clientX - swipeStartX;
+    var dy  = t.clientY - swipeStartY;
+    var absDx = Math.abs(dx);
+    var absDy = Math.abs(dy);
+
+    // Only handle if horizontal motion dominates
+    if (absDx > absDy && absDx >= SWIPE_MIN_DIST) {
+      // Don't fire if a drawer/terminal/overlay is already open
+      var termOpen = document.getElementById('termOverlay');
+      if (termOpen && termOpen.classList.contains('term-open')) { swipeTracking = null; return; }
+      var aiOpen = document.getElementById('cybaash-ai-overlay');
+      if (aiOpen && aiOpen.classList.contains('cyb-open')) { swipeTracking = null; return; }
+
+      if (swipeTracking === 'left-edge' && dx > 0) {
+        // Swipe right from left edge → Attack Engine drawer
+        if (typeof window.mobOpenLeft === 'function') window.mobOpenLeft();
+      } else if (swipeTracking === 'right-edge' && dx < 0) {
+        // Swipe left from right edge → Skill DNA drawer
+        if (typeof window.mobOpenRight === 'function') window.mobOpenRight();
+      }
+    }
+
+    swipeTracking = null;
+    swipeStartX = null;
+    swipeStartY = null;
+  }, { passive: true });
 
 })();
 </script>
