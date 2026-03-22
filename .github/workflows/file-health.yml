@@ -1,0 +1,906 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# FILE HEALTH CHECK — Verify every file in the repo is present and valid
+# Checks: existence · JS syntax · JSON validity · CSS parse · HTML refs
+#         image integrity · JSON data structure · SW cache · manifest ·
+#         admin build config · file sizes · encoding · admin panel files
+# Run: manually via workflow_dispatch, or on any push to main
+# ═══════════════════════════════════════════════════════════════════════════
+name: File Health Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/file-health.yml'
+
+concurrency:
+  group: file-health-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  file-health:
+    name: Full File Health Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── 1. Critical file existence ────────────────────────────────────
+      - name: Critical file existence
+        id: existence
+        run: |
+          MISSING=0
+
+          echo "── Core pages ──────────────────────────────────────────"
+          for f in \
+            frontend/index.html \
+            frontend/recruiter.html \
+            frontend/dashboard.html \
+            frontend/offline.html \
+            frontend/ai/index.html; do
+            if [ -f "$f" ]; then echo "✓  $f"
+            else echo "❌ MISSING: $f"; MISSING=$((MISSING+1)); fi
+          done
+
+          echo "── Stylesheets ─────────────────────────────────────────"
+          for f in \
+            frontend/style.css \
+            frontend/mobile.css \
+            frontend/cybaash-ai.css \
+            frontend/dashboard-patch.css \
+            frontend/offline-patch.css \
+            frontend/recruiter-patch.css; do
+            if [ -f "$f" ]; then echo "✓  $f"
+            else echo "❌ MISSING: $f"; MISSING=$((MISSING+1)); fi
+          done
+
+          echo "── JavaScript ──────────────────────────────────────────"
+          for f in \
+            frontend/script.js \
+            frontend/github.js \
+            frontend/cybaash-ai.js \
+            frontend/cybaash_chatbot.js \
+            frontend/cybaash-ai_script.js \
+            frontend/ai/cybaash-ai_script.js \
+            frontend/saas-integration.js \
+            frontend/mobile.js \
+            frontend/mobile-nav.js \
+            frontend/mobile-features.js \
+            frontend/dashboard-military-additions.js \
+            frontend/soc-tracker-v2.js \
+            frontend/sw.js \
+            frontend/ai-script.js; do
+            if [ -f "$f" ]; then echo "✓  $f"
+            else echo "❌ MISSING: $f"; MISSING=$((MISSING+1)); fi
+          done
+
+          echo "── PWA / Config ────────────────────────────────────────"
+          for f in \
+            frontend/manifest.json \
+            frontend/_headers; do
+            if [ -f "$f" ]; then echo "✓  $f"
+            else echo "❌ MISSING: $f"; MISSING=$((MISSING+1)); fi
+          done
+
+          echo "── Data files ──────────────────────────────────────────"
+          for f in \
+            frontend/data_main.json \
+            frontend/data_ai_config.json \
+            frontend/data_ai_cache.json \
+            frontend/data_meta.json \
+            frontend/data_creds_1.json \
+            frontend/data_creds_2.json \
+            frontend/data_creds_3.json \
+            frontend/data_creds_4.json \
+            frontend/data_creds_5.json; do
+            if [ -f "$f" ]; then echo "✓  $f"
+            else echo "❌ MISSING: $f"; MISSING=$((MISSING+1)); fi
+          done
+
+          echo "── Admin SOC panel ─────────────────────────────────────"
+          for f in \
+            frontend/admin/security.html \
+            frontend/admin/security.js \
+            frontend/admin/security.css \
+            frontend/admin/security-military-additions.js \
+            frontend/admin/intel.html \
+            frontend/admin/tools.html; do
+            if [ -f "$f" ]; then echo "✓  $f"
+            else echo "❌ MISSING: $f"; MISSING=$((MISSING+1)); fi
+          done
+
+          echo "── Admin React panel ───────────────────────────────────"
+          for f in \
+            frontend/admin/package.json \
+            frontend/admin/vite.config.js \
+            frontend/admin/src/App.jsx \
+            frontend/admin/src/main.jsx; do
+            if [ -f "$f" ]; then echo "✓  $f"
+            else echo "❌ MISSING: $f"; MISSING=$((MISSING+1)); fi
+          done
+
+          echo "── PWA icons ───────────────────────────────────────────"
+          for f in \
+            frontend/icons/favicon.ico \
+            frontend/icons/icon-192x192.png \
+            frontend/icons/icon-512x512.png; do
+            if [ -f "$f" ]; then echo "✓  $f"
+            else echo "⚠  MISSING (non-fatal): $f"; fi
+          done
+
+          [ $MISSING -eq 0 ] && echo -e "\n✅ All critical files present" \
+                              || { echo -e "\n❌ $MISSING critical file(s) missing"; exit 1; }
+
+      # ── 2. JS syntax check (all JS files) ────────────────────────────
+      - name: JS syntax check
+        id: js_syntax
+        run: |
+          set +e
+          ERRORS=0
+          FILES=0
+
+          for f in \
+            frontend/*.js \
+            frontend/ai/*.js \
+            frontend/admin/security.js \
+            frontend/admin/security-military-additions.js; do
+            [ -f "$f" ] || continue
+            FILES=$((FILES+1))
+            node --check "$f" 2>/tmp/node_err
+            if [ $? -ne 0 ]; then
+              echo "❌ SYNTAX ERROR: $f"
+              cat /tmp/node_err
+              ERRORS=$((ERRORS+1))
+            else
+              echo "✓  $f"
+            fi
+          done
+
+          echo ""
+          echo "Files checked: $FILES"
+          [ $ERRORS -eq 0 ] && echo "✅ All JS files pass syntax check" || exit 1
+
+      # ── 3. JSON validation (all JSON files) ──────────────────────────
+      - name: JSON validation
+        id: json_valid
+        run: |
+          python3 - << 'PYEOF'
+          import json, sys
+          from pathlib import Path
+
+          errors = 0
+          files  = 0
+
+          targets = (
+              list(Path('frontend').glob('*.json')) +
+              list(Path('frontend/admin').glob('*.json'))
+          )
+
+          for f in sorted(targets):
+              files += 1
+              try:
+                  data = json.loads(f.read_text())
+                  # Extra: check data_creds have required keys
+                  if 'data_creds' in f.name:
+                      creds = data.get('credentials', [])
+                      broken = [c.get('id','?') for c in creds
+                                if not c.get('id') or not c.get('title')]
+                      if broken:
+                          print(f'⚠  {f}: {len(broken)} entries missing id/title')
+                      print(f'✓  {f}  ({len(creds)} credentials)')
+                  else:
+                      print(f'✓  {f}')
+              except json.JSONDecodeError as e:
+                  print(f'❌ INVALID JSON: {f}')
+                  print(f'   {e}')
+                  errors += 1
+
+          print(f'\nFiles checked: {files}')
+          if errors:
+              print(f'❌ {errors} invalid JSON file(s)')
+              sys.exit(1)
+          else:
+              print('✅ All JSON files valid')
+          PYEOF
+
+      # ── 4. CSS parse check ────────────────────────────────────────────
+      - name: CSS parse check
+        id: css_check
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          from pathlib import Path
+
+          errors = 0
+          files  = 0
+
+          for f in sorted(Path('frontend').glob('*.css')):
+              files += 1
+              text = f.read_text(errors='replace')
+              # Check balanced braces
+              opens  = text.count('{')
+              closes = text.count('}')
+              # Check for obvious truncation (file ends mid-rule)
+              stripped = text.rstrip()
+              ends_ok  = stripped.endswith('}') or stripped.endswith('*/') \
+                        or stripped == ''
+              size_kb  = f.stat().st_size / 1024
+
+              if opens != closes:
+                  print(f'❌ UNBALANCED BRACES: {f}  ({opens} open, {closes} close)')
+                  errors += 1
+              elif not ends_ok:
+                  print(f'⚠  {f}: file may be truncated (does not end with }})')
+              else:
+                  print(f'✓  {f}  ({size_kb:.0f}KB, {opens} rules)')
+
+          print(f'\nFiles checked: {files}')
+          if errors:
+              print(f'❌ {errors} CSS file(s) with issues')
+              sys.exit(1)
+          else:
+              print('✅ All CSS files parse OK')
+          PYEOF
+
+      # ── 5. HTML internal reference check ─────────────────────────────
+      - name: HTML internal reference check
+        id: html_refs
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          from pathlib import Path
+
+          frontend = Path('frontend')
+          pages = (
+              list(frontend.glob('*.html')) +
+              list(frontend.glob('ai/*.html')) +
+              list(frontend.glob('admin/*.html'))
+          )
+          errors   = 0
+          warnings = 0
+
+          SKIP_PATTERNS = [
+              'portfolio/', '/ai/', '/icons/', 'avatar',
+              'data_creds', '../', 'frontend/', '${', '{{'
+          ]
+
+          for page in sorted(pages):
+              html      = page.read_text(errors='replace')
+              html_clean = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
+              refs = re.findall(
+                  r'(?:src|href)=["\'](?!https?://|//|#|data:|mailto:|javascript:)([^"\']+)["\']',
+                  html_clean
+              )
+              page_errors = 0
+              for ref in refs:
+                  clean = ref.split('?')[0].split('#')[0]
+                  if not clean: continue
+                  if any(x in clean for x in SKIP_PATTERNS): continue
+
+                  if clean.startswith('/'):
+                      target = (frontend / clean.lstrip('/')).resolve()
+                  else:
+                      target = (page.parent / clean).resolve()
+
+                  if not target.exists():
+                      if clean.endswith(('.js', '.css')):
+                          print(f'❌ {page.relative_to(frontend.parent)}: missing JS/CSS → {clean}')
+                          errors += 1
+                          page_errors += 1
+                      else:
+                          print(f'⚠  {page.relative_to(frontend.parent)}: missing → {clean}')
+                          warnings += 1
+
+              if page_errors == 0:
+                  print(f'✓  {page.relative_to(frontend.parent)}')
+
+          print(f'\nPages checked: {len(pages)}  |  warnings: {warnings}')
+          if errors:
+              print(f'❌ {errors} broken JS/CSS reference(s)')
+              sys.exit(1)
+          else:
+              print('✅ All critical HTML references OK')
+          PYEOF
+
+      # ── 6. Image file integrity ───────────────────────────────────────
+      - name: Image file integrity
+        id: image_check
+        run: |
+          python3 - << 'PYEOF'
+          import struct, sys
+          from pathlib import Path
+
+          errors   = 0
+          warnings = 0
+          checked  = 0
+
+          PNG_SIG = b'\x89PNG\r\n\x1a\n'
+          JPEG_SIG = b'\xff\xd8\xff'
+
+          def check_image(path):
+              data = path.read_bytes()
+              size = len(data)
+              if size < 8:
+                  return False, f'too small ({size} bytes) — likely corrupt or LFS pointer'
+              if path.suffix.lower() in ('.png',):
+                  if not data.startswith(PNG_SIG):
+                      return False, 'invalid PNG signature'
+              elif path.suffix.lower() in ('.jpg', '.jpeg'):
+                  if not data.startswith(JPEG_SIG):
+                      return False, 'invalid JPEG signature'
+              return True, None
+
+          # Check icons (critical)
+          print('── Icons ────────────────────────────────────────────')
+          for f in sorted(Path('frontend/icons').glob('*')):
+              if not f.is_file() or f.suffix.lower() not in ('.png','.ico'): continue
+              ok, reason = check_image(f)
+              checked += 1
+              if ok:
+                  print(f'✓  {f.relative_to("frontend")}  ({f.stat().st_size/1024:.0f}KB)')
+              else:
+                  print(f'❌ {f.relative_to("frontend")}: {reason}')
+                  errors += 1
+
+          # Check cert images (sample — check first 10 and last 10)
+          auto_imgs = sorted(Path('frontend/certificates/auto').glob('*.jpg'))
+          sample = auto_imgs[:10] + auto_imgs[-10:]
+          print(f'\n── Certificate images (sampling {len(sample)} of {len(auto_imgs)}) ──')
+          for f in sample:
+              ok, reason = check_image(f)
+              checked += 1
+              if ok:
+                  print(f'✓  {f.name}  ({f.stat().st_size/1024:.0f}KB)')
+              else:
+                  print(f'❌ {f.name}: {reason}')
+                  errors += 1
+
+          # Check avatar
+          print('\n── Portfolio images ─────────────────────────────────')
+          for f in Path('frontend').glob('*.png'):
+              ok, reason = check_image(f)
+              checked += 1
+              if ok: print(f'✓  {f.name}  ({f.stat().st_size/1024:.0f}KB)')
+              else:  print(f'❌ {f.name}: {reason}'); errors += 1
+
+          # Count cert logos
+          cert_logos = list(Path('frontend/cert_logos').glob('*.jpg'))
+          print(f'\n── cert_logos: {len(cert_logos)} files (spot check first 3) ──')
+          for f in sorted(cert_logos)[:3]:
+              ok, reason = check_image(f)
+              checked += 1
+              if ok: print(f'✓  {f.name}')
+              else:  print(f'❌ {f.name}: {reason}'); errors += 1
+
+          print(f'\nImages checked: {checked}  |  total auto certs: {len(auto_imgs)}')
+          if errors:
+              print(f'❌ {errors} corrupt or invalid image(s)')
+              sys.exit(1)
+          else:
+              print('✅ All sampled images OK')
+          PYEOF
+
+      # ── 7. File size audit ────────────────────────────────────────────
+      - name: File size audit
+        id: size_audit
+        run: |
+          python3 - << 'PYEOF'
+          import sys
+          from pathlib import Path
+
+          # Hard limits (bytes) — exceeding these is a CI failure
+          HARD_LIMITS = {
+              'frontend/soc-tracker-v2.js':  40_000,
+              'frontend/sw.js':              50_000,
+              'frontend/manifest.json':       5_000,
+          }
+
+          # Soft limits — warning only
+          SOFT_LIMITS = {
+              'frontend/cybaash_chatbot.js':    300_000,
+              'frontend/dashboard.html':        400_000,
+              'frontend/admin/security.js':     120_000,
+              'frontend/admin/App.jsx':         700_000,
+          }
+
+          errors   = 0
+          warnings = 0
+
+          print('── Hard limits ──────────────────────────────────────')
+          for path, limit in HARD_LIMITS.items():
+              p = Path(path)
+              if not p.exists(): continue
+              size = p.stat().st_size
+              kb   = size / 1024
+              if size > limit:
+                  print(f'❌ {path}: {kb:.1f}KB exceeds {limit/1024:.0f}KB limit')
+                  errors += 1
+              else:
+                  print(f'✓  {path}: {kb:.1f}KB (limit {limit/1024:.0f}KB)')
+
+          print('\n── Soft limits (warning only) ───────────────────────')
+          for path, limit in SOFT_LIMITS.items():
+              p = Path(path)
+              if not p.exists(): continue
+              size = p.stat().st_size
+              kb   = size / 1024
+              if size > limit:
+                  print(f'⚠  {path}: {kb:.1f}KB exceeds soft limit {limit/1024:.0f}KB')
+                  warnings += 1
+              else:
+                  print(f'✓  {path}: {kb:.1f}KB')
+
+          print('\n── Files over 1MB (GitHub marks red) ───────────────')
+          found_large = False
+          for f in sorted(Path('frontend').rglob('*')):
+              if not f.is_file(): continue
+              if f.stat().st_size > 1_000_000:
+                  print(f'⚠  {f.relative_to("frontend")}: {f.stat().st_size/1024/1024:.1f}MB')
+                  found_large = True
+                  warnings += 1
+          if not found_large:
+              print('✓  No files over 1MB')
+
+          print(f'\nwarnings: {warnings}')
+          if errors:
+              print(f'❌ {errors} file(s) exceed hard size limits')
+              sys.exit(1)
+          else:
+              print('✅ All hard size limits OK')
+          PYEOF
+
+      # ── 8. Service worker check ───────────────────────────────────────
+      - name: Service worker check
+        id: sw_check
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          from pathlib import Path
+
+          sw   = Path('frontend/sw.js').read_text()
+          errors = 0
+
+          # Must have VERSION constant (stamped by deploy)
+          if re.search(r"const VERSION\s*=\s*'[^']+'", sw):
+              print("✓  VERSION constant present")
+          else:
+              print("❌ VERSION constant missing — deploy stamp will fail")
+              errors += 1
+
+          # Must have fetch handler
+          if "addEventListener('fetch'" in sw:
+              print("✓  fetch handler present")
+          else:
+              print("❌ fetch event listener missing")
+              errors += 1
+
+          # Must have install handler
+          if "addEventListener('install'" in sw:
+              print("✓  install handler present")
+          else:
+              print("⚠  install event listener not found")
+
+          # Must have activate handler
+          if "addEventListener('activate'" in sw:
+              print("✓  activate handler present")
+          else:
+              print("⚠  activate event listener not found")
+
+          # Check SW references files that actually exist
+          shell_refs = re.findall(r"['\"](\.[^'\"]+\.(html|css|js|json|png|ico))['\"]", sw)
+          missing_refs = []
+          for ref, _ in shell_refs:
+              target = Path('frontend') / ref.lstrip('./')
+              if not target.exists():
+                  missing_refs.append(ref)
+          if missing_refs:
+              print(f'⚠  SW references {len(missing_refs)} file(s) not found locally (may be runtime paths):')
+              for r in missing_refs[:5]:
+                  print(f'   {r}')
+          else:
+              print('✓  SW file references OK')
+
+          sw_size = Path('frontend/sw.js').stat().st_size
+          print(f'\nSW file size: {sw_size/1024:.1f}KB')
+
+          if errors:
+              print(f'\n❌ {errors} service worker issue(s)')
+              sys.exit(1)
+          else:
+              print('\n✅ Service worker OK')
+          PYEOF
+
+      # ── 9. Manifest.json validation ───────────────────────────────────
+      - name: Manifest validation
+        id: manifest_check
+        run: |
+          python3 - << 'PYEOF'
+          import json, sys
+          from pathlib import Path
+
+          m      = json.loads(Path('frontend/manifest.json').read_text())
+          errors = 0
+
+          required = ['name', 'short_name', 'start_url', 'display',
+                      'icons', 'background_color', 'theme_color']
+          for key in required:
+              if key in m:
+                  print(f'✓  {key}: {str(m[key])[:60]}')
+              else:
+                  print(f'❌ missing key: {key}')
+                  errors += 1
+
+          # Check icons exist on disk
+          icons = m.get('icons', [])
+          print(f'\n── Icons declared in manifest ({len(icons)}) ──')
+          missing = 0
+          for icon in icons:
+              src  = icon.get('src','').lstrip('/')
+              path = Path('frontend') / src
+              if path.exists():
+                  print(f'✓  {src}  ({icon.get("sizes","?")})')
+              else:
+                  print(f'⚠  NOT FOUND: {src}  ({icon.get("sizes","?")})')
+                  missing += 1
+          if missing:
+              print(f'⚠  {missing} icon(s) declared in manifest but not found on disk')
+
+          if errors:
+              print(f'\n❌ {errors} manifest validation error(s)')
+              sys.exit(1)
+          else:
+              print(f'\n✅ manifest.json OK')
+          PYEOF
+
+      # ── 10. Admin panel build config check ───────────────────────────
+      - name: Admin panel config check
+        id: admin_check
+        run: |
+          python3 - << 'PYEOF'
+          import json, re, sys
+          from pathlib import Path
+
+          errors = 0
+
+          # package.json
+          pkg = json.loads(Path('frontend/admin/package.json').read_text())
+          scripts = pkg.get('scripts', {})
+
+          checks = [
+              ('build script present',  'build' in scripts),
+              ('dev script present',    'dev' in scripts),
+              ('react dependency',      'react' in pkg.get('dependencies', {})),
+              ('react-dom dependency',  'react-dom' in pkg.get('dependencies', {})),
+              ('vite devDep',           'vite' in pkg.get('devDependencies', {})),
+          ]
+          for label, ok in checks:
+              if ok: print(f'✓  {label}')
+              else:  print(f'❌ {label}'); errors += 1
+
+          # vite.config.js
+          vc = Path('frontend/admin/vite.config.js').read_text()
+          vite_checks = [
+              ('imports vite defineConfig', 'defineConfig' in vc),
+              ('uses @vitejs/plugin-react', 'plugin-react' in vc or "react()" in vc),
+              ('sets base URL',             'base' in vc),
+              ('sets outDir to dist',       "outDir: 'dist'" in vc or 'outDir:"dist"' in vc),
+          ]
+          print('')
+          for label, ok in vite_checks:
+              if ok: print(f'✓  {label}')
+              else:  print(f'⚠  {label}')
+
+          # Dist folder exists (from last build)
+          dist = Path('frontend/admin/dist')
+          if dist.exists():
+              dist_files = list(dist.rglob('*'))
+              print(f'\n✓  dist/ present: {len(dist_files)} files')
+              if not (dist / 'index.html').exists():
+                  print('⚠  dist/index.html missing — re-run npm build')
+          else:
+              print('\n⚠  dist/ not found — npm build has not been run or dist is gitignored')
+
+          if errors:
+              print(f'\n❌ {errors} admin panel config error(s)')
+              sys.exit(1)
+          else:
+              print('\n✅ Admin panel config OK')
+          PYEOF
+
+      # ── 11. Data files structure check ───────────────────────────────
+      - name: Data files structure check
+        id: data_check
+        run: |
+          python3 - << 'PYEOF'
+          import json, sys
+          from pathlib import Path
+
+          errors = 0
+          total_creds = 0
+
+          # data_main.json
+          dm = json.loads(Path('frontend/data_main.json').read_text())
+          print('── data_main.json ───────────────────────────────────')
+          for key in ['skills', 'projects', 'experience']:
+              val = dm.get(key)
+              if val is not None:
+                  count = len(val) if isinstance(val, list) else '(present)'
+                  print(f'✓  {key}: {count}')
+              else:
+                  print(f'⚠  {key}: not found')
+
+          # data_creds_*.json
+          print('\n── data_creds_*.json ────────────────────────────────')
+          for n in range(1, 6):
+              p = Path(f'frontend/data_creds_{n}.json')
+              if not p.exists(): continue
+              d     = json.loads(p.read_text())
+              creds = d.get('credentials', [])
+              total_creds += len(creds)
+
+              # Check required fields
+              broken  = [c.get('id','?') for c in creds
+                         if not c.get('id') or not c.get('title')]
+              no_date = [c.get('id','?') for c in creds if not c.get('date')]
+              size_kb = p.stat().st_size / 1024
+              flag    = ' ⚠ OVER 1MB — red in GitHub' if size_kb > 1024 else ''
+
+              print(f'✓  data_creds_{n}.json: {len(creds)} creds  |  {size_kb:.0f}KB{flag}')
+              if broken:
+                  print(f'   ⚠  {len(broken)} missing id/title: {broken[:3]}')
+                  errors += 1
+              if no_date:
+                  print(f'   ⚠  {len(no_date)} missing date field')
+
+          print(f'\n   Total credentials: {total_creds}')
+
+          # data_ai_config.json
+          ac = json.loads(Path('frontend/data_ai_config.json').read_text())
+          print('\n── data_ai_config.json ──────────────────────────────')
+          print(f'✓  loaded  |  top-level keys: {list(ac.keys())[:5]}')
+
+          # data_meta.json
+          meta = json.loads(Path('frontend/data_meta.json').read_text())
+          print('\n── data_meta.json ───────────────────────────────────')
+          print(f'✓  loaded  |  top-level keys: {list(meta.keys())[:5]}')
+
+          if errors:
+              print(f'\n❌ {errors} data integrity error(s)')
+              sys.exit(1)
+          else:
+              print(f'\n✅ All data files structurally OK')
+          PYEOF
+
+      # ── 12. Security headers file check ──────────────────────────────
+      - name: _headers file check
+        id: headers_check
+        run: |
+          python3 - << 'PYEOF'
+          import re, sys
+          from pathlib import Path
+
+          text   = Path('frontend/_headers').read_text()
+          errors = 0
+
+          required_rules = [
+              ('global CSP',         'Content-Security-Policy'),
+              ('HSTS header',        'Strict-Transport-Security'),
+              ('X-Frame-Options',    'X-Frame-Options'),
+              ('X-Content-Type',     'X-Content-Type-Options'),
+              ('Referrer-Policy',    'Referrer-Policy'),
+              ('/admin/security.html rule', '/admin/security.html'),
+              ('/admin/intel.html rule',    '/admin/intel.html'),
+              ('/admin/tools.html rule',    '/admin/tools.html'),
+              ('noindex for admin',  'noindex'),
+              ('no-store for admin', 'no-store'),
+              ('SW cache-control',   '/sw.js'),
+          ]
+
+          for label, token in required_rules:
+              if token in text:
+                  print(f'✓  {label}')
+              else:
+                  print(f'❌ missing: {label}  (expected "{token}")')
+                  errors += 1
+
+          # Count route blocks
+          blocks = re.findall(r'^/\S+', text, re.MULTILINE)
+          print(f'\nRoute blocks: {len(blocks)} → {blocks}')
+
+          if errors:
+              print(f'\n❌ {errors} _headers issue(s)')
+              sys.exit(1)
+          else:
+              print('\n✅ _headers OK')
+          PYEOF
+
+      # ── 13. SOC files isolation check ────────────────────────────────
+      - name: SOC files isolation check
+        id: soc_isolation
+        run: |
+          python3 - << 'PYEOF'
+          import re, os, sys
+          from pathlib import Path
+
+          errors = 0
+
+          # soc-tracker must not have hardcoded secrets
+          tracker = Path('frontend/soc-tracker-v2.js').read_text()
+          secret_patterns = [
+              (r'groq\.com',                                        'Groq API reference'),
+              (r'REPLACE_WITH',                                     'unreplaced placeholder'),
+              (r'script\.google\.com/macros/s/[A-Za-z0-9_-]{20,}', 'hardcoded Apps Script URL'),
+              (r'["\']AIza[A-Za-z0-9_-]{35}["\']',                 'hardcoded Google API key'),
+          ]
+          for pattern, label in secret_patterns:
+              if re.search(pattern, tracker):
+                  print(f'❌ soc-tracker-v2.js: found {label}')
+                  errors += 1
+
+          if 'workers.dev' in tracker:
+              print('✓  soc-tracker-v2.js: Worker URL present')
+          else:
+              print('❌ soc-tracker-v2.js: Worker URL missing')
+              errors += 1
+
+          # Main pages must include SOC tracker
+          for page in ['frontend/index.html','frontend/dashboard.html',
+                       'frontend/recruiter.html','frontend/ai/index.html']:
+              html = Path(page).read_text(errors='replace')
+              if 'soc-tracker-v2.js' in html:
+                  print(f'✓  {page}: tracker present')
+              else:
+                  print(f'❌ {page}: tracker MISSING')
+                  errors += 1
+              if 'SOC_CONFIG' in html:
+                  print(f'❌ {page}: SOC_CONFIG found (secrets in HTML)')
+                  errors += 1
+
+          # security.html must NOT have the tracker (isolation)
+          sec = Path('frontend/admin/security.html').read_text()
+          if 'soc-tracker-v2.js' not in sec:
+              print('✓  security.html: properly isolated (no tracker)')
+          else:
+              print('❌ security.html: tracker injected — must be isolated')
+              errors += 1
+
+          # No groq refs outside admin
+          for root, dirs, files in os.walk('frontend'):
+              dirs[:] = [d for d in dirs if d != 'admin']
+              for fname in files:
+                  if not fname.endswith(('.html','.js','.css')): continue
+                  c = open(os.path.join(root, fname), errors='replace').read()
+                  if 'groq.com' in c or 'groq_key' in c.lower():
+                      print(f'❌ {os.path.join(root, fname)}: Groq reference found')
+                      errors += 1
+
+          if errors:
+              print(f'\n❌ {errors} SOC isolation issue(s)')
+              sys.exit(1)
+          else:
+              print('\n✅ SOC isolation checks passed')
+          PYEOF
+
+      # ── 14. Encoding / binary check ──────────────────────────────────
+      - name: File encoding check
+        id: encoding_check
+        run: |
+          python3 - << 'PYEOF'
+          import sys
+          from pathlib import Path
+
+          errors   = 0
+          lfs_hits = 0
+
+          text_exts = {'.html','.js','.css','.json','.txt','.md','.yml','.yaml','.py','.sh'}
+
+          for f in sorted(Path('frontend').rglob('*')):
+              if not f.is_file(): continue
+              if f.suffix.lower() not in text_exts: continue
+
+              raw = f.read_bytes()
+
+              # LFS pointer detection
+              if raw.startswith(b'version https://git-lfs.github.com/spec/v1'):
+                  print(f'❌ LFS POINTER: {f.relative_to("frontend")} — content not downloaded')
+                  lfs_hits += 1
+                  errors += 1
+                  continue
+
+              # UTF-8 decode check
+              try:
+                  raw.decode('utf-8')
+              except UnicodeDecodeError:
+                  print(f'⚠  {f.relative_to("frontend")}: not valid UTF-8 (may be binary disguised as text)')
+
+              # Null bytes in text files
+              if b'\x00' in raw:
+                  print(f'❌ {f.relative_to("frontend")}: contains null bytes — likely corrupt')
+                  errors += 1
+
+          if lfs_hits:
+              print(f'\n❌ {lfs_hits} LFS pointer file(s) — run: git lfs pull')
+          elif errors:
+              print(f'\n❌ {errors} file encoding/corruption issue(s)')
+              sys.exit(1)
+          else:
+              print('✅ All text files encoded correctly, no LFS pointers, no corruption')
+          PYEOF
+
+      # ── 15. Certificate images count check ───────────────────────────
+      - name: Certificate images check
+        id: cert_images
+        run: |
+          python3 - << 'PYEOF'
+          import json, sys
+          from pathlib import Path
+
+          # Count cert images
+          auto_imgs  = list(Path('frontend/certificates/auto').glob('*.jpg'))
+          li_imgs    = [f for f in auto_imgs if f.stem.startswith('li')]
+          pro_imgs   = [f for f in auto_imgs if f.stem.startswith('pro')]
+          aws_pdfs   = list(Path('frontend/certificates/aws').glob('*.pdf'))
+          cert_logos = list(Path('frontend/cert_logos').glob('*.jpg'))
+
+          print(f'✓  auto/ LinkedIn images:  {len(li_imgs)}')
+          print(f'✓  auto/ Pro badge images: {len(pro_imgs)}')
+          print(f'✓  auto/ total:            {len(auto_imgs)}')
+          print(f'✓  aws/ PDFs:              {len(aws_pdfs)}')
+          print(f'✓  cert_logos/:            {len(cert_logos)}')
+
+          # Cross-check: count creds expecting images
+          total_creds = 0
+          for n in range(1, 6):
+              p = Path(f'frontend/data_creds_{n}.json')
+              if not p.exists(): continue
+              d = json.loads(p.read_text())
+              total_creds += len(d.get('credentials', []))
+
+          print(f'\n✓  Total credentials in JSON: {total_creds}')
+          print(f'✓  Total auto images:          {len(auto_imgs)}')
+
+          if len(auto_imgs) == 0:
+              print('⚠  No auto/ images found — run weekly pipeline to fetch them')
+          elif len(auto_imgs) < total_creds * 0.5:
+              print(f'⚠  Auto images ({len(auto_imgs)}) much fewer than credentials ({total_creds}) — some may be missing')
+          else:
+              print('✅ Certificate image counts look healthy')
+          PYEOF
+
+      # ── Write summary ─────────────────────────────────────────────────
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## 🏥 File Health Check — \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Critical file existence | ${{ steps.existence.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JS syntax check | ${{ steps.js_syntax.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JSON validation | ${{ steps.json_valid.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CSS parse check | ${{ steps.css_check.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| HTML reference check | ${{ steps.html_refs.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image integrity | ${{ steps.image_check.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| File size audit | ${{ steps.size_audit.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service worker | ${{ steps.sw_check.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Manifest | ${{ steps.manifest_check.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Admin panel config | ${{ steps.admin_check.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Data files structure | ${{ steps.data_check.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| _headers file | ${{ steps.headers_check.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SOC isolation | ${{ steps.soc_isolation.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| File encoding | ${{ steps.encoding_check.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Certificate images | ${{ steps.cert_images.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
