@@ -1,25 +1,5 @@
+(function(){
 /**
-
-// ── CI-required threat detection aliases ─────────────
-function getRiskScore(req) {
-  // riskScore calculation based on request characteristics
-  let riskScore = 0;
-  if (!req) return riskScore;
-  if (req.suspicious) riskScore += 40;
-  if (req.honeypot)   riskScore += 60;
-  return Math.min(riskScore, 100);
-}
-
-function detectAttackType(url, body) {
-  // attackType detection — classify request patterns
-  const str = (url || '') + (body || '');
-  if (/select.*from|union.*select|'.*or.*'/i.test(str)) return 'SQLi';
-  if (/<script|onerror=|javascript:/i.test(str))         return 'XSS';
-  if (/\.\.\//i.test(str))                               return 'LFI';
-  return 'CLEAN';
-}
-// ── End threat detection aliases ──────────────────────
-
  * CYBAASH SOC — soc-tracker-v2.js — MILITARY GRADE v3.0
  * Zero secrets — config fetched from Cloudflare Worker at runtime
  * NEW v3.0: WebGL/audio fingerprint, bot signals, session timeline,
@@ -30,6 +10,7 @@ function detectAttackType(url, body) {
 
   var WORKER_BASE = 'https://cybaash.mohamedaasiq07.workers.dev';
   var CONFIG_URL  = WORKER_BASE + '/config';
+  var WORKER_LOG_URL = WORKER_BASE + '/log';
   var DEBUG       = (window.SOC_CONFIG && window.SOC_CONFIG.debug) || false;
 
   var ENDPOINT = '';
@@ -285,4 +266,6 @@ function detectAttackType(url, body) {
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+})();
+
 })();
