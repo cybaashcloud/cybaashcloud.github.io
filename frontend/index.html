@@ -1734,7 +1734,7 @@ body.attacker-mode #attackerBadge { display: block; }
       <div class="pulse-dot" id="statusDot"></div>
       <span id="statusLabel" style="color:var(--dim)">STANDBY</span>
     </div>
-    <div class="stat-pill">CERTS <span class="val blue" id="headerCertCount">…</span></div>
+    <div class="stat-pill">NODES <span class="val blue" id="headerNodeCount">9</span></div>
     <div class="stat-pill">THREAT <span class="val" id="threatValH">0%</span></div>
     <div class="stat-pill">ATK <span class="val red" id="atkCount">0</span></div>
     <div class="stat-pill">DEF <span class="val green" id="defCount">0</span></div>
@@ -1749,7 +1749,7 @@ body.attacker-mode #attackerBadge { display: block; }
 <div class="mob-header-drawer" id="mobHeaderDrawer" aria-hidden="true">
   <div class="mob-hd-stats">
     <div class="stat-pill"><div class="pulse-dot" id="mStatusDot"></div><span id="mStatusLabel" style="color:var(--dim)">STANDBY</span></div>
-    <div class="stat-pill">CERTS <span class="val blue" id="mHeaderCertCount">…</span></div>
+    <div class="stat-pill">NODES <span class="val blue" id="mHeaderNodeCount">9</span></div>
     <div class="stat-pill">THREAT <span class="val" id="mThreatValH">0%</span></div>
     <div class="stat-pill">ATK <span class="val red" id="mAtkCount">0</span></div>
     <div class="stat-pill">DEF <span class="val green" id="mDefCount">0</span></div>
@@ -1876,11 +1876,17 @@ body.attacker-mode #attackerBadge { display: block; }
       <div class="mini-metric"><span class="mini-label">RESPONSE TIME</span><span class="mini-val" id="defTime">—</span></div>
     </div>
 
-    <!-- Skill Influence -->
-    <div class="panel-title" style="font-size:8px;">CERT INFLUENCE</div>
-    <div id="skillInfluence" style="padding:4px 0">
-      <!-- filled dynamically -->
+    <!-- Threat Intelligence Feed -->
+    <div class="panel-title" style="font-size:8px;">THREAT INTEL</div>
+    <div id="threatIntelFeed" style="padding:4px 0;font-size:9px;line-height:1.6">
+      <div class="mini-metric"><span class="mini-label" style="color:var(--red)">CVE ACTIVE</span><span class="mini-val red" id="tiCveCount">0</span></div>
+      <div class="mini-metric"><span class="mini-label">ATTACK VECTOR</span><span class="mini-val" id="tiVector">—</span></div>
+      <div class="mini-metric"><span class="mini-label">CVSS SCORE</span><span class="mini-val yellow" id="tiCvss">—</span></div>
+      <div class="mini-metric"><span class="mini-label">EXPLOIT TYPE</span><span class="mini-val" id="tiExploit">—</span></div>
+      <div class="mini-metric"><span class="mini-label">PATCH STATUS</span><span class="mini-val green" id="tiPatch">SECURE</span></div>
     </div>
+    <!-- Hidden — still used by JS for difficulty calculation -->
+    <div id="skillInfluence" style="display:none"></div>
   </div><!-- /leftPanelBody -->
   </div><!-- /leftPanel -->
 
@@ -1909,28 +1915,8 @@ body.attacker-mode #attackerBadge { display: block; }
           <div class="event-log" id="eventList">
             <div class="event-item">
               <span class="event-time">00:00:00</span>
-              <span class="event-type sys">SYS</span>
-              <span class="event-msg">AASIQ_OS v5.0 — Autonomous Cyber Range booting...</span>
-            </div>
-            <div class="event-item">
-              <span class="event-time">00:00:01</span>
               <span class="event-type info">INFO</span>
-              <span class="event-msg">Operator: Mohamed Aasiq · Cybersecurity Specialist &amp; Ethical Hacker</span>
-            </div>
-            <div class="event-item">
-              <span class="event-time">00:00:02</span>
-              <span class="event-type info">INFO</span>
-              <span class="event-msg">Loading credential matrix — 343 verified certifications across 8 domains</span>
-            </div>
-            <div class="event-item">
-              <span class="event-time">00:00:03</span>
-              <span class="event-type info">INFO</span>
-              <span class="event-msg">Threat models loaded · AI mentor armed · Simulation engine READY</span>
-            </div>
-            <div class="event-item">
-              <span class="event-time">00:00:04</span>
-              <span class="event-type sys">SYS</span>
-              <span class="event-msg">All systems nominal — press LAUNCH to begin red vs blue simulation</span>
+              <span class="event-msg">Cyber Range initialized. 334 certificates loaded. Awaiting simulation start...</span>
             </div>
           </div>
         </div>
@@ -2045,17 +2031,23 @@ body.attacker-mode #attackerBadge { display: block; }
 
   </div><!-- /center panel -->
 
-  <!-- RIGHT PANEL: Skill DNA + Metrics -->
+  <!-- RIGHT PANEL: Operator Profile + Metrics -->
   <div class="panel" id="rightPanel">
-    <div class="panel-title" id="rightPanelTitle">SKILL DNA</div>
+    <div class="panel-title" id="rightPanelTitle">OPERATOR PROFILE</div>
     <div id="rightPanelBody">
 
-    <!-- Skill Bars — filled dynamically from data_main.json -->
-    <div id="skillDNA">
-      <div class="skill-bar-row" style="opacity:.4">
-        <div class="skill-name">Loading…</div>
-      </div>
+    <!-- Operator mission stats -->
+    <div id="operatorProfile" style="padding:4px 0">
+      <div class="mini-metric"><span class="mini-label">OPERATOR</span><span class="mini-val blue" id="opName">AASIQ</span></div>
+      <div class="mini-metric"><span class="mini-label">CLEARANCE</span><span class="mini-val green" id="opClearance">EXPERT</span></div>
+      <div class="mini-metric"><span class="mini-label">SPECIALIZATION</span><span class="mini-val" id="opSpec">PEN TESTING</span></div>
+      <div class="mini-metric"><span class="mini-label">SESSION SCORE</span><span class="mini-val yellow" id="opSessionScore">0</span></div>
+      <div class="mini-metric"><span class="mini-label">WIN RATE</span><span class="mini-val green" id="opWinRate">—</span></div>
+      <div class="mini-metric"><span class="mini-label">AVG RESPONSE</span><span class="mini-val" id="opAvgResponse">—</span></div>
     </div>
+
+    <!-- Hidden — still needed for simulation difficulty engine -->
+    <div id="skillDNA" style="display:none"></div>
 
     <!-- Adaptive Difficulty -->
     <div class="panel-title" style="font-size:8px;">ADAPTIVE DIFFICULTY</div>
@@ -2257,7 +2249,7 @@ function _applyPortfolioDataToUI() {
   const total = CERT_DATA.total;
 
   // Header cert pill
-  const headerEl = document.getElementById('headerCertCount');
+  const headerEl = document.getElementById('headerNodeCount');
   if (headerEl) headerEl.textContent = total;
 
   // Recruiter overlay
@@ -2303,26 +2295,10 @@ function _applyPortfolioDataToUI() {
   if (aiCat)    DIFFICULTY.aiBoost       = aiCat.weight;
   if (cloudCat) DIFFICULTY.cloudBoost    = cloudCat.weight;
 
-  // Boot event log — full sequence after live data loads
-  const eventList = document.getElementById('eventList');
-  if (eventList) {
-    const now = new Date();
-    const ts = (h,m,s) => `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    const h = now.getHours(), mi = now.getMinutes(), s = now.getSeconds();
-    const boots = [
-      { t: ts(h,mi,s),   cls:'sys',  msg: 'AASIQ_OS v5.0 — Autonomous Cyber Range booting...' },
-      { t: ts(h,mi,s+1), cls:'info', msg: 'Operator: Mohamed Aasiq · Cybersecurity Specialist & Ethical Hacker' },
-      { t: ts(h,mi,s+2), cls:'info', msg: `Credential matrix loaded — ${total} verified certifications across 8 domains` },
-      { t: ts(h,mi,s+3), cls:'info', msg: 'Pen Testing · Cloud Security · Network Defense · AI Security — skills indexed' },
-      { t: ts(h,mi,s+4), cls:'info', msg: 'AI mentor armed · Threat models calibrated · Adaptive difficulty set to ADVANCED' },
-      { t: ts(h,mi,s+5), cls:'sys',  msg: 'All systems nominal — press LAUNCH to begin red vs blue simulation' },
-    ];
-    eventList.innerHTML = boots.map(e => `
-      <div class="event-item">
-        <span class="event-time">${e.t}</span>
-        <span class="event-type ${e.cls}">${e.cls.toUpperCase()}</span>
-        <span class="event-msg">${e.msg}</span>
-      </div>`).join('');
+  // Boot event log message
+  const initMsg = document.querySelector('#eventList .event-msg');
+  if (initMsg) {
+    initMsg.textContent = `Cyber Range initialized. ${total} certificates loaded. Awaiting simulation start...`;
   }
 }
 
@@ -2942,6 +2918,7 @@ function tick() {
     state.nodesCompromised++;
     state.flashNodes[targetNode.id] = { color: '#ff2244', alpha: 1.0 };
     logEvent('ATK', `${technique.name} on ${targetNode.id} via ${vuln.split(' ')[0]} — BREACH DETECTED`, 'atk');
+    updateThreatIntel(true);
 
     // Trigger blue team response
     const btTid = setTimeout(() => blueTeamResponse(targetNode, technique), 400 + Math.random() * 800);
@@ -2955,6 +2932,7 @@ function tick() {
     targetNode.status = 'secure';
     state.flashNodes[targetNode.id] = { color: '#00ff88', alpha: 0.8 };
     logEvent('DEF', `${technique.name} attempt BLOCKED at ${targetNode.id} — Threat mitigated`, 'def');
+    updateThreatIntel(true);
     state.defCount++;
     state.nodesSecured++;
     autonomousDefenseDecision(targetNode, technique, 'preemptive');
@@ -3084,6 +3062,7 @@ function endSimulation() {
   document.getElementById('redTeamStatus').textContent = 'IDLE';
   document.getElementById('btnLaunchAtk').disabled = false;
   document.getElementById('btnPauseAtk').disabled = true;
+  _tiActiveCVE = 0; updateThreatIntel(false);
   document.getElementById('scoreH').textContent = capScore;
 
   logEvent('SYS', `Simulation complete. Score: ${capScore}/100. ${state.atkCount} attacks, ${state.defCount} defenses, ${state.alertCount} alerts.`, 'sys');
@@ -3093,6 +3072,8 @@ function endSimulation() {
   document.querySelectorAll('#phaseBar .phase-cell').forEach(c => c.className = 'phase-cell inactive');
 
   updateScoringPanel();
+  const _simWon = capScore >= 50;
+  updateOperatorProfile(true, _simWon, state.defCount > 0 ? Math.round(800 / Math.max(state.defCount,1)) : null);
   NODES.forEach(n => n.status = 'secure');
   drawNetwork();
 }
@@ -3500,6 +3481,7 @@ function updateMetrics() {
 }
 
 function updateScores() {
+  updateOperatorProfile(false, false, null);
   const total = state.atkCount + state.defCount;
   if (total > 0) {
     const score = Math.round((state.defCount / total) * 100 * 0.6 + (1 - state.threatLevel / 100) * 40);
@@ -3635,6 +3617,72 @@ function rpSnapshot() {
     scores:          {...state.scores},
     nodeStatuses:    NODES.map(n => ({ id:n.id, status:n.status }))
   };
+}
+
+// ══════════════════════════════════════════════════════════════
+// THREAT INTEL FEED — updates during simulation
+// ══════════════════════════════════════════════════════════════
+const THREAT_VECTORS   = ['NETWORK','WEB APP','SOCIAL ENG','SUPPLY CHAIN','INSIDER','FIRMWARE'];
+const EXPLOIT_TYPES    = ['RCE','PRIVESC','LATERAL MOV','CREDENTIAL','PERSISTENCE','EXFILTRATION'];
+const PATCH_STATES     = ['PATCHING…','MITIGATED','QUARANTINED','MONITORING','SECURE','BLOCKED'];
+let _tiActiveCVE = 0;
+
+function updateThreatIntel(atkData) {
+  const cvss = atkData ? (5 + Math.random() * 5).toFixed(1) : '—';
+  const vector = atkData ? THREAT_VECTORS[Math.floor(Math.random()*THREAT_VECTORS.length)] : '—';
+  const exploit = atkData ? EXPLOIT_TYPES[Math.floor(Math.random()*EXPLOIT_TYPES.length)] : '—';
+  const patch = atkData ? PATCH_STATES[Math.floor(Math.random()*PATCH_STATES.length)] : 'SECURE';
+  if (atkData) _tiActiveCVE++;
+  const cvssNum = parseFloat(cvss);
+  const cvssCol = cvssNum >= 9 ? 'var(--red)' : cvssNum >= 7 ? 'var(--orange)' : cvssNum >= 4 ? 'var(--yellow)' : 'var(--green)';
+  const patchCol = patch === 'SECURE' || patch === 'BLOCKED' || patch === 'MITIGATED' ? 'var(--green)' : 'var(--yellow)';
+  const tiCve   = document.getElementById('tiCveCount');
+  const tiVec   = document.getElementById('tiVector');
+  const tiCvss  = document.getElementById('tiCvss');
+  const tiExp   = document.getElementById('tiExploit');
+  const tiPatch = document.getElementById('tiPatch');
+  if (tiCve)   tiCve.textContent = _tiActiveCVE;
+  if (tiVec)   tiVec.textContent = vector;
+  if (tiCvss)  { tiCvss.textContent = cvss; tiCvss.style.color = cvssCol; }
+  if (tiExp)   tiExp.textContent = exploit;
+  if (tiPatch) { tiPatch.textContent = patch; tiPatch.style.color = patchCol; }
+}
+
+// ══════════════════════════════════════════════════════════════
+// OPERATOR PROFILE — tracks session performance
+// ══════════════════════════════════════════════════════════════
+const OP_SPECS = ['PEN TESTING','CLOUD SEC','NETWORK DEF','AI SECURITY','FORENSICS','THREAT HUNT'];
+let _opSims = 0, _opWins = 0, _opResponseTimes = [];
+
+function updateOperatorProfile(simEnded, won, responseMs) {
+  if (simEnded) {
+    _opSims++;
+    if (won) _opWins++;
+    if (responseMs) _opResponseTimes.push(responseMs);
+  }
+  const score = (typeof state !== 'undefined' && state.scores) ? (state.scores.total || state.scores.defense || 0) : 0;
+  const winRate = _opSims > 0 ? ((_opWins / _opSims) * 100).toFixed(0) + '%' : '—';
+  const avgMs = _opResponseTimes.length > 0
+    ? (_opResponseTimes.reduce((a,b)=>a+b,0) / _opResponseTimes.length).toFixed(0) + 'ms'
+    : '—';
+  const clearance = score > 800 ? 'ELITE' : score > 500 ? 'EXPERT' : score > 200 ? 'ADVANCED' : 'OPERATOR';
+  const clearCol  = clearance === 'ELITE' ? 'var(--purple)' : clearance === 'EXPERT' ? 'var(--green)' : clearance === 'ADVANCED' ? 'var(--blue)' : 'var(--dim)';
+  const spec = OP_SPECS[Math.floor((_opSims * 1.618) % OP_SPECS.length)];
+  const opClear = document.getElementById('opClearance');
+  const opSpec  = document.getElementById('opSpec');
+  const opScore = document.getElementById('opSessionScore');
+  const opWin   = document.getElementById('opWinRate');
+  const opAvg   = document.getElementById('opAvgResponse');
+  if (opClear)  { opClear.textContent = clearance; opClear.style.color = clearCol; }
+  if (opSpec)   opSpec.textContent = spec;
+  if (opScore)  opScore.textContent = score;
+  if (opWin)    { opWin.textContent = winRate; opWin.style.color = (_opWins / Math.max(_opSims,1)) > 0.6 ? 'var(--green)' : 'var(--yellow)'; }
+  if (opAvg)    opAvg.textContent = avgMs;
+  const nodeCount = typeof NODES !== 'undefined' ? NODES.length : 9;
+  const nc  = document.getElementById('headerNodeCount');
+  const mnc = document.getElementById('mHeaderNodeCount');
+  if (nc)  nc.textContent = nodeCount;
+  if (mnc) mnc.textContent = nodeCount;
 }
 
 // ── 2. HOOK INTO logEvent ────────────────────────────────────────
@@ -7547,7 +7595,7 @@ Drop file or click to upload<br>
 <div class="cyb-chat-ava">A</div>
 <div><div class="cyb-chat-name">CYBAASH AI</div>
 <div class="cyb-chat-status"><span class="cyb-status-dot"></span> Online &middot; Cybersecurity Expert</div></div>
-<span id="cybaash-backend-status" class="cyb-online">&bull; Gemini Online</span>
+<span id="cybaash-backend-status" class="cyb-offline">&bull; Demo Mode</span>
 </div>
 <div id="cybaash-messages">
 <div class="cyb-msg cyb-bot">
@@ -7570,7 +7618,7 @@ Drop file or click to upload<br>
 <button id="cybaash-send-btn" onclick="cybaashSend()" title="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>
 </div>
 <div class="cyb-input-meta">
-<span id="cybaash-status-txt" class="cyb-online">&bull; Gemini Online</span>
+<span id="cybaash-status-txt" class="cyb-offline">&bull; Demo mode</span>
 <span>Enter to send &middot; Shift+Enter for newline</span>
 </div></div>
 </div>
@@ -8697,7 +8745,7 @@ Drop file or click to upload<br>
   // ── SYNC header stats to drawer mirror ─────────────────────────────
   var MIRROR = [
     ['statusLabel','mStatusLabel'],
-    ['headerCertCount','mHeaderCertCount'],
+    ['headerNodeCount','mHeaderNodeCount'],
     ['threatValH','mThreatValH'],
     ['atkCount','mAtkCount'],
     ['defCount','mDefCount'],
