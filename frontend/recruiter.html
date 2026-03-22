@@ -1344,9 +1344,15 @@ function credCard(c){
   const pdfIsImage = c.pdf && !c.pdf.endsWith('.pdf')
   const certJpeg = c.image || (pdfIsImage ? c.pdf : '')
   let logoSrc = ''
+  let logoFallback = ''
   if(isC){
-    logoSrc = c.credlyImageUrl
-      || (c.credlyBadgeId ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png` : '')
+    // Primary: base64 inline image (fastest, no CORS)
+    // Fallback: Credly CDN by assertion UUID (works without API, public hotlink)
+    const cdnUrl = c.credlyBadgeId
+      ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png`
+      : ''
+    logoSrc      = c.credlyImageUrl || cdnUrl
+    logoFallback = cdnUrl  // used in onerror if base64 somehow fails
   } else if(isLI){
     logoSrc = c.logo || LI_BADGE
   } else {
@@ -1365,7 +1371,14 @@ function credCard(c){
   if(certJpeg){
     topHtml = `<div class="cc-top"><img class="cc-banner" src="${x(certJpeg)}" alt="${x(c.title||'')}" loading="lazy" onerror="this.parentElement.classList.add('cc-top-noimg');this.style.display='none'"></div>`;
   } else if(isC && logoSrc){
-    topHtml = `<div class="cc-top cc-top-badge"><img class="cc-badge-img" src="${x(logoSrc)}" alt="${x(c.title||'')}" loading="lazy" onerror="this.style.display='none'"></div>`;
+    const fallbackAttr = logoFallback && logoFallback !== logoSrc
+      ? ` onerror="this.onerror=null;this.src='${logoFallback}'"`
+      : ` onerror="this.style.display='none'"`;
+    topHtml = `<div class="cc-top cc-top-badge"><img class="cc-badge-img" src="${x(logoSrc)}" alt="${x(c.title||'')}" loading="lazy"${fallbackAttr}></div>`;
+  } else if(isC && c.credlyBadgeId){
+    // No logoSrc at all — go straight to CDN
+    const cdnUrl = `https://images.credly.com/size/340x340/images/${x(c.credlyBadgeId)}/image.png`;
+    topHtml = `<div class="cc-top cc-top-badge"><img class="cc-badge-img" src="${cdnUrl}" alt="${x(c.title||'')}" loading="lazy" onerror="this.style.display='none'"></div>`;
   } else {
     topHtml = `<div class="cc-top cc-top-noimg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="width:28px;height:28px;opacity:.12"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
   }
