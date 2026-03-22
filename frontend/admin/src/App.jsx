@@ -1861,13 +1861,9 @@ function CredentialsSection({ data, onSave }) {
                 const topImg = c.image || (pdfIsImage ? c.pdf : '')
 
                 let logoSrc = ''
-                let logoFallback = ''
                 if (isC) {
-                  const cdnUrl = c.credlyBadgeId
-                    ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png`
-                    : ''
-                  logoSrc      = c.credlyImageUrl || cdnUrl
-                  logoFallback = cdnUrl
+                  logoSrc = c.credlyImageUrl
+                    || (c.credlyBadgeId ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png` : '')
                 } else {
                   const iss = (c.issuer || '').toLowerCase()
                   if (iss.includes('amazon') || iss.includes('aws'))
@@ -1892,20 +1888,7 @@ function CredentialsSection({ data, onSave }) {
                     ) : isC && logoSrc ? (
                       <div className="cc-top cc-top-badge">
                         <img className="cc-badge-img" src={logoSrc} alt={c.title || ''} loading="lazy"
-                          onError={e => {
-                            if (logoFallback && e.target.src !== logoFallback) {
-                              e.target.src = logoFallback
-                            } else {
-                              e.target.style.display = 'none'
-                            }
-                          }}/>
-                      </div>
-                    ) : isC && c.credlyBadgeId ? (
-                      <div className="cc-top cc-top-badge">
-                        <img className="cc-badge-img"
-                          src={`https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png`}
-                          alt={c.title || ''} loading="lazy"
-                          onError={e => { e.target.style.display = 'none' }}/>
+                          onError={e => e.target.style.display='none'}/>
                       </div>
                     ) : (
                       <div className="cc-top cc-top-noimg">
