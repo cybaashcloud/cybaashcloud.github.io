@@ -733,6 +733,9 @@ input[placeholder*="search"] {
 <meta name="msapplication-TileColor" content="#030a0f">
 <link rel="stylesheet" href="mobile.css">
 <script src="mobile.js" defer></script>
+<meta property="og:image" content="https://cybaashcloud.github.io/icons/icon-512x512.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://cybaashcloud.github.io/recruiter.html">
 </head>
 <body class="page-recruiter">
 
@@ -1632,7 +1635,7 @@ function showInstallBanner() {
       <span>Add to home screen for offline access &amp; faster load</span>
     </div>
     <button id="pwa-install-btn" onclick="installPWA()">⬇ INSTALL</button>
-    <button id="pwa-dismiss-btn" onclick="hideInstallBanner()" title="Dismiss">×</button>
+    <button aria-label="Dismiss" id="pwa-dismiss-btn" onclick="hideInstallBanner()" title="Dismiss">×</button>
   `;
   document.body.appendChild(banner);
 }
@@ -1669,8 +1672,7 @@ function showUpdateBanner() {
     <button style="background:none;border:1px solid #00ff88;color:#00ff88;font-family:'Share Tech Mono',monospace;
       font-size:9px;letter-spacing:.2em;padding:6px 14px;cursor:pointer;text-transform:uppercase;min-height:36px"
       onclick="updateApp()">↺ RELOAD</button>
-    <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:16px;min-height:36px;padding:0 6px"
-      onclick="this.closest('#pwa-update-banner').remove()">×</button>
+    <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:16px;min-height:36px;padding:0 6px" aria-label="Close">×</button>
   `;
   document.body.prepend(banner);
 }

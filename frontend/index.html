@@ -1608,6 +1608,9 @@ body.attacker-mode #attackerBadge { display: block; }
 <link rel="stylesheet" href="cybaash-ai.css">
 <link rel="stylesheet" href="mobile.css">
 <script src="mobile.js" defer></script>
+<meta property="og:image" content="https://cybaashcloud.github.io/icons/icon-512x512.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://cybaashcloud.github.io/">
 </head>
 <body class="page-index">
 
@@ -1757,31 +1760,31 @@ body.attacker-mode #attackerBadge { display: block; }
     <div class="stat-pill">SCORE <span class="val yellow" id="mScoreH">—</span></div>
   </div>
   <div class="mob-hd-btns">
-    <button class="btn btn-green" onclick="termToggle();mobCloseHeader()">
+    <button aria-label="Dismiss" class="btn btn-green" onclick="termToggle();mobCloseHeader()">
       <span class="mob-hd-icon">⌨</span> TERMINAL
     </button>
-    <button class="btn btn-red" onclick="window.open('recruiter.html','_blank','noopener,noreferrer');mobCloseHeader()">
+    <button aria-label="Dismiss" class="btn btn-red" onclick="window.open('recruiter.html','_blank','noopener,noreferrer');mobCloseHeader()">
       <span class="mob-hd-icon">◈</span> RECRUITER VIEW
     </button>
-    <button class="btn" style="color:var(--blue)" onclick="window.open('dashboard.html','_blank','noopener,noreferrer');mobCloseHeader()">
+    <button aria-label="Dismiss" class="btn" style="color:var(--blue)" onclick="window.open('dashboard.html','_blank','noopener,noreferrer');mobCloseHeader()">
       <span class="mob-hd-icon">◆</span> DASHBOARD
     </button>
-    <button class="btn btn-green" onclick="launchAttack&&launchAttack();mobCloseHeader()">
+    <button aria-label="Dismiss" class="btn btn-green" onclick="launchAttack&&launchAttack();mobCloseHeader()">
       <span class="mob-hd-icon">▶</span> LAUNCH
     </button>
-    <button class="btn" style="color:var(--blue)" onclick="generateScenario&&generateScenario();mobCloseHeader()">
+    <button aria-label="Dismiss" class="btn" style="color:var(--blue)" onclick="generateScenario&&generateScenario();mobCloseHeader()">
       <span class="mob-hd-icon">↺</span> SCENARIO
     </button>
-    <button class="btn" style="color:var(--purple)" onclick="window.open('ai/','_blank','noopener,noreferrer');mobCloseHeader()">
+    <button aria-label="Dismiss" class="btn" style="color:var(--purple)" onclick="window.open('ai/','_blank','noopener,noreferrer');mobCloseHeader()">
       <span class="mob-hd-icon">⬡</span> CYBAASH AI
     </button>
-    <button class="btn" onclick="mobOpenLeft();mobCloseHeader()">
+    <button aria-label="Dismiss" class="btn" onclick="mobOpenLeft();mobCloseHeader()">
       <span class="mob-hd-icon">⚔</span> ATTACK ENGINE
     </button>
-    <button class="btn" onclick="mobOpenRight();mobCloseHeader()">
+    <button aria-label="Dismiss" class="btn" onclick="mobOpenRight();mobCloseHeader()">
       <span class="mob-hd-icon" style="color:var(--blue)">◆</span> SKILL DNA
     </button>
-    <button class="btn" onclick="mobCloseHeader()" style="color:var(--dim);border-bottom:none">
+    <button aria-label="Dismiss" class="btn" onclick="mobCloseHeader()" style="color:var(--dim);border-bottom:none">
       <span class="mob-hd-icon">✕</span> CLOSE
     </button>
   </div>
@@ -1792,7 +1795,7 @@ body.attacker-mode #attackerBadge { display: block; }
 <div class="mob-drawer left" id="mobLeftDrawer" role="complementary" aria-label="Attack Engine">
   <div class="mob-drawer-head">
     <span class="mob-drawer-head-title">⚔ ATTACK ENGINE</span>
-    <button class="mob-drawer-close" onclick="mobCloseAll()">✕</button>
+    <button class="mob-drawer-close" onclick="mobCloseAll()" aria-label="Close">✕</button>
   </div>
   <div class="mob-drawer-body" id="mobLeftBody">
     <!-- leftPanel cloned here by JS -->
@@ -1803,7 +1806,7 @@ body.attacker-mode #attackerBadge { display: block; }
 <div class="mob-drawer right" id="mobRightDrawer" role="complementary" aria-label="Skill DNA">
   <div class="mob-drawer-head">
     <span class="mob-drawer-head-title" style="color:var(--blue)">◆ SKILL DNA</span>
-    <button class="mob-drawer-close" onclick="mobCloseAll()">✕</button>
+    <button class="mob-drawer-close" onclick="mobCloseAll()" aria-label="Close">✕</button>
   </div>
   <div class="mob-drawer-body" id="mobRightBody">
     <!-- rightPanel cloned here by JS -->
@@ -7995,7 +7998,7 @@ function showInstallBanner() {
       <span>Add to home screen for offline access &amp; faster load</span>
     </div>
     <button id="pwa-install-btn" onclick="installPWA()">⬇ INSTALL</button>
-    <button id="pwa-dismiss-btn" onclick="hideInstallBanner()" title="Dismiss">×</button>
+    <button aria-label="Dismiss" id="pwa-dismiss-btn" onclick="hideInstallBanner()" title="Dismiss">×</button>
   `;
   document.body.appendChild(banner);
 }
@@ -8032,8 +8035,7 @@ function showUpdateBanner() {
     <button style="background:none;border:1px solid #00ff88;color:#00ff88;font-family:'Share Tech Mono',monospace;
       font-size:9px;letter-spacing:.2em;padding:6px 14px;cursor:pointer;text-transform:uppercase;min-height:36px"
       onclick="updateApp()">↺ RELOAD</button>
-    <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:16px;min-height:36px;padding:0 6px"
-      onclick="this.closest('#pwa-update-banner').remove()">×</button>
+    <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:16px;min-height:36px;padding:0 6px" aria-label="Close">×</button>
   `;
   document.body.prepend(banner);
 }
@@ -8206,14 +8208,14 @@ if (!localStorage.getItem('kbHintSeen')) {
       <span id="reportTitle">SIMULATION REPORT</span>
       <div style="display:flex;gap:10px;align-items:center">
         <span id="reportDate" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim)"></span>
-        <button onclick="closeReport()" style="background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+        <button onclick="closeReport()" style="background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;line-height:1;padding:0 4px" aria-label="Close">×</button>
       </div>
     </div>
     <div id="reportBody"></div>
     <div id="reportFooter">
       <button class="btn btn-green" onclick="printReport()">⬇ SAVE / PRINT</button>
       <button class="btn btn-blue" onclick="shareReport()">↗ SHARE LINK</button>
-      <button class="btn btn-ghost" onclick="closeReport()">CLOSE</button>
+      <button aria-label="Dismiss" class="btn btn-ghost" onclick="closeReport()">CLOSE</button>
     </div>
   </div>
 </div>
@@ -8408,7 +8410,9 @@ function printReport() {
     '<meta charset="UTF-8">',
     '<meta name="viewport" content="width=device-width,initial-scale=1">',
     '<title>Mohamed_Aasiq_SimReport_' + new Date().toISOString().slice(0,10) + '</title>',
-    '<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">',
+    '<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">',
     '<style>' + reportCSS + '</style>',
     '</head><body>\n\n<!-- Attacker mode badge -->\n<div id=\"attackerBadge\">⚠ ATTACKER MODE — RED TEAM ACTIVE ⚠</div>\n',
     '<div id="reportBody">' + bodyHTML + '</div>',
@@ -8876,7 +8880,7 @@ if (typeof defCmd === 'function') {
   <div class="cyb-title">CYB<span>AASH</span> AI</div>
   <div class="cyb-subtitle">Cybersecurity Expert &middot; Gemini</div>
 </div>
-<button class="cyb-close" onclick="closeCybaashAI()" title="Close">&times;</button>
+<button aria-label="Dismiss" class="cyb-close" onclick="closeCybaashAI()" title="Close">&times;</button>
 </div>
 <div class="cyb-suggestions">
 <button class="cyb-sug-btn" onclick="cybaashInject('Explain SQL injection with a Python example')">SQL Injection &rarr;</button>

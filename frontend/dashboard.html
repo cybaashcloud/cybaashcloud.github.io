@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CYBAASH // Operator Dashboard</title>
 <style>
@@ -597,6 +599,9 @@ table {
 <meta name="msapplication-TileColor" content="#030a0f">
 <link rel="stylesheet" href="mobile.css">
 <script src="mobile.js" defer></script>
+<meta property="og:image" content="https://cybaashcloud.github.io/icons/icon-512x512.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://cybaashcloud.github.io/dashboard.html">
 </head>
 <body class="page-dashboard">
 <div id="dashAtkBadge"></div>
@@ -643,7 +648,7 @@ table {
   <!-- ── THREAT LEVEL BANNER (military upgrade) ──────────── -->
   <div id="threatBanner" style="display:none;background:linear-gradient(90deg,rgba(255,34,68,.15),rgba(255,34,68,.05));border-bottom:1px solid var(--red);padding:6px 20px;font-size:10px;letter-spacing:2px;color:var(--red);text-align:center;position:sticky;top:0;z-index:200">
     <span id="threatBannerText">⚠ ELEVATED THREAT LEVEL — MONITORING ACTIVE</span>
-    <button onclick="document.getElementById('threatBanner').style.display='none'" style="float:right;background:none;border:none;color:var(--red);cursor:pointer;font-size:12px">✕</button>
+    <button onclick="document.getElementById('threatBanner').style.display='none'" style="float:right;background:none;border:none;color:var(--red);cursor:pointer;font-size:12px" aria-label="Close">✕</button>
   </div>
   <header class="hdr">
     <div class="hdr-logo">CYB<span>AASH</span></div>
@@ -1487,7 +1492,7 @@ function showInstallBanner() {
       <span>Add to home screen for offline access &amp; faster load</span>
     </div>
     <button id="pwa-install-btn" onclick="installPWA()">⬇ INSTALL</button>
-    <button id="pwa-dismiss-btn" onclick="hideInstallBanner()" title="Dismiss">×</button>
+    <button aria-label="Dismiss" id="pwa-dismiss-btn" onclick="hideInstallBanner()" title="Dismiss">×</button>
   `;
   document.body.appendChild(banner);
 }
@@ -1524,8 +1529,7 @@ function showUpdateBanner() {
     <button style="background:none;border:1px solid #00ff88;color:#00ff88;font-family:'Share Tech Mono',monospace;
       font-size:9px;letter-spacing:.2em;padding:6px 14px;cursor:pointer;text-transform:uppercase;min-height:36px"
       onclick="updateApp()">↺ RELOAD</button>
-    <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:16px;min-height:36px;padding:0 6px"
-      onclick="this.closest('#pwa-update-banner').remove()">×</button>
+    <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:16px;min-height:36px;padding:0 6px" aria-label="Close">×</button>
   `;
   document.body.prepend(banner);
 }
