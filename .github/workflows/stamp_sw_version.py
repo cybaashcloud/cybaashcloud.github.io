@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-scripts/stamp_sw_version.py  <sw_path>  [<version>]
+scripts/stamp_sw_version.py  <sw_path>  [<version>] 
 
 Replaces VERSION in sw.js.
 - If <version> is given, uses that directly.
