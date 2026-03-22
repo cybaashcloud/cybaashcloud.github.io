@@ -691,6 +691,12 @@ jobs:
       # ══════════════════════════════════════════════════════════════════════
       # 13. DEPLOYED SECURITY HEADERS — live site
       # ══════════════════════════════════════════════════════════════════════
+      - name: Wait for deployment to propagate
+        run: |
+          echo "Waiting 3 minutes for GitHub Pages deployment to propagate..."
+          sleep 180
+          echo "Proceeding with live site checks."
+
       - name: Deployed security headers check
         id: live_headers
         continue-on-error: true
@@ -757,18 +763,20 @@ jobs:
 
           BASE   = 'https://cybaashcloud.github.io'
           errors = 0
+          # must_not uses specific GitHub Pages 404 text, not bare '404' (which appears in JS)
+          GH_404 = [b"There isn't a GitHub Pages site here", b'404: Not Found', b'File not found']
           checks = [
-              ('/',                    'Main portfolio',    [b'cybaash',b'soc-tracker'],     [b'404']),
-              ('/dashboard.html',      'Dashboard',         [b'scenario',b'simulation'],      [b'404']),
-              ('/recruiter.html',      'Recruiter',         [b'credly',b'certificate'],        [b'404']),
-              ('/offline.html',        'Offline',           [b'offline'],                      [b'404']),
-              ('/manifest.json',       'Manifest',          [b'"name"',b'"icons"'],            [b'404']),
-              ('/sw.js',               'Service Worker',    [b'VERSION',b'fetch'],             [b'404']),
-              ('/soc-tracker-v2.js',   'SOC Tracker',       [b'workers.dev',b'getFingerprint'],[b'404']),
-              ('/admin/security.html', 'SOC Dashboard',     [b'login',b'security'],            [b'404']),
-              ('/admin/intel.html',    'Intel',             [b'intel',b'audit'],               [b'404']),
-              ('/admin/tools.html',    'Toolkit',           [b'CYBAASH TOOLKIT',b'Base64'],    [b'404']),
-              ('/ai/index.html',       'AI page',           [b'chat',b'cybaash'],              [b'404']),
+              ('/',                    'Main portfolio',    [b'cybaash',b'soc-tracker'],      GH_404),
+              ('/dashboard.html',      'Dashboard',         [b'scenario',b'simulation'],       GH_404),
+              ('/recruiter.html',      'Recruiter',         [b'credly',b'certificate'],         GH_404),
+              ('/offline.html',        'Offline',           [b'offline'],                       GH_404),
+              ('/manifest.json',       'Manifest',          [b'"name"',b'"icons"'],             GH_404),
+              ('/sw.js',               'Service Worker',    [b'VERSION',b'fetch'],              GH_404),
+              ('/soc-tracker-v2.js',   'SOC Tracker',       [b'workers.dev',b'getFingerprint'],GH_404),
+              ('/admin/security.html', 'SOC Dashboard',     [b'login',b'security'],            GH_404),
+              ('/admin/intel.html',    'Intel',             [b'intel',b'audit'],               GH_404),
+              ('/admin/tools.html',    'Toolkit',           [b'CYBAASH TOOLKIT',b'Base64'],    GH_404),
+              ('/ai/index.html',       'AI page',           [b'chat',b'cybaash'],              GH_404),
           ]
 
           for path, label, must_have, must_not in checks:
