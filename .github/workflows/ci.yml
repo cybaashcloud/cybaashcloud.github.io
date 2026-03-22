@@ -215,13 +215,13 @@ jobs:
 
           for page in pages:
               html = page.read_text(errors='replace')
-              page_dir = page.parent
-              # Strip HTML comments to avoid false positives from inline instructions
+              # Strip HTML comments to avoid scanning commented-out refs
               html_clean = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
+              page_dir = page.parent
               refs = re.findall(r'(?:src|href)=["\'](?!https?://|//|#|data:|mailto:)([^"\']+)["\']', html_clean)
               for ref in refs:
                   clean = ref.split('?')[0].split('#')[0]
-                  if not clean or clean.startswith('{{'): continue
+                  if not clean or clean.startswith('{{') or '${' in clean: continue
                   if clean.startswith('/'):
                       target = (frontend / clean.lstrip('/')).resolve()
                   else:
