@@ -2322,9 +2322,8 @@ function _applyPortfolioDataToUI() {
     const boots = [
       { t: ts(h,mi,s),   cls:'sys',  msg: 'AASIQ_OS v5.0 — Autonomous Cyber Range booting...' },
       { t: ts(h,mi,s+1), cls:'info', msg: 'Operator: Mohamed Aasiq · Cybersecurity Specialist & Ethical Hacker' },
-      { t: ts(h,mi,s+2), cls:'info', msg: `Pen Testing · Cloud Security · Network Defense · AI Security — ${total} credentials indexed` },
-      { t: ts(h,mi,s+3), cls:'info', msg: 'AI mentor armed · Threat models calibrated · Adaptive difficulty ADVANCED' },
-      { t: ts(h,mi,s+4), cls:'sys',  msg: 'All systems nominal — press LAUNCH to begin red vs blue simulation' },
+      { t: ts(h,mi,s+2), cls:'info', msg: 'AI mentor armed · Threat models calibrated · Adaptive difficulty ADVANCED' },
+      { t: ts(h,mi,s+3), cls:'sys',  msg: 'All systems nominal — press LAUNCH to begin red vs blue simulation' },
     ];
     eventList.innerHTML = boots.map(e => `
       <div class="event-item">
