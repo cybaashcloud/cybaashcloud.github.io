@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # DEPLOY — Build admin panel + assemble _site + publish to GitHub Pages
-# Updated: includes SOC dashboard, security panel, and tracker
+# Updated: all files included — intel.html, patch CSS, military JS, meta JSON
 # ═══════════════════════════════════════════════════════════════════════════
 name: Deploy to GitHub Pages
 
@@ -57,41 +57,70 @@ jobs:
           set -euo pipefail
           mkdir -p _site/portfolio _site/admin _site/icons _site/ai
 
-          # ── Core pages ───────────────────────────────────────────────
+          # ── Core HTML pages ──────────────────────────────────────────
           cp frontend/index.html      _site/index.html
           cp frontend/recruiter.html  _site/recruiter.html
           cp frontend/dashboard.html  _site/dashboard.html
           cp frontend/offline.html    _site/offline.html
 
-          # ── AI chatbot ────────────────────────────────────────────────
+          # ── AI chatbot page ──────────────────────────────────────────
           cp -r frontend/ai/. _site/ai/
 
-          # ── JS / CSS ──────────────────────────────────────────────────
-          for f in cybaash-ai.js cybaash-ai.css script.js github.js \
-                   saas-integration.js style.css mobile.css mobile.js \
-                   ai-script.js cybaash_chatbot.js; do
+          # ── JavaScript files ─────────────────────────────────────────
+          for f in \
+            cybaash-ai.js \
+            cybaash-ai_script.js \
+            cybaash_chatbot.js \
+            script.js \
+            github.js \
+            saas-integration.js \
+            mobile.js \
+            mobile-features.js \
+            mobile-nav.js \
+            ai-script.js \
+            dashboard-military-additions.js \
+            soc-tracker-v2.js; do
             [ -f "frontend/$f" ] && cp "frontend/$f" "_site/$f" && echo "OK $f" || echo "SKIP $f"
           done
 
-          # ── SOC Tracker (no secrets — config fetched from Cloudflare Worker) ──
-          cp frontend/soc-tracker-v2.js _site/soc-tracker-v2.js
-          echo "OK soc-tracker-v2.js"
+          # ── CSS files ────────────────────────────────────────────────
+          for f in \
+            cybaash-ai.css \
+            style.css \
+            mobile.css \
+            dashboard-patch.css \
+            offline-patch.css \
+            recruiter-patch.css; do
+            [ -f "frontend/$f" ] && cp "frontend/$f" "_site/$f" && echo "OK $f" || echo "SKIP $f"
+          done
 
-          # ── SOC Security Dashboard (isolated — separate from admin panel) ─────
-          mkdir -p _site/admin
-          cp frontend/admin/security.html _site/admin/security.html
-          cp frontend/admin/security.js   _site/admin/security.js
-          cp frontend/admin/security.css  _site/admin/security.css
-          echo "OK admin/security.{html,js,css}"
+          # ── SOC Security Dashboard (isolated — no tracker injected) ──
+          cp frontend/admin/security.html                _site/admin/security.html
+          cp frontend/admin/security.js                  _site/admin/security.js
+          cp frontend/admin/security.css                 _site/admin/security.css
+          cp frontend/admin/security-military-additions.js _site/admin/security-military-additions.js
+          echo "OK admin/security.{html,js,css} + military additions"
+
+          # ── Intel Panel ───────────────────────────────────────────────
+          cp frontend/admin/intel.html _site/admin/intel.html
+          echo "OK admin/intel.html"
 
           # ── Portfolio images ──────────────────────────────────────────
           for f in avatar.png li-logo.jpg project_eatpqa2f.png; do
-            [ -f "frontend/$f" ] && cp "frontend/$f" "_site/portfolio/$f" || true
+            [ -f "frontend/$f" ] && cp "frontend/$f" "_site/portfolio/$f" && \
+              cp "frontend/$f" "_site/$f" && echo "OK $f" || echo "SKIP $f"
           done
 
-          # ── Data files ────────────────────────────────────────────────
-          for f in data_main.json data_creds_1.json data_creds_2.json \
-                   data_creds_3.json data_creds_4.json data_creds_5.json; do
+          # ── Data / JSON files ─────────────────────────────────────────
+          for f in \
+            data_main.json \
+            data_meta.json \
+            data_ai_config.json \
+            data_creds_1.json \
+            data_creds_2.json \
+            data_creds_3.json \
+            data_creds_4.json \
+            data_creds_5.json; do
             if [ -f "frontend/$f" ]; then
               cp "frontend/$f" "_site/portfolio/$f"
               cp "frontend/$f" "_site/$f"
@@ -106,20 +135,24 @@ jobs:
             cp frontend/data_ai_cache.json _site/data_ai_cache.json && \
             echo "OK data_ai_cache.json" || echo "SKIP data_ai_cache.json"
 
-          # ── Admin panel (React content editor — separate from SOC) ────
+          # ── Admin React panel (built by Vite) ─────────────────────────
           cp -r frontend/admin/dist/. _site/admin/
-          # Re-copy SOC files after dist copy (dist may overwrite security.*)
-          cp frontend/admin/security.html _site/admin/security.html
-          cp frontend/admin/security.js   _site/admin/security.js
-          cp frontend/admin/security.css  _site/admin/security.css
-          echo "OK SOC files re-applied after admin dist copy"
+          # Re-copy SOC + Intel files after dist (dist may overwrite them)
+          cp frontend/admin/security.html                  _site/admin/security.html
+          cp frontend/admin/security.js                    _site/admin/security.js
+          cp frontend/admin/security.css                   _site/admin/security.css
+          cp frontend/admin/security-military-additions.js _site/admin/security-military-additions.js
+          cp frontend/admin/intel.html                     _site/admin/intel.html
+          echo "OK SOC + Intel files re-applied after admin dist copy"
 
-          # ── Certificates ──────────────────────────────────────────────
+          # ── Certificates (auto + aws + manual) ───────────────────────
           if [ -d frontend/certificates ]; then
             mkdir -p _site/certificates
             cp -r frontend/certificates/. _site/certificates/
             echo "OK certificates/ ($(find frontend/certificates -type f | wc -l) files)"
           fi
+
+          # ── Cert logos ────────────────────────────────────────────────
           if [ -d frontend/cert_logos ]; then
             mkdir -p _site/cert_logos
             cp -r frontend/cert_logos/. _site/cert_logos/
@@ -129,28 +162,37 @@ jobs:
           # ── PWA manifest + service worker ─────────────────────────────
           cp frontend/manifest.json _site/manifest.json
           cp frontend/sw.js         _site/sw.js
-          [ -f frontend/_headers ] && cp frontend/_headers _site/_headers
+          [ -f frontend/_headers ] && cp frontend/_headers _site/_headers && echo "OK _headers"
 
-          # ── Icons ─────────────────────────────────────────────────────
+          # ── Icons (all sizes + favicon) ───────────────────────────────
           find frontend/icons \( -name '*.png' -o -name '*.ico' \) | \
             while read -r f; do cp "$f" "_site/icons/$(basename "$f")"; done
+          echo "OK icons/ ($(find frontend/icons -type f | wc -l) files)"
 
           touch _site/.nojekyll
 
-          # ── Validate critical files including SOC ─────────────────────
+          # ── Validate critical files ───────────────────────────────────
           echo "=== Validating _site ==="
           for f in \
             _site/index.html \
+            _site/recruiter.html \
+            _site/dashboard.html \
+            _site/offline.html \
             _site/admin/index.html \
             _site/admin/security.html \
             _site/admin/security.js \
             _site/admin/security.css \
+            _site/admin/security-military-additions.js \
+            _site/admin/intel.html \
             _site/soc-tracker-v2.js \
             _site/portfolio/data_main.json \
             _site/data_main.json \
             _site/cybaash-ai.js \
+            _site/script.js \
+            _site/style.css \
+            _site/mobile.css \
             _site/sw.js \
-            _site/mobile.css; do
+            _site/manifest.json; do
             test -f "$f" && echo "✓ $f" || { echo "MISSING: $f"; exit 1; }
           done
           echo "Total files: $(find _site -type f | wc -l)"
@@ -174,6 +216,8 @@ jobs:
             '_site/soc-tracker-v2.js',
             '_site/admin/security.html',
             '_site/admin/security.js',
+            '_site/admin/intel.html',
+            '_site/admin/security-military-additions.js',
           ]
 
           h = hashlib.sha256()
@@ -212,10 +256,13 @@ jobs:
         run: |
           TOTAL=$(find _site -type f | wc -l)
           CERTS=$(find _site/certificates -type f 2>/dev/null | wc -l || echo 0)
+          ICONS=$(find _site/icons -type f 2>/dev/null | wc -l || echo 0)
           echo "## Deploy Build" >> $GITHUB_STEP_SUMMARY
           echo "- **Files assembled:** $TOTAL" >> $GITHUB_STEP_SUMMARY
           echo "- **Certificate files:** $CERTS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Icons:** $ICONS" >> $GITHUB_STEP_SUMMARY
           echo "- **SOC Dashboard:** \`/admin/security.html\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Intel Panel:** \`/admin/intel.html\`" >> $GITHUB_STEP_SUMMARY
           echo "- **SOC Tracker:** \`/soc-tracker-v2.js\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
 
