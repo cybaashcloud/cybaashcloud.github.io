@@ -19,7 +19,7 @@ FORBIDDEN = [
 ]
 
 SKIP_PATHS = [
-    'frontend/certificates/',
+    'frontend/certificates/', 
     'frontend/cert_logos/',
     '.git/',
     'node_modules/',
