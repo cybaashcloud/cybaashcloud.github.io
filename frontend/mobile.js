@@ -264,4 +264,85 @@
     }, { passive: true });
   });
 
+  /* ── 9. body.term-is-open — drives CSS FAB hide + AI FAB push-up ── */
+  // FIX: watch termOverlay class changes and mirror to body so CSS reacts
+  function syncTermClass() {
+    var el = document.getElementById('termOverlay');
+    if (!el) return;
+    document.body.classList.toggle('term-is-open', el.classList.contains('term-open'));
+  }
+
+  ready(function () {
+    var el = document.getElementById('termOverlay');
+    if (!el) return;
+    new MutationObserver(syncTermClass).observe(el, { attributes: true, attributeFilter: ['class'] });
+    syncTermClass(); // sync initial state
+
+    // FIX: also patch termToggle for belt-and-suspenders
+    var _origTermToggle = window.termToggle;
+    if (typeof _origTermToggle === 'function') {
+      window.termToggle = function () {
+        var r = _origTermToggle.apply(this, arguments);
+        syncTermClass();
+        return r;
+      };
+    }
+
+    // FIX: auto-scroll output to bottom each time terminal opens
+    var termOutput = document.getElementById('termOutput');
+    if (termOutput) {
+      new MutationObserver(function () {
+        if (el.classList.contains('term-open')) {
+          setTimeout(function () { termOutput.scrollTop = termOutput.scrollHeight; }, 120);
+        }
+      }).observe(el, { attributes: true, attributeFilter: ['class'] });
+    }
+  });
+
+  /* ── 10. body.cyb-ai-open — drives CSS FAB hide when AI panel open ─ */
+  // FIX: watch AI overlay class changes and mirror to body
+  function syncAiClass() {
+    var el = document.getElementById('cybaash-ai-overlay');
+    if (!el) return;
+    document.body.classList.toggle('cyb-ai-open', el.classList.contains('cyb-open'));
+  }
+
+  ready(function () {
+    var el = document.getElementById('cybaash-ai-overlay');
+    if (!el) return;
+    new MutationObserver(syncAiClass).observe(el, { attributes: true, attributeFilter: ['class'] });
+    syncAiClass();
+  });
+
+  /* ── 11. Drawer ghost fix — belt-and-suspenders overlay close ──── */
+  // FIX: ensure mobOverlay tap always removes .open from both drawers
+  ready(function () {
+    var overlay = document.getElementById('mobOverlay');
+    if (!overlay) return;
+    overlay.addEventListener('click', function () {
+      ['mobLeftDrawer', 'mobRightDrawer'].forEach(function (id) {
+        var d = document.getElementById(id);
+        if (d) d.classList.remove('open');
+      });
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    });
+  });
+
+  /* ── 12. Terminal input focus — release body scroll lock ────────── */
+  // FIX: when user taps the terminal input and keyboard appears,
+  // the body.nav-open scroll lock must NOT be active — it freezes
+  // the layout and traps the input behind the keyboard.
+  ready(function () {
+    var termInput = document.getElementById('termInput');
+    if (!termInput) return;
+    termInput.addEventListener('focus', function () {
+      if (document.body.style.position === 'fixed') {
+        document.body.style.position = '';
+        document.body.style.width    = '';
+        document.body.style.overflow = '';
+      }
+    });
+  });
+
 })();

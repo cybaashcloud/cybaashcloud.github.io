@@ -27,3 +27,9 @@
 
 /sw.js
   Cache-Control: no-cache, no-store
+
+/mobile.css
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/mobile.js
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400

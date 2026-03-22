@@ -108,7 +108,12 @@
   max-height: 580px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
-  background: var(--cyb-surface);
+  /* FIX: explicit solid bg — backdrop-filter fails on Android WebView */
+  background: #111115;
+  background: var(--cyb-surface, #111115);
+  /* FIX: no backdrop-filter — it causes transparency on Android */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,229,160,0.06);
   overflow: hidden;
   flex-direction: column;

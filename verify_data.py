@@ -1,3 +1,18 @@
+
+# ── Mobile JS sanity check ─────────────────────────────────────────────────
+def check_mobile_js(base_path='frontend'):
+    """Verify mobile.js exists and contains required god-fix functions."""
+    mjs = os.path.join(base_path, 'mobile.js')
+    if not os.path.exists(mjs):
+        return False, 'mobile.js not found'
+    with open(mjs) as f:
+        src = f.read()
+    required = ['syncTermClass', 'syncAiClass', 'term-is-open', 'cyb-ai-open']
+    missing = [r for r in required if r not in src]
+    if missing:
+        return False, f'mobile.js missing: {missing}'
+    return True, f'mobile.js OK ({len(src)} bytes)'
+
 #!/usr/bin/env python3
 """
 verify_data.py — Portfolio data integrity checker (split-file edition)

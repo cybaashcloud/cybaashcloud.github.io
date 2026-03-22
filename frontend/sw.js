@@ -2,23 +2,33 @@
 // NEW v5.0: Background sync for failed SOC logs, Web Push notifications
 // ALL ORIGINAL caching strategies preserved
 
-const VERSION     = 'cybaash-v5.0';
+const VERSION     = 'cybaash-v5.1';
 const SHELL_CACHE = `${VERSION}-shell`;
 const DATA_CACHE  = `${VERSION}-data`;
 const IMAGE_CACHE = `${VERSION}-images`;
 const FONT_CACHE  = `${VERSION}-fonts`;
 
 const SHELL_FILES = [
-  '/', '/index.html', '/dashboard.html', '/recruiter.html', '/manifest.json',
-  '/offline.html', '/style.css', '/mobile.css', '/script.js', '/github.js',
-  '/mobile.js', '/cybaash-ai.js', '/cybaash-ai.css', '/cybaash_chatbot.js',
-  '/saas-integration.js', '/icons/icon-192x192.png', '/icons/icon-512x512.png',
-  '/icons/icon-maskable-192x192.png', '/ai/index.html', '/ai/style.css',
-  '/ai/cybaash-ai_script.js', '/soc-tracker-v2.js',
+  // Core pages
+  '/', '/index.html', '/dashboard.html', '/recruiter.html',
+  '/offline.html', '/ai/index.html',
+  '/admin/index.html', '/admin/security.html', '/admin/intel.html', '/admin/tools.html',
+  // Stylesheets
+  '/style.css', '/mobile.css', '/cybaash-ai.css',
+  '/dashboard-patch.css', '/offline-patch.css', '/recruiter-patch.css',
+  '/ai/style.css',
+  // Scripts
+  '/script.js', '/github.js', '/mobile.js',
+  '/cybaash-ai.js', '/cybaash_chatbot.js', '/saas-integration.js',
+  '/soc-tracker-v2.js', '/ai/cybaash-ai_script.js',
+  // PWA
+  '/manifest.json',
+  '/icons/icon-192x192.png', '/icons/icon-512x512.png',
+  '/icons/icon-maskable-192x192.png',
 ];
 
 self.addEventListener('install', event => {
-  console.log('[SW] Installing CYBAASH v5.0...');
+  console.log('[SW] Installing CYBAASH v5.1...');
   event.waitUntil(
     caches.open(SHELL_CACHE).then(cache =>
       Promise.allSettled(SHELL_FILES.map(url =>
@@ -29,7 +39,7 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating CYBAASH v5.0...');
+  console.log('[SW] Activating CYBAASH v5.1...');
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
