@@ -6455,7 +6455,7 @@ defCmd('searchcve', (args) => {
 
 defCmd('livefeeds', (args) => {
   termPrint({ t:'t-dim', v:`[THREAT] Fetching live critical CVEs from NVD...` });
-  workerFetch('/threats').then(data => {
+  workerFetch('/nvd').then(data => {
     if (data.error) { termPrint({ t:'t-err', v:`livefeeds: ${data.error}` }); return; }
     termPrint({ t:'t-sep', v:'╔══════════════════════════════════════════════════════╗' });
     termPrint({ t:'t-header', v:`  LIVE THREAT FEED — ${data.threats?.length || 0} CRITICAL CVEs` });
@@ -6539,7 +6539,7 @@ defCmd('cves', (args) => {
 // ── threatfeed — REAL live critical CVEs from NVD ────────────────────────────
 defCmd('threatfeed', (args) => {
   termPrint({ t:'t-dim', v:`[NVD] Fetching live CRITICAL CVEs...` });
-  workerFetch('/threats').then(data => {
+  workerFetch('/nvd').then(data => {
     if (data.error && !data.threats) { termPrint({ t:'t-err', v:`threatfeed: ${data.error}` }); return; }
     termPrint({ t:'t-sep', v:'╔══════════════════════════════════════════════════════╗' });
     termPrint({ t:'t-header', v:'  LIVE THREAT FEED — NVD CRITICAL CVEs' });
