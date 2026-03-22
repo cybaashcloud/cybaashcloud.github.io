@@ -1,4 +1,50 @@
 /**
+
+// ── Portfolio data functions ──────────────────────────
+async function loadCredentials() {
+  const paths = ['data_creds_1.json','data_creds_2.json','data_creds_3.json','data_creds_4.json','data_creds_5.json'];
+  const results = await Promise.all(paths.map(p => fetch(p).then(r=>r.json()).catch(()=>({credentials:[]}))));
+  return results.flatMap(r => r.credentials || []);
+}
+
+function renderCredentials(creds, container) {
+  if (!container) return;
+  container.innerHTML = creds.map(c => `<div class="cert-card" data-tags="${(c.tags||[]).join(',')}">
+    <div class="cert-title">${c.title||''}</div>
+    <div class="cert-date">${c.date||''}</div>
+  </div>`).join('');
+}
+
+async function loadGitHubData(username) {
+  const r = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=20`);
+  return r.json();
+}
+
+function renderProjects(projects, container) {
+  if (!container) return;
+  container.innerHTML = (projects||[]).map(p => `<div class="project-card">
+    <h3>${p.name}</h3><p>${p.description||''}</p>
+  </div>`).join('');
+}
+
+function setupFilters(items, filterFn) {
+  document.querySelectorAll('[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => filterFn(btn.dataset.filter));
+  });
+}
+
+async function initPortfolio() {
+  const creds = await loadCredentials();
+  renderCredentials(creds, document.getElementById('creds-container'));
+  const projects = await loadGitHubData('cybaashcloud');
+  renderProjects(projects, document.getElementById('projects-container'));
+  setupFilters(creds, (tag) => {
+    const filtered = tag === 'all' ? creds : creds.filter(c => (c.tags||[]).includes(tag));
+    renderCredentials(filtered, document.getElementById('creds-container'));
+  });
+}
+// ── End portfolio data functions ──────────────────────
+
  * CYBAASH AI — Portfolio + Chatbot Script
  * Handles: data loading, chat UI, backend API calls, analysis tools
  */

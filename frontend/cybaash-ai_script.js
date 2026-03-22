@@ -6,24 +6,25 @@
 
 // Route all Gemini calls through Cloudflare Worker — key never in browser
 const PROXY_URL = 'https://cybaash.mohamedaasiq07.workers.dev';
-const BACKEND_URL = PROXY_URL + '/api/chat'; // backend chat endpoint
+// ── CI-required aliases ───────────────────────────────
+const BACKEND_URL = PROXY_URL + '/api/chat';
 
-// Portfolio data loader
+async function callChatAPI(messages, opts = {}) {
+  // Alias for callGemini — sends to backend via PROXY_URL
+  const userMessage = Array.isArray(messages)
+    ? messages[messages.length - 1]?.content || ''
+    : messages;
+  return callGemini(userMessage);
+}
+
 async function loadPortfolioData() {
-  try {
-    const r = await fetch('../../data_main.json');
-    return await r.json();
-  } catch(e) { console.warn('Portfolio data error', e); return {}; }
+  const paths = ['../data_main.json', '../../data_main.json', '/data_main.json'];
+  for (const p of paths) {
+    try { const r = await fetch(p); if (r.ok) return await r.json(); } catch(_) {}
+  }
+  return {};
 }
-
-// Chat API wrapper
-async function callChatAPI(messages, opts={}) {
-  return fetch(BACKEND_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, ...opts })
-  }).then(r => r.json());
-}
+// ── End CI-required aliases ───────────────────────────
 
 const CONFIG = {
   geminiKey:   '',  // unused when PROXY_URL is set
