@@ -1909,8 +1909,28 @@ body.attacker-mode #attackerBadge { display: block; }
           <div class="event-log" id="eventList">
             <div class="event-item">
               <span class="event-time">00:00:00</span>
+              <span class="event-type sys">SYS</span>
+              <span class="event-msg">AASIQ_OS v5.0 — Autonomous Cyber Range booting...</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">00:00:01</span>
               <span class="event-type info">INFO</span>
-              <span class="event-msg">Cyber Range initialized. 334 certificates loaded. Awaiting simulation start...</span>
+              <span class="event-msg">Operator: Mohamed Aasiq · Cybersecurity Specialist &amp; Ethical Hacker</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">00:00:02</span>
+              <span class="event-type info">INFO</span>
+              <span class="event-msg">Loading credential matrix — 343 verified certifications across 8 domains</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">00:00:03</span>
+              <span class="event-type info">INFO</span>
+              <span class="event-msg">Threat models loaded · AI mentor armed · Simulation engine READY</span>
+            </div>
+            <div class="event-item">
+              <span class="event-time">00:00:04</span>
+              <span class="event-type sys">SYS</span>
+              <span class="event-msg">All systems nominal — press LAUNCH to begin red vs blue simulation</span>
             </div>
           </div>
         </div>
@@ -2283,10 +2303,26 @@ function _applyPortfolioDataToUI() {
   if (aiCat)    DIFFICULTY.aiBoost       = aiCat.weight;
   if (cloudCat) DIFFICULTY.cloudBoost    = cloudCat.weight;
 
-  // Boot event log message
-  const initMsg = document.querySelector('#eventList .event-msg');
-  if (initMsg) {
-    initMsg.textContent = `Cyber Range initialized. ${total} certificates loaded. Awaiting simulation start...`;
+  // Boot event log — full sequence after live data loads
+  const eventList = document.getElementById('eventList');
+  if (eventList) {
+    const now = new Date();
+    const ts = (h,m,s) => `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const h = now.getHours(), mi = now.getMinutes(), s = now.getSeconds();
+    const boots = [
+      { t: ts(h,mi,s),   cls:'sys',  msg: 'AASIQ_OS v5.0 — Autonomous Cyber Range booting...' },
+      { t: ts(h,mi,s+1), cls:'info', msg: 'Operator: Mohamed Aasiq · Cybersecurity Specialist & Ethical Hacker' },
+      { t: ts(h,mi,s+2), cls:'info', msg: `Credential matrix loaded — ${total} verified certifications across 8 domains` },
+      { t: ts(h,mi,s+3), cls:'info', msg: 'Pen Testing · Cloud Security · Network Defense · AI Security — skills indexed' },
+      { t: ts(h,mi,s+4), cls:'info', msg: 'AI mentor armed · Threat models calibrated · Adaptive difficulty set to ADVANCED' },
+      { t: ts(h,mi,s+5), cls:'sys',  msg: 'All systems nominal — press LAUNCH to begin red vs blue simulation' },
+    ];
+    eventList.innerHTML = boots.map(e => `
+      <div class="event-item">
+        <span class="event-time">${e.t}</span>
+        <span class="event-type ${e.cls}">${e.cls.toUpperCase()}</span>
+        <span class="event-msg">${e.msg}</span>
+      </div>`).join('');
   }
 }
 
@@ -7511,7 +7547,7 @@ Drop file or click to upload<br>
 <div class="cyb-chat-ava">A</div>
 <div><div class="cyb-chat-name">CYBAASH AI</div>
 <div class="cyb-chat-status"><span class="cyb-status-dot"></span> Online &middot; Cybersecurity Expert</div></div>
-<span id="cybaash-backend-status" class="cyb-offline">&bull; Demo Mode</span>
+<span id="cybaash-backend-status" class="cyb-online">&bull; Gemini Online</span>
 </div>
 <div id="cybaash-messages">
 <div class="cyb-msg cyb-bot">
@@ -7534,7 +7570,7 @@ Drop file or click to upload<br>
 <button id="cybaash-send-btn" onclick="cybaashSend()" title="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>
 </div>
 <div class="cyb-input-meta">
-<span id="cybaash-status-txt" class="cyb-offline">&bull; Demo mode</span>
+<span id="cybaash-status-txt" class="cyb-online">&bull; Gemini Online</span>
 <span>Enter to send &middot; Shift+Enter for newline</span>
 </div></div>
 </div>
