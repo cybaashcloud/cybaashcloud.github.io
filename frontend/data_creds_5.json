@@ -1,25 +1,6 @@
 {
   "credentials": [
     {
-      "id": "li0269",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/ca966c5bd4d05dda91c9320585f1b0b3d34c8219e0fb4843fc9cc6c72074cfe4",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Building Trust",
-        "ID:"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0269.jpg",
-      "title": "Why Trust Matters with Rachel Botsman",
-      "issuer": "LinkedIn",
-      "courseId": "why-trust-matters-with-rachel-botsman",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "ca966c5bd4d05dda91c9320585f1b0b3d34c8219e0fb4843fc9cc6c72074cfe4"
-    },
-    {
       "id": "li0270",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/e571c70a9ae3591e5306a402960b32405f46a6df45ed82e4cd3018acd9ffba97",
