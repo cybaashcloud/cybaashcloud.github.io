@@ -1,26 +1,6 @@
 {
   "credentials": [
     {
-      "id": "li0017",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Tech Career Skills",
-        "Security Awareness",
-        "Information Security Awareness"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0017.jpg",
-      "title": "Build Your Cybersecurity Awareness Skills",
-      "issuer": "LinkedIn",
-      "courseId": "build-your-cybersecurity-awareness-skills",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861"
-    },
-    {
       "id": "li0018",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/bd2ae17d87ff083fe61fc6ab928660e4de3c4ecf32bb086b5ef16bec9e36663d",
@@ -1580,6 +1560,26 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925"
+    },
+    {
+      "id": "li0101",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Artificial Intelligence (AI",
+        "Responsible AI",
+        "Copyright Law"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0101.jpg",
+      "title": "Generative AI: Business and Legal Concerns for Creatives",
+      "issuer": "LinkedIn",
+      "courseId": "generative-ai-business-and-legal-concerns-for-creatives",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc"
     }
   ]
 }
