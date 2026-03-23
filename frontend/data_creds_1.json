@@ -1327,28 +1327,6 @@
       "certJpeg": "certificates/auto/pro061.jpg"
     },
     {
-      "id": "pro062",
-      "title": "AWS Cloud Quest: Cloud Practitioner",
-      "issuer": "Amazon Web Services (AWS)",
-      "type": "certificate",
-      "date": "2026-03",
-      "url": "https://skillbuilder.aws",
-      "pdf": "https://cybaashcloud.github.io/certificates/aws/24ddc7ba-31fb-4c8b-a5f4-ce00b2835af4.pdf",
-      "image": "/certificates/auto/pro062.jpg",
-      "logo": "",
-      "featured": true,
-      "tags": [
-        "AWS Cloud",
-        "Cloud Practitioner",
-        "EC2",
-        "Cloud Computing",
-        "AWS Services",
-        "AWS"
-      ],
-      "pdfUrl": "/certificates/aws/24ddc7ba-31fb-4c8b-a5f4-ce00b2835af4.pdf",
-      "certJpeg": "certificates/auto/pro062.jpg"
-    },
-    {
       "id": "pro063",
       "title": "Amazon Security Lake Getting Started",
       "issuer": "Amazon Web Services (AWS)",
@@ -1700,6 +1678,26 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf"
+    },
+    {
+      "id": "li0017",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Tech Career Skills",
+        "Security Awareness",
+        "Information Security Awareness"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0017.jpg",
+      "title": "Build Your Cybersecurity Awareness Skills",
+      "issuer": "LinkedIn",
+      "courseId": "build-your-cybersecurity-awareness-skills",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861"
     }
   ]
 }
