@@ -17,14 +17,8 @@
 const SOC_CONFIG = {
   appsScriptUrl: '', // populated at runtime from Worker /config
 
-  // Admin password (hashed via SHA-256 — change this)
-  // Generate: https://emn178.github.io/online-tools/sha256.html
-  // Default password: cybaash-soc-admin
-  // Change it: login → Settings tab → New Admin Password → Save
-  passwordHash: 'df132f130508df6a9d31b7fe7dc77a058296bb8d12c8202fca2c765dd0c7e52b',  // default: cybaash-soc-admin — change via Settings tab
-
-  // Session timeout in minutes
-  sessionTimeout: 30,
+  // Session timeout in minutes (must match Worker JWT_EXPIRY)
+  sessionTimeout: 480, // 8 hours
 
   // Auto-refresh interval (seconds)
   refreshInterval: 30,
@@ -53,48 +47,34 @@ const STATE = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SESSION TOKEN — HMAC-signed, used to authenticate /audit /intel /threats
-// Never a static secret. Signed with password hash so only authenticated
-// users can produce a valid token. Worker verifies server-side with HMAC_SECRET.
+// JWT TOKEN — issued by Cloudflare Worker after passphrase verification
 // ─────────────────────────────────────────────────────────────────────────────
-let _sessionToken = '';
+let _jwt = '';
 
-async function generateSessionToken() {
-  // Sign the current timestamp with the stored password hash as the client key.
-  // The Worker verifies using HMAC_SECRET — two-factor: client proves auth,
-  // server verifies the signature hasn't been forged.
-  const ts       = Date.now().toString();
-  const pwHash   = localStorage.getItem('soc_pw_hash') || SOC_CONFIG.passwordHash;
-  const keyData  = new TextEncoder().encode(pwHash);
-  const msgData  = new TextEncoder().encode(ts);
+function getStoredJWT() {
   try {
-    const key = await crypto.subtle.importKey(
-      'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-    );
-    const sig    = await crypto.subtle.sign('HMAC', key, msgData);
-    const sigHex = Array.from(new Uint8Array(sig))
-      .map(b => b.toString(16).padStart(2, '0')).join('');
-    return ts + '.' + sigHex;
-  } catch(_) {
-    // Fallback: use btoa of timestamp + hash prefix (weaker but functional)
-    return btoa(ts + ':' + pwHash.substring(0, 16));
-  }
+    const sess = JSON.parse(sessionStorage.getItem('soc_session') || '{}');
+    if (sess.jwt && sess.exp && Date.now() < sess.exp) {
+      _jwt = sess.jwt;
+      return _jwt;
+    }
+  } catch(_) {}
+  return '';
+}
+
+function storeJWT(token, expiresIn) {
+  _jwt = token;
+  try {
+    sessionStorage.setItem('soc_session', JSON.stringify({
+      jwt: token,
+      exp: Date.now() + expiresIn,
+    }));
+  } catch(_) {}
 }
 
 async function getSessionToken() {
-  // Return cached token if still valid (regenerate every 25 min to stay within 30 min session)
-  if (_sessionToken) {
-    const ts = parseInt(_sessionToken.split('.')[0] || '0');
-    if (Date.now() - ts < 25 * 60 * 1000) return _sessionToken;
-  }
-  _sessionToken = await generateSessionToken();
-  // Persist in sessionStorage so page reloads don't lose it
-  try {
-    const sess = JSON.parse(sessionStorage.getItem('soc_session') || '{}');
-    sess.sessionToken = _sessionToken;
-    sessionStorage.setItem('soc_session', JSON.stringify(sess));
-  } catch(_) {}
-  return _sessionToken;
+  // Returns JWT for use in X-JWT-Token header
+  return _jwt || getStoredJWT();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -271,72 +251,52 @@ function showLockoutTimer(ms) {
 
 async function handleLogin(e) {
   e.preventDefault();
-  const pw = el('login-password').value;
-  const errorEl = el('login-error');
+  const passphrase = el('login-password').value.trim();
+  const errorEl    = el('login-error');
+  const btn        = document.querySelector('.login-btn');
 
-  // ── Check lockout first ────────────────────────────────────────────────
-  const lockRemaining = checkLockout();
-  if (lockRemaining) {
-    showLockoutTimer(lockRemaining);
-    return;
-  }
-
-  if (!pw) {
-    errorEl.textContent = 'Password required.';
+  if (!passphrase) {
+    errorEl.textContent = 'Passphrase required.';
     errorEl.classList.add('show');
     return;
   }
 
-  const hash = await sha256(pw);
+  if (btn) { btn.textContent = 'VERIFYING…'; btn.disabled = true; }
 
-  // ── Try Apps Script token validation ──────────────────────────────────
   try {
-    const verified = await callAppsScript('verifyAdmin', { token: hash });
-    if (verified && verified.ok) {
-      setLoginState({}); // clear attempts on success
-      grantSession();
+    const resp = await fetch('https://cybaash.mohamedaasiq07.workers.dev/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passphrase }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    const data = await resp.json();
+
+    if (resp.status === 429) {
+      errorEl.textContent = data.error || 'Too many attempts. Please wait.';
+      errorEl.classList.add('show');
+      if (btn) { btn.textContent = 'CONNECT →'; btn.disabled = true; }
       return;
     }
-  } catch (_) {
-    // Falls through to local hash check
-  }
 
-  // ── Local hash check ──────────────────────────────────────────────────
-  const localHash   = localStorage.getItem('soc_pw_hash');
-  const defaultHash = SOC_CONFIG.passwordHash;
-  const storedHash  = localHash || defaultHash;
+    if (!resp.ok || !data.ok) {
+      throw new Error(data.error || 'Invalid credentials');
+    }
 
-  console.log('[SOC] Login attempt — computed:', hash.substring(0,8),
-    'stored:', storedHash.substring(0,8), 'match:', hash === storedHash);
-
-  if (hash === storedHash) {
-    setLoginState({}); // clear attempts on success
+    // Store JWT in sessionStorage (never localStorage)
+    storeJWT(data.token, data.expiresIn);
+    el('login-password').value = '';
     grantSession();
     return;
-  }
 
-  // Stale localStorage hash fallback
-  if (localHash && hash === defaultHash) {
-    console.log('[SOC] Stale localStorage hash — matched default, clearing');
-    localStorage.removeItem('soc_pw_hash');
-    setLoginState({});
-    grantSession();
-    return;
-  }
-
-  // ── Record failed attempt ─────────────────────────────────────────────
-  const result = recordFailedAttempt();
-  termLog('error', 'Failed login attempt (' +
-    (result.locked ? 'LOCKED' : (LOGIN_MAX_ATTEMPTS - result.attempts + 1) + ' attempts left') + ')');
-
-  if (result.locked) {
-    showLockoutTimer(LOGIN_LOCKOUT_MS);
-  } else {
-    const left = LOGIN_MAX_ATTEMPTS - result.attempts;
-    errorEl.textContent = 'Invalid credentials. ' +
-      (left === 1 ? '1 attempt remaining before lockout.' : left + ' attempts remaining.');
+  } catch (err) {
+    errorEl.textContent = err.message === 'Invalid credentials'
+      ? 'Invalid credentials. Access denied.'
+      : 'Connection error — check your network.';
     errorEl.classList.add('show');
     setTimeout(() => errorEl.classList.remove('show'), 4000);
+    if (btn) { btn.textContent = 'CONNECT →'; btn.disabled = false; }
   }
 
   el('login-password').value = '';
@@ -347,31 +307,32 @@ async function handleLogin(e) {
 function grantSession() {
   STATE.authenticated = true;
   STATE.sessionExpiry = Date.now() + SOC_CONFIG.sessionTimeout * 60 * 1000;
-  // Generate HMAC session token for authenticating /audit /intel /threats
-  generateSessionToken().then(function(tok) {
-    _sessionToken = tok;
-    sessionStorage.setItem('soc_session', JSON.stringify({
-      expiry: STATE.sessionExpiry,
-      sessionToken: tok,
-    }));
-  });
   el('login-screen').style.display = 'none';
   el('soc-app').classList.add('active');
-  termLog('info', 'Admin session started');
+  termLog('info', 'Admin session started — JWT active');
   showToast('Authentication successful', 'success');
+  // Mark connection as LIVE
+  const badge = el('api-badge');
+  if (badge) { badge.textContent = '● LIVE'; badge.className = 'badge badge-green'; }
+  const cfgStatus = el('cfg-status');
+  if (cfgStatus) { cfgStatus.textContent = 'LIVE'; cfgStatus.className = 'badge badge-green'; }
   initDashboard();
 }
 
 function checkSession() {
   try {
     const sess = JSON.parse(sessionStorage.getItem('soc_session') || '{}');
-    if (sess.expiry && Date.now() < sess.expiry) {
+    if (sess.expiry && Date.now() < sess.expiry && sess.jwt) {
       STATE.authenticated = true;
       STATE.sessionExpiry = sess.expiry;
-      // Restore session token from sessionStorage
-      if (sess.sessionToken) _sessionToken = sess.sessionToken;
+      _jwt = sess.jwt;
       el('login-screen').style.display = 'none';
       el('soc-app').classList.add('active');
+      // Restore LIVE badge
+      const badge = el('api-badge');
+      if (badge) { badge.textContent = '● LIVE'; badge.className = 'badge badge-green'; }
+      const cfgStatus = el('cfg-status');
+      if (cfgStatus) { cfgStatus.textContent = 'LIVE'; cfgStatus.className = 'badge badge-green'; }
       initDashboard();
       return true;
     }
@@ -401,21 +362,48 @@ setInterval(() => {
 // APPS SCRIPT API
 // ─────────────────────────────────────────────────────────────────────────────
 async function callAppsScript(action, params = {}) {
-  // Always route through Cloudflare Worker /api to avoid CORS issues
-  // Worker proxies to Apps Script server-side with proper CORS headers
   const WORKER_API = 'https://cybaash.mohamedaasiq07.workers.dev/api';
 
   try {
+    const jwt = _jwt || getStoredJWT();
+    if (!jwt) throw new Error('No JWT — please log in');
+
     const response = await fetch(WORKER_API, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-JWT-Token': jwt,
+      },
       body: JSON.stringify({ action, ...params }),
       signal: AbortSignal.timeout(15000),
     });
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    return await response.json();
+
+    // If JWT expired/invalid, force re-login
+    if (response.status === 401) {
+      termLog('warn', 'Session expired — please log in again');
+      logout();
+      return null;
+    }
+
+    if (!response.ok) throw new Error('Worker HTTP ' + response.status);
+    const data = await response.json();
+
+    // Update status badge to LIVE on first successful call
+    const badge = el('api-badge');
+    if (badge && badge.textContent !== '● LIVE') {
+      badge.textContent = '● LIVE'; badge.className = 'badge badge-green';
+    }
+    const cfgStatus = el('cfg-status');
+    if (cfgStatus && cfgStatus.textContent !== 'LIVE') {
+      cfgStatus.textContent = 'LIVE'; cfgStatus.className = 'badge badge-green';
+    }
+    return data;
+
   } catch (err) {
-    termLog('warn', 'API error [' + action + ']: ' + err.message);
+    termLog('warn', 'Worker API error [' + action + ']: ' + err.message);
+    // Show demo badge
+    const badge = el('api-badge');
+    if (badge) { badge.textContent = '● DEMO'; badge.className = 'badge badge-cyan'; }
     return getMockData(action, params);
   }
 }
@@ -565,7 +553,7 @@ async function initDashboard() {
 }
 
 async function refreshAll() {
-  termLog('info', 'Fetching latest data from Apps Script...');
+  termLog('info', 'Fetching live data from Worker...');
   const [stats, logs, attackers, blocked] = await Promise.all([
     callAppsScript('getStats'),
     callAppsScript('getLogs'),
@@ -996,33 +984,19 @@ function exportLogs() {
 // SETTINGS SAVE
 // ─────────────────────────────────────────────────────────────────────────────
 async function saveSettings() {
-  const appsScriptUrl = el('cfg-apps-script-url')?.value.trim();
-  const newPw = el('cfg-new-password')?.value.trim();
-
-  if (appsScriptUrl) {
-    SOC_CONFIG.appsScriptUrl = appsScriptUrl;
-    localStorage.setItem('soc_apps_script_url', appsScriptUrl);
-    termLog('info', 'Apps Script URL updated');
-  }
-
-  if (newPw) {
-    const hash = await sha256(newPw);
-    localStorage.setItem('soc_pw_hash', hash);
-    SOC_CONFIG.passwordHash = hash;
-    el('cfg-new-password').value = '';
-    termLog('info', 'Admin password updated');
-  }
-
+  // Worker URL is fixed — routing all API calls through Cloudflare Worker
+  const WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
+  SOC_CONFIG.appsScriptUrl = WORKER;
+  termLog('info', 'Worker URL confirmed: ' + WORKER);
   showToast('Settings saved', 'success');
 }
 
 function loadSettings() {
-  const savedUrl = localStorage.getItem('soc_apps_script_url');
-  if (savedUrl) {
-    SOC_CONFIG.appsScriptUrl = savedUrl;
-    const el_ = el('cfg-apps-script-url');
-    if (el_) el_.value = savedUrl;
-  }
+  // Always use the Cloudflare Worker as the backend
+  const WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
+  SOC_CONFIG.appsScriptUrl = WORKER;
+  const urlField = el('cfg-apps-script-url');
+  if (urlField) urlField.value = WORKER;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

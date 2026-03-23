@@ -31,9 +31,9 @@
 
     <form id="login-form" autocomplete="off">
       <div class="login-field">
-        <label for="login-password">Admin Passphrase</label>
+        <label for="login-password">Passphrase</label>
         <div style="position:relative;">
-          <input type="password" id="login-password" placeholder="Enter secure passphrase" autocomplete="current-password" autofocus />
+          <input type="password" id="login-password" placeholder="" autocomplete="off" autofocus />
           <button type="button" id="toggle-pw" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;">👁</button>
         </div>
       </div>
@@ -42,8 +42,7 @@
     </form>
 
     <div class="login-footer">
-      RESTRICTED SYSTEM · AUTHORIZED PERSONNEL ONLY<br>
-      All access attempts are logged and monitored.
+      RESTRICTED ACCESS
     </div>
   </div>
 </div>
@@ -436,23 +435,21 @@
       <div class="config-section">
         <h3>Backend Connection</h3>
         <div class="config-field">
-          <label>Apps Script URL</label>
-          <input type="url" id="cfg-apps-script-url" placeholder="https://script.google.com/macros/s/.../exec" />
+          <label>Worker URL</label>
+          <input type="url" id="cfg-apps-script-url"
+            value="https://cybaash.mohamedaasiq07.workers.dev"
+            readonly style="opacity:0.75;cursor:default;" />
         </div>
         <div class="config-field">
           <label>Connection Status</label>
-          <span id="cfg-status" class="badge badge-cyan">DEMO MODE</span>
+          <span id="cfg-status" class="badge badge-cyan">CONNECTING…</span>
         </div>
       </div>
 
       <div class="config-section">
         <h3>Authentication</h3>
-        <div class="config-field">
-          <label>New Admin Password</label>
-          <input type="password" id="cfg-new-password" placeholder="Leave blank to keep current" />
-        </div>
         <p style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:8px;grid-column:1/-1;">
-          ⚠ Password is hashed (SHA-256) before storage. Never stored in plaintext.
+          Access via Personal Access Token.
         </p>
       </div>
 
