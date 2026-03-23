@@ -1768,17 +1768,6 @@
   ],
   "projects": [
     {
-      "id": "eatpqa2f",
-      "title": "CYBAASH",
-      "desc": "Cybaash Portfolio is a professional cybersecurity portfolio created to demonstrate my skills, certifications, and continuous learning journey in the field of cybersecurity. The platform showcases verified professional certifications, security knowledge, and technical competencies related to ethical hacking, cyber defense, and security analysis.\n\nThis portfolio serves as a centralized hub for presenting my cybersecurity achievements, industry credentials, and ongoing skill development while reflecting my commitment to maintaining high standards in information security and digital protection.",
-      "tech": [],
-      "status": "Completed",
-      "liveUrl": "https://cybaash.github.io/",
-      "githubUrl": "",
-      "image": null,
-      "featured": true
-    },
-    {
       "id": "1u05gacf",
       "title": "Cybaashcloud",
       "desc": "CYBAASH — Autonomous Cyber Range Portfolio\n\n\nA production-grade cybersecurity portfolio that doesn't just talk security — it practices it. Every layer is engineered with an attacker's mindset.\n\nBuilt an 8-module SOC tracker covering visitor fingerprinting, behavioral anomaly detection, honeypot link injection, URL scanning, rate abuse tracking, and async log relay to a Cloudflare Worker backend — completely isolated from the admin interface by design.\n\nIntegrated CYBAASH AI (Gemini 2.5 Flash Lite) through a rate-limited Cloudflare Worker proxy — API keys never exposed client-side, with geo-blocking, CORS enforcement, and graceful offline fallback.\n\nDeployed an 11-step CI/CD pipeline: JS syntax checks, JSON schema validation, SOC assertions, HTML integrity scanning, cert data validation, Worker security audits, secret leak scanning via Gitleaks, and performance budget enforcement on every push.\n\nAdmin CMS uses SHA-256 hashed auth — no plaintext passwords, no default credentials. All changes committed via GitHub API, creating a full audit trail.\n\nReal-world pentest work documented: MySQL port 3306 public exposure (CVSS 9.8), XML-RPC brute force bypass, REST API admin enumeration, backup config file exposure, and missing security headers — each with CVSS scoring, attack chain analysis, and remediation guidance.\n\n · AWS · Cisco · Microsoft · Penetration Testing · AI Red Teaming · Cloud Security",
