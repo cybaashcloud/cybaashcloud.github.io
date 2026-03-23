@@ -617,17 +617,29 @@ table {
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-logo">CYB<span>AASH</span></div>
+    <div class="login-sub">// AUTONOMOUS CYBER RANGE</div>
+    <hr class="login-hr">
     <div id="loginBody">
+      <p class="login-desc">
+        Enter a GitHub Personal Access Token to access your operator dashboard.
+        Your data is stored in your own private repository — zero cost, total control.
+      </p>
+      <p class="login-desc" style="font-size:10px;margin-top:6px;opacity:.7">
+        Create one at <strong>github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong>.
+        Required scopes: <code>repo</code> (read &amp; write) and <code>read:user</code>.
+      </p>
       <div style="margin-top:14px">
         <input id="patInput" type="password" placeholder=""
           style="width:100%;padding:12px 14px;background:#0a1520;border:1px solid #1a3a5c;border-radius:4px;color:#c8e0f4;font-family:inherit;font-size:max(16px,13px);outline:none;margin-bottom:12px;-webkit-appearance:none;min-height:44px;box-sizing:border-box"
           onkeydown="if(event.key==='Enter')appLogin()" autocomplete="off" spellcheck="false">
-        <button class="btn-gh" aria-label="Connect" onclick="appLogin()">
-          Connect
+        <button class="btn-gh" aria-label="Login with GitHub" onclick="appLogin()">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" fill="currentColor"/></svg>
+          Connect with Token
         </button>
       </div>
       <div id="loginError" class="login-error" style="display:none"></div>
     </div>
+    <div class="login-footer">$0 servers · $0 databases · 100% GitHub</div>
   </div>
 </div>
 
@@ -769,50 +781,85 @@ async function ensureRepo() {
 // ════════════════════════════════════════════════════════════
 // AUTH — GitHub Device Flow
 // ════════════════════════════════════════════════════════════
-async function appLogin() {
-  // GitHub Device Flow requires a backend (CORS-blocked from browsers).
-  // Static GitHub Pages sites must use Personal Access Tokens instead.
-  const pat = (document.getElementById('patInput')?.value || '').trim();
-  if (!pat) {
-    showLoginError('Please enter your GitHub Personal Access Token.');
-    return;
-  }
-  // Accept classic PAT (ghp_), fine-grained (github_pat_), or any token the user provides
-  if (!pat.startsWith('ghp_') && !pat.startsWith('github_pat_') && pat.length < 20) {
-    showLoginError('Token looks too short — paste your full GitHub Personal Access Token.');
-    return;
-  }
+// ── JWT helpers for Worker auth ──────────────────────────────────────────────
+const WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
+let _dashJWT = '';
+
+function getDashJWT() {
+  if (_dashJWT) return _dashJWT;
   try {
-    showLoginError('');
-    document.getElementById('patInput').disabled = true;
-    const loginBtn = document.querySelector('.btn-gh');
-    loginBtn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(0,212,255,.3);border-top-color:#00d4ff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px"></span>Verifying token…';
-    if (!document.getElementById('spinKf')) {
-      const sk = document.createElement('style');
-      sk.id = 'spinKf';
-      sk.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
-      document.head.appendChild(sk);
+    const s = JSON.parse(sessionStorage.getItem('dash_jwt') || '{}');
+    if (s.jwt && s.exp && Date.now() < s.exp) { _dashJWT = s.jwt; return s.jwt; }
+  } catch(_) {}
+  return '';
+}
+
+function storeDashJWT(token, expiresIn) {
+  _dashJWT = token;
+  try {
+    sessionStorage.setItem('dash_jwt', JSON.stringify({ jwt: token, exp: Date.now() + expiresIn }));
+  } catch(_) {}
+}
+
+async function appLogin() {
+  const pat = (document.getElementById('patInput')?.value || '').trim();
+  if (!pat) { showLoginError('Enter your access token.'); return; }
+
+  showLoginError('');
+  const patInput = document.getElementById('patInput');
+  const loginBtn = document.querySelector('.btn-gh');
+  patInput.disabled = true;
+  loginBtn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(0,212,255,.3);border-top-color:#00d4ff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px"></span>Verifying…';
+  if (!document.getElementById('spinKf')) {
+    const sk = document.createElement('style');
+    sk.id = 'spinKf';
+    sk.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(sk);
+  }
+
+  try {
+    // Step 1 — verify via Worker JWT (passphrase auth)
+    const authResp = await fetch(WORKER + '/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passphrase: pat }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const authData = await authResp.json();
+
+    if (authResp.status === 429) {
+      throw new Error(authData.error || 'Too many attempts. Please wait.');
     }
+
+    if (!authResp.ok || !authData.ok) {
+      // Step 2 fallback — try as GitHub PAT for repo access
+      TOKEN = pat;
+      const user = await gh('/user');
+      if (!user?.login) throw new Error('Invalid token. Access denied.');
+      storeDashJWT('', 0); // no Worker JWT but GitHub auth succeeded
+      LS.setTok(TOKEN);
+      await afterLogin();
+      return;
+    }
+
+    // Worker JWT issued — store it, then verify GitHub PAT access
+    storeDashJWT(authData.token, authData.expiresIn);
     TOKEN = pat;
-    // Verify the token works before storing it
-    const user = await gh('/user');
-    if (!user?.login) throw new Error('Token accepted but could not read user info.');
+    try {
+      const user = await gh('/user');
+      if (!user?.login) throw new Error('Token accepted but could not read user info.');
+    } catch(_) {
+      // JWT is valid but PAT may not have GitHub access — still allow in
+    }
     LS.setTok(TOKEN);
     await afterLogin();
+
   } catch(err) {
     TOKEN = null;
-    document.getElementById('patInput').disabled = false;
-    document.querySelector('.btn-gh').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" fill="currentColor"/></svg> Connect with Token`;
-    const msg = err.message || 'Connection failed';
-    let errMsg = msg;
-    if (/401|403|Bad credentials/i.test(msg)) {
-      if (pat.startsWith('github_pat_')) {
-        errMsg = 'Fine-grained token rejected. Required permissions: Contents (Read & Write) + Metadata (Read) on your repos, and Account (Read) for user info. Go to GitHub → Settings → Developer settings → Fine-grained tokens to edit.';
-      } else {
-        errMsg = "Token rejected by GitHub — check it hasn't expired and has scopes: repo (Full control) + read:user.";
-      }
-    }
-    showLoginError(errMsg);
+    _dashJWT = '';
+    patInput.disabled = false;
+    loginBtn.textContent = 'Connect';
+    showLoginError(err.message || 'Connection failed');
   }
 }
 
@@ -872,6 +919,8 @@ async function boot() {
   const tok  = LS.tok();
   const user = LS.get('user');
   const prof = LS.get('profile');
+  // Restore Worker JWT if still valid
+  getDashJWT();
   if (tok && user) {
     TOKEN = tok;
     USER  = user;

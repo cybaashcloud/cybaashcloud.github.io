@@ -123,36 +123,68 @@ async function ensureDataRepo() {
 // §5 — AUTHENTICATION (GitHub Device Flow)
 // ══════════════════════════════════════════════════════════════
 
+const _SAAS_WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
+let _saasJWT = '';
+
+function getSaasJWT() {
+  if (_saasJWT) return _saasJWT;
+  try {
+    const s = JSON.parse(sessionStorage.getItem('saas_jwt') || '{}');
+    if (s.jwt && s.exp && Date.now() < s.exp) { _saasJWT = s.jwt; return s.jwt; }
+  } catch(_) {}
+  return '';
+}
+
+function storeSaasJWT(token, expiresIn) {
+  _saasJWT = token;
+  try { sessionStorage.setItem('saas_jwt', JSON.stringify({ jwt: token, exp: Date.now() + expiresIn })); } catch(_) {}
+}
+
 async function saasLogin() {
-  // GitHub Device Flow is CORS-blocked in browsers. Use PAT instead.
   showPatOverlay();
 }
 
-function saasLoginWithPat(pat) {
+async function saasLoginWithPat(pat) {
   pat = (pat || '').trim();
-  if (!pat) { setPatOverlayError('Please enter your GitHub Personal Access Token.'); return; }
-  if (!pat.startsWith('ghp_') && !pat.startsWith('github_pat_')) {
-    setPatOverlayError("Invalid token.");
-    return;
-  }
+  if (!pat) { setPatOverlayError('Enter your access token.'); return; }
+
   const btn = document.getElementById('saas-pat-btn');
-  if (btn) { btn.textContent = 'Connecting…'; btn.disabled = true; }
-  SAAS.token = pat;
-  ghRequest('/user').then(async ghUser => {
-    try {
-      if (!ghUser?.login) throw new Error('Token accepted but could not read user info.');
-      LS.setTok(pat);
-      hidePatOverlay();
-      await finishLogin();
-    } catch (err) {
-      SAAS.token = null;
+  if (btn) { btn.textContent = 'Verifying…'; btn.disabled = true; }
+
+  try {
+    // Try Worker JWT auth first
+    const authResp = await fetch(_SAAS_WORKER + '/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passphrase: pat }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const authData = await authResp.json();
+
+    if (authResp.status === 429) {
+      setPatOverlayError(authData.error || 'Too many attempts. Please wait.');
       if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
-      const msg = err.message || '';
-      setPatOverlayError(/401|403|Bad credentials/i.test(msg)
-        ? "Token rejected — check it has repo + read:user scopes and hasn't expired."
-        : msg || 'Connection failed');
+      return;
     }
-  });
+
+    if (authResp.ok && authData.ok) {
+      storeSaasJWT(authData.token, authData.expiresIn);
+    }
+
+    // Regardless of Worker JWT, verify GitHub access
+    SAAS.token = pat;
+    const ghUser = await ghRequest('/user');
+    if (!ghUser?.login) throw new Error('Invalid token. Access denied.');
+    LS.setTok(pat);
+    hidePatOverlay();
+    await finishLogin();
+
+  } catch(err) {
+    SAAS.token = null;
+    _saasJWT = '';
+    if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
+    setPatOverlayError(err.message || 'Connection failed');
+  }
 }
 
 async function finishLogin() {
@@ -651,7 +683,7 @@ function showPatOverlay() {
   overlay.style.display = 'flex';
   overlay.innerHTML = `
     <div style="text-align:center;max-width:420px;padding:40px;background:#0a1520;border:1px solid #1a3a5c;border-radius:4px;">
-      <div style="font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:#00d4ff;letter-spacing:4px;text-shadow:0 0 12px rgba(0,212,255,.5);margin-bottom:6px">CYBAASH</div>
+      <div style="font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:#00d4ff;letter-spacing:4px;text-shadow:0 0 12px rgba(0,212,255,.5);margin-bottom:24px">CYBAASH</div>
       <input id="saas-pat-input" type="password" placeholder=""
         style="width:100%;padding:10px;background:#060f18;border:1px solid #1a3a5c;color:#c8e0f4;font-family:'Share Tech Mono',monospace;font-size:12px;border-radius:2px;margin-bottom:10px;outline:none;box-sizing:border-box;"
         onkeydown="if(event.key==='Enter')saasLoginWithPat(document.getElementById('saas-pat-input').value)"
