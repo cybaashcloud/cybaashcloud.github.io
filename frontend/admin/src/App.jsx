@@ -1092,6 +1092,22 @@ function SetupWizard({ onComplete }) {
 
           {step===0 && (
             <div>
+              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:12,color:'var(--g)',letterSpacing:2,marginBottom:16}}>WELCOME TO AASIQ OS</div>
+              <p style={{fontSize:13,color:'var(--tx2)',lineHeight:1.7,marginBottom:20}}>
+                Your portfolio data lives in <strong style={{color:'var(--g)'}}>split JSON files</strong> directly in your GitHub repo — no database needed. The admin panel reads and writes them via the GitHub API using a Personal Access Token stored only in your browser.
+              </p>
+              <div style={{background:'var(--bg2)',border:'1px solid var(--bd)',padding:16,marginBottom:20,fontFamily:"'Share Tech Mono',monospace",fontSize:11}}>
+                <div style={{color:'var(--g)',marginBottom:10,letterSpacing:2}}>WHAT YOU NEED:</div>
+                {[
+                  'Your GitHub username and repo name (e.g. cybaash / cybaash.github.io)',
+                  'A Personal Access Token with Contents read+write permission',
+                  'Go to GitHub → Settings → Developer settings → Fine-grained tokens',
+                ].map((s,i)=>(
+                  <div key={i} style={{color:'var(--tx2)',marginBottom:6,display:'flex',gap:8}}>
+                    <span style={{color:'var(--g3)'}}>{'>'}</span>{s}
+                  </div>
+                ))}
+              </div>
               <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}} onClick={()=>setStep(1)}>
                 ▶ START SETUP
               </button>
@@ -1100,27 +1116,32 @@ function SetupWizard({ onComplete }) {
 
           {step===1 && (
             <div>
+              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:12,color:'var(--g)',letterSpacing:2,marginBottom:16}}>STEP 1 — GITHUB CONFIG</div>
+
               {err && <div className="auth-error">⚠ {err}</div>}
               {ok  && <div className="auth-success">✓ Connected successfully!</div>}
 
               <div className="form-group">
-                <label className="form-label">Username</label>
+                <label className="form-label">GitHub Username</label>
                 <input className="form-input" value={owner} onChange={e=>setOwner(e.target.value)}
-                  placeholder=""/>
+                  placeholder="cybaash"/>
+                <div className="form-hint">Your GitHub username (not email)</div>
               </div>
               <div className="form-group">
                 <label className="form-label">Repository Name</label>
                 <input className="form-input" value={repo} onChange={e=>setRepo(e.target.value)}
-                  placeholder=""/>
+                  placeholder="cybaash.github.io"/>
+                <div className="form-hint">The repo where your portfolio lives</div>
               </div>
               <div className="form-group">
                 <label className="form-label">Personal Access Token</label>
                 <input className="form-input" type="password" value={token} onChange={e=>setToken(e.target.value)}
-                  placeholder=""/>
+                  placeholder="github_pat_..."/>
+                <div className="form-hint">GitHub → Settings → Developer settings → Fine-grained tokens → Contents: read+write</div>
               </div>
               <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}}
                 onClick={testAndSave} disabled={testing||!owner||!repo||!token}>
-                {testing ? '⟳ TESTING...' : '▶ SAVE'}
+                {testing ? '⟳ TESTING CONNECTION...' : '▶ TEST & SAVE'}
               </button>
             </div>
           )}
@@ -1166,45 +1187,77 @@ function SetupWizard({ onComplete }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// LOGIN
+// LOGIN — Worker JWT + GitHub PAT
 // ══════════════════════════════════════════════════════════════════════════
-function Login({ onAuth }) {
-  const [pw, setPw]   = useState('')
-  const [err, setErr] = useState('')
-  const [locked, setLocked] = useState(false)
-  const [lockMsg, setLockMsg] = useState('')
+const WORKER_URL = 'https://cybaash.mohamedaasiq07.workers.dev'
 
-  // Check lockout on mount and on each render
-  useEffect(() => {
-    const s = getLockout()
-    if (s.until > Date.now()) {
-      setLocked(true)
-      const mins = Math.ceil((s.until - Date.now()) / 60000)
-      setLockMsg(`Too many failed attempts. Try again in ${mins} minute${mins>1?'s':''}.`)
-      const timer = setInterval(() => {
-        const remaining = getLockout().until - Date.now()
-        if (remaining <= 0) { setLocked(false); setLockMsg(''); clearInterval(timer) }
-        else setLockMsg(`Too many failed attempts. Try again in ${Math.ceil(remaining/60000)} minute${Math.ceil(remaining/60000)>1?'s':''}.`)
-      }, 10000)
-      return () => clearInterval(timer)
-    }
-  }, [])
+function getAdminJWT() {
+  try {
+    const s = JSON.parse(sessionStorage.getItem('admin_jwt') || '{}')
+    if (s.jwt && s.exp && Date.now() < s.exp) return s.jwt
+  } catch(_) {}
+  return ''
+}
+
+function storeAdminJWT(token, expiresIn) {
+  try {
+    sessionStorage.setItem('admin_jwt', JSON.stringify({ jwt: token, exp: Date.now() + expiresIn }))
+  } catch(_) {}
+}
+
+function Login({ onAuth }) {
+  const [token, setToken] = useState('')
+  const [err, setErr]     = useState('')
+  const [loading, setLoading] = useState(false)
 
   const attempt = async () => {
-    const s = getLockout()
-    if (s.until > Date.now()) return   // still locked
-    const ok = await checkAdminPw(pw)
-    if (ok) { clearLockout(); onAuth(); setErr('') }
-    else {
-      const { count, until } = recordFailedAttempt()
-      if (until > Date.now()) {
-        setLocked(true)
-        setLockMsg('Too many failed attempts. Try again in 15 minutes.')
-      } else {
-        setErr(`Invalid password. ${MAX_ATTEMPTS - count} attempt${MAX_ATTEMPTS-count===1?'':'s'} remaining.`)
+    if (!token.trim()) { setErr('Enter your access token'); return }
+    setLoading(true); setErr('')
+
+    try {
+      // Step 1 — try Worker JWT auth
+      const authResp = await fetch(WORKER_URL + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passphrase: token.trim() }),
+        signal: AbortSignal.timeout(10000),
+      })
+      const authData = await authResp.json()
+
+      if (authResp.status === 429) {
+        throw new Error(authData.error || 'Too many attempts. Please wait.')
       }
+
+      if (authResp.ok && authData.ok) {
+        storeAdminJWT(authData.token, authData.expiresIn)
+      }
+
+      // Step 2 — verify GitHub PAT (needed for repo read/write)
+      const cfg = getGithubConfig()
+      if (cfg?.token) {
+        // Token already stored from setup — just auth
+        onAuth()
+        return
+      }
+
+      // New token provided — test it against GitHub
+      const testResult = await testConnection(cfg?.owner || '', cfg?.repo || '', token.trim())
+      if (testResult.ok) {
+        if (cfg) saveGithubConfig(cfg.owner, cfg.repo, token.trim())
+        onAuth()
+      } else if (authResp.ok && authData.ok) {
+        // Worker JWT valid even if GitHub PAT check failed — allow in
+        onAuth()
+      } else {
+        throw new Error('Invalid token. Access denied.')
+      }
+    } catch(e) {
+      setErr(e.message || 'Connection failed')
+    } finally {
+      setLoading(false)
     }
   }
+
   return (
     <>
       <FontLink/>
@@ -1215,23 +1268,18 @@ function Login({ onAuth }) {
           <div className="auth-logo">
             <div className="auth-logo-icon">◈</div>
             <div className="auth-logo-title">CYB<span>AASH</span></div>
-            <div className="auth-logo-sub">ADMIN CONTROL PANEL · v4.0</div>
+            <div className="auth-logo-sub">ADMIN CONTROL PANEL · v4.1</div>
           </div>
-          {locked && <div className="auth-error" style={{borderColor:'var(--amber)',color:'var(--amber)'}}>🔒 {lockMsg}</div>}
-          {!locked && err && <div className="auth-error">⚠ {err}</div>}
+          {err && <div className="auth-error">⚠ {err}</div>}
           <div className="form-group">
-            <label className="form-label">Admin Password</label>
-            <input className="form-input" type="password" value={pw}
-              onChange={e=>setPw(e.target.value)}
-              onKeyDown={e=>e.key==='Enter'&&!locked&&attempt()}
-              placeholder="••••••••" autoFocus disabled={locked}/>
+            <input className="form-input" type="password" value={token}
+              onChange={e=>setToken(e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&!loading&&attempt()}
+              placeholder="" autoFocus disabled={loading}/>
           </div>
-          <button className="btn btn-green" style={{width:'100%',justifyContent:'center',padding:'12px',marginTop:8,opacity:locked?0.4:1,cursor:locked?'not-allowed':'pointer'}} onClick={attempt} disabled={locked}>
-            {locked ? '🔒 LOCKED' : '▶ AUTHENTICATE'}
+          <button className="btn btn-green" style={{width:'100%',justifyContent:'center',padding:'12px',marginTop:8,opacity:loading?0.6:1}} onClick={attempt} disabled={loading}>
+            {loading ? '⟳ VERIFYING...' : '▶ ENTER'}
           </button>
-          <div style={{marginTop:20,fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--tx3)',textAlign:'center',letterSpacing:1}}>
-            Contact admin if you forgot your password
-          </div>
         </div>
       </div>
     </>
