@@ -621,25 +621,25 @@ table {
     <hr class="login-hr">
     <div id="loginBody">
       <p class="login-desc">
-        Enter a GitHub Personal Access Token to access your operator dashboard.
+        Enter your Personal Access Token to access your operator dashboard.
         Your data is stored in your own private repository — zero cost, total control.
       </p>
       <p class="login-desc" style="font-size:10px;margin-top:6px;opacity:.7">
-        Create one at <strong>github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong>.
+        Create one at <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong>.
         Required scopes: <code>repo</code> (read &amp; write) and <code>read:user</code>.
       </p>
       <div style="margin-top:14px">
-        <input id="patInput" type="password" placeholder="ghp_xxxxxxxxxxxxxxxx or github_pat_xxx"
+        <input id="patInput" type="password" placeholder="Paste your Personal Access Token…"
           style="width:100%;padding:12px 14px;background:#0a1520;border:1px solid #1a3a5c;border-radius:4px;color:#c8e0f4;font-family:inherit;font-size:max(16px,13px);outline:none;margin-bottom:12px;-webkit-appearance:none;min-height:44px;box-sizing:border-box"
           onkeydown="if(event.key==='Enter')appLogin()" autocomplete="off" spellcheck="false">
-        <button class="btn-gh" aria-label="Login with GitHub" onclick="appLogin()">
+        <button class="btn-gh" aria-label="Login with Personal Access Token" onclick="appLogin()">
           <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" fill="currentColor"/></svg>
           Connect with Token
         </button>
       </div>
       <div id="loginError" class="login-error" style="display:none"></div>
     </div>
-    <div class="login-footer">$0 servers · $0 databases · 100% GitHub</div>
+    <div class="login-footer">$0 servers · $0 databases · 100% Personal Access Token</div>
   </div>
 </div>
 
@@ -683,7 +683,7 @@ table {
       <div class="sb-spacer"></div>
       <div class="sb-footer">
         <div class="sb-footer-tier" id="sbTier">FREE TIER</div>
-        <div class="sb-footer-info">⬡ github storage</div>
+        <div class="sb-footer-info">⬡ personal access token storage</div>
         <div class="sb-footer-info" style="margin-top:4px;">
           <a href="index.html" style="color:var(--blue);text-decoration:none;font-size:9px;">↗ CYBER RANGE</a>
         </div>
@@ -786,12 +786,12 @@ async function appLogin() {
   // Static GitHub Pages sites must use Personal Access Tokens instead.
   const pat = (document.getElementById('patInput')?.value || '').trim();
   if (!pat) {
-    showLoginError('Please enter your GitHub Personal Access Token.');
+    showLoginError('Please enter your Personal Access Token.');
     return;
   }
   // Accept classic PAT (ghp_), fine-grained (github_pat_), or any token the user provides
   if (!pat.startsWith('ghp_') && !pat.startsWith('github_pat_') && pat.length < 20) {
-    showLoginError('Token looks too short — paste your full GitHub Personal Access Token.');
+    showLoginError('Token looks too short — paste your full Personal Access Token.');
     return;
   }
   try {
@@ -819,9 +819,9 @@ async function appLogin() {
     let errMsg = msg;
     if (/401|403|Bad credentials/i.test(msg)) {
       if (pat.startsWith('github_pat_')) {
-        errMsg = 'Fine-grained token rejected. Required permissions: Contents (Read & Write) + Metadata (Read) on your repos, and Account (Read) for user info. Go to GitHub → Settings → Developer settings → Fine-grained tokens to edit.';
+        errMsg = 'Fine-grained token rejected. Required permissions: Contents (Read & Write) + Metadata (Read) on your repos, and Account (Read) for user info. Go to Settings → Developer settings → Fine-grained tokens to edit.';
       } else {
-        errMsg = "Token rejected by GitHub — check it hasn't expired and has scopes: repo (Full control) + read:user.";
+        errMsg = "Token rejected — check it hasn't expired and has scopes: repo (Full control) + read:user.";
       }
     }
     showLoginError(errMsg);
@@ -867,7 +867,7 @@ const BOOT_LINES = [
   'LOADING THREAT INTELLIGENCE ENGINE…',
   'MOUNTING CREDENTIAL DATABASE…',
   'INITIALIZING SIMULATION CORE…',
-  'CONNECTING TO GITHUB STORAGE…',
+  'CONNECTING TO SECURE STORAGE…',
   'DECRYPTING OPERATOR PROFILE…',
   'SYSTEM READY.',
 ];
@@ -1285,7 +1285,7 @@ function renderProfile(mc) {
       <div class="profile-identity">
         <img class="profile-avatar-big" src="${USER.avatar_url}" alt="${USER.login}">
         <div class="profile-username">${USER.login}</div>
-        <div class="profile-gh-link"><a href="${USER.html_url}" target="_blank" rel="noopener">↗ GitHub Profile</a></div>
+        <div class="profile-gh-link"><a href="${USER.html_url}" target="_blank" rel="noopener">↗ Profile</a></div>
         <div class="profile-since">Member since ${new Date(p.createdAt||Date.now()).getFullYear()}</div>
         <div class="profile-role-badge ${p.role||'defender'}" style="border:1px solid ${p.role==='attacker'?'var(--red)':'var(--green)'};color:${p.role==='attacker'?'var(--red)':'var(--green)'}">${(p.role||'defender').toUpperCase()}</div>
       </div>
@@ -1327,7 +1327,7 @@ function renderProfile(mc) {
         <button class="btn-save" aria-label="Save profile" onclick="saveProfile()" style="width:100%;margin-top:4px">⊕ SAVE PROFILE</button>
 
         <div style="color:var(--dim);font-size:9px;margin-top:10px;text-align:center">
-          Stored in your private <code style="color:var(--blue)">cybaash-data</code> GitHub repository.
+          Stored in your private <code style="color:var(--blue)">cybaash-data</code> repository.
         </div>
       </div>
     </div>
@@ -1370,7 +1370,7 @@ async function saveProfile() {
     document.getElementById('hdrRole').textContent = updated.role.toUpperCase();
     document.getElementById('hdrRole').className = 'hdr-role-badge '+updated.role;
     document.getElementById('profSuccess').style.display='block';
-    document.getElementById('profSuccess').textContent = '✓ Profile saved to GitHub';
+    document.getElementById('profSuccess').textContent = '✓ Profile saved';
   } catch(err) {
     document.getElementById('profError').style.display='block';
     document.getElementById('profError').textContent = 'ERR: '+err.message;
