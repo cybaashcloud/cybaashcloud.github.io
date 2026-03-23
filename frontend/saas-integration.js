@@ -132,7 +132,7 @@ function saasLoginWithPat(pat) {
   pat = (pat || '').trim();
   if (!pat) { setPatOverlayError('Please enter your GitHub Personal Access Token.'); return; }
   if (!pat.startsWith('ghp_') && !pat.startsWith('github_pat_')) {
-    setPatOverlayError("Token should start with ghp_ or github_pat_");
+    setPatOverlayError("Invalid token.");
     return;
   }
   const btn = document.getElementById('saas-pat-btn');
@@ -652,10 +652,7 @@ function showPatOverlay() {
   overlay.innerHTML = `
     <div style="text-align:center;max-width:420px;padding:40px;background:#0a1520;border:1px solid #1a3a5c;border-radius:4px;">
       <div style="font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:#00d4ff;letter-spacing:4px;text-shadow:0 0 12px rgba(0,212,255,.5);margin-bottom:6px">CYBAASH</div>
-      <div style="color:#5a7a9a;font-size:9px;letter-spacing:3px;margin-bottom:20px">// GITHUB PERSONAL ACCESS TOKEN</div>
-      <div style="color:#c8e0f4;font-size:10px;margin-bottom:6px;text-align:left">GitHub → Settings → Developer settings → Personal access tokens</div>
-      <div style="color:#5a7a9a;font-size:9px;margin-bottom:16px;text-align:left">Required scopes: <span style="color:#00d4ff">repo</span> + <span style="color:#00d4ff">read:user</span></div>
-      <input id="saas-pat-input" type="password" placeholder="ghp_xxxx or github_pat_xxxx"
+      <input id="saas-pat-input" type="password" placeholder=""
         style="width:100%;padding:10px;background:#060f18;border:1px solid #1a3a5c;color:#c8e0f4;font-family:'Share Tech Mono',monospace;font-size:12px;border-radius:2px;margin-bottom:10px;outline:none;box-sizing:border-box;"
         onkeydown="if(event.key==='Enter')saasLoginWithPat(document.getElementById('saas-pat-input').value)"
       />
