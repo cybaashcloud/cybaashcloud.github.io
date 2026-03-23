@@ -1,25 +1,6 @@
 {
   "credentials": [
     {
-      "id": "li0184",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/142c90aa710d34f329d8fbbbc71f997292e3508cd6d7a2d4cc1219f367cd96c3",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Marketing",
-        "Brand Storytelling"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0184.jpg",
-      "title": "Marketing: How to Use High-Impact Storytelling",
-      "issuer": "LinkedIn",
-      "courseId": "marketing-how-to-use-high-impact-storytelling",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "142c90aa710d34f329d8fbbbc71f997292e3508cd6d7a2d4cc1219f367cd96c3"
-    },
-    {
       "id": "li0185",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/eed3d44feef30cd64ec2ea06dd88882ecaade1eecbf0ecfd0ea93b328a9f6f59",
@@ -1560,6 +1541,24 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "7ce2f3bf3f54dc7c84074349e16b32e940b4c971cf8721780d20f1f6ef7c0bff"
+    },
+    {
+      "id": "li0268",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/a347fc5a8bb226d74ff1c67e0b9f09f16177528ea0af6ab6d4970b0598b87ec2",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "ID:"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0268.jpg",
+      "title": "When Negotiation's about More than Money: How to Negotiate (Almost) Anything",
+      "issuer": "LinkedIn",
+      "courseId": "when-negotiation-s-about-more-than-money-how-to-negotiate-al",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "a347fc5a8bb226d74ff1c67e0b9f09f16177528ea0af6ab6d4970b0598b87ec2"
     }
   ]
 }
