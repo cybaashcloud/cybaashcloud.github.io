@@ -1,25 +1,6 @@
 {
   "credentials": [
     {
-      "id": "li0016",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Body Language",
-        "Leadership"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0016.jpg",
-      "title": "Body Language for Leaders and Managers",
-      "issuer": "LinkedIn",
-      "courseId": "body-language-for-leaders-and-managers",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf"
-    },
-    {
       "id": "li0017",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861",
@@ -1579,6 +1560,26 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "a12976f56c009c8efb6bc74ffc72fe48afc6da1badaadc26de92f8d90fd0bdba"
+    },
+    {
+      "id": "li0100",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Conditional Image Generation",
+        "Artificial Intelligence for Design",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0100.jpg",
+      "title": "Generative AI Imaging: What Creative Pros Need to Know",
+      "issuer": "LinkedIn",
+      "courseId": "generative-ai-imaging-what-creative-pros-need-to-know",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925"
     }
   ]
 }
