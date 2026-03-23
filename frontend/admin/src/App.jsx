@@ -1041,16 +1041,13 @@ function SyncToast({ state, syncError, onRetry }) {
 // SETUP WIZARD (first run — no GitHub config yet)
 // ══════════════════════════════════════════════════════════════════════════
 function SetupWizard({ onComplete }) {
-  const [step, setStep]       = useState(0) // 0=intro, 1=github, 2=password, 3=done
+  const [step, setStep]       = useState(0) // 0=intro, 1=token, 2=done
   const [owner, setOwner]     = useState('')
   const [repo, setRepo]       = useState('')
   const [token, setToken]     = useState('')
   const [testing, setTesting] = useState(false)
   const [err, setErr]         = useState('')
   const [ok, setOk]           = useState(false)
-  const [newPw, setNewPw]     = useState('')
-  const [confPw, setConfPw]   = useState('')
-  const [pwErr, setPwErr]     = useState('')
 
   const testAndSave = async () => {
     setTesting(true); setErr(''); setOk(false)
@@ -1060,15 +1057,6 @@ function SetupWizard({ onComplete }) {
     saveGithubConfig(owner.trim(), repo.trim(), token.trim())
     setOk(true)
     setTimeout(() => setStep(2), 1200)
-  }
-
-  const savePassword = async () => {
-    if (newPw.length < 8)            { setPwErr('Password must be at least 8 characters'); return }
-    if (newPw !== confPw)            { setPwErr('Passwords do not match'); return }
-    if (!/[^a-zA-Z0-9]/.test(newPw)) { setPwErr('Include at least one special character (e.g. @, !, #)'); return }
-    await setAdminPw(newPw)
-    setPwErr('')
-    setStep(3)
   }
 
   return (
@@ -1085,96 +1073,47 @@ function SetupWizard({ onComplete }) {
           </div>
 
           <div className="step-indicator">
-            {[0,1,2,3].map(i=>(
+            {[0,1,2].map(i=>(
               <div key={i} className={`step-dot${step===i?' active':step>i?' done':''}`}/>
             ))}
           </div>
 
           {step===0 && (
             <div>
-              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:12,color:'var(--g)',letterSpacing:2,marginBottom:16}}>WELCOME TO AASIQ OS</div>
-              <p style={{fontSize:13,color:'var(--tx2)',lineHeight:1.7,marginBottom:20}}>
-                Your portfolio data lives in <strong style={{color:'var(--g)'}}>split JSON files</strong> directly in your GitHub repo — no database needed. The admin panel reads and writes them via the GitHub API using a Personal Access Token stored only in your browser.
-              </p>
-              <div style={{background:'var(--bg2)',border:'1px solid var(--bd)',padding:16,marginBottom:20,fontFamily:"'Share Tech Mono',monospace",fontSize:11}}>
-                <div style={{color:'var(--g)',marginBottom:10,letterSpacing:2}}>WHAT YOU NEED:</div>
-                {[
-                  'Your GitHub username and repo name (e.g. cybaash / cybaash.github.io)',
-                  'A Personal Access Token with Contents read+write permission',
-                  'Go to GitHub → Settings → Developer settings → Fine-grained tokens',
-                ].map((s,i)=>(
-                  <div key={i} style={{color:'var(--tx2)',marginBottom:6,display:'flex',gap:8}}>
-                    <span style={{color:'var(--g3)'}}>{'>'}</span>{s}
-                  </div>
-                ))}
-              </div>
               <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}} onClick={()=>setStep(1)}>
-                ▶ START SETUP
+                ▶ START
               </button>
             </div>
           )}
 
           {step===1 && (
             <div>
-              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:12,color:'var(--g)',letterSpacing:2,marginBottom:16}}>STEP 1 — GITHUB CONFIG</div>
-
               {err && <div className="auth-error">⚠ {err}</div>}
-              {ok  && <div className="auth-success">✓ Connected successfully!</div>}
-
+              {ok  && <div className="auth-success">✓ Connected!</div>}
               <div className="form-group">
-                <label className="form-label">GitHub Username</label>
-                <input className="form-input" value={owner} onChange={e=>setOwner(e.target.value)}
-                  placeholder="cybaash"/>
-                <div className="form-hint">Your GitHub username (not email)</div>
+                <label className="form-label">Username</label>
+                <input className="form-input" value={owner} onChange={e=>setOwner(e.target.value)} placeholder=""/>
               </div>
               <div className="form-group">
-                <label className="form-label">Repository Name</label>
-                <input className="form-input" value={repo} onChange={e=>setRepo(e.target.value)}
-                  placeholder="cybaash.github.io"/>
-                <div className="form-hint">The repo where your portfolio lives</div>
+                <label className="form-label">Repository</label>
+                <input className="form-input" value={repo} onChange={e=>setRepo(e.target.value)} placeholder=""/>
               </div>
               <div className="form-group">
                 <label className="form-label">Personal Access Token</label>
-                <input className="form-input" type="password" value={token} onChange={e=>setToken(e.target.value)}
-                  placeholder="github_pat_..."/>
-                <div className="form-hint">GitHub → Settings → Developer settings → Fine-grained tokens → Contents: read+write</div>
+                <input className="form-input" type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder=""/>
               </div>
               <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}}
                 onClick={testAndSave} disabled={testing||!owner||!repo||!token}>
-                {testing ? '⟳ TESTING CONNECTION...' : '▶ TEST & SAVE'}
+                {testing ? '⟳ TESTING...' : '▶ SAVE'}
               </button>
             </div>
           )}
 
           {step===2 && (
-            <div>
-              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:12,color:'var(--g)',letterSpacing:2,marginBottom:16}}>STEP 2 — SET ADMIN PASSWORD</div>
-              <p style={{fontSize:13,color:'var(--tx2)',lineHeight:1.7,marginBottom:20}}>
-                Create a strong password for the admin panel. This is stored locally in your browser only.
-              </p>
-              {pwErr && <div className="auth-error">⚠ {pwErr}</div>}
-              <div className="form-group">
-                <label className="form-label">New Password</label>
-                <input className="form-input" type="password" value={newPw}
-                  onChange={e=>setNewPw(e.target.value)} placeholder="Min 8 chars, include a special char"/>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Confirm Password</label>
-                <input className="form-input" type="password" value={confPw}
-                  onChange={e=>setConfPw(e.target.value)} placeholder="Repeat password"/>
-              </div>
-              <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}}
-                onClick={savePassword} disabled={!newPw||!confPw}>
-                ▶ SET PASSWORD
-              </button>
-            </div>
-          )}
-
-          {step===3 && (
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:48,marginBottom:16}}>✓</div>
               <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:14,color:'var(--g)',letterSpacing:2,marginBottom:12}}>SETUP COMPLETE</div>
-              <p style={{fontSize:13,color:'var(--tx2)',lineHeight:1.7,marginBottom:24}}>GitHub is connected and your password is set. Click below to log in.</p>
+              <p style={{fontSize:13,color:'var(--tx2)',lineHeight:1.7,marginBottom:24}}>Connected. Click below to enter.</p>
               <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}} onClick={onComplete}>
                 ▶ GO TO LOGIN
               </button>
@@ -1187,7 +1126,7 @@ function SetupWizard({ onComplete }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// LOGIN — Worker JWT + GitHub PAT
+// LOGIN — Worker JWT auth
 // ══════════════════════════════════════════════════════════════════════════
 const WORKER_URL = 'https://cybaash.mohamedaasiq07.workers.dev'
 
@@ -1200,62 +1139,41 @@ function getAdminJWT() {
 }
 
 function storeAdminJWT(token, expiresIn) {
-  try {
-    sessionStorage.setItem('admin_jwt', JSON.stringify({ jwt: token, exp: Date.now() + expiresIn }))
-  } catch(_) {}
+  try { sessionStorage.setItem('admin_jwt', JSON.stringify({ jwt: token, exp: Date.now() + expiresIn })) } catch(_) {}
 }
 
 function Login({ onAuth }) {
-  const [token, setToken] = useState('')
-  const [err, setErr]     = useState('')
+  const [token, setToken]   = useState('')
+  const [err, setErr]       = useState('')
   const [loading, setLoading] = useState(false)
 
   const attempt = async () => {
     if (!token.trim()) { setErr('Enter your access token'); return }
     setLoading(true); setErr('')
-
     try {
-      // Step 1 — try Worker JWT auth
-      const authResp = await fetch(WORKER_URL + '/auth', {
+      const resp = await fetch(WORKER_URL + '/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ passphrase: token.trim() }),
         signal: AbortSignal.timeout(10000),
       })
-      const authData = await authResp.json()
-
-      if (authResp.status === 429) {
-        throw new Error(authData.error || 'Too many attempts. Please wait.')
-      }
-
-      if (authResp.ok && authData.ok) {
-        storeAdminJWT(authData.token, authData.expiresIn)
-      }
-
-      // Step 2 — verify GitHub PAT (needed for repo read/write)
-      const cfg = getGithubConfig()
-      if (cfg?.token) {
-        // Token already stored from setup — just auth
+      const data = await resp.json()
+      if (resp.status === 429) throw new Error(data.error || 'Too many attempts. Please wait.')
+      if (resp.ok && data.ok) {
+        storeAdminJWT(data.token, data.expiresIn)
         onAuth()
         return
       }
-
-      // New token provided — test it against GitHub
-      const testResult = await testConnection(cfg?.owner || '', cfg?.repo || '', token.trim())
-      if (testResult.ok) {
-        if (cfg) saveGithubConfig(cfg.owner, cfg.repo, token.trim())
-        onAuth()
-      } else if (authResp.ok && authData.ok) {
-        // Worker JWT valid even if GitHub PAT check failed — allow in
-        onAuth()
-      } else {
-        throw new Error('Invalid token. Access denied.')
+      // Fallback: verify as GitHub PAT via testConnection
+      const cfg = getGithubConfig()
+      if (cfg) {
+        const r = await testConnection(cfg.owner, cfg.repo, token.trim())
+        if (r.ok) { saveGithubConfig(cfg.owner, cfg.repo, token.trim()); onAuth(); return }
       }
+      throw new Error('Invalid token. Access denied.')
     } catch(e) {
       setErr(e.message || 'Connection failed')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   return (
@@ -1317,7 +1235,7 @@ function Dashboard({ data, lastSync, ghCfg }) {
           <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:11,color:'var(--g)',letterSpacing:2,marginBottom:16}}>RECENT ACTIVITY</div>
           {[
             {color:'var(--g)',    text:'Admin panel connected',     time:now()},
-            {color:'var(--blue)',text:'GitHub storage active',       time:now()},
+            {color:'var(--blue)',text:'Storage active',       time:now()},
             {color:'var(--g)',   text:`Skills tracked: ${counts.skills}`, time:now()},
             {color:'var(--g)',   text:`Last sync: ${lastSync||'—'}`, time:''},
           ].map((a,i)=>(
@@ -1335,7 +1253,7 @@ function Dashboard({ data, lastSync, ghCfg }) {
           <div className="card-corner bl"/><div className="card-corner br"/>
           <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:11,color:'var(--g)',letterSpacing:2,marginBottom:16}}>SYSTEM STATUS</div>
           {[
-            {label:'Storage',   val:'GitHub (split JSON files)',       ok:true},
+            {label:'Storage',   val:'Split JSON files',       ok:true},
             {label:'Access',    val:'Token (local only)',               ok:true},
             {label:'Repo',      val:ghCfg ? `${ghCfg.owner}/${ghCfg.repo}` : '—', ok:!!ghCfg},
             {label:'Last Save', val:lastSync||'—',                     ok:!!lastSync},
@@ -2563,19 +2481,9 @@ function ContactSection({ data, onSave }) {
 // ══════════════════════════════════════════════════════════════════════════
 // SETTINGS
 function SettingsSection({ data, ghCfg, onDisconnect }) {
-  const [pwd, setPwd] = useState({old:'',newP:'',confirm:''})
   const [msg, setMsg] = useState(null)
   const [testMsg, setTestMsg] = useState(null)
   const [testing, setTesting] = useState(false)
-
-  const changePassword = async () => {
-    const oldOk = await checkAdminPw(pwd.old)
-    if (!oldOk)                        { setMsg({err:true,txt:'Current password incorrect'}); return }
-    if (pwd.newP!==pwd.confirm)        { setMsg({err:true,txt:'Passwords do not match'}); return }
-    if (pwd.newP.length<6)             { setMsg({err:true,txt:'Minimum 6 characters'}); return }
-    await setAdminPw(pwd.newP)
-    setMsg({err:false,txt:'✓ Password updated (stored as SHA-256 hash)'}); setPwd({old:'',newP:'',confirm:''})
-  }
 
   const testConn = async () => {
     setTesting(true); setTestMsg(null)
@@ -2597,16 +2505,7 @@ function SettingsSection({ data, ghCfg, onDisconnect }) {
 
       {/* ── PASSWORD + GITHUB ── */}
       <div className="grid-2" style={{marginBottom:20}}>
-        <div className="card">
-          <div className="card-corner tl"/><div className="card-corner tr"/>
-          <div className="card-corner bl"/><div className="card-corner br"/>
-          <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--g)',letterSpacing:2,marginBottom:14}}>CHANGE PASSWORD</div>
-          {msg&&<div style={{padding:'10px 14px',border:`1px solid ${msg.err?'var(--red)':'var(--g)'}`,color:msg.err?'var(--red)':'var(--g)',fontFamily:"'Share Tech Mono',monospace",fontSize:11,marginBottom:14}}>{msg.txt}</div>}
-          <div className="form-group"><label className="form-label">Current Password</label><input className="form-input" type="password" value={pwd.old} onChange={e=>setPwd(p=>({...p,old:e.target.value}))}/></div>
-          <div className="form-group"><label className="form-label">New Password</label><input className="form-input" type="password" value={pwd.newP} onChange={e=>setPwd(p=>({...p,newP:e.target.value}))}/></div>
-          <div className="form-group"><label className="form-label">Confirm</label><input className="form-input" type="password" value={pwd.confirm} onChange={e=>setPwd(p=>({...p,confirm:e.target.value}))}/></div>
-          <button className="btn btn-green" onClick={changePassword}>Update Password</button>
-        </div>
+
         <div className="card">
           <div className="card-corner tl"/><div className="card-corner tr"/>
           <div className="card-corner bl"/><div className="card-corner br"/>
@@ -2625,7 +2524,7 @@ function SettingsSection({ data, ghCfg, onDisconnect }) {
           ))}
           <div style={{display:'flex',gap:10,marginTop:16}}>
             <button className="btn btn-ghost btn-sm" onClick={testConn} disabled={testing}>{testing?'Testing…':'Test Connection'}</button>
-            <button className="btn btn-red btn-sm" onClick={()=>{if(window.confirm('Disconnect GitHub?')){clearGithubConfig();onDisconnect()}}}>Disconnect</button>
+            <button className="btn btn-red btn-sm" onClick={()=>{if(window.confirm('Disconnect?')){clearGithubConfig();onDisconnect()}}}>Disconnect</button>
           </div>
         </div>
       </div>
