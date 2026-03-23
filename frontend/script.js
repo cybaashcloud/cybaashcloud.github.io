@@ -293,6 +293,14 @@ function clearChat() {
   appendMessage('bot', '🔄 **Chat cleared.** Session history reset. How can I help you with cybersecurity?');
 }
 
+function injectPrompt(text) {
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+  input.value = text;
+  input.focus();
+  autoResize(input);
+}
+
 /* ══════════════════════════════════════════════════════════════════
    TOOL PANELS
    ══════════════════════════════════════════════════════════════════ */
