@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CYBAASH // Operator Dashboard</title>
+<style>
+/* ── SYSTEM FONT FALLBACKS (offline / Google Fonts unavailable) ── */
+/* These kick in automatically if Google Fonts fails to load        */
+:root {
+  --font-mono:   'Share Tech Mono', 'Courier New', Courier, monospace;
+  --font-display:'Orbitron', 'Impact', 'Arial Black', sans-serif;
+  --font-body:   'Rajdhani', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+/* Apply fallbacks globally */
+body { font-family: var(--font-mono); }
+.logo, .logo-title, .logo-cyber,
+h1, h2, .hero-name, .stat-val, .dash-num, .kpi-num,
+[style*="Orbitron"], .topbar-title, .modal-title,
+.section-title, .auth-logo-title {
+  font-family: var(--font-display);
+}
+.hero-sub, .hero-title, p, li,
+[style*="Rajdhani"] {
+  font-family: var(--font-body);
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+
+:root {
+  --bg:      #030a0f;  --bg2:    #060f18;
+  --panel:   #0a1520;  --panel2: #0d1e2e;
+  --border:  #1a3a5c;
+  --red:     #ff2244;  --blue:   #00d4ff;
+  --green:   #00ff88;  --yellow: #ffd700;
+  --orange:  #ff6600;  --purple: #aa44ff;
+  --text:    #c8e0f4;  --dim:    #5a7a9a;
+  --glow-r:  0 0 16px rgba(255,34,68,.5);
+  --glow-b:  0 0 16px rgba(0,212,255,.5);
+  --glow-g:  0 0 16px rgba(0,255,136,.5);
+  --glow-y:  0 0 16px rgba(255,215,0,.4);
+  --glow-p:  0 0 16px rgba(170,68,255,.5);
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body {
+  background:var(--bg); color:var(--text);
+  font-family:'Share Tech Mono',monospace; font-size:11px;
+  min-height:100vh; overflow-x:hidden; -webkit-overflow-scrolling:touch;
+}
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px);
+}
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:var(--bg2); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+/* ── BOOT / LOGIN ───────────────────────────────── */
+#bootScreen {
+  position:fixed; inset:0; background:var(--bg); z-index:5000;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+}
+.boot-logo { font-family:'Orbitron',monospace; font-size:42px; font-weight:900; color:var(--blue); text-shadow:var(--glow-b); letter-spacing:8px; }
+.boot-logo span { color:var(--red); text-shadow:var(--glow-r); }
+.boot-line { color:var(--dim); font-size:11px; letter-spacing:3px; }
+.boot-bar-track { width:280px; height:2px; background:var(--border); }
+.boot-bar-fill  { height:100%; background:var(--blue); box-shadow:var(--glow-b); transition:width .4s ease; width:0; }
+
+#loginScreen {
+  position:fixed; inset:0; background:radial-gradient(ellipse at 50% 40%, #030f1a 0%,var(--bg) 70%); z-index:4000;
+  display:none; align-items:center; justify-content:center;
+}
+.login-card {
+  width:min(440px,92vw); background:var(--panel); border:1px solid var(--border);
+  border-radius:4px; padding:44px 40px; text-align:center;
+}
+.login-logo { font-family:'Orbitron',monospace; font-size:30px; font-weight:900; color:var(--blue); letter-spacing:4px; text-shadow:var(--glow-b); }
+.login-logo span { color:var(--red); text-shadow:var(--glow-r); }
+.login-sub  { color:var(--dim); font-size:9px; letter-spacing:4px; margin:8px 0 24px; }
+.login-hr   { border:none; border-top:1px solid var(--border); margin-bottom:24px; }
+.login-desc { color:var(--dim); font-size:11px; line-height:1.7; margin-bottom:24px; font-family:'Rajdhani',sans-serif; font-size:13px; }
+.device-code-wrap { padding:8px 0 20px; }
+.device-code-url  { color:var(--dim); font-size:11px; margin-bottom:10px; }
+.device-code {
+  font-family:'Orbitron',monospace; font-size:30px; font-weight:700;
+  color:var(--green); letter-spacing:10px; text-shadow:var(--glow-g);
+  padding:16px 24px; border:1px solid var(--green); border-radius:2px;
+  margin:12px 0; background:rgba(0,255,136,.03);
+}
+.device-waiting { color:var(--dim); font-size:10px; }
+.login-footer   { color:var(--dim); font-size:9px; margin-top:24px; letter-spacing:2px; }
+.login-error    { color:var(--red); font-size:11px; margin-top:12px; }
+.btn-gh {
+  display:inline-flex; align-items:center; gap:10px;
+  padding:11px 24px; background:var(--panel2); border:1px solid var(--border);
+  color:var(--text); cursor:pointer; font-size:13px;
+  font-family:'Rajdhani',sans-serif; font-weight:600; letter-spacing:1px;
+  border-radius:2px; transition:border-color .2s, color .2s;
+}
+.btn-gh:hover { border-color:var(--blue); color:var(--blue); }
+.btn-gh svg { fill:currentColor; }
+
+/* ── LAYOUT ─────────────────────────────────────── */
+#app { display:flex; flex-direction:column; height:100dvh; }
+.hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 20px; background:linear-gradient(90deg,#020a12,#0a1a2e,#020a12);
+  border-bottom:1px solid var(--border); flex-shrink:0; position:sticky; top:0; z-index:100;
+}
+.hdr-logo { font-family:'Orbitron',monospace; font-size:17px; font-weight:900; color:var(--blue); letter-spacing:4px; text-shadow:var(--glow-b); }
+.hdr-logo span { color:var(--red); text-shadow:var(--glow-r); }
+.hdr-tag  { color:var(--dim); font-size:9px; letter-spacing:3px; }
+.hdr-right { display:flex; align-items:center; gap:10px; }
+.hdr-avatar { width:26px; height:26px; border-radius:50%; border:1px solid var(--border); }
+.hdr-user { color:var(--dim); font-size:11px; }
+.hdr-role-badge { font-size:9px; padding:2px 7px; border-radius:2px; letter-spacing:1px; }
+.hdr-role-badge.attacker { border:1px solid var(--red);   color:var(--red); }
+.hdr-role-badge.defender { border:1px solid var(--green); color:var(--green); }
+.hdr-role-badge.admin    { border:1px solid var(--yellow);color:var(--yellow); }
+.hdr-btn-logout { background:none; border:none; color:var(--dim); cursor:pointer; font-size:16px; padding:2px; }
+.hdr-btn-logout:hover { color:var(--red); }
+
+.body-wrap { display:flex; flex:1; overflow:hidden; }
+
+/* ── SIDEBAR ─────────────────────────────────────── */
+.sidebar {
+  width:clamp(140px,18vw,174px); flex-shrink:0; background:var(--bg2);
+  border-right:1px solid var(--border); padding:16px 0;
+  display:flex; flex-direction:column; overflow-y:auto;
+}
+.sb-label { color:var(--dim); font-size:8px; letter-spacing:3px; padding:0 14px 10px; }
+.sb-tab {
+  display:flex; align-items:center; gap:9px; padding:9px 14px;
+  background:none; border:none; color:var(--dim); cursor:pointer;
+  font-family:'Rajdhani',sans-serif; font-size:13px; font-weight:600; letter-spacing:.5px;
+  text-align:left; width:100%; border-left:2px solid transparent;
+  transition:color .15s, background .15s;
+}
+.sb-tab:hover { color:var(--text); background:rgba(0,212,255,.04); }
+.sb-tab.active { color:var(--blue); border-left-color:var(--blue); background:rgba(0,212,255,.06); }
+.sb-icon { font-size:13px; min-width:16px; }
+.sb-spacer { flex:1; }
+.sb-footer { padding:14px; border-top:1px solid var(--border); }
+.sb-footer-tier   { color:var(--green); font-size:8px; letter-spacing:2px; }
+.sb-footer-info   { color:var(--dim);   font-size:8px; margin-top:3px; }
+
+/* ── MAIN CONTENT ─────────────────────────────────── */
+.main { flex:1; overflow-y:auto; padding:22px; }
+.panel-title  { color:var(--blue); font-size:12px; letter-spacing:2px; }
+.panel-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--border);
+}
+.empty-state { text-align:center; padding:50px 0; color:var(--dim); }
+.empty-icon  { font-size:28px; margin-bottom:14px; opacity:.4; }
+.loading-row { color:var(--dim); padding:40px 0; text-align:center; }
+.error-box   { color:var(--red); padding:20px 0; text-align:center; }
+
+/* ── FILTER ROW ──────────────────────────────────── */
+.filter-row { display:flex; gap:5px; flex-wrap:wrap; }
+.filter-btn {
+  padding:3px 9px; border:1px solid var(--border);
+  background:none; color:var(--dim); cursor:pointer;
+  font-family:'Share Tech Mono',monospace; font-size:9px;
+  border-radius:2px; transition:all .15s; letter-spacing:1px;
+}
+.filter-btn:hover { border-color:var(--blue); color:var(--blue); }
+.filter-btn.active { border-color:var(--blue); color:var(--blue); background:rgba(0,212,255,.08); }
+
+/* ── STATS ───────────────────────────────────────── */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px; }
+.stat-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:2px; padding:16px;
+}
+.stat-card.wide { grid-column:span 2; }
+.stat-card-label { color:var(--dim); font-size:8px; letter-spacing:2px; margin-bottom:10px; }
+.stat-big { font-family:'Orbitron',monospace; font-size:34px; font-weight:900; }
+.stat-big.blue   { color:var(--blue);   text-shadow:var(--glow-b); }
+.stat-big.green  { color:var(--green);  text-shadow:var(--glow-g); }
+.stat-big.yellow { color:var(--yellow); text-shadow:var(--glow-y); }
+.stat-big.red    { color:var(--red);    text-shadow:var(--glow-r); }
+.stat-sub { color:var(--dim); font-size:9px; margin-top:4px; }
+.rank-name { font-family:'Orbitron',monospace; font-size:20px; font-weight:900; color:var(--blue); letter-spacing:3px; margin-bottom:12px; text-shadow:var(--glow-b); }
+.xp-track  { height:3px; background:var(--panel2); border-radius:2px; overflow:hidden; margin-bottom:6px; }
+.xp-fill   { height:100%; background:var(--blue); box-shadow:var(--glow-b); transition:width .8s; }
+.xp-meta   { display:flex; justify-content:space-between; color:var(--dim); font-size:9px; }
+.bar-chart { display:flex; flex-direction:column; gap:9px; }
+.bar-row   { display:flex; align-items:center; gap:10px; }
+.bar-label { width:28px; font-size:8px; letter-spacing:1px; }
+.bar-track { flex:1; height:5px; background:var(--panel2); border-radius:2px; overflow:hidden; }
+.bar-fill  { height:100%; border-radius:2px; transition:width .7s; }
+.bar-fill.beg { background:var(--green);  }
+.bar-fill.int { background:var(--blue);   }
+.bar-fill.adv { background:var(--yellow); }
+.bar-fill.exp { background:var(--red);    }
+.bar-count { width:18px; text-align:right; color:var(--dim); font-size:9px; }
+.rank-ladder { display:flex; flex-direction:column; gap:5px; }
+.rank-step  { display:flex; align-items:center; gap:7px; color:var(--dim); font-size:9px; }
+.rank-step.done    { color:var(--text); }
+.rank-step.current { color:var(--blue); }
+.rank-dot { font-size:11px; }
+.rank-step-xp { margin-left:auto; font-size:8px; }
+/* Skill hexagon radar (CSS only) */
+.skill-radar { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:4px; }
+.skill-row { display:flex; align-items:center; gap:8px; }
+.skill-name-label { width:80px; font-size:9px; color:var(--dim); }
+.skill-bar-track { flex:1; height:4px; background:var(--panel2); border-radius:2px; overflow:hidden; }
+.skill-bar-inner { height:100%; border-radius:2px; }
+.skill-pct { font-size:8px; color:var(--dim); width:26px; text-align:right; }
+
+/* ── MISSIONS ────────────────────────────────────── */
+.missions-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+.mission-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:2px; padding:14px;
+  transition:border-color .15s;
+}
+.mission-card:hover { border-color:var(--blue); }
+.mc-top { display:flex; justify-content:space-between; margin-bottom:8px; }
+.mc-diff { font-size:9px; letter-spacing:1px; }
+.mc-diff.beg { color:var(--green);  }
+.mc-diff.int { color:var(--blue);   }
+.mc-diff.adv { color:var(--yellow); }
+.mc-diff.exp { color:var(--red);    }
+.mc-status  { font-size:9px; color:var(--dim); }
+.mc-status.active    { color:var(--green); }
+.mc-status.paused    { color:var(--yellow); }
+.mc-status.completed { color:var(--blue); }
+.mc-title { font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:600; margin-bottom:3px; }
+.mc-type  { color:var(--dim); font-size:9px; text-transform:uppercase; letter-spacing:1px; margin-bottom:9px; }
+.mc-meta  { display:flex; justify-content:space-between; color:var(--dim); font-size:9px; margin-bottom:10px; }
+.mc-actions { display:flex; gap:7px; }
+
+/* ── LAUNCHER ─────────────────────────────────────── */
+.scenario-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; margin-bottom:24px; }
+.scenario-card {
+  background:var(--panel); border:1px solid var(--border); border-radius:2px;
+  padding:16px; cursor:pointer; transition:border-color .15s, background .15s;
+  position:relative;
+}
+.scenario-card:hover { background:var(--panel2); }
+.scenario-card.sel-red    { border-color:var(--red); }
+.scenario-card.sel-blue   { border-color:var(--blue); }
+.scenario-card.sel-green  { border-color:var(--green); }
+.scenario-card.sel-yellow { border-color:var(--yellow); }
+.scenario-card.sel-purple { border-color:var(--purple); }
+.sc-icon { font-size:20px; margin-bottom:8px; opacity:.7; }
+.sc-name { font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:700; margin-bottom:5px; }
+.sc-desc { color:var(--dim); font-size:10px; line-height:1.5; font-family:'Rajdhani',sans-serif; margin-bottom:8px; }
+.sc-roles { display:flex; gap:5px; }
+.sc-role-tag { font-size:8px; padding:2px 5px; border-radius:2px; border:1px solid; letter-spacing:1px; }
+.sc-role-tag.attacker { color:var(--red);   border-color:var(--red); }
+.sc-role-tag.defender { color:var(--green); border-color:var(--green); }
+.launch-config {
+  background:var(--panel); border:1px solid var(--border); border-radius:2px; padding:20px;
+}
+.lc-title  { color:var(--blue); font-size:10px; letter-spacing:2px; margin-bottom:16px; }
+.form-row  { margin-bottom:14px; }
+.form-label { display:block; color:var(--dim); font-size:8px; letter-spacing:2px; margin-bottom:5px; }
+.form-input {
+  width:100%; padding:7px 10px; background:var(--bg2); border:1px solid var(--border);
+  color:var(--text); font-family:'Share Tech Mono',monospace; font-size:11px;
+  border-radius:2px; outline:none; transition:border-color .15s;
+}
+.form-input:focus { border-color:var(--blue); }
+.form-textarea { min-height:60px; resize:vertical; }
+.diff-row  { display:flex; gap:7px; flex-wrap:wrap; }
+.diff-btn {
+  padding:5px 13px; border:1px solid var(--border); background:none;
+  color:var(--dim); cursor:pointer; font-family:'Share Tech Mono',monospace;
+  font-size:9px; border-radius:2px; transition:all .15s; letter-spacing:1px;
+}
+.diff-btn.active-beg { border-color:var(--green);  color:var(--green); }
+.diff-btn.active-int { border-color:var(--blue);   color:var(--blue); }
+.diff-btn.active-adv { border-color:var(--yellow); color:var(--yellow); }
+.diff-btn.active-exp { border-color:var(--red);    color:var(--red); }
+.cat-other        { color:var(--border); border-color:var(--border); }
+
+/* ── PROFILE ─────────────────────────────────────── */
+.profile-grid { display:grid; grid-template-columns:200px 1fr; gap:28px; }
+
+.profile-identity { text-align:center; }
+.profile-avatar-big { width:80px; height:80px; border-radius:50%; border:2px solid var(--border); margin-bottom:12px; }
+.profile-username { font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:var(--blue); letter-spacing:2px; margin-bottom:8px; }
+.profile-since { color:var(--dim); font-size:9px; margin:6px 0; }
+.profile-gh-link a { color:var(--dim); font-size:9px; text-decoration:none; }
+.profile-gh-link a:hover { color:var(--blue); }
+.profile-role-badge {
+  display:inline-block; padding:3px 10px; border-radius:2px;
+  font-size:9px; letter-spacing:2px; margin-top:10px; border:1px solid;
+}
+.role-selector { display:flex; gap:8px; margin-bottom:6px; }
+.role-btn {
+  flex:1; padding:10px 8px; border:1px solid var(--border); background:none;
+  color:var(--dim); cursor:pointer; font-family:'Share Tech Mono',monospace; font-size:9px;
+  letter-spacing:1px; border-radius:2px; transition:all .15s;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+.role-btn-icon { font-size:16px; }
+.role-btn.active-att { border-color:var(--red);   color:var(--red);   background:rgba(255,34,68,.05); }
+.role-btn.active-def { border-color:var(--green); color:var(--green); background:rgba(0,255,136,.05); }
+.role-desc { color:var(--dim); font-size:9px; line-height:1.5; margin-bottom:14px; }
+
+/* ── BUTTONS ─────────────────────────────────────── */
+.btn-primary {
+  padding:6px 12px; background:none; border:1px solid var(--blue); color:var(--blue);
+  cursor:pointer; font-family:'Share Tech Mono',monospace; font-size:9px;
+  border-radius:2px; transition:background .15s; letter-spacing:1px;
+}
+.btn-primary:hover { background:rgba(0,212,255,.1); }
+.btn-danger {
+  padding:6px 9px; background:none; border:1px solid var(--border); color:var(--dim);
+  cursor:pointer; font-family:'Share Tech Mono',monospace; font-size:9px; border-radius:2px;
+  transition:all .15s;
+}
+.btn-danger:hover { border-color:var(--red); color:var(--red); }
+.btn-launch {
+  width:100%; padding:12px; background:none;
+  border:1px solid var(--green); color:var(--green);
+  cursor:pointer; font-family:'Orbitron',monospace; font-size:12px; font-weight:700;
+  letter-spacing:2px; border-radius:2px; transition:all .15s; margin-top:18px;
+}
+.btn-launch:hover { background:rgba(0,255,136,.07); box-shadow:var(--glow-g); }
+.btn-launch:disabled { opacity:.5; cursor:not-allowed; }
+.btn-save {
+  padding:7px 14px; background:none; border:1px solid var(--green); color:var(--green);
+  cursor:pointer; font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:1px;
+  border-radius:2px; transition:all .15s;
+}
+.btn-save:hover { background:rgba(0,255,136,.07); }
+.form-error   { color:var(--red);   font-size:9px; margin-top:8px; }
+.form-success { color:var(--green); font-size:9px; margin-top:8px; }
+
+.blink { animation:blink 1s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+a { color:inherit; }
+button { cursor:pointer; }
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE ADDITIONS — dashboard.html
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Safety base ── */
+*, *::before, *::after { box-sizing: border-box; }
+img, svg { max-width: 100%; }
+
+/* Login box — fluid on all screens */
+.login-box {
+  width: min(440px, 92vw) !important;
+  padding: clamp(24px, 6vw, 44px) clamp(20px, 5vw, 40px) !important;
+}
+
+/* ── TABLET  (≤ 900px) ── */
+
+
+/* ── MOBILE  (≤ 768px) ── */
+
+
+/* ── SMALL MOBILE  (≤ 480px) ── */
+
+
+/* ── MOBILE OVERFLOW GLOBAL FIX ── */
+
+
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD ATTACKER MODE — full red theme
+   ══════════════════════════════════════════════════════════ */
+body.attacker-mode {
+  --blue:  #ff2244;
+  --green: #ff4466;
+  --glow-b: 0 0 20px rgba(255,34,68,.7);
+  --glow-g: 0 0 20px rgba(255,34,68,.5);
+}
+body.attacker-mode::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9990;
+  background: radial-gradient(ellipse at center,
+    transparent 50%, rgba(255,34,68,.06) 80%, rgba(255,34,68,.18) 100%);
+  animation: dAtkVig 2s ease-in-out infinite;
+}
+@keyframes dAtkVig { 0%,100%{opacity:.7} 50%{opacity:1} }
+body.attacker-mode .hdr {
+  background: linear-gradient(90deg,#120204,#1a0308,#120204) !important;
+  border-bottom-color: rgba(255,34,68,.4) !important;
+  box-shadow: 0 2px 20px rgba(255,34,68,.2);
+}
+body.attacker-mode .hdr-logo { color: #ff2244 !important; text-shadow: 0 0 20px rgba(255,34,68,.8) !important; }
+body.attacker-mode .sidebar {
+  background: linear-gradient(180deg,#120204,#0e0206) !important;
+  border-right-color: rgba(255,34,68,.2) !important;
+}
+body.attacker-mode .nav-item.active {
+  border-left-color: #ff2244 !important; color: #ff2244 !important;
+  background: rgba(255,34,68,.08) !important;
+}
+body.attacker-mode .nav-item:hover { color: #ff2244 !important; }
+body.attacker-mode .panel-title { color: #ff2244 !important; }
+body.attacker-mode .stat-val { color: #ff2244 !important; }
+body.attacker-mode .btn-blue {
+  border-color: #ff2244 !important; color: #ff2244 !important;
+  box-shadow: 0 0 15px rgba(255,34,68,.3) !important;
+}
+body.attacker-mode ::-webkit-scrollbar-thumb { background: rgba(255,34,68,.4) !important; }
+body.attacker-mode .hdr-role-badge.attacker {
+  border-color: #ff2244 !important; color: #ff2244 !important;
+  box-shadow: 0 0 12px rgba(255,34,68,.4);
+  animation: roleGlow 1.5s ease-in-out infinite;
+}
+@keyframes roleGlow { 0%,100%{box-shadow:0 0 8px rgba(255,34,68,.3)} 50%{box-shadow:0 0 20px rgba(255,34,68,.7)} }
+/* Attacker badge overlay */
+#dashAtkBadge {
+  display: none; position: fixed; top: 0; left: 0; right: 0;
+  height: 2px; background: linear-gradient(90deg,transparent,#ff2244,transparent);
+  z-index: 9999; animation: atkSweep 2s linear infinite;
+}
+body.attacker-mode #dashAtkBadge { display: block; }
+@keyframes atkSweep { 0%{opacity:.4} 50%{opacity:1} 100%{opacity:.4} }
+
+
+
+/* ═══ DASHBOARD LOGIN MOBILE FIX ═══ */
+
+/* Ensure login screen covers full viewport including safe area */
+#loginScreen {
+  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+
+
+
+/* Boot screen — safe area + responsive */
+#bootScreen {
+  padding: max(20px, env(safe-area-inset-top, 20px)) 20px max(20px, env(safe-area-inset-bottom, 20px)) 20px;
+}
+.boot-logo {
+  font-size: clamp(26px, 9vw, 42px) !important;
+  letter-spacing: clamp(3px, 1.5vw, 8px) !important;
+}
+.boot-bar-track { width: min(280px, 80vw) !important; }
+/* ═══════════════════════════════════════════════════════ */
+
+/* === MOBILE PATCH === */
+/* ═══════════════════════════════════════════════════════════════════
+   CYBAASH · MOBILE PATCH — dashboard.html (Operator Dashboard)
+   Pairs with existing responsive CSS already in dashboard.html.
+   Add: <link rel="stylesheet" href="dashboard-patch.css"> in <head>
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── iOS / Android Safe Area tokens ────────────────────────────── */
+:root {
+  --sai-top:    env(safe-area-inset-top, 0px);
+  --sai-right:  env(safe-area-inset-right, 0px);
+  --sai-bottom: env(safe-area-inset-bottom, 0px);
+  --sai-left:   env(safe-area-inset-left, 0px);
+  --touch-min:  44px;
+}
+
+/* ── Global base hardening ──────────────────────────────────────── */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ── DISABLE CUSTOM CURSOR ON TOUCH DEVICES ─────────────────────
+   dashboard.html uses cursor: none — fatal on touchscreens.
+   ─────────────────────────────────────────────────────────────── */
+
+
+/* ── HEADER ─────────────────────────────────────────────────────── */
+.hdr {
+  padding-left:  max(12px, var(--sai-left));
+  padding-right: max(12px, var(--sai-right));
+  padding-top:   max(8px, var(--sai-top));
+}
+
+
+
+/* ── BOOT / LOGIN SCREENS ───────────────────────────────────────── */
+
+
+/* ── FIX iOS ZOOM: all inputs must be ≥ 16px ────────────────────
+   iOS Safari zooms the page when any input's font-size is < 16px.
+   ─────────────────────────────────────────────────────────────── */
+input, textarea, select {
+  font-size: max(16px, 1rem) !important;
+}
+
+/* Specific dashboard inputs */
+#patInput,
+.form-input,
+.tool-input,
+.search-input {
+  font-size: 16px !important;
+  min-height: var(--touch-min);
+  padding: 10px 14px;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 2px;
+}
+#patInput:focus,
+.form-input:focus { border-color: var(--blue); }
+
+/* ── SIDEBAR ─────────────────────────────────────────────────────
+   The existing CSS converts it to a bottom tab bar at ≤768px.
+   We add safe-area + refinements.
+   ─────────────────────────────────────────────────────────────── */
+
+
+/* ── SIDEBAR — ICON-ONLY at tablet (≤ 900px) ────────────────────*/
+
+
+/* ── STATS GRID ─────────────────────────────────────────────────*/
+
+
+
+
+/* ── PANEL HEADERS ──────────────────────────────────────────────*/
+
+
+/* ── FILTER ROW / FILTER BUTTONS ────────────────────────────────*/
+
+
+/* ── SECTION GRIDS ──────────────────────────────────────────────*/
+
+
+/* ── MISSION CARDS ───────────────────────────────────────────────*/
+
+
+/* ── RANK / XP ───────────────────────────────────────────────────*/
+
+
+/* ── ACTIVITY LOG ────────────────────────────────────────────────*/
+
+
+/* ── BUTTONS — Global touch target enforcement ───────────────────*/
+
+
+/* ── CARDS ──────────────────────────────────────────────────────*/
+
+
+/* ── RANK LADDER ─────────────────────────────────────────────────*/
+
+
+/* ── TABLES ─────────────────────────────────────────────────────*/
+table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+/* ── OVERFLOW GUARD ──────────────────────────────────────────────*/
+
+
+/* ── HOVER → ACTIVE for touch ────────────────────────────────────*/
+
+
+/* ── REDUCED MOTION ──────────────────────────────────────────────*/
+
+
+</style>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00d4ff" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#00d4ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CYBAASH">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="CYBAASH">
+<meta name="description" content="Autonomous cyber range simulation platform — operator dashboard">
+<meta property="og:title" content="CYBAASH // Autonomous Cyber Range">
+<meta property="og:description" content="The world's first portfolio that thinks like a threat actor">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cybaash.github.io">
+<link rel="apple-touch-icon" href="/icons/icon-180x180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png">
+<link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96x96.png">
+<link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+<meta name="msapplication-TileImage" content="/icons/icon-144x144.png">
+<meta name="msapplication-TileColor" content="#030a0f">
+<link rel="stylesheet" href="mobile.css">
+<script src="mobile.js" defer></script>
+<meta property="og:image" content="https://cybaashcloud.github.io/icons/icon-512x512.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://cybaashcloud.github.io/dashboard.html">
+</head>
+<body class="page-dashboard">
+<div id="dashAtkBadge"></div>
+
+<!-- ── BOOT SCREEN ─────────────────────────────────────────────── -->
+<div id="bootScreen">
+  <div class="boot-logo">CYB<span>AASH</span></div>
+  <div class="boot-line" id="bootLine">INITIALIZING SECURE ENVIRONMENT</div>
+  <div class="boot-bar-track"><div class="boot-bar-fill" id="bootBar"></div></div>
+</div>
+
+<!-- ── LOGIN SCREEN ────────────────────────────────────────────── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">CYB<span>AASH</span></div>
+    <div id="loginBody">
+      <div style="margin-top:14px">
+        <input id="patInput" type="password" placeholder=""
+          style="width:100%;padding:12px 14px;background:#0a1520;border:1px solid #1a3a5c;border-radius:4px;color:#c8e0f4;font-family:inherit;font-size:max(16px,13px);outline:none;margin-bottom:12px;-webkit-appearance:none;min-height:44px;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')appLogin()" autocomplete="off" spellcheck="false">
+        <button class="btn-gh" aria-label="Connect" onclick="appLogin()">Connect</button>
+      </div>
+      <div id="loginError" class="login-error" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── APP SHELL ────────────────────────────────────────────────── -->
+<div id="app" style="display:none">
+  <!-- ── THREAT LEVEL BANNER (military upgrade) ──────────── -->
+  <div id="threatBanner" style="display:none;background:linear-gradient(90deg,rgba(255,34,68,.15),rgba(255,34,68,.05));border-bottom:1px solid var(--red);padding:6px 20px;font-size:10px;letter-spacing:2px;color:var(--red);text-align:center;position:sticky;top:0;z-index:200">
+    <span id="threatBannerText">⚠ ELEVATED THREAT LEVEL — MONITORING ACTIVE</span>
+    <button onclick="document.getElementById('threatBanner').style.display='none'" style="float:right;background:none;border:none;color:var(--red);cursor:pointer;font-size:12px" aria-label="Close">✕</button>
+  </div>
+  <header class="hdr">
+    <div class="hdr-logo">CYB<span>AASH</span></div>
+    <div class="hdr-tag">// OPERATOR DASHBOARD</div>
+    <div class="hdr-right">
+      <img id="hdrAvatar" class="hdr-avatar" src="" alt="">
+      <span id="hdrUser" class="hdr-user">—</span>
+      <span id="hdrRole" class="hdr-role-badge defender">DEFENDER</span>
+      <button class="hdr-btn-logout" onclick="appLogout()" title="Sign out">⏏</button>
+    </div>
+  </header>
+
+  <div class="body-wrap">
+    <nav class="sidebar">
+      <div class="sb-label">// NAVIGATION</div>
+      <button class="sb-tab active" aria-label="Stats view" onclick="switchView('stats',this)">
+        <span class="sb-icon">◎</span> Statistics
+      </button>
+      <button class="sb-tab" aria-label="Missions view" onclick="switchView('missions',this)">
+        <span class="sb-icon">◈</span> Missions
+      </button>
+      <button class="sb-tab" aria-label="Launch view" onclick="switchView('launch',this)">
+        <span class="sb-icon">⊕</span> New Mission
+      </button>
+
+      <button class="sb-tab" aria-label="Tools view" onclick="switchView('tools',this)">
+        <span>⚙</span>TOOLS
+      </button>
+      <button class="sb-tab" aria-label="Profile view" onclick="switchView('profile',this)">
+        <span class="sb-icon">◉</span> Profile
+      </button>
+      <div class="sb-spacer"></div>
+      <div class="sb-footer">
+        <div class="sb-footer-tier" id="sbTier">FREE TIER</div>
+        <div class="sb-footer-info">⬡ secure storage</div>
+        <div class="sb-footer-info" style="margin-top:4px;">
+          <a href="index.html" style="color:var(--blue);text-decoration:none;font-size:9px;">↗ CYBER RANGE</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main" id="mainContent">
+      <!-- Views injected here -->
+    </main>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG — SET YOUR CLIENT ID HERE
+// ════════════════════════════════════════════════════════════
+// CLIENT_ID removed — dashboard uses Personal Access Token auth (Device Flow is CORS-blocked in browsers)
+const DATA_REPO  = 'cybaash-data';
+const GITHUB_USERNAME = 'cybaash'; // ← your GitHub username (for reading cert data)
+
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+let TOKEN = null, USER = null, PROFILE_DATA = null;
+let ALL_MISSIONS = [];
+
+const LS = {
+  get:    k => { try { return JSON.parse(localStorage.getItem('cydash_'+k)) } catch{ return null } },
+  set:    (k,v) => localStorage.setItem('cydash_'+k, JSON.stringify(v)),
+  del:    k => localStorage.removeItem('cydash_'+k),
+  tok:    () => localStorage.getItem('cydash_tok'),
+  setTok: t => localStorage.setItem('cydash_tok', t),
+  delTok: () => localStorage.removeItem('cydash_tok'),
+};
+
+// ════════════════════════════════════════════════════════════
+// GITHUB API
+// ════════════════════════════════════════════════════════════
+async function gh(path, opts={}) {
+  const r = await fetch('https://api.github.com'+path, {
+    ...opts,
+    headers: {
+      Authorization:'Bearer '+TOKEN,
+      Accept:'application/vnd.github+json',
+      'X-GitHub-Api-Version':'2022-11-28',
+      'Content-Type':'application/json',
+      ...opts.headers,
+    },
+  });
+  if (r.status===404) return null;
+  if (!r.ok) throw new Error('GitHub '+r.status+': '+path);
+  return r.status===204 ? null : r.json();
+}
+
+async function ghRead(owner, path) {
+  const m = await gh(`/repos/${owner}/${DATA_REPO}/contents/${path}`);
+  if (!m) return null;
+  const content = JSON.parse(atob(m.content.replace(/\n/g,'')));
+  return { content, sha: m.sha };
+}
+
+async function ghWrite(owner, path, content, sha=null) {
+  const enc = btoa(unescape(encodeURIComponent(JSON.stringify(content,null,2))));
+  return gh(`/repos/${owner}/${DATA_REPO}/contents/${path}`, {
+    method:'PUT',
+    body: JSON.stringify({
+      message:`cybaash: update ${path}`,
+      content: enc,
+      ...(sha&&{sha}),
+    }),
+  });
+}
+
+async function ensureRepo() {
+  const ex = await gh(`/repos/${USER.login}/${DATA_REPO}`).catch(()=>null);
+  if (ex) return;
+  try {
+    await gh('/user/repos',{ method:'POST', body:JSON.stringify({
+      name:DATA_REPO, private:true,
+      description:'CYBAASH operator data — auto-managed', auto_init:true,
+    })});
+    await new Promise(r=>setTimeout(r,1500));
+  } catch(err) {
+    // Fine-grained tokens cannot create repos — user must create it manually
+    // or use a classic PAT with full repo scope
+    const msg = 'Could not auto-create the "' + DATA_REPO + '" repository.\n\n' +
+      'Either:\n' +
+      '1. Create it manually at github.com/new (name it "' + DATA_REPO + '", set Private, tick "Add a README"),\n' +
+      '2. Or use a classic PAT (ghp_...) with full "repo" scope instead of a fine-grained token.';
+    showLoginError(msg);
+    throw err;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// AUTH — GitHub Device Flow
+// ════════════════════════════════════════════════════════════
+const WORKER_URL = 'https://cybaash.mohamedaasiq07.workers.dev';
+let _dashJWT = '';
+
+function getDashJWT() {
+  if (_dashJWT) return _dashJWT;
+  try {
+    const s = JSON.parse(sessionStorage.getItem('dash_jwt') || '{}');
+    if (s.jwt && s.exp && Date.now() < s.exp) { _dashJWT = s.jwt; return s.jwt; }
+  } catch(_) {}
+  return '';
+}
+
+function storeDashJWT(token, expiresIn) {
+  _dashJWT = token;
+  try { sessionStorage.setItem('dash_jwt', JSON.stringify({ jwt: token, exp: Date.now() + expiresIn })); } catch(_) {}
+}
+
+async function appLogin() {
+  const pat = (document.getElementById('patInput')?.value || '').trim();
+  if (!pat) { showLoginError('Enter your access token.'); return; }
+
+  showLoginError('');
+  const patInput = document.getElementById('patInput');
+  const loginBtn = document.querySelector('.btn-gh');
+  patInput.disabled = true;
+  loginBtn.textContent = 'Verifying…';
+  if (!document.getElementById('spinKf')) {
+    const sk = document.createElement('style');
+    sk.id = 'spinKf';
+    sk.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(sk);
+  }
+
+  try {
+    const authResp = await fetch(WORKER_URL + '/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passphrase: pat }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const authData = await authResp.json();
+
+    if (authResp.status === 429) throw new Error(authData.error || 'Too many attempts. Please wait.');
+
+    if (authResp.ok && authData.ok) {
+      storeDashJWT(authData.token, authData.expiresIn);
+      TOKEN = pat;
+      LS.setTok(TOKEN);
+      try { const user = await gh('/user'); if (user?.login) { await afterLogin(); return; } } catch(_) {}
+      await afterLogin();
+      return;
+    }
+
+    // Fallback: try as GitHub PAT directly
+    TOKEN = pat;
+    const user = await gh('/user');
+    if (!user?.login) throw new Error('Invalid token. Access denied.');
+    LS.setTok(TOKEN);
+    await afterLogin();
+
+  } catch(err) {
+    TOKEN = null; _dashJWT = '';
+    patInput.disabled = false;
+    loginBtn.textContent = 'Connect';
+    showLoginError(err.message || 'Connection failed');
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  if (!el) return;
+  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg;
+}
+
+async function afterLogin() {
+  USER = await gh('/user');
+  LS.set('user', USER);
+  await ensureRepo();
+
+  let prof = null;
+  try { prof = (await ghRead(USER.login, `operators/${USER.login}/profile.json`))?.content; } catch(_){}
+  if (!prof) {
+    prof = { username:USER.login, name:USER.name||USER.login, role:'defender', xp:0, rank:'Recruit', tier:'free', createdAt:new Date().toISOString() };
+    ghWrite(USER.login, `operators/${USER.login}/profile.json`, prof).catch(()=>{});
+  }
+  PROFILE_DATA = prof;
+  LS.set('profile', prof);
+  showApp();
+}
+
+function appLogout() {
+  TOKEN=null; USER=null; PROFILE_DATA=null;
+  LS.delTok(); LS.del('user'); LS.del('profile');
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginBody').style.display='block';
+  document.getElementById('loginDeviceFlow').style.display='none';
+}
+
+// ════════════════════════════════════════════════════════════
+// BOOT SEQUENCE
+// ════════════════════════════════════════════════════════════
+const BOOT_LINES = [
+  'LOADING THREAT INTELLIGENCE ENGINE…',
+  'MOUNTING CREDENTIAL DATABASE…',
+  'INITIALIZING SIMULATION CORE…',
+  'CONNECTING TO SECURE STORAGE…',
+  'DECRYPTING OPERATOR PROFILE…',
+  'SYSTEM READY.',
+];
+
+async function boot() {
+  const bar  = document.getElementById('bootBar');
+  const line = document.getElementById('bootLine');
+  for (let i=0; i<BOOT_LINES.length; i++) {
+    line.textContent = BOOT_LINES[i];
+    bar.style.width  = ((i+1)/BOOT_LINES.length*100)+'%';
+    await new Promise(r=>setTimeout(r,180));
+  }
+
+  const tok  = LS.tok();
+  const user = LS.get('user');
+  const prof = LS.get('profile');
+  if (tok && user) {
+    TOKEN = tok;
+    USER  = user;
+    PROFILE_DATA = prof || { role:'defender', xp:0, rank:'Recruit', tier:'free' };
+    try {
+      USER = await gh('/user');
+      LS.set('user', USER);
+    } catch(_) { TOKEN=null; LS.delTok(); }
+  }
+
+  document.getElementById('bootScreen').style.display='none';
+  if (TOKEN && USER) { showApp(); }
+  else { document.getElementById('loginScreen').style.display='flex'; }
+}
+
+// ════════════════════════════════════════════════════════════
+// APP SHELL
+// ════════════════════════════════════════════════════════════
+function showApp() {
+  // Hide login, show app — use both display and visibility for reliability
+  const loginScr = document.getElementById('loginScreen');
+  const appEl    = document.getElementById('app');
+  if (loginScr) { loginScr.style.display = 'none'; loginScr.style.visibility = 'hidden'; }
+  if (appEl)    { appEl.style.display = 'flex'; appEl.style.visibility = 'visible'; }
+
+  // Populate header
+  if (USER) {
+    const av = document.getElementById('hdrAvatar');
+    if (av) av.src = USER.avatar_url || '';
+    const un = document.getElementById('hdrUser');
+    if (un) un.textContent = USER.login || USER.name || 'Operator';
+  }
+
+  const role = PROFILE_DATA?.role || 'defender';
+  const rb   = document.getElementById('hdrRole');
+  if (rb) {
+    rb.textContent = role.toUpperCase();
+    rb.className   = 'hdr-role-badge ' + role;
+  }
+  const st = document.getElementById('sbTier');
+  if (st) st.textContent = ((PROFILE_DATA?.tier || 'free') + ' TIER').toUpperCase();
+
+  // Apply attacker theme if role is attacker
+  if (role === 'attacker') applyAttackerTheme(true);
+
+  // Force layout recalculation (fixes some cached-display edge cases)
+  document.body.offsetHeight;
+
+  switchView('stats', document.querySelector('.sb-tab'));
+}
+
+function switchView(view, btn) {
+  document.querySelectorAll('.sb-tab').forEach(t=>t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = '';
+  const fns = { stats:renderStats, missions:renderMissions, launch:renderLaunch, profile:renderProfile };
+  if (fns[view]) fns[view](mc);
+}
+
+// ════════════════════════════════════════════════════════════
+// STATS VIEW
+// ════════════════════════════════════════════════════════════
+const RANKS = [
+  {name:'Recruit',xp:0},{name:'Operator',xp:500},{name:'Specialist',xp:1500},
+  {name:'Analyst',xp:3500},{name:'Expert',xp:7500},{name:'Elite',xp:15000},{name:'Phantom',xp:30000},
+];
+function getRank(xp) {
+  for (let i=RANKS.length-1;i>=0;i--) if (xp>=RANKS[i].xp) return {r:RANKS[i],n:RANKS[i+1]};
+  return {r:RANKS[0],n:RANKS[1]};
+}
+
+async function renderStats(mc) {
+  mc.innerHTML = '<div class="loading-row"><span class="blink">▋</span> Loading statistics…</div>';
+  
+  let stats = PROFILE_DATA || {};
+  try {
+    const f = await ghRead(USER.login, `operators/${USER.login}/stats.json`);
+    if (f) stats = {...stats, ...f.content};
+  } catch(_){}
+
+  const missions = LS.get('missions_index') || [];
+  const xp = stats.xp||0;
+  const {r,n} = getRank(xp);
+  const pct = n ? Math.min(100,Math.round(((xp-r.xp)/(n.xp-r.xp))*100)) : 100;
+  const completed = missions.filter(m=>m.status==='completed').length;
+  const byDiff = ['beginner','intermediate','advanced','expert'].map(d=>({
+    d, count: missions.filter(m=>m.difficulty===d&&m.status==='completed').length,
+    label:['BEG','INT','ADV','EXP'][['beginner','intermediate','advanced','expert'].indexOf(d)],
+    cls:['beg','int','adv','exp'][['beginner','intermediate','advanced','expert'].indexOf(d)],
+  }));
+  const maxCount = Math.max(1,...byDiff.map(x=>x.count));
+
+  const catDist = [];
+
+  mc.innerHTML = `
+    <div class="panel-header">
+      <span class="panel-title">// OPERATOR STATISTICS</span>
+    </div>
+    <div class="stats-grid">
+
+      <div class="stat-card wide">
+        <div class="stat-card-label">CURRENT RANK</div>
+        <div class="rank-name">${r.name.toUpperCase()}</div>
+        <div class="xp-track"><div class="xp-fill" style="width:${pct}%"></div></div>
+        <div class="xp-meta">
+          <span>${xp.toLocaleString()} XP</span>
+          ${n ? `<span>${r.name} → ${n.name} (${pct}%)</span>` : '<span>MAX RANK</span>'}
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-label">MISSIONS COMPLETE</div>
+        <div class="stat-big green">${completed}</div>
+        <div class="stat-sub">of ${missions.length} total</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-label">TOTAL XP</div>
+        <div class="stat-big blue">${xp.toLocaleString()}</div>
+        <div class="stat-sub">lifetime</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-label">ACTIVE STREAK</div>
+        <div class="stat-big red">${stats.streakDays||0}</div>
+        <div class="stat-sub">days</div>
+      </div>
+
+      <div class="stat-card wide">
+        <div class="stat-card-label">COMPLETIONS BY DIFFICULTY</div>
+        <div class="bar-chart">
+          ${byDiff.map(b=>`
+            <div class="bar-row">
+              <span class="bar-label mc-diff ${b.cls}">${b.label}</span>
+              <div class="bar-track"><div class="bar-fill ${b.cls}" style="width:${b.count?(b.count/maxCount*100):2}%"></div></div>
+              <span class="bar-count">${b.count}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="stat-card wide">
+        <div class="stat-card-label">SKILL PROFILE</div>
+        <div class="skill-radar">
+          ${catDist.map(c=>`
+            <div class="skill-row">
+              <span class="skill-name-label">${c.label}</span>
+              <div class="skill-bar-track"><div class="skill-bar-inner" style="width:${c.pct}%;background:${c.color}"></div></div>
+              <span class="skill-pct">${c.pct}%</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-label">RANK LADDER</div>
+        <div class="rank-ladder">
+          ${RANKS.map(rk=>`
+            <div class="rank-step ${rk.name===r.name?'current':xp>=rk.xp?'done':''}">
+              <span class="rank-dot">${rk.name===r.name?'◉':xp>=rk.xp?'◆':'○'}</span>
+              <span style="flex:1">${rk.name}</span>
+              <span class="rank-step-xp">${rk.xp.toLocaleString()}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+    </div>
+  `;
+}
+
+
+// ════════════════════════════════════════════════════════════
+// MISSIONS VIEW
+// ════════════════════════════════════════════════════════════
+async function renderMissions(mc) {
+  mc.innerHTML = '<div class="loading-row"><span class="blink">▋</span> Loading missions…</div>';
+  await loadMissions();
+  buildMissionsUI(mc);
+}
+
+async function loadMissions() {
+  // Try GitHub first
+  if (TOKEN && USER) {
+    try {
+      const f = await ghRead(USER.login, `operators/${USER.login}/simulations/index.json`);
+      if (f) { ALL_MISSIONS = f.content; LS.set('missions_index', f.content); return; }
+    } catch(_){}
+  }
+  ALL_MISSIONS = LS.get('missions_index') || [];
+}
+
+function buildMissionsUI(mc, filter='all') {
+  const list = filter==='all' ? ALL_MISSIONS : ALL_MISSIONS.filter(m=>m.status===filter);
+  const diffMap = {beginner:'beg',intermediate:'int',advanced:'adv',expert:'exp'};
+  const statusMap = {
+    created:'○ READY', active:'● ACTIVE', paused:'◐ PAUSED',
+    completed:'◆ DONE', abandoned:'✕ ENDED',
+  };
+
+  mc.innerHTML = `
+    <div class="panel-header">
+      <span class="panel-title">// SAVED MISSIONS</span>
+      <div class="filter-row">
+        ${['all','active','paused','completed'].map(f=>`
+          <button class="filter-btn ${filter===f?'active':''}" aria-label="Filter missions by ${f}" onclick="refiltMissions('${f}')">${f.toUpperCase()}</button>
+        `).join('')}
+      </div>
+    </div>
+    ${!list.length ? `
+      <div class="empty-state">
+        <div class="empty-icon">◈</div>
+        <div>No missions found.</div>
+        <div style="font-size:9px;margin-top:8px;color:var(--dim)">
+          Run a simulation in the Cyber Range and type "save" in the terminal.
+        </div>
+      </div>
+    ` : `
+      <div class="missions-grid">
+        ${list.map(m=>`
+          <div class="mission-card">
+            <div class="mc-top">
+              <span class="mc-diff ${diffMap[m.difficulty]||'beg'}">${(m.difficulty||'beginner').toUpperCase()}</span>
+              <span class="mc-status ${m.status||''}">${statusMap[m.status]||m.status}</span>
+            </div>
+            <div class="mc-title">${escHTML(m.label||m.id||'Untitled')}</div>
+            <div class="mc-type">${(m.type||m.scenarioType||'').replace(/_/g,' ')}</div>
+            <div class="mc-meta">
+              <span>Score: ${m.score||0}</span>
+              <span>${m.nodeCount||0} nodes</span>
+              <span>${m.savedAt ? new Date(m.savedAt).toLocaleDateString('en-GB'):''}</span>
+            </div>
+            <div class="mc-actions">
+              <a href="index.html?sim=${encodeURIComponent(m.id)}" class="btn-primary" style="text-decoration:none;display:inline-block">
+                ${m.status==='paused'||m.status==='active'?'RESUME':'OPEN'}
+              </a>
+              <button class="btn-danger" aria-label="Delete mission" onclick="deleteMission('${m.id}',this)">✕ DEL</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+function refiltMissions(f) {
+  buildMissionsUI(document.getElementById('mainContent'), f);
+}
+
+async function deleteMission(id, btn) {
+  if (!confirm('Delete this mission? This cannot be undone.')) return;
+  ALL_MISSIONS = ALL_MISSIONS.filter(m=>m.id!==id);
+  LS.set('missions_index', ALL_MISSIONS);
+  btn.closest('.mission-card').remove();
+  if (TOKEN && USER) {
+    try {
+      const idxPath = `operators/${USER.login}/simulations/index.json`;
+      const f = await ghRead(USER.login, idxPath).catch(()=>null);
+      await ghWrite(USER.login, idxPath, ALL_MISSIONS, f?.sha);
+    } catch(_){}
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// LAUNCH VIEW
+// ════════════════════════════════════════════════════════════
+const SCENARIOS = [
+  { id:'network_infiltration', name:'Network Infiltration', desc:'Breach a corporate network. Recon, pivot, escalate privileges.', icon:'◈', color:'red',    roles:['attacker'], diffs:['beginner','intermediate','advanced','expert'] },
+  { id:'ransomware_response',  name:'Ransomware Response',  desc:'Contain an active outbreak. Detect, isolate, recover.',        icon:'◎', color:'yellow', roles:['defender'], diffs:['intermediate','advanced'] },
+  { id:'web_exploitation',     name:'Web Exploitation',     desc:'OWASP Top 10 attack chains on a live web target.',             icon:'◆', color:'blue',   roles:['attacker'], diffs:['beginner','intermediate','advanced'] },
+  { id:'cloud_breach',         name:'Cloud Breach',         desc:'Exploit misconfigured AWS/Azure resources. Exfiltrate data.',  icon:'⬡', color:'purple', roles:['attacker','defender'], diffs:['intermediate','advanced','expert'] },
+  { id:'apt_simulation',       name:'APT Simulation',       desc:'Full Advanced Persistent Threat campaign — 8 kill chain phases.',icon:'▲', color:'red',  roles:['attacker','defender'], diffs:['advanced','expert'] },
+  { id:'social_engineering',   name:'Social Engineering',   desc:'Phishing, pretexting, and OSINT-driven human exploitation.',   icon:'◉', color:'green',  roles:['attacker'], diffs:['beginner','intermediate'] },
+];
+
+let launchSelected=null, launchDiff='beginner';
+
+function renderLaunch(mc) {
+  launchSelected=null; launchDiff='beginner';
+  const role = PROFILE_DATA?.role||'defender';
+  const avail = SCENARIOS.filter(s=>s.roles.includes(role)||role==='admin');
+
+  mc.innerHTML = `
+    <div class="panel-header">
+      <span class="panel-title">// NEW MISSION</span>
+    </div>
+    <div class="scenario-grid">
+      ${avail.map(s=>`
+        <div class="scenario-card" id="sc_${s.id}" onclick="selectScenario('${s.id}')">
+          <div class="sc-icon">${s.icon}</div>
+          <div class="sc-name">${s.name}</div>
+          <div class="sc-desc">${s.desc}</div>
+          <div class="sc-roles">
+            ${s.roles.map(r=>`<span class="sc-role-tag ${r}">${r.toUpperCase()}</span>`).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div id="launchConfig" style="display:none">
+      <div class="launch-config">
+        <div class="lc-title" id="lcTitle">// CONFIGURE MISSION</div>
+        <div class="form-row">
+          <label class="form-label">MISSION TITLE</label>
+          <input class="form-input" id="lcTitle2" placeholder="Auto-generated if blank" maxlength="80">
+        </div>
+        <div class="form-row">
+          <label class="form-label">DIFFICULTY</label>
+          <div class="diff-row" id="diffRow"></div>
+        </div>
+        <div id="lcError" class="form-error" style="display:none"></div>
+        <button class="btn-launch" id="launchBtn" aria-label="Launch mission" onclick="doLaunch()">⊕ LAUNCH MISSION</button>
+      </div>
+    </div>
+  `;
+}
+
+function selectScenario(id) {
+  document.querySelectorAll('.scenario-card').forEach(c=>{
+    c.className='scenario-card';
+  });
+  const s = SCENARIOS.find(x=>x.id===id);
+  if (!s) return;
+  launchSelected = s;
+  const card = document.getElementById('sc_'+id);
+  if (card) card.className = 'scenario-card sel-'+s.color;
+
+  const cfg = document.getElementById('launchConfig');
+  cfg.style.display='block';
+  document.getElementById('lcTitle').textContent = `// CONFIGURE: ${s.name.toUpperCase()}`;
+  launchDiff = s.diffs[0];
+  document.getElementById('diffRow').innerHTML = s.diffs.map(d=>`
+    <button class="diff-btn ${d===launchDiff?'active-'+d.substring(0,3):''}"
+             aria-label="Set difficulty to ${d}"
+      onclick="setDiff('${d}',this)">${d.toUpperCase()}</button>
+  `).join('');
+}
+
+function setDiff(d, btn) {
+  launchDiff = d;
+  document.querySelectorAll('#diffRow .diff-btn').forEach(b=>{
+    b.className='diff-btn';
+  });
+  const map={beginner:'beg',intermediate:'int',advanced:'adv',expert:'exp'};
+  btn.className = 'diff-btn active-'+(map[d]||'beg');
+}
+
+async function doLaunch() {
+  if (!launchSelected) return;
+  const btn = document.getElementById('launchBtn');
+  btn.disabled=true; btn.textContent='⠿ INITIALIZING…';
+
+  const titleInput = document.getElementById('lcTitle2').value.trim();
+  const title = titleInput || `${launchSelected.name} — ${launchDiff}`;
+  const simId = 'sim_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+
+  const sim = {
+    id:           simId,
+    label:        title,
+    title,
+    scenarioType: launchSelected.id,
+    difficulty:   launchDiff,
+    status:       'created',
+    score:        0,
+    nodeCount:    0,
+    savedAt:      new Date().toISOString(),
+  };
+
+  // Save to index
+  const idx = LS.get('missions_index') || [];
+  idx.unshift(sim);
+  LS.set('missions_index', idx);
+
+  if (TOKEN && USER) {
+    try {
+      const filePath = `operators/${USER.login}/simulations/${simId}.json`;
+      await ghWrite(USER.login, filePath, sim);
+      const idxPath = `operators/${USER.login}/simulations/index.json`;
+      const f = await ghRead(USER.login, idxPath).catch(()=>null);
+      const ghIdx = f?.content || [];
+      ghIdx.unshift(sim);
+      await ghWrite(USER.login, idxPath, ghIdx.slice(0,50), f?.sha);
+    } catch(_){}
+  }
+
+  window.location.href = `index.html?sim=${simId}&scenario=${launchSelected.id}&difficulty=${launchDiff}`;
+}
+// ════════════════════════════════════════════════════════════
+// PROFILE VIEW
+// ════════════════════════════════════════════════════════════
+function renderProfile(mc) {
+  const p = PROFILE_DATA||{};
+  mc.innerHTML = `
+    <div class="panel-header">
+      <span class="panel-title">// OPERATOR PROFILE</span>
+    </div>
+    <div class="profile-grid">
+
+      <div class="profile-identity">
+        <img class="profile-avatar-big" src="${USER.avatar_url}" alt="${USER.login}">
+        <div class="profile-username">${USER.login}</div>
+        <div class="profile-gh-link"><a href="${USER.html_url}" target="_blank" rel="noopener">↗ Profile</a></div>
+        <div class="profile-since">Member since ${new Date(p.createdAt||Date.now()).getFullYear()}</div>
+        <div class="profile-role-badge ${p.role||'defender'}" style="border:1px solid ${p.role==='attacker'?'var(--red)':'var(--green)'};color:${p.role==='attacker'?'var(--red)':'var(--green)'}">${(p.role||'defender').toUpperCase()}</div>
+      </div>
+
+      <div>
+        <div class="form-row">
+          <label class="form-label">DISPLAY NAME</label>
+          <input class="form-input" id="profName" value="${escHTML(p.name||USER.name||USER.login)}" maxlength="40">
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">OPERATOR ROLE</label>
+          <div class="role-selector">
+            <button class="role-btn ${p.role==='attacker'?'active-att':''}" id="roleAtt" aria-label="Set role to attacker" onclick="setProfRole('attacker')">
+              <span class="role-btn-icon">⚔</span> ATTACKER
+            </button>
+            <button class="role-btn ${p.role!=='attacker'?'active-def':''}" id="roleDef" aria-label="Set role to defender" onclick="setProfRole('defender')">
+              <span class="role-btn-icon">⛨</span> DEFENDER
+            </button>
+          </div>
+          <div class="role-desc" id="roleDesc">
+            ${p.role==='attacker'?'Offensive tools: exploit, scan, lateral movement.':'Defensive tools: monitor, patch, incident response.'}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">BIO</label>
+          <textarea class="form-input form-textarea" id="profBio" maxlength="300" placeholder="Brief operator bio…">${escHTML(p.bio||'')}</textarea>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">LOCATION</label>
+          <input class="form-input" id="profLocation" value="${escHTML(p.location||USER.location||'')}" maxlength="60" placeholder="City, Country">
+        </div>
+
+        <div id="profError"   class="form-error"   style="display:none"></div>
+        <div id="profSuccess" class="form-success" style="display:none"></div>
+
+        <button class="btn-save" aria-label="Save profile" onclick="saveProfile()" style="width:100%;margin-top:4px">⊕ SAVE PROFILE</button>
+
+        <div style="color:var(--dim);font-size:9px;margin-top:10px;text-align:center">
+          Stored in your private <code style="color:var(--blue)">cybaash-data</code> repository.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+let _profRole = PROFILE_DATA?.role||'defender';
+function setProfRole(r) {
+  _profRole = r;
+  document.getElementById('roleAtt').className = 'role-btn '+(r==='attacker'?'active-att':'');
+  document.getElementById('roleDef').className = 'role-btn '+(r==='defender'?'active-def':'');
+  document.getElementById('roleDesc').textContent = r==='attacker'
+    ? '⚠ RED TEAM — Offensive tools: exploit, scan, lateral movement.'
+    : '✓ BLUE TEAM — Defensive tools: monitor, patch, incident response.';
+  // Apply full red theme when attacker selected
+  applyAttackerTheme(r === 'attacker');
+}
+
+async function saveProfile() {
+  const btn = document.querySelector('.btn-save');
+  if (btn) { btn.disabled=true; btn.textContent='SAVING…'; }
+  document.getElementById('profError').style.display='none';
+  document.getElementById('profSuccess').style.display='none';
+
+  const updated = {
+    ...PROFILE_DATA,
+    name:      document.getElementById('profName').value.trim(),
+    role:      _profRole,
+    bio:       document.getElementById('profBio').value.trim(),
+    location:  document.getElementById('profLocation').value.trim(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    const filePath = `operators/${USER.login}/profile.json`;
+    const existing = await ghRead(USER.login, filePath).catch(()=>null);
+    await ghWrite(USER.login, filePath, updated, existing?.sha);
+    PROFILE_DATA = updated;
+    LS.set('profile', updated);
+    document.getElementById('hdrRole').textContent = updated.role.toUpperCase();
+    document.getElementById('hdrRole').className = 'hdr-role-badge '+updated.role;
+    document.getElementById('profSuccess').style.display='block';
+    document.getElementById('profSuccess').textContent = '✓ Profile saved';
+  } catch(err) {
+    document.getElementById('profError').style.display='block';
+    document.getElementById('profError').textContent = 'ERR: '+err.message;
+  } finally {
+    if (btn) { btn.disabled=false; btn.textContent='⊕ SAVE PROFILE'; }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════════
+function escHTML(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════════════════════════════════
+
+function applyAttackerTheme(on) {
+  if (on) {
+    document.body.classList.add('attacker-mode');
+  } else {
+    document.body.classList.remove('attacker-mode');
+  }
+}
+
+// INIT
+// ════════════════════════════════════════════════════════════
+(async () => { try { await boot(); } catch(e) { console.error("[BOOT]", e); document.getElementById("bootScreen").style.display="none"; document.getElementById("loginScreen").style.display="flex"; } })();
+</script>
+
+<script>
+// ── Service Worker Registration ──────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => {
+        console.log('[PWA] Service worker registered:', reg.scope);
+        // Listen for updates
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              newWorker.postMessage('SKIP_WAITING');
+              window.location.reload();
+            }
+          });
+        });
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload();
+        });
+      })
+      .catch(err => console.warn('[PWA] SW registration failed:', err));
+  });
+}
+
+// ── Install Prompt (A2HS) ────────────────────────────────────────────────────
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  hideInstallBanner();
+  console.log('[PWA] CYBAASH installed successfully');
+});
+
+function showInstallBanner() {
+  if (document.getElementById('pwa-install-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pwa-install-banner';
+  banner.innerHTML = `
+    <style>
+      #pwa-install-banner {
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        z-index: 99999; display: flex; align-items: center; gap: 14px;
+        background: #0a1520; border: 1px solid rgba(0,212,255,.3);
+        padding: 14px 20px; font-family: 'Share Tech Mono', monospace;
+        font-size: 11px; color: #c8e0f4; max-width: min(480px, 92vw);
+        width: 100%; box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 30px rgba(0,212,255,.1);
+        animation: pwa-slide-up .4s cubic-bezier(.175,.885,.32,1.275);
+      }
+      #pwa-install-banner::before {
+        content: ''; position: absolute; top: -1px; left: -1px; right: -1px; height: 1.5px;
+        background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+      }
+      #pwa-install-banner::after {
+        content: ''; position: absolute; top: -1px; left: -1px;
+        width: 8px; height: 8px;
+        border-top: 2px solid #00d4ff; border-left: 2px solid #00d4ff;
+      }
+      @keyframes pwa-slide-up {
+        from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+      }
+      #pwa-icon { font-size: 28px; flex-shrink: 0; }
+      #pwa-text { flex: 1; min-width: 0; }
+      #pwa-text strong { display: block; color: #00d4ff; letter-spacing: .15em; font-size: 10px; margin-bottom: 3px; }
+      #pwa-text span { color: #5a7a9a; font-size: 10px; }
+      #pwa-install-btn {
+        background: none; border: 1px solid #00d4ff; color: #00d4ff;
+        font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: .2em;
+        padding: 8px 16px; cursor: pointer; text-transform: uppercase; white-space: nowrap;
+        min-height: 44px; flex-shrink: 0; transition: all .15s;
+      }
+      #pwa-install-btn:hover { background: rgba(0,212,255,.1); box-shadow: 0 0 16px rgba(0,212,255,.3); }
+      #pwa-dismiss-btn {
+        background: none; border: none; color: #5a7a9a; cursor: pointer;
+        font-size: 16px; padding: 4px; line-height: 1; min-height: 44px; min-width: 32px;
+        display: flex; align-items: center; justify-content: center;
+      }
+      #pwa-dismiss-btn:hover { color: #ff2244; }
+    </style>
+    <div id="pwa-icon">⬡</div>
+    <div id="pwa-text">
+      <strong>INSTALL CYBAASH</strong>
+      <span>Add to home screen for offline access &amp; faster load</span>
+    </div>
+    <button id="pwa-install-btn" aria-label="Install as app" onclick="installPWA()">⬇ INSTALL</button>
+    <button aria-label="Dismiss" id="pwa-dismiss-btn" onclick="hideInstallBanner()" title="Dismiss">×</button>
+  `;
+  document.body.appendChild(banner);
+}
+
+function hideInstallBanner() {
+  const b = document.getElementById('pwa-install-banner');
+  if (b) b.remove();
+}
+
+async function installPWA() {
+  if (!deferredPrompt) return;
+  hideInstallBanner();
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  console.log('[PWA] Install outcome:', outcome);
+  deferredPrompt = null;
+}
+
+function showUpdateBanner() {
+  if (document.getElementById('pwa-update-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pwa-update-banner';
+  banner.innerHTML = `
+    <style>
+      #pwa-update-banner {
+        position: fixed; top: 0; left: 0; right: 0; z-index: 99999;
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; background: rgba(0,255,136,.08); border-bottom: 1px solid rgba(0,255,136,.3);
+        padding: 10px 20px; font-family: 'Share Tech Mono', monospace;
+        font-size: 10px; color: #00ff88; letter-spacing: .1em;
+      }
+    </style>
+    <span>⬡ UPDATE AVAILABLE — New version of CYBAASH ready</span>
+    <button style="background:none;border:1px solid #00ff88;color:#00ff88;font-family:'Share Tech Mono',monospace;
+      font-size:9px;letter-spacing:.2em;padding:6px 14px;cursor:pointer;text-transform:uppercase;min-height:36px"
+      aria-label="Reload to update app"
+      onclick="updateApp()">↺ RELOAD</button>
+    <button style="background:none;border:none;color:#5a7a9a;cursor:pointer;font-size:16px;min-height:36px;padding:0 6px" aria-label="Close">×</button>
+  `;
+  document.body.prepend(banner);
+}
+
+function updateApp() {
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage('SKIP_WAITING');
+  }
+  window.location.reload();
+}
+</script>
+
+
+    <!-- ── TOOLS PANEL (military upgrade) ────────────────── -->
+    <div id="view-tools" style="display:none;padding:20px 0">
+      <div class="panel-header" style="margin-bottom:16px">
+        <span class="panel-title">// SECURITY TOOLKIT</span>
+        <span style="color:var(--dim);font-size:9px;letter-spacing:1px">EDUCATIONAL · ETHICAL USE ONLY</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px">
+        <div class="scenario-card" onclick="window.open('/ai/index.html','_blank')" style="cursor:pointer">
+          <div style="font-size:20px;margin-bottom:6px">🤖</div>
+          <div style="color:var(--blue);font-size:10px;letter-spacing:1px">AI CHAT</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">Ask cybersecurity questions</div>
+        </div>
+        <div class="scenario-card" onclick="window.open('/admin/security.html','_blank')" style="cursor:pointer">
+          <div style="font-size:20px;margin-bottom:6px">🛡️</div>
+          <div style="color:var(--blue);font-size:10px;letter-spacing:1px">SOC DASHBOARD</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">Security operations center</div>
+        </div>
+        <div class="scenario-card" onclick="window.open('/admin/intel.html','_blank')" style="cursor:pointer">
+          <div style="font-size:20px;margin-bottom:6px">🔍</div>
+          <div style="color:var(--purple);font-size:10px;letter-spacing:1px">INTEL PANEL</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">IP threat intelligence</div>
+        </div>
+        <div class="scenario-card" style="cursor:pointer" onclick="checkThreatLevel()">
+          <div style="font-size:20px;margin-bottom:6px">⚡</div>
+          <div style="color:var(--orange);font-size:10px;letter-spacing:1px">THREAT SCAN</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">Check current threat level</div>
+        </div>
+        <div class="scenario-card" style="cursor:pointer" onclick="window.open('https://cybaash.mohamedaasiq07.workers.dev/threats','_blank')">
+          <div style="font-size:20px;margin-bottom:6px">☠</div>
+          <div style="color:var(--red);font-size:10px;letter-spacing:1px">THREAT INTEL</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">Blocked IP database</div>
+        </div>
+        <div class="scenario-card" style="cursor:pointer" onclick="window.open('/admin/intel.html','_blank')">
+          <div style="font-size:20px;margin-bottom:6px">📋</div>
+          <div style="color:var(--yellow);font-size:10px;letter-spacing:1px">AUDIT LOG</div>
+          <div style="color:var(--dim);font-size:9px;margin-top:4px">Worker audit entries</div>
+        </div>
+      </div>
+      <div style="background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.2);padding:12px;border-radius:2px;font-size:10px;color:var(--dim)">
+        ⚠ <strong style="color:var(--yellow)">Educational &amp; authorized testing only.</strong>
+        All activity monitored by CYBAASH SOC.
+        Shortcuts: <span style="color:var(--text)">Ctrl+Shift+S</span> SOC ·
+        <span style="color:var(--text)">Ctrl+Shift+A</span> AI ·
+        <span style="color:var(--text)">Ctrl+Shift+L</span> Admin
+      </div>
+    </div>
+  <!-- ── CYBAASH SOC TRACKER — config loaded from Cloudflare Worker ── -->
+  <script src="/soc-tracker-v2.js"></script>
+  <!-- ───────────────────────────────────────────────────────────────── -->
+
+  <!-- ── Military upgrade script (threat banner + ticker + keyboard shortcuts) -->
+  <script src="/dashboard-military-additions.js" defer></script>
+// ── Military upgrade: handle tools view ──────────────────
+const _origSwitchView = switchView;
+function switchView(view, btn) {
+  _origSwitchView(view, btn);
+  const toolsPanel = document.getElementById('view-tools');
+  if (toolsPanel) toolsPanel.style.display = (view === 'tools') ? 'block' : 'none';
+}
+</script>
+  <!-- ── SOC LIVE TICKER (military upgrade) ──────────────── -->
+  <div id="socTicker" style="position:fixed;bottom:0;left:0;right:0;background:rgba(3,10,15,.95);border-top:1px solid var(--border);padding:4px 20px;font-size:9px;color:var(--dim);letter-spacing:1px;white-space:nowrap;overflow:hidden;z-index:50">
+    <span style="color:var(--blue);margin-right:12px">▶ CYBAASH SOC</span>
+    <span id="tickerText" style="transition:opacity 0.2s ease">Initializing threat feed...</span>
+  </div>
+</body>
+</html>
