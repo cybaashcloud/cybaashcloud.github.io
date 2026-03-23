@@ -319,6 +319,8 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .tech-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
 .tech-t{font-size:8px;letter-spacing:.5px;padding:2px 7px;border:1px solid rgba(0,212,255,.18);color:rgba(0,212,255,.65);font-family:'Share Tech Mono',monospace}
 .proj-links{display:flex;gap:7px}
+.pl.pl-pdf{border-color:rgba(0,255,136,.3);color:var(--green)}
+.pl.pl-pdf:hover{border-color:var(--green);background:rgba(0,255,136,.06)}
 .pl{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;padding:5px 11px;border:1px solid var(--border);color:var(--dim);text-decoration:none;transition:all .2s;display:flex;align-items:center;gap:4px;text-transform:uppercase}
 .pl:hover{border-color:var(--blue);color:var(--blue)}
 .pl svg{width:9px;height:9px}
@@ -1488,6 +1490,7 @@ function rProj(proj){
         <div class="proj-links">
           ${p.liveUrl?`<a class="pl" href="${p.liveUrl}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>LIVE</a>`:''}
           ${p.githubUrl?`<a class="pl" href="${p.githubUrl}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>GITHUB</a>`:''}
+          ${p.pdf?`<a class="pl pl-pdf" href="${p.pdf}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="9" height="9"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</a>`:''}
         </div>
       </div>
     </div>`).join('');
