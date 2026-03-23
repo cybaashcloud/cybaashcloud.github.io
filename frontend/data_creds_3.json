@@ -1,26 +1,6 @@
 {
   "credentials": [
     {
-      "id": "li0101",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Artificial Intelligence (AI",
-        "Responsible AI",
-        "Copyright Law"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0101.jpg",
-      "title": "Generative AI: Business and Legal Concerns for Creatives",
-      "issuer": "LinkedIn",
-      "courseId": "generative-ai-business-and-legal-concerns-for-creatives",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc"
-    },
-    {
       "id": "li0102",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/66dde9127100b148ad120df760a3049dffbc2d83347b5ef979a2246177b97aec",
@@ -1570,6 +1550,26 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "142c90aa710d34f329d8fbbbc71f997292e3508cd6d7a2d4cc1219f367cd96c3"
+    },
+    {
+      "id": "li0185",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/eed3d44feef30cd64ec2ea06dd88882ecaade1eecbf0ecfd0ea93b328a9f6f59",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Machine Learning",
+        "Azure AI Foundry",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0185.jpg",
+      "title": "Microsoft Azure AI Essentials: Workloads and Machine Learning on Azure",
+      "issuer": "LinkedIn",
+      "courseId": "microsoft-azure-ai-essentials-workloads-and-machine-learning",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "eed3d44feef30cd64ec2ea06dd88882ecaade1eecbf0ecfd0ea93b328a9f6f59"
     }
   ]
 }
