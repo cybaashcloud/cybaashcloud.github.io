@@ -1,26 +1,6 @@
 {
   "credentials": [
     {
-      "id": "li0100",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Conditional Image Generation",
-        "Artificial Intelligence for Design",
-        "Artificial Intelligence (AI"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0100.jpg",
-      "title": "Generative AI Imaging: What Creative Pros Need to Know",
-      "issuer": "LinkedIn",
-      "courseId": "generative-ai-imaging-what-creative-pros-need-to-know",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925"
-    },
-    {
       "id": "li0101",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc",
@@ -1571,6 +1551,25 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "e0322259a18c03f1c133e901527b29990fd3d670b0b2c0f99017bd2c08325f2b"
+    },
+    {
+      "id": "li0184",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/142c90aa710d34f329d8fbbbc71f997292e3508cd6d7a2d4cc1219f367cd96c3",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Marketing",
+        "Brand Storytelling"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0184.jpg",
+      "title": "Marketing: How to Use High-Impact Storytelling",
+      "issuer": "LinkedIn",
+      "courseId": "marketing-how-to-use-high-impact-storytelling",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "142c90aa710d34f329d8fbbbc71f997292e3508cd6d7a2d4cc1219f367cd96c3"
     }
   ]
 }
