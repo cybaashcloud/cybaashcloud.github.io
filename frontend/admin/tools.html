@@ -172,16 +172,16 @@ input[type=range]{flex:1;accent-color:var(--cy)}
     </div>
     <form id="lform" autocomplete="off">
       <div class="lf">
-        <label for="lpw">Access Passphrase</label>
+        <label for="lpw">Passphrase</label>
         <div style="position:relative">
-          <input type="password" id="lpw" placeholder="Enter secure passphrase" autocomplete="current-password" autofocus/>
+          <input type="password" id="lpw" placeholder="" autocomplete="off" autofocus/>
           <button type="button" id="tpw" aria-label="Toggle" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tm);cursor:pointer;font-size:16px">👁</button>
         </div>
       </div>
       <div id="lerr" class="lerr"></div>
       <button type="submit" class="lbtn" id="lbtn">AUTHENTICATE &rarr;</button>
     </form>
-    <div class="lfoot">RESTRICTED · AUTHORIZED SECURITY RESEARCHERS ONLY<br>All access is logged &amp; monitored.</div>
+    <div class="lfoot">RESTRICTED ACCESS</div>
   </div>
 </div>
 <div id="tc" aria-live="polite"></div>
@@ -661,7 +661,8 @@ function clk(){const s=gls();if(!s.lu)return null;const r=s.lu-Date.now();if(r>0
 function rfl(){const s=gls();const a=(s.at||0)+1;if(a>=LM){sls({at:a,lu:Date.now()+LK});return{lk:true};}sls({at:a});return{lk:false,left:LM-a};}
 function slk(ms){const b=el('lbtn');if(b)b.disabled=true;const e=el('lerr');const t=()=>{const r=clk();if(!r){e.classList.remove('show');e.textContent='';if(b)b.disabled=false;return;}const m=Math.floor(r/60000),s=Math.floor((r%60000)/1000);e.textContent='Too many attempts. Locked '+m+'m '+String(s).padStart(2,'0')+'s';e.classList.add('show');setTimeout(t,1000);};t();}
 async function gtk(){const ts=Date.now().toString(),pw=localStorage.getItem('soc_pw_hash')||DH;try{const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),{name:'HMAC',hash:'SHA-256'},false,['sign']);const s=await crypto.subtle.sign('HMAC',k,new TextEncoder().encode(ts));return ts+'.'+[...new Uint8Array(s)].map(b=>b.toString(16).padStart(2,'0')).join('');}catch(_){return btoa(ts+':'+pw.slice(0,8));}}
-async function hlogin(ev){ev.preventDefault();const pw=el('lpw').value;const er=el('lerr');const lr=clk();if(lr){slk(lr);return;}if(!pw){er.textContent='Passphrase required.';er.classList.add('show');return;}const h=await sha256(pw);try{const r=await fetch(WK+'/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'verifyAdmin',token:h}),signal:AbortSignal.timeout(6000)}).then(x=>x.json());if(r?.ok){sls({});await grant();return;}}catch(_){}const st=localStorage.getItem('soc_pw_hash')||DH;if(h===st){sls({});await grant();return;}const res=rfl();if(res.lk){slk(LK);}else{er.textContent='Invalid credentials. '+res.left+' attempt'+(res.left!==1?'s':'')+' remaining.';er.classList.add('show');setTimeout(()=>er.classList.remove('show'),4000);}el('lpw').value='';}
+var _tjwt='';function stJWT(t,e){_tjwt=t;try{sessionStorage.setItem('tk_jwt',JSON.stringify({jwt:t,exp:Date.now()+e}));}catch(_){}}function ldJWT(){try{const s=JSON.parse(sessionStorage.getItem('tk_jwt')||'{}');if(s.jwt&&s.exp&&Date.now()<s.exp){_tjwt=s.jwt;return s.jwt;}}catch(_){}return '';}
+async function hlogin(ev){ev.preventDefault();const pp=el('lpw').value.trim();const er=el('lerr');const btn=document.getElementById('lbtn');if(!pp){er.textContent='Passphrase required.';er.classList.add('show');return;}if(btn){btn.textContent='VERIFYING…';btn.disabled=true;}try{const r=await fetch('https://cybaash.mohamedaasiq07.workers.dev/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passphrase:pp}),signal:AbortSignal.timeout(10000)});const d=await r.json();if(r.status===429){er.textContent=d.error||'Too many attempts.';er.classList.add('show');if(btn){btn.textContent='AUTHENTICATE →';btn.disabled=true;}return;}if(!r.ok||!d.ok)throw new Error(d.error||'Invalid credentials');stJWT(d.token,d.expiresIn);sls({});await grant();return;}catch(e){er.textContent=e.message==='Invalid credentials'?'Invalid credentials. Access denied.':'Connection error.';er.classList.add('show');setTimeout(()=>er.classList.remove('show'),4000);if(btn){btn.textContent='AUTHENTICATE →';btn.disabled=false;}}el('lpw').value='';}
 async function grant(){_tok=await gtk();_exp=Date.now()+SM;sessionStorage.setItem('ts',JSON.stringify({e:_exp,t:_tok}));el('login-screen').style.display='none';el('app').classList.add('on');stck();init();toast('Access granted','success',2000);}
 function chksess(){try{const s=JSON.parse(sessionStorage.getItem('ts')||'{}');if(s.e&&Date.now()<s.e){_exp=s.e;_tok=s.t||'';el('login-screen').style.display='none';el('app').classList.add('on');stck();init();return true;}}catch(_){}return false;}
 function logout(){sessionStorage.removeItem('ts');el('app').classList.remove('on');el('login-screen').style.display='flex';el('lpw').value='';toast('Session ended','info',2000);}

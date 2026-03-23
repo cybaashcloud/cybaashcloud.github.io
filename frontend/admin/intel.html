@@ -149,16 +149,16 @@
     </div>
     <form id="login-form" autocomplete="off">
       <div class="login-field">
-        <label for="login-password">Admin Passphrase</label>
+        <label for="login-password">Passphrase</label>
         <div style="position:relative">
-          <input type="password" id="login-password" placeholder="Enter secure passphrase" autocomplete="current-password" autofocus />
+          <input type="password" id="login-password" placeholder="" autocomplete="off" autofocus />
           <button type="button" id="toggle-pw" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted,#5a7a9a);cursor:pointer;font-size:16px;">👁</button>
         </div>
       </div>
       <div id="login-error" class="login-error">Invalid credentials.</div>
       <button type="submit" class="login-btn">AUTHENTICATE &rarr;</button>
     </form>
-    <div class="login-footer">RESTRICTED SYSTEM · All access attempts are logged.</div>
+    <div class="login-footer">RESTRICTED ACCESS</div>
   </div>
 </div>
 
@@ -328,32 +328,55 @@ function startClock() {
 }
 
 // ── Authentication ─────────────────────────────────────────────
+var _jwt = '';
+function storeJWT(token, expiresIn) {
+  _jwt = token;
+  try { sessionStorage.setItem('intel_jwt', JSON.stringify({ jwt: token, exp: Date.now() + expiresIn })); } catch(_) {}
+}
+function loadJWT() {
+  try {
+    var s = JSON.parse(sessionStorage.getItem('intel_jwt') || '{}');
+    if (s.jwt && s.exp && Date.now() < s.exp) { _jwt = s.jwt; return s.jwt; }
+  } catch(_) {}
+  return '';
+}
+
 async function handleLogin(e) {
   e.preventDefault();
-  var pw  = el('login-password').value;
+  var passphrase = el('login-password').value.trim();
   var err = el('login-error');
-  if (!pw) { err.textContent = 'Password required.'; err.classList.add('show'); return; }
+  var btn = document.querySelector('.login-btn');
 
-  var hash = await sha256(pw);
+  if (!passphrase) { err.textContent = 'Passphrase required.'; err.classList.add('show'); return; }
+  if (btn) { btn.textContent = 'VERIFYING…'; btn.disabled = true; }
 
-  // Try Apps Script verify
   try {
-    var resp = await fetch(WORKER + '/api', {
+    var resp = await fetch('https://cybaash.mohamedaasiq07.workers.dev/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'verifyAdmin', token: hash }),
-      signal: AbortSignal.timeout(8000)
+      body: JSON.stringify({ passphrase: passphrase }),
+      signal: AbortSignal.timeout(10000),
     });
-    var result = await resp.json();
-    if (result && result.ok) { grantAccess(); return; }
-  } catch(_) {}
+    var data = await resp.json();
 
-  // Local hash fallback
-  var storedHash = localStorage.getItem('soc_pw_hash') || DEFAULT_HASH;
-  if (hash === storedHash) { grantAccess(); return; }
+    if (resp.status === 429) {
+      err.textContent = data.error || 'Too many attempts. Please wait.';
+      err.classList.add('show');
+      if (btn) { btn.textContent = 'AUTHENTICATE →'; btn.disabled = true; }
+      return;
+    }
+    if (!resp.ok || !data.ok) throw new Error(data.error || 'Invalid credentials');
 
-  err.textContent = 'Invalid credentials. Access denied.';
-  err.classList.add('show');
+    storeJWT(data.token, data.expiresIn);
+    el('login-password').value = '';
+    grantAccess();
+    return;
+  } catch(e2) {
+    err.textContent = e2.message === 'Invalid credentials' ? 'Invalid credentials. Access denied.' : 'Connection error.';
+    err.classList.add('show');
+    setTimeout(function(){ err.classList.remove('show'); }, 4000);
+    if (btn) { btn.textContent = 'AUTHENTICATE →'; btn.disabled = false; }
+  }
   el('login-password').value = '';
 }
 
@@ -413,7 +436,7 @@ async function callWorkerDirect(path) {
   var tok  = await getSessionToken();
   var resp = await fetch(WORKER + path, {
     method: 'GET',
-    headers: { 'Content-Type': 'application/json', 'X-Session-Token': tok },
+    headers: { 'Content-Type': 'application/json', 'X-JWT-Token': _jwt || loadJWT() },
     signal: AbortSignal.timeout(10000)
   });
   return resp.json();
@@ -503,7 +526,7 @@ async function addToIntel() {
   try {
     var resp = await fetch(WORKER + '/intel', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Session-Token': await getSessionToken() },
+      headers: { 'Content-Type': 'application/json', 'X-JWT-Token': _jwt || loadJWT() },
       body: JSON.stringify({ ip: ip, action: 'add', reason: 'Manual — added from Intel Panel', score: 80 })
     });
     var result = await resp.json();
@@ -527,7 +550,7 @@ async function removeFromIntel() {
   try {
     var resp = await fetch(WORKER + '/intel', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Session-Token': await getSessionToken() },
+      headers: { 'Content-Type': 'application/json', 'X-JWT-Token': _jwt || loadJWT() },
       body: JSON.stringify({ ip: ip, action: 'remove' })
     });
     var result = await resp.json();
