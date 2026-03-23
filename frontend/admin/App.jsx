@@ -1027,8 +1027,8 @@ function SyncToast({ state, syncError, onRetry }) {
   if (state==='idle') return null
   return (
     <div className={`sync-toast ${state}`}>
-      {state==='saving' && <><div className="sync-spinner"/> SAVING...</>}
-      {state==='saved'  && <>✓ SYNCED</>}
+      {state==='saving' && <><div className="sync-spinner"/> SAVING TO GITHUB...</>}
+      {state==='saved'  && <>✓ SYNCED TO GITHUB</>}
       {state==='error'  && <>
         <span>⚠ SAVE FAILED{syncError ? ` — ${syncError}` : ' — check console (token / permissions?)'}</span>
         {onRetry && <button onClick={onRetry} style={{marginLeft:10,background:'transparent',border:'1px solid var(--red)',color:'var(--red)',fontFamily:"'Share Tech Mono',monospace",fontSize:10,padding:'3px 10px',cursor:'pointer',letterSpacing:1}}>↺ RETRY</button>}
@@ -1092,22 +1092,6 @@ function SetupWizard({ onComplete }) {
 
           {step===0 && (
             <div>
-              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:12,color:'var(--g)',letterSpacing:2,marginBottom:16}}>WELCOME TO AASIQ OS</div>
-              <p style={{fontSize:13,color:'var(--tx2)',lineHeight:1.7,marginBottom:20}}>
-                Your portfolio data lives in <strong style={{color:'var(--g)'}}>split JSON files</strong> directly in your repository — no database needed. The admin panel reads and writes them via the API using a Personal Access Token stored only in your browser.
-              </p>
-              <div style={{background:'var(--bg2)',border:'1px solid var(--bd)',padding:16,marginBottom:20,fontFamily:"'Share Tech Mono',monospace",fontSize:11}}>
-                <div style={{color:'var(--g)',marginBottom:10,letterSpacing:2}}>WHAT YOU NEED:</div>
-                {[
-                  'Your username and repo name (e.g. cybaash / cybaash.github.io)',
-                  'A Personal Access Token with Contents read+write permission',
-                  'Go to Settings → Developer settings → Fine-grained tokens',
-                ].map((s,i)=>(
-                  <div key={i} style={{color:'var(--tx2)',marginBottom:6,display:'flex',gap:8}}>
-                    <span style={{color:'var(--g3)'}}>{'>'}</span>{s}
-                  </div>
-                ))}
-              </div>
               <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}} onClick={()=>setStep(1)}>
                 ▶ START SETUP
               </button>
@@ -1116,32 +1100,27 @@ function SetupWizard({ onComplete }) {
 
           {step===1 && (
             <div>
-              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:12,color:'var(--g)',letterSpacing:2,marginBottom:16}}>STEP 1 — TOKEN CONFIG</div>
-
               {err && <div className="auth-error">⚠ {err}</div>}
               {ok  && <div className="auth-success">✓ Connected successfully!</div>}
 
               <div className="form-group">
                 <label className="form-label">Username</label>
                 <input className="form-input" value={owner} onChange={e=>setOwner(e.target.value)}
-                  placeholder="cybaash"/>
-                <div className="form-hint">Your username (not email)</div>
+                  placeholder=""/>
               </div>
               <div className="form-group">
                 <label className="form-label">Repository Name</label>
                 <input className="form-input" value={repo} onChange={e=>setRepo(e.target.value)}
-                  placeholder="cybaash.github.io"/>
-                <div className="form-hint">The repo where your portfolio lives</div>
+                  placeholder=""/>
               </div>
               <div className="form-group">
                 <label className="form-label">Personal Access Token</label>
                 <input className="form-input" type="password" value={token} onChange={e=>setToken(e.target.value)}
-                  placeholder="Paste your Personal Access Token…"/>
-                <div className="form-hint">Settings → Developer settings → Fine-grained tokens → Contents: read+write</div>
+                  placeholder=""/>
               </div>
               <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}}
                 onClick={testAndSave} disabled={testing||!owner||!repo||!token}>
-                {testing ? '⟳ TESTING CONNECTION...' : '▶ TEST & SAVE'}
+                {testing ? '⟳ TESTING...' : '▶ SAVE'}
               </button>
             </div>
           )}
@@ -1174,7 +1153,7 @@ function SetupWizard({ onComplete }) {
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:48,marginBottom:16}}>✓</div>
               <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:14,color:'var(--g)',letterSpacing:2,marginBottom:12}}>SETUP COMPLETE</div>
-              <p style={{fontSize:13,color:'var(--tx2)',lineHeight:1.7,marginBottom:24}}>Connected and your password is set. Click below to log in.</p>
+              <p style={{fontSize:13,color:'var(--tx2)',lineHeight:1.7,marginBottom:24}}>GitHub is connected and your password is set. Click below to log in.</p>
               <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}} onClick={onComplete}>
                 ▶ GO TO LOGIN
               </button>
@@ -1290,7 +1269,7 @@ function Dashboard({ data, lastSync, ghCfg }) {
           <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:11,color:'var(--g)',letterSpacing:2,marginBottom:16}}>RECENT ACTIVITY</div>
           {[
             {color:'var(--g)',    text:'Admin panel connected',     time:now()},
-            {color:'var(--blue)',text:'Storage active',       time:now()},
+            {color:'var(--blue)',text:'GitHub storage active',       time:now()},
             {color:'var(--g)',   text:`Skills tracked: ${counts.skills}`, time:now()},
             {color:'var(--g)',   text:`Last sync: ${lastSync||'—'}`, time:''},
           ].map((a,i)=>(
@@ -1308,7 +1287,7 @@ function Dashboard({ data, lastSync, ghCfg }) {
           <div className="card-corner bl"/><div className="card-corner br"/>
           <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:11,color:'var(--g)',letterSpacing:2,marginBottom:16}}>SYSTEM STATUS</div>
           {[
-            {label:'Storage',   val:'Split JSON files',       ok:true},
+            {label:'Storage',   val:'GitHub (split JSON files)',       ok:true},
             {label:'Access',    val:'Token (local only)',               ok:true},
             {label:'Repo',      val:ghCfg ? `${ghCfg.owner}/${ghCfg.repo}` : '—', ok:!!ghCfg},
             {label:'Last Save', val:lastSync||'—',                     ok:!!lastSync},
@@ -2554,7 +2533,7 @@ function SettingsSection({ data, ghCfg, onDisconnect }) {
     setTesting(true); setTestMsg(null)
     const r = await testConnection(ghCfg?.owner, ghCfg?.repo, ghCfg?.token)
     setTesting(false)
-    setTestMsg(r.ok ? {ok:true,txt:'✓ Connection healthy'} : {ok:false,txt:'⚠ '+r.msg})
+    setTestMsg(r.ok ? {ok:true,txt:'✓ GitHub connection healthy'} : {ok:false,txt:'⚠ '+r.msg})
   }
 
   const exportData = () => {
@@ -2583,7 +2562,7 @@ function SettingsSection({ data, ghCfg, onDisconnect }) {
         <div className="card">
           <div className="card-corner tl"/><div className="card-corner tr"/>
           <div className="card-corner bl"/><div className="card-corner br"/>
-          <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--g)',letterSpacing:2,marginBottom:14}}>CONNECTION</div>
+          <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--g)',letterSpacing:2,marginBottom:14}}>GITHUB CONNECTION</div>
           {testMsg&&<div style={{padding:'10px 14px',border:`1px solid ${testMsg.ok?'var(--g)':'var(--amber)'}`,color:testMsg.ok?'var(--g)':'var(--amber)',fontFamily:"'Share Tech Mono',monospace",fontSize:11,marginBottom:14}}>{testMsg.txt}</div>}
           {[
             {l:'Owner',  v: ghCfg?.owner||'—'},
@@ -2598,7 +2577,7 @@ function SettingsSection({ data, ghCfg, onDisconnect }) {
           ))}
           <div style={{display:'flex',gap:10,marginTop:16}}>
             <button className="btn btn-ghost btn-sm" onClick={testConn} disabled={testing}>{testing?'Testing…':'Test Connection'}</button>
-            <button className="btn btn-red btn-sm" onClick={()=>{if(window.confirm('Disconnect?')){clearGithubConfig();onDisconnect()}}}>Disconnect</button>
+            <button className="btn btn-red btn-sm" onClick={()=>{if(window.confirm('Disconnect GitHub?')){clearGithubConfig();onDisconnect()}}}>Disconnect</button>
           </div>
         </div>
       </div>
@@ -2892,7 +2871,7 @@ export default function App() {
     <>
       <FontLink/><style>{CSS}</style>
       <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--bg)',fontFamily:"'Share Tech Mono',monospace",color:'var(--g)',fontSize:14,letterSpacing:3}}>
-        LOADING...
+        LOADING FROM GITHUB...
       </div>
     </>
   )
@@ -2910,7 +2889,7 @@ export default function App() {
           </div>
           <div className="sb-status">
             <div style={{width:6,height:6,borderRadius:'50%',background:'var(--g)',boxShadow:'0 0 6px var(--g)'}}/>
-            <span style={{color:'var(--g)'}}>SECURE STORAGE</span>
+            <span style={{color:'var(--g)'}}>GITHUB STORAGE</span>
           </div>
           <nav className="nav" aria-label="Admin navigation">
             {NAV.map(n=>(
