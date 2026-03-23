@@ -1,7 +1,7 @@
 {
   "name": "CYBAASH \u2014 Autonomous Cyber Range",
   "short_name": "CYBAASH",
-  "description": "Autonomous red vs blue cyber range simulation platform with 334 verified credentials",
+  "description": "Autonomous red vs blue cyber range simulation platform with 343 verified credentials",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -110,7 +110,7 @@
     {
       "name": "Recruiter View",
       "short_name": "Recruiter",
-      "description": "View 334 verified credentials",
+      "description": "View 343 verified credentials",
       "url": "/recruiter.html",
       "icons": [
         {

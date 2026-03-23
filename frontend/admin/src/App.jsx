@@ -971,6 +971,13 @@ function FileUpload({ value, onChange, accept='image/*', label='Upload File' }) 
 }
 
 function Confirm({ msg, onConfirm, onCancel }) {
+  const touchStartY = useRef(null)
+  const handleTouchStart = e => { touchStartY.current = e.touches[0].clientY }
+  const handleTouchEnd = e => {
+    if (touchStartY.current === null) return
+    if (e.changedTouches[0].clientY - touchStartY.current > 80) onCancel()
+    touchStartY.current = null
+  }
   useEffect(()=>{
     const handler = e => { if(e.key==='Escape') onCancel() }
     document.addEventListener('keydown', handler)
@@ -2119,7 +2126,7 @@ function CredentialsSection({ data, onSave }) {
 // ══════════════════════════════════════════════════════════════════════════
 // PROJECTS
 // ══════════════════════════════════════════════════════════════════════════
-const BLANK_PROJ = ()=>({id:uid(),title:'',desc:'',tech:[],status:'Completed',liveUrl:'',githubUrl:'',image:null,featured:false})
+const BLANK_PROJ = ()=>({id:uid(),title:'',desc:'',tech:[],status:'Completed',liveUrl:'',githubUrl:'',image:null,pdf:null,featured:false})
 const STATUS_COLOR = {Completed:'green','In Progress':'amber',Planned:'blue',Archived:'red'}
 
 function ProjectsSection({ data, onSave }) {
@@ -2177,6 +2184,7 @@ function ProjectsSection({ data, onSave }) {
             <div style={{display:'flex',gap:8}}>
               {p.liveUrl&&<a href={p.liveUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">↗ Live</a>}
               {p.githubUrl&&<a href={p.githubUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">⌥ GitHub</a>}
+              {p.pdf&&<a href={p.pdf} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">📄 PDF</a>}
               <button className="btn btn-amber btn-sm btn-icon" style={{marginLeft:'auto'}} onClick={()=>open(p.id)}>✎</button>
               <button className="btn btn-red btn-sm btn-icon" onClick={()=>setConfirm(p.id)}>✕</button>
             </div>
@@ -2207,6 +2215,8 @@ function ProjectsSection({ data, onSave }) {
             </div>
             <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--g)',letterSpacing:2,marginBottom:10}}>SCREENSHOT</div>
             <FileUpload value={form.image} accept="image/*" label="Upload Image" onChange={b=>setForm(p=>({...p,image:b}))}/>
+            <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--blue)',letterSpacing:2,marginBottom:10,marginTop:16}}>PROJECT PDF / REPORT</div>
+            <FileUpload value={form.pdf} accept="application/pdf" label="Upload PDF" onChange={b=>setForm(p=>({...p,pdf:b}))}/>
           </div>
           <div className="modal-footer"><button className="btn btn-ghost" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-green" onClick={save}>Save</button></div>
         </div></div>
