@@ -1,26 +1,6 @@
 {
   "credentials": [
     {
-      "id": "li0185",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/eed3d44feef30cd64ec2ea06dd88882ecaade1eecbf0ecfd0ea93b328a9f6f59",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Machine Learning",
-        "Azure AI Foundry",
-        "Artificial Intelligence (AI"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0185.jpg",
-      "title": "Microsoft Azure AI Essentials: Workloads and Machine Learning on Azure",
-      "issuer": "LinkedIn",
-      "courseId": "microsoft-azure-ai-essentials-workloads-and-machine-learning",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "eed3d44feef30cd64ec2ea06dd88882ecaade1eecbf0ecfd0ea93b328a9f6f59"
-    },
-    {
       "id": "li0186",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/6a14472cd57b1559030e01bd1fd66d65edb0841ec689ad1312b4a7106f6d9ad7",
@@ -1559,6 +1539,25 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "a347fc5a8bb226d74ff1c67e0b9f09f16177528ea0af6ab6d4970b0598b87ec2"
+    },
+    {
+      "id": "li0269",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/ca966c5bd4d05dda91c9320585f1b0b3d34c8219e0fb4843fc9cc6c72074cfe4",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Building Trust",
+        "ID:"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0269.jpg",
+      "title": "Why Trust Matters with Rachel Botsman",
+      "issuer": "LinkedIn",
+      "courseId": "why-trust-matters-with-rachel-botsman",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "ca966c5bd4d05dda91c9320585f1b0b3d34c8219e0fb4843fc9cc6c72074cfe4"
     }
   ]
 }
