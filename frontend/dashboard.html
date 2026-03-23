@@ -617,29 +617,15 @@ table {
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-logo">CYB<span>AASH</span></div>
-    <div class="login-sub">// AUTONOMOUS CYBER RANGE</div>
-    <hr class="login-hr">
     <div id="loginBody">
-      <p class="login-desc">
-        Enter a GitHub Personal Access Token to access your operator dashboard.
-        Your data is stored in your own private repository — zero cost, total control.
-      </p>
-      <p class="login-desc" style="font-size:10px;margin-top:6px;opacity:.7">
-        Create one at <strong>github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong>.
-        Required scopes: <code>repo</code> (read &amp; write) and <code>read:user</code>.
-      </p>
       <div style="margin-top:14px">
         <input id="patInput" type="password" placeholder=""
           style="width:100%;padding:12px 14px;background:#0a1520;border:1px solid #1a3a5c;border-radius:4px;color:#c8e0f4;font-family:inherit;font-size:max(16px,13px);outline:none;margin-bottom:12px;-webkit-appearance:none;min-height:44px;box-sizing:border-box"
           onkeydown="if(event.key==='Enter')appLogin()" autocomplete="off" spellcheck="false">
-        <button class="btn-gh" aria-label="Login with GitHub" onclick="appLogin()">
-          <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" fill="currentColor"/></svg>
-          Connect with Token
-        </button>
+        <button class="btn-gh" aria-label="Connect" onclick="appLogin()">Connect</button>
       </div>
       <div id="loginError" class="login-error" style="display:none"></div>
     </div>
-    <div class="login-footer">$0 servers · $0 databases · 100% GitHub</div>
   </div>
 </div>
 
@@ -683,7 +669,7 @@ table {
       <div class="sb-spacer"></div>
       <div class="sb-footer">
         <div class="sb-footer-tier" id="sbTier">FREE TIER</div>
-        <div class="sb-footer-info">⬡ github storage</div>
+        <div class="sb-footer-info">⬡ secure storage</div>
         <div class="sb-footer-info" style="margin-top:4px;">
           <a href="index.html" style="color:var(--blue);text-decoration:none;font-size:9px;">↗ CYBER RANGE</a>
         </div>
@@ -781,8 +767,7 @@ async function ensureRepo() {
 // ════════════════════════════════════════════════════════════
 // AUTH — GitHub Device Flow
 // ════════════════════════════════════════════════════════════
-// ── JWT helpers for Worker auth ──────────────────────────────────────────────
-const WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
+const WORKER_URL = 'https://cybaash.mohamedaasiq07.workers.dev';
 let _dashJWT = '';
 
 function getDashJWT() {
@@ -796,9 +781,7 @@ function getDashJWT() {
 
 function storeDashJWT(token, expiresIn) {
   _dashJWT = token;
-  try {
-    sessionStorage.setItem('dash_jwt', JSON.stringify({ jwt: token, exp: Date.now() + expiresIn }));
-  } catch(_) {}
+  try { sessionStorage.setItem('dash_jwt', JSON.stringify({ jwt: token, exp: Date.now() + expiresIn })); } catch(_) {}
 }
 
 async function appLogin() {
@@ -809,7 +792,7 @@ async function appLogin() {
   const patInput = document.getElementById('patInput');
   const loginBtn = document.querySelector('.btn-gh');
   patInput.disabled = true;
-  loginBtn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(0,212,255,.3);border-top-color:#00d4ff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px"></span>Verifying…';
+  loginBtn.textContent = 'Verifying…';
   if (!document.getElementById('spinKf')) {
     const sk = document.createElement('style');
     sk.id = 'spinKf';
@@ -818,8 +801,7 @@ async function appLogin() {
   }
 
   try {
-    // Step 1 — verify via Worker JWT (passphrase auth)
-    const authResp = await fetch(WORKER + '/auth', {
+    const authResp = await fetch(WORKER_URL + '/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ passphrase: pat }),
@@ -827,36 +809,26 @@ async function appLogin() {
     });
     const authData = await authResp.json();
 
-    if (authResp.status === 429) {
-      throw new Error(authData.error || 'Too many attempts. Please wait.');
-    }
+    if (authResp.status === 429) throw new Error(authData.error || 'Too many attempts. Please wait.');
 
-    if (!authResp.ok || !authData.ok) {
-      // Step 2 fallback — try as GitHub PAT for repo access
+    if (authResp.ok && authData.ok) {
+      storeDashJWT(authData.token, authData.expiresIn);
       TOKEN = pat;
-      const user = await gh('/user');
-      if (!user?.login) throw new Error('Invalid token. Access denied.');
-      storeDashJWT('', 0); // no Worker JWT but GitHub auth succeeded
       LS.setTok(TOKEN);
+      try { const user = await gh('/user'); if (user?.login) { await afterLogin(); return; } } catch(_) {}
       await afterLogin();
       return;
     }
 
-    // Worker JWT issued — store it, then verify GitHub PAT access
-    storeDashJWT(authData.token, authData.expiresIn);
+    // Fallback: try as GitHub PAT directly
     TOKEN = pat;
-    try {
-      const user = await gh('/user');
-      if (!user?.login) throw new Error('Token accepted but could not read user info.');
-    } catch(_) {
-      // JWT is valid but PAT may not have GitHub access — still allow in
-    }
+    const user = await gh('/user');
+    if (!user?.login) throw new Error('Invalid token. Access denied.');
     LS.setTok(TOKEN);
     await afterLogin();
 
   } catch(err) {
-    TOKEN = null;
-    _dashJWT = '';
+    TOKEN = null; _dashJWT = '';
     patInput.disabled = false;
     loginBtn.textContent = 'Connect';
     showLoginError(err.message || 'Connection failed');
@@ -902,7 +874,7 @@ const BOOT_LINES = [
   'LOADING THREAT INTELLIGENCE ENGINE…',
   'MOUNTING CREDENTIAL DATABASE…',
   'INITIALIZING SIMULATION CORE…',
-  'CONNECTING TO GITHUB STORAGE…',
+  'CONNECTING TO SECURE STORAGE…',
   'DECRYPTING OPERATOR PROFILE…',
   'SYSTEM READY.',
 ];
@@ -919,8 +891,6 @@ async function boot() {
   const tok  = LS.tok();
   const user = LS.get('user');
   const prof = LS.get('profile');
-  // Restore Worker JWT if still valid
-  getDashJWT();
   if (tok && user) {
     TOKEN = tok;
     USER  = user;
@@ -1322,7 +1292,7 @@ function renderProfile(mc) {
       <div class="profile-identity">
         <img class="profile-avatar-big" src="${USER.avatar_url}" alt="${USER.login}">
         <div class="profile-username">${USER.login}</div>
-        <div class="profile-gh-link"><a href="${USER.html_url}" target="_blank" rel="noopener">↗ GitHub Profile</a></div>
+        <div class="profile-gh-link"><a href="${USER.html_url}" target="_blank" rel="noopener">↗ Profile</a></div>
         <div class="profile-since">Member since ${new Date(p.createdAt||Date.now()).getFullYear()}</div>
         <div class="profile-role-badge ${p.role||'defender'}" style="border:1px solid ${p.role==='attacker'?'var(--red)':'var(--green)'};color:${p.role==='attacker'?'var(--red)':'var(--green)'}">${(p.role||'defender').toUpperCase()}</div>
       </div>
@@ -1364,7 +1334,7 @@ function renderProfile(mc) {
         <button class="btn-save" aria-label="Save profile" onclick="saveProfile()" style="width:100%;margin-top:4px">⊕ SAVE PROFILE</button>
 
         <div style="color:var(--dim);font-size:9px;margin-top:10px;text-align:center">
-          Stored in your private <code style="color:var(--blue)">cybaash-data</code> GitHub repository.
+          Stored in your private <code style="color:var(--blue)">cybaash-data</code> repository.
         </div>
       </div>
     </div>
@@ -1407,7 +1377,7 @@ async function saveProfile() {
     document.getElementById('hdrRole').textContent = updated.role.toUpperCase();
     document.getElementById('hdrRole').className = 'hdr-role-badge '+updated.role;
     document.getElementById('profSuccess').style.display='block';
-    document.getElementById('profSuccess').textContent = '✓ Profile saved to GitHub';
+    document.getElementById('profSuccess').textContent = '✓ Profile saved';
   } catch(err) {
     document.getElementById('profError').style.display='block';
     document.getElementById('profError').textContent = 'ERR: '+err.message;
