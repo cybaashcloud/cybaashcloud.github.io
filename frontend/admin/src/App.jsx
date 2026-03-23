@@ -39,7 +39,7 @@ const now  = () => new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'s
 
 function fileToB64(file) {
   return new Promise((res, rej) => {
-    if (file.size > 6 * 1024 * 1024) { rej(new Error('File too large (max 6 MB)')); return }
+    if (file.size > 5 * 1024 * 1024) { rej(new Error('File too large (max 5 MB)')); return }
     const r = new FileReader()
     r.onload = e => res(e.target.result)
     r.onerror = () => rej(new Error('File read failed'))
@@ -956,7 +956,7 @@ function FileUpload({ value, onChange, accept='image/*', label='Upload File' }) 
         <input type="file" accept={accept} onChange={e=>handleFile(e.target.files[0])}/>
         <div className="file-drop-icon">📁</div>
         <div className="file-drop-text">{label}</div>
-        <div className="file-drop-sub">{isTouch() ? 'Tap to upload · Max 6MB' : 'Drag & drop or click · Max 6MB'}</div>
+        <div className="file-drop-sub">{isTouch() ? 'Tap to upload · Max 5MB' : 'Drag & drop or click · Max 5MB'}</div>
       </div>
       {value && (
         <div className="file-preview">
@@ -1602,9 +1602,6 @@ const CRED_CSS = `
     background:var(--bg2);border-bottom:1px solid var(--border);overflow:hidden;flex-shrink:0}
   .cc-top-noimg{background:var(--bg2)}
   .cc-top-badge{background:radial-gradient(ellipse at 50% 60%,rgba(247,147,30,.07) 0%,transparent 70%),var(--bg2)}
-  .cc-top-pdf-cert{background:radial-gradient(ellipse at 50% 55%,rgba(0,212,255,.06) 0%,transparent 70%),linear-gradient(180deg,rgba(0,212,255,.04) 0%,transparent 100%),var(--bg2);flex-direction:column;gap:5px}
-  .cc-pdf-logo{width:60px;height:60px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
-  .cc-pdf-label{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:2px;color:rgba(0,212,255,.45);text-transform:uppercase}
   .cc-banner{width:100%;height:100%;object-fit:cover}
   .cc-badge-img{width:80px;height:80px;object-fit:contain;border-radius:6px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
   .cc-body{padding:10px;display:flex;flex-direction:column;gap:6px;flex:1}
@@ -1832,13 +1829,6 @@ function CredentialsSection({ data, onSave }) {
                       <div className="cc-top">
                         <img className="cc-banner" src={topImg} alt={c.title || ''} loading="lazy"
                           onError={e => { e.target.style.display='none'; e.target.parentElement.classList.add('cc-top-noimg') }}/>
-                      </div>
-                    ) : hasPdf && logoSrc ? (
-                      // AWS-style PDF-only cert card
-                      <div className="cc-top cc-top-pdf-cert">
-                        <img className="cc-pdf-logo" src={logoSrc} alt={c.issuer || ''} loading="lazy"
-                          onError={e => e.target.style.display='none'}/>
-                        <span className="cc-pdf-label">📄 PDF CERT</span>
                       </div>
                     ) : isC && logoSrc ? (
                       <div className="cc-top cc-top-badge">
