@@ -1283,28 +1283,6 @@
       "certJpeg": "certificates/auto/pro058.jpg"
     },
     {
-      "id": "pro059",
-      "title": "AWS Security Champion Badge Assessment",
-      "issuer": "Amazon Web Services (AWS)",
-      "type": "certificate",
-      "date": "2026-03",
-      "url": "https://skillbuilder.aws",
-      "pdf": "https://cybaashcloud.github.io/certificates/aws/6a093802-71c6-4d32-9c3c-27764f126da9.pdf",
-      "image": "/certificates/auto/pro059.jpg",
-      "logo": "",
-      "featured": true,
-      "tags": [
-        "AWS Security",
-        "Security Champion",
-        "AWS IAM",
-        "Cloud Security",
-        "AWS Best Practices",
-        "AWS"
-      ],
-      "pdfUrl": "/certificates/aws/6a093802-71c6-4d32-9c3c-27764f126da9.pdf",
-      "certJpeg": "certificates/auto/pro059.jpg"
-    },
-    {
       "id": "pro060",
       "title": "AWS Security Best Practices: Monitoring and Alerting",
       "issuer": "Amazon Web Services (AWS)",
@@ -1703,6 +1681,25 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "30af1784ddf77ba012f1b70aa133fc7ca3adbc854e181ede452a0dbe7afb1ed4"
+    },
+    {
+      "id": "li0016",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Body Language",
+        "Leadership"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0016.jpg",
+      "title": "Body Language for Leaders and Managers",
+      "issuer": "LinkedIn",
+      "courseId": "body-language-for-leaders-and-managers",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf"
     }
   ]
 }
