@@ -1092,22 +1092,6 @@ function SetupWizard({ onComplete }) {
 
           {step===0 && (
             <div>
-              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:12,color:'var(--g)',letterSpacing:2,marginBottom:16}}>WELCOME TO AASIQ OS</div>
-              <p style={{fontSize:13,color:'var(--tx2)',lineHeight:1.7,marginBottom:20}}>
-                Your portfolio data lives in <strong style={{color:'var(--g)'}}>split JSON files</strong> directly in your GitHub repo — no database needed. The admin panel reads and writes them via the GitHub API using a Personal Access Token stored only in your browser.
-              </p>
-              <div style={{background:'var(--bg2)',border:'1px solid var(--bd)',padding:16,marginBottom:20,fontFamily:"'Share Tech Mono',monospace",fontSize:11}}>
-                <div style={{color:'var(--g)',marginBottom:10,letterSpacing:2}}>WHAT YOU NEED:</div>
-                {[
-                  'Your GitHub username and repo name (e.g. cybaash / cybaash.github.io)',
-                  'A Personal Access Token with Contents read+write permission',
-                  'Go to GitHub → Settings → Developer settings → Fine-grained tokens',
-                ].map((s,i)=>(
-                  <div key={i} style={{color:'var(--tx2)',marginBottom:6,display:'flex',gap:8}}>
-                    <span style={{color:'var(--g3)'}}>{'>'}</span>{s}
-                  </div>
-                ))}
-              </div>
               <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}} onClick={()=>setStep(1)}>
                 ▶ START SETUP
               </button>
@@ -1116,32 +1100,27 @@ function SetupWizard({ onComplete }) {
 
           {step===1 && (
             <div>
-              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:12,color:'var(--g)',letterSpacing:2,marginBottom:16}}>STEP 1 — GITHUB CONFIG</div>
-
               {err && <div className="auth-error">⚠ {err}</div>}
               {ok  && <div className="auth-success">✓ Connected successfully!</div>}
 
               <div className="form-group">
-                <label className="form-label">GitHub Username</label>
+                <label className="form-label">Username</label>
                 <input className="form-input" value={owner} onChange={e=>setOwner(e.target.value)}
-                  placeholder="cybaash"/>
-                <div className="form-hint">Your GitHub username (not email)</div>
+                  placeholder=""/>
               </div>
               <div className="form-group">
                 <label className="form-label">Repository Name</label>
                 <input className="form-input" value={repo} onChange={e=>setRepo(e.target.value)}
-                  placeholder="cybaash.github.io"/>
-                <div className="form-hint">The repo where your portfolio lives</div>
+                  placeholder=""/>
               </div>
               <div className="form-group">
                 <label className="form-label">Personal Access Token</label>
                 <input className="form-input" type="password" value={token} onChange={e=>setToken(e.target.value)}
-                  placeholder="github_pat_..."/>
-                <div className="form-hint">GitHub → Settings → Developer settings → Fine-grained tokens → Contents: read+write</div>
+                  placeholder=""/>
               </div>
               <button className="btn btn-green" style={{width:'100%',justifyContent:'center'}}
                 onClick={testAndSave} disabled={testing||!owner||!repo||!token}>
-                {testing ? '⟳ TESTING CONNECTION...' : '▶ TEST & SAVE'}
+                {testing ? '⟳ TESTING...' : '▶ SAVE'}
               </button>
             </div>
           )}
