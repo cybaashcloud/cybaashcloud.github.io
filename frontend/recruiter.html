@@ -247,10 +247,6 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 /* Credly badge panel — slightly taller, subtle radial glow */
 .cc-top-badge{height:130px;background:radial-gradient(ellipse at 50% 60%,rgba(247,147,30,.07) 0%,transparent 70%),var(--panel2)}
 .cc-badge-img{width:90px;height:90px;object-fit:contain;border-radius:8px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}
-/* AWS-style PDF-only cert card top */
-.cc-top-pdf-cert{background:radial-gradient(ellipse at 50% 55%,rgba(0,212,255,.06) 0%,transparent 70%),linear-gradient(180deg,rgba(0,212,255,.04) 0%,transparent 100%),var(--panel2);flex-direction:column;gap:6px}
-.cc-pdf-logo{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
-.cc-pdf-label{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;color:rgba(0,212,255,.45);text-transform:uppercase}
 /* Card body */
 .cc-body{padding:14px 16px 16px}
 /* Header row: meta+logo left, type badge right */
@@ -1358,15 +1354,12 @@ function credCard(c){
   }
 
   // ── Top image area ──
-  // Cert with image  → full JPEG/PNG banner
-  // Cert with PDF only → AWS-style card: dark gradient bg + large centered logo
-  // Credly            → dark panel with badge centered (badge IS the credential visual)
-  // Else              → plain dark panel
+  // Cert  → full JPEG banner
+  // Credly → dark panel with badge centered (badge IS the credential visual)
+  // Else  → plain dark panel
   let topHtml = '';
   if(certJpeg){
     topHtml = `<div class="cc-top"><img class="cc-banner" src="${x(certJpeg)}" alt="${x(c.title||'')}" loading="lazy" onerror="this.parentElement.classList.add('cc-top-noimg');this.style.display='none'"></div>`;
-  } else if(hasPdf && logoSrc){
-    topHtml = `<div class="cc-top cc-top-pdf-cert"><img class="cc-pdf-logo" src="${x(logoSrc)}" alt="${x(c.issuer||'')}" loading="lazy" onerror="this.style.display='none'"><span class="cc-pdf-label">&#128196; PDF CERT</span></div>`;
   } else if(isC && logoSrc){
     topHtml = `<div class="cc-top cc-top-badge"><img class="cc-badge-img" src="${x(logoSrc)}" alt="${x(c.title||'')}" loading="lazy" onerror="this.style.display='none'"></div>`;
   } else {
