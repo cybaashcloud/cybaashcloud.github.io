@@ -1339,7 +1339,8 @@ function credCard(c){
   //   Priority: c.image (CERTIFICATE IMAGE field in admin) → c.pdf if it's an image (not a .pdf)
   // logoSrc  → small issuer icon shown in the card body header row
   //   Priority: c.logo → LI_BADGE for linkedin type → credly badge image
-  const pdfIsImage = c.pdf && !c.pdf.endsWith('.pdf')
+  const pdfIsDataUri = c.pdf && c.pdf.startsWith('data:application/pdf')
+  const pdfIsImage = c.pdf && !c.pdf.endsWith('.pdf') && !pdfIsDataUri
   const certJpeg = c.image || (pdfIsImage ? c.pdf : '')
   let logoSrc = ''
   if(isC){
@@ -1373,7 +1374,7 @@ function credCard(c){
     ? `<div class="cc-tags">${(c.tags).map(t=>`<span class="cc-tag${HL.has(t)?' hl':''}">${x(t)}</span>`).join('')}</div>`
     : '';
 
-  const hasPdf    = c.pdf && c.pdf.endsWith('.pdf');
+  const hasPdf    = c.pdf && (c.pdf.endsWith('.pdf') || c.pdf.startsWith('data:application/pdf'));
   const badgeHref = c.url || '#';           // Credly / cert URL
   const pdfHref   = hasPdf ? c.pdf : '';   // PDF link if present
   // Primary click target on the card itself
