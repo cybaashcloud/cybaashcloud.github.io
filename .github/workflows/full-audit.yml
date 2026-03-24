@@ -743,7 +743,9 @@ jobs:
               (r'(?i)private[_-]?key\s*[=:]\s*["\']([^"\']{20,})["\']',     'Private Key'),
           ]
           # Values that are obviously placeholders / examples — not real secrets
-          SAFE_VALUES = {'YOUR_KEY','your-key','INSERT','PLACEHOLDER','example','demo','test','xxx','yyy'}
+          # Also includes base64-encoded binary content (PDFs, images) that start with eyJ/JVB due to encoding
+          SAFE_VALUES = {'YOUR_KEY','your-key','INSERT','PLACEHOLDER','example','demo','test','xxx','yyy',
+                         'data:application/pdf','data:image/','JVBERi','application/pdf'}
 
           errors = []
           for f in list(base.glob('**/*.js')) + list(base.glob('**/*.html')) + list(base.glob('**/*.json')):
