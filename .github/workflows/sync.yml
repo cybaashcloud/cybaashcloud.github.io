@@ -128,6 +128,13 @@ jobs:
           cp frontend/admin/tools.html    _site/admin/tools.html
           echo "OK admin/tools.html"
 
+          # ── Project PDFs ──────────────────────────────────────────────
+          if [ -d frontend/pdfs ]; then
+            mkdir -p _site/pdfs
+            cp -r frontend/pdfs/. _site/pdfs/
+            echo "OK pdfs/ ($(find frontend/pdfs -type f | wc -l) files)"
+          fi
+
           # ── Certificates ──────────────────────────────────────────────
           if [ -d frontend/certificates ]; then
             mkdir -p _site/certificates
