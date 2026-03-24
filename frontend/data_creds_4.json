@@ -1,6 +1,64 @@
 {
   "credentials": [
     {
+      "id": "li0183",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/e0322259a18c03f1c133e901527b29990fd3d670b0b2c0f99017bd2c08325f2b",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Social Media Marketing",
+        "Social Media Writing"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0183.jpg",
+      "title": "Marketing: Copywriting for Social Media",
+      "issuer": "LinkedIn",
+      "courseId": "marketing-copywriting-for-social-media",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "e0322259a18c03f1c133e901527b29990fd3d670b0b2c0f99017bd2c08325f2b"
+    },
+    {
+      "id": "li0184",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/142c90aa710d34f329d8fbbbc71f997292e3508cd6d7a2d4cc1219f367cd96c3",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Marketing",
+        "Brand Storytelling"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0184.jpg",
+      "title": "Marketing: How to Use High-Impact Storytelling",
+      "issuer": "LinkedIn",
+      "courseId": "marketing-how-to-use-high-impact-storytelling",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "142c90aa710d34f329d8fbbbc71f997292e3508cd6d7a2d4cc1219f367cd96c3"
+    },
+    {
+      "id": "li0185",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/eed3d44feef30cd64ec2ea06dd88882ecaade1eecbf0ecfd0ea93b328a9f6f59",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Machine Learning",
+        "Azure AI Foundry",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0185.jpg",
+      "title": "Microsoft Azure AI Essentials: Workloads and Machine Learning on Azure",
+      "issuer": "LinkedIn",
+      "courseId": "microsoft-azure-ai-essentials-workloads-and-machine-learning",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "eed3d44feef30cd64ec2ea06dd88882ecaade1eecbf0ecfd0ea93b328a9f6f59"
+    },
+    {
       "id": "li0186",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/6a14472cd57b1559030e01bd1fd66d65edb0841ec689ad1312b4a7106f6d9ad7",
@@ -1503,61 +1561,6 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "09e3aa04ffd56b3931dfb5528dc1067df635ea5ccf0d17c4572eb0cf06ba87ca"
-    },
-    {
-      "id": "li0267",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/7ce2f3bf3f54dc7c84074349e16b32e940b4c971cf8721780d20f1f6ef7c0bff",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Business Writing"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0267.jpg",
-      "title": "What's the So What: Writing Clearly for a Business Audience",
-      "issuer": "LinkedIn",
-      "courseId": "what-s-the-so-what-writing-clearly-for-a-business-audience",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "7ce2f3bf3f54dc7c84074349e16b32e940b4c971cf8721780d20f1f6ef7c0bff"
-    },
-    {
-      "id": "li0268",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/a347fc5a8bb226d74ff1c67e0b9f09f16177528ea0af6ab6d4970b0598b87ec2",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "ID:"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0268.jpg",
-      "title": "When Negotiation's about More than Money: How to Negotiate (Almost) Anything",
-      "issuer": "LinkedIn",
-      "courseId": "when-negotiation-s-about-more-than-money-how-to-negotiate-al",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "a347fc5a8bb226d74ff1c67e0b9f09f16177528ea0af6ab6d4970b0598b87ec2"
-    },
-    {
-      "id": "li0269",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/ca966c5bd4d05dda91c9320585f1b0b3d34c8219e0fb4843fc9cc6c72074cfe4",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Building Trust",
-        "ID:"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0269.jpg",
-      "title": "Why Trust Matters with Rachel Botsman",
-      "issuer": "LinkedIn",
-      "courseId": "why-trust-matters-with-rachel-botsman",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "ca966c5bd4d05dda91c9320585f1b0b3d34c8219e0fb4843fc9cc6c72074cfe4"
     }
   ]
 }
