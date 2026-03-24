@@ -234,7 +234,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .proj-card{background:var(--panel);border:1px solid var(--border);position:relative;transition:border-color .2s;overflow:hidden}
 .proj-card:hover{border-color:rgba(0,212,255,.28)}
 .proj-img{width:100%;height:130px;object-fit:cover;display:block;border-bottom:1px solid var(--border)}
-.proj-noimg{width:100%;height:90px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.proj-noimg{width:100%;height:130px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
 .proj-noimg svg{width:28px;height:28px;opacity:.12}
 .cr-logo-top{width:100%;height:90px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
 
@@ -1479,30 +1479,62 @@ function rSkills(skills){
 function rProj(proj){
   if(!proj.length){g('pjGrid').innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><div class="empty-t">No projects yet — add via admin panel</div></div>`;return}
   const sc=s=>s?.replace(/\s+/g,'-')||'Completed';
+  // Guard: treat empty/whitespace-only strings as falsy for URLs
+  const realUrl=v=>v&&v.trim()?v.trim():null;
   // hasPdf: only show PDF button when the link is a real URL/path (not a raw base64 blob)
-  const hasPdf=p=>p.pdf&&!p.pdf.startsWith('data:');
-  g('pjGrid').innerHTML=proj.map(p=>{
-    const imgHtml=p.image
-      ?`<img class="proj-img" src="${x(p.image)}" alt="${x(p.title)}" onerror="this.style.display='none'">`
-      :'';
-    const noImgStyle=p.image?'display:none':'';
+  const hasPdf=p=>realUrl(p.pdf)&&!p.pdf.startsWith('data:');
+  // Tech colour palette cycling
+  const TC=['#ff2244','#aa44ff','#00d4ff','#ffd700','#00ff88','#ff6600'];
+  g('pjGrid').innerHTML=proj.map((p,i)=>{
+    const hasImg = p.image && !p.image.startsWith('data:image/gif;base64,R0lGOD'); // valid image
+    const hasB64  = p.image && p.image.startsWith('data:');
+    const showImg = hasImg || hasB64;
+
+    // ── Top banner: real/base64 image OR styled no-image panel ──
+    let topHtml;
+    if(showImg){
+      topHtml=`<img class="proj-img" src="${x(p.image)}" alt="${x(p.title)}" loading="lazy" onerror="this.parentElement.querySelector('.proj-noimg-fallback').style.display='flex';this.style.display='none'">
+               <div class="proj-noimg proj-noimg-fallback" style="display:none">${_projNoImgInner(p,i)}</div>`;
+    } else {
+      // No image — render a full-height styled banner matching the card aesthetic
+      topHtml=`<div class="proj-noimg">${_projNoImgInner(p,i)}</div>`;
+    }
+
+    const liveUrl=realUrl(p.liveUrl), ghUrl=realUrl(p.githubUrl), pdfUrl=hasPdf(p)?realUrl(p.pdf):null;
     return `
     <div class="proj-card">
       <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
-      ${imgHtml}<div class="proj-noimg" style="${noImgStyle}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+      ${topHtml}
       <div class="proj-body">
         <div class="proj-hdr"><div class="proj-title">${x(p.title||'Untitled')}</div><span class="stat-b ${sc(p.status)}">${x(p.status||'Completed')}</span></div>
-        ${p.featured?'<div class="feat-b">FEATURED</div>':'' }
-        <p class="proj-desc">${x(p.desc||'')} </p>
+        ${p.featured?'<div class="feat-b">FEATURED</div>':''}
+        <p class="proj-desc">${x(p.desc||'')}</p>
         ${p.tech?.length?`<div class="tech-row">${p.tech.map(t=>`<span class="tech-t">${x(t)}</span>`).join('')}</div>`:''}
         <div class="proj-links">
-          ${p.liveUrl?`<a class="pl" href="${x(p.liveUrl)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>LIVE</a>`:''}
-          ${p.githubUrl?`<a class="pl" href="${x(p.githubUrl)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>GITHUB</a>`:''}
-          ${hasPdf(p)?`<a class="pl pl-pdf" href="${x(p.pdf)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="9" height="9"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</a>`:''}
+          ${liveUrl?`<a class="pl" href="${x(liveUrl)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>LIVE</a>`:''}
+          ${ghUrl?`<a class="pl" href="${x(ghUrl)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>GITHUB</a>`:''}
+          ${pdfUrl?`<a class="pl pl-pdf" href="${x(pdfUrl)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="9" height="9"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF REPORT</a>`:''}
         </div>
       </div>
     </div>`;
   }).join('');
+}
+
+// ── Styled no-image banner inner content (used for fallback + missing image) ──
+function _projNoImgInner(p, i){
+  const COLS2=['#ff2244','#aa44ff','#00d4ff','#ffd700','#00ff88','#ff6600'];
+  const col=COLS2[i%COLS2.length];
+  // Extract first line of desc as a short tagline
+  const tagline=(p.desc||'').split('\n').find(l=>l.trim())||'';
+  const short=tagline.length>72?tagline.slice(0,72)+'…':tagline;
+  // Pick a type label from tech or status
+  const typeLabel=p.tech?.[0]||p.status||'PROJECT';
+  return `<div style="width:100%;text-align:center;padding:0 16px;position:relative;z-index:1">
+    <div style="font-family:'Orbitron',monospace;font-size:7px;letter-spacing:3px;color:${col};opacity:.7;margin-bottom:8px;text-transform:uppercase">${x(typeLabel)}</div>
+    <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:900;color:${col};letter-spacing:2px;text-shadow:0 0 20px ${col}55;margin-bottom:6px;line-height:1.3">${x(p.title||'')}</div>
+    ${short?`<div style="font-family:'Rajdhani',sans-serif;font-size:10px;color:rgba(200,224,244,.4);line-height:1.5;max-width:280px;margin:0 auto">${x(short)}</div>`:''}
+  </div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,${col}12 0%,transparent 70%);pointer-events:none"></div>`;
 }
 
 // ── CTF Flags
