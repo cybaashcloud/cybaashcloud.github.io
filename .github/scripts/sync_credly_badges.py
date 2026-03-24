@@ -4,7 +4,8 @@ sync_credly_badges.py  —  Credly Badge Auto-Sync
 
 Fetches NEW Credly badges from the user's public Credly profile and adds
 them into data_creds_*.json exactly matching the format used by existing
-badges (credlyBadgeId, credlyImageUrl, url, tags, title, issuer, date …).
+badges (credlyBadgeId, credlyImageUrl, url, tags, title, issuer, date,
+pdf/certificate URL, and real skill tags pulled directly from the Credly API).
 
 HOW IT WORKS
 ─────────────
@@ -215,14 +216,37 @@ def _badge_to_credential(raw: dict, session) -> Optional[dict]:
         # Public badge URL
         badge_url = CREDLY_BADGE_URL.format(badge_id=badge_id)
 
-        # Download badge image as base64
+        # ── Skills / Tags ──────────────────────────────────────────────
+        # Prefer real skill names from the API over keyword guessing.
+        # Credly public API: badge_template.skills = [{"name": "Python"}, ...]
+        api_skills = badge_template.get("skills") or []
+        api_skill_names = [s.get("name", "").strip() for s in api_skills if s.get("name")]
+
+        if api_skill_names:
+            # Use the actual skill names Credly provides — these are the real tags
+            tags = sorted(set(api_skill_names))
+            print(f"    Skills from API ({len(tags)}): {', '.join(tags[:5])}{'…' if len(tags)>5 else ''}")
+        else:
+            # Fall back to keyword heuristic against title + issuer
+            tags = _title_to_tags(f"{name} {issuer_name}")
+            print(f"    Skills (heuristic): {tags}")
+
+        # ── PDF / Certificate URL ──────────────────────────────────────
+        # Credly public API may provide a certificate PDF URL in several places.
+        # Check them all in priority order.
+        pdf_url = (
+            badge_template.get("certificate_url") or          # direct cert PDF
+            (raw.get("evidence", {}) or {}).get("url") or     # evidence block
+            raw.get("evidence_file_url") or                    # flat field
+            badge_template.get("global_activity_url") or      # activity cert page
+            ""
+        )
+
+        # ── Download badge image as base64 ────────────────────────────
         credly_image_b64 = ""
         if image_url:
             print(f"    Downloading badge image for: {name[:50]} …")
             credly_image_b64 = _download_image_b64(image_url, session) or ""
-
-        # Tags from title + issuer
-        tags = _title_to_tags(f"{name} {issuer_name}")
 
         # Generate a short local ID so it doesn't collide with existing ones
         local_id = "crd" + str(uuid.uuid4()).replace("-", "")[:6]
@@ -234,7 +258,7 @@ def _badge_to_credential(raw: dict, session) -> Optional[dict]:
             "issuer":           issuer_name,
             "date":             date_str,
             "url":              badge_url,
-            "pdf":              "",           # No PDF for Credly badges
+            "pdf":              pdf_url,      # Certificate/PDF URL from Credly API
             "image":            None,
             "logo":             "",
             "tags":             tags,
