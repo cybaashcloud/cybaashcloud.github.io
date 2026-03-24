@@ -1,6 +1,65 @@
 {
   "credentials": [
     {
+      "id": "li0015",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/30af1784ddf77ba012f1b70aa133fc7ca3adbc854e181ede452a0dbe7afb1ed4",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Machine Learning",
+        "Artificial Intelligence (AI",
+        "Artificial Intelligence Foundations"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0015.jpg",
+      "title": "Artificial Intelligence Foundations: Machine Learning",
+      "issuer": "LinkedIn",
+      "courseId": "artificial-intelligence-foundations-machine-learning",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "30af1784ddf77ba012f1b70aa133fc7ca3adbc854e181ede452a0dbe7afb1ed4"
+    },
+    {
+      "id": "li0016",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Body Language",
+        "Leadership"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0016.jpg",
+      "title": "Body Language for Leaders and Managers",
+      "issuer": "LinkedIn",
+      "courseId": "body-language-for-leaders-and-managers",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf"
+    },
+    {
+      "id": "li0017",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Tech Career Skills",
+        "Security Awareness",
+        "Information Security Awareness"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0017.jpg",
+      "title": "Build Your Cybersecurity Awareness Skills",
+      "issuer": "LinkedIn",
+      "courseId": "build-your-cybersecurity-awareness-skills",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861"
+    },
+    {
       "id": "li0018",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/bd2ae17d87ff083fe61fc6ab928660e4de3c4ecf32bb086b5ef16bec9e36663d",
@@ -1520,66 +1579,6 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "c5c9f37dbe7966310b4f3150f8dacfdd6d16e54299060921cde8fcfaec7e9242"
-    },
-    {
-      "id": "li0099",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/a12976f56c009c8efb6bc74ffc72fe48afc6da1badaadc26de92f8d90fd0bdba",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "AI for Business",
-        "Artificial Intelligence (AI",
-        "Business Analysis"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0099.jpg",
-      "title": "Generative AI for Business Analysts",
-      "issuer": "LinkedIn",
-      "courseId": "generative-ai-for-business-analysts",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "a12976f56c009c8efb6bc74ffc72fe48afc6da1badaadc26de92f8d90fd0bdba"
-    },
-    {
-      "id": "li0100",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Conditional Image Generation",
-        "Artificial Intelligence for Design",
-        "Artificial Intelligence (AI"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0100.jpg",
-      "title": "Generative AI Imaging: What Creative Pros Need to Know",
-      "issuer": "LinkedIn",
-      "courseId": "generative-ai-imaging-what-creative-pros-need-to-know",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "4067f56caddfb6ea44434beb3079eddf465448bb2f34695542b797e7f9302925"
-    },
-    {
-      "id": "li0101",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Artificial Intelligence (AI",
-        "Responsible AI",
-        "Copyright Law"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0101.jpg",
-      "title": "Generative AI: Business and Legal Concerns for Creatives",
-      "issuer": "LinkedIn",
-      "courseId": "generative-ai-business-and-legal-concerns-for-creatives",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "ece7d8647b7f94e32f686e460d60f1273805cd9b4b78f86e225fb89398ac0edc"
     }
   ]
 }
