@@ -49,6 +49,7 @@ FRONTEND_DIR    = Path("frontend")
 CREDS_PATTERN   = "data_creds_{n}.json"
 MAX_PER_FILE    = int(os.environ.get("MAX_BADGES_FILE", 90))
 CREDLY_USERNAME = os.environ.get("CREDLY_USERNAME", "").strip()
+FORCE_RESYNC    = os.environ.get("FORCE_RESYNC", "false").strip().lower() == "true"
 
 CREDLY_EARNER_URL = "https://www.credly.com/users/{username}/badges.json"
 CREDLY_BADGE_URL  = "https://www.credly.com/badges/{badge_id}/public_url"
@@ -341,6 +342,7 @@ def main():
 
     print(f"Credly username : {CREDLY_USERNAME}")
     print(f"Frontend dir    : {FRONTEND_DIR.resolve()}")
+    print(f"Force re-sync   : {FORCE_RESYNC}")
     print()
 
     try:
@@ -367,31 +369,53 @@ def main():
 
     if not raw_badges:
         print("No badges returned from Credly. Nothing to add.")
-        _write_summary(0, 0, 0)
+        _write_summary(0, 0, 0, 0)
         return
 
-    # 3. Filter to only NEW badges
+    # 3a. Find NEW badges not yet in JSON
     new_badges = [
         b for b in raw_badges
         if b.get("id") and b["id"] not in existing_ids
     ]
+
+    # 3b. In force-resync mode, also find existing badges missing skills or pdf
+    patch_badges = []
+    if FORCE_RESYNC:
+        # Build a map of credlyBadgeId → (fname, cred_index, cred)
+        existing_map = {}
+        for fname, data in files.items():
+            for idx, cred in enumerate(data.get("credentials", [])):
+                bid = cred.get("credlyBadgeId", "")
+                if bid:
+                    existing_map[bid] = (fname, idx, cred)
+
+        for raw in raw_badges:
+            bid = raw.get("id", "")
+            if bid in existing_map:
+                fname, idx, cred = existing_map[bid]
+                needs_patch = (
+                    not cred.get("tags") or
+                    not cred.get("pdf") or
+                    not cred.get("credlyImageUrl")
+                )
+                if needs_patch:
+                    patch_badges.append((raw, fname, idx))
+
+        print(f"── Force re-sync: {len(patch_badges)} existing badge(s) need skills/pdf patch")
+
     print(f"── New badges (not yet in JSON): {len(new_badges)}")
 
-    if not new_badges:
-        print("   All Credly badges are already present. Nothing to add.")
-        _write_summary(len(raw_badges), 0, 0)
-        return
-
-    # 4. Process each new badge
+    # 4. Process NEW badges
     added   = 0
     skipped = 0
+    patched = 0
 
     for raw in new_badges:
         badge_id   = raw.get("id", "?")
         badge_tmpl = raw.get("badge_template", {}) or {}
         badge_name = badge_tmpl.get("name", "Unnamed badge")
 
-        print(f"  Processing: {badge_name[:60]} ({badge_id})")
+        print(f"  Adding: {badge_name[:60]} ({badge_id})")
         cred = _badge_to_credential(raw, session)
 
         if cred is None:
@@ -404,9 +428,42 @@ def main():
         print(f"    ✓ added to {Path(target).name}")
         time.sleep(0.3)
 
+    # 5. Patch existing badges that are missing skills/pdf (force resync only)
+    for raw, fname, idx in patch_badges:
+        badge_tmpl = raw.get("badge_template", {}) or {}
+        badge_name = badge_tmpl.get("name", "Unnamed badge")
+        badge_id   = raw.get("id", "?")
+
+        print(f"  Patching: {badge_name[:60]} ({badge_id})")
+        updated = _badge_to_credential(raw, session)
+        if updated is None:
+            print(f"    ✗ skipped (could not convert)")
+            continue
+
+        cred = files[fname]["credentials"][idx]
+
+        # Only overwrite fields that were missing — preserve id, featured, etc.
+        if not cred.get("tags") and updated.get("tags"):
+            cred["tags"] = updated["tags"]
+            print(f"    ✓ tags updated: {updated['tags'][:3]}…")
+        if not cred.get("pdf") and updated.get("pdf"):
+            cred["pdf"] = updated["pdf"]
+            print(f"    ✓ pdf updated: {updated['pdf'][:60]}")
+        if not cred.get("credlyImageUrl") and updated.get("credlyImageUrl"):
+            cred["credlyImageUrl"] = updated["credlyImageUrl"]
+            print(f"    ✓ image updated")
+
+        patched += 1
+        time.sleep(0.3)
+
+    if not new_badges and not patch_badges:
+        print("   All Credly badges are already present and complete. Nothing to do.")
+        _write_summary(len(raw_badges), 0, 0, 0)
+        return
+
     print()
 
-    # 5. Write modified files back
+    # 6. Write modified files back
     modified = []
     for fname, data in files.items():
         p = Path(fname)
@@ -422,13 +479,14 @@ def main():
     print(f"── Summary ───────────────────────────────────────────")
     print(f"   Credly badges found : {len(raw_badges)}")
     print(f"   New badges added    : {added}")
+    print(f"   Existing patched    : {patched}")
     print(f"   Skipped             : {skipped}")
     print(f"   Files updated       : {', '.join(modified) if modified else 'none'}")
 
-    _write_summary(len(raw_badges), added, skipped)
+    _write_summary(len(raw_badges), added, patched, skipped)
 
 
-def _write_summary(total: int, added: int, skipped: int):
+def _write_summary(total: int, added: int, patched: int, skipped: int):
     """Write to GITHUB_STEP_SUMMARY if available."""
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY", "")
     if summary_path:
@@ -437,6 +495,7 @@ def _write_summary(total: int, added: int, skipped: int):
                 f.write("## Credly Badge Sync\n")
                 f.write(f"- **Total Credly badges found** : {total}\n")
                 f.write(f"- **New badges added to JSON**  : {added}\n")
+                f.write(f"- **Existing badges patched**   : {patched}\n")
                 f.write(f"- **Skipped**                   : {skipped}\n")
         except Exception:
             pass
