@@ -49,7 +49,7 @@ CREDS_PATTERN   = "data_creds_{n}.json"
 MAX_PER_FILE    = int(os.environ.get("MAX_BADGES_FILE", 90))
 CREDLY_USERNAME = os.environ.get("CREDLY_USERNAME", "").strip()
 
-CREDLY_EARNER_URL = "https://api.credly.com/v1/obi/v2/earners/{username}/badges"
+CREDLY_EARNER_URL = "https://www.credly.com/users/{username}/badges.json"
 CREDLY_BADGE_URL  = "https://www.credly.com/badges/{badge_id}/public_url"
 
 # Skill keywords → tags (mirrors sync_skills.py taxonomy)
@@ -134,7 +134,7 @@ def _fetch_credly_badges(username: str, session) -> list:
             r = session.get(
                 url,
                 headers=_headers(),
-                params={"page": page, "page_size": 50},
+                params={"page": page, "page_size": 48},  # credly.com max page size
                 timeout=20,
             )
             if r.status_code == 404:
@@ -152,8 +152,9 @@ def _fetch_credly_badges(username: str, session) -> list:
 
             all_badges.extend(badges)
             meta     = data.get("metadata", {})
-            total    = meta.get("count", len(all_badges))
-            per_page = meta.get("per_page", 50)
+            # Public endpoint uses 'total_count'; fall back to 'count' for safety
+            total    = meta.get("total_count") or meta.get("count") or len(all_badges)
+            per_page = meta.get("per_page", 48)  # credly.com default page size is 48
 
             if len(all_badges) >= total or len(badges) < per_page:
                 break
@@ -177,17 +178,27 @@ def _badge_to_credential(raw: dict, session) -> Optional[dict]:
         if not badge_id:
             return None
 
-        # Pull nested badge template info
+        # The public endpoint (credly.com/users/{u}/badges.json) nests info
+        # under 'badge_template'; fall back to top-level fields for safety.
         badge_template = raw.get("badge_template", {}) or {}
-        name           = badge_template.get("name", "").strip()
-        issuer_info    = badge_template.get("issuing_org", {}) or {}
-        issuer_name    = issuer_info.get("name", "").strip() or "Credly"
+        name           = (badge_template.get("name") or raw.get("badge_name", "")).strip()
 
-        # Badge image URL (the actual badge graphic)
-        image_info     = badge_template.get("image", {}) or {}
-        image_url      = (
-            image_info.get("url") or
-            image_info.get("id")  or
+        # Issuer: public endpoint has issuer inside badge_template.issuing_org
+        # OR at the top level as badge_template.issuer
+        issuer_info = (
+            badge_template.get("issuing_org") or
+            badge_template.get("issuer") or
+            {}
+        )
+        issuer_name = (issuer_info.get("name") or "").strip() or "Credly"
+
+        # Badge image URL — public endpoint puts it at badge_template.image.url
+        # OR badge_template.image_url (flat string), OR top-level image_url
+        image_info = badge_template.get("image") or {}
+        image_url  = (
+            (image_info.get("url") if isinstance(image_info, dict) else image_info) or
+            badge_template.get("image_url") or
+            raw.get("image_url") or
             ""
         )
 
