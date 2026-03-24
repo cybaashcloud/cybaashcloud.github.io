@@ -1,1 +1,1806 @@
-{"about":{"bio":"A dedicated Cybersecurity Specialist and Ethical Hacker driven by a passion for digital defense. As a lifelong knowledge seeker, I specialize in identifying vulnerabilities and securing complex infrastructures. Committed to constant learning, I stay ahead of threats to safeguard data integrity and user trust.","name":"Mohamed Aasiq","title":"Cybersecurity | Ethical Hacker","location":"Pollachi, Tamil Nadu, India","availability":"freelance","avatar":"portfolio/avatar.png","yearsExp":"8","tagline":"AASIQ_OS","linkedin":"https://www.linkedin.com/in/mohamedaasiq07/","github":"https://github.com/cybaash","email":"mohamedaasiq07@gmail.com","certCount":343},"contact":{"email":"mohamedaasiq07@gmail.com","phone":"+91 95665 96077","github":"https://github.com/cybaash","linkedin":"https://linkedin.com/in/mohamedaasiq07","tryhackme":"https://tryhackme.com","twitter":"","address":"Pollachi, Tamil Nadu, India (Remote-friendly)","ctaMessage":"Open to full stack web development projects and providing security from cyber attacks for websites, apps, servers, databases and social media accounts","specialization":"Pen Testing | Cloud Security | Network Defense | AI Security","languages":"Tamil (Native) \u00b7 Urdu (Native) \u00b7 English (Professional) \u00b7 Hindi"},"experience":[{"id":"ex1","desc":"Leading a wellness enterprise as Managing Director \u2014 overseeing full business operations, team management, client relations, and strategic growth. Applied cybersecurity best practices to protect customer data and digital infrastructure.","role":"Managing Director & Founder","type":"Full-time","company":"Detoxy Hijama","country":"\ud83c\uddee\ud83c\uddf3","current":true,"endDate":"","location":"Pune, Maharashtra","startDate":"Aug 2020","achievements":["Founded and scaled the business from 0 to operational within 6 months","Implemented digital security protocols for client data protection","Built and managed a team of 8 employees"]},{"id":"ex2","desc":"Managed 50+ Amazon SKUs \u2014 resolved suppressed listings, optimised inbound shipments to cut shipping costs, maintained Star seller rating by handling policy appeals, and automated daily sales reporting via Excel Macros.","role":"Operations Executive","type":"Full-time","company":"Haneez Enterprises Pvt. Ltd.","country":"\ud83c\uddee\ud83c\uddf3","current":false,"endDate":"Jul 2020","location":"Pune, Maharashtra","startDate":"May 2019","achievements":["Managed 50+ Amazon SKUs across multiple categories","Reduced shipping costs by optimising inbound shipments","Automated daily sales reporting via Excel Macros"]},{"id":"ex3","desc":"Managed inventory control, stock audits, vendor coordination, and merchandising for a retail & wholesale outlet.","role":"Storekeeper","type":"Full-time","company":"SKB Multy Shop","country":"\ud83c\uddee\ud83c\uddf3","current":false,"endDate":"May 2019","location":"Tamil Nadu","startDate":"Jun 2018","achievements":["Maintained 99% inventory accuracy across 500+ SKUs","Coordinated with 10+ vendors for timely restocking","Implemented barcode-based stock tracking system"]}],"skills":[{"id":"cat001","name":"Cybersecurity & Security","items":[{"id":"sk001","name":"AWS Knowledge: Security Champion","badge":"","level":"Expert"},{"id":"sk002","name":"Junior Cybersecurity Analyst Career Path","badge":"","level":"Expert"},{"id":"sk003","name":"Become A Cybersecurity Professional","badge":"","level":"Expert"},{"id":"sk004","name":"Become An It Security Specialist","badge":"","level":"Expert"},{"id":"sk005","name":"Building Ai Products: Security Essentials By Linkedin Learning","badge":"","level":"Expert"},{"id":"sk006","name":"Ciso Leadership: Managing A Cybersecurity Program","badge":"","level":"Expert"},{"id":"sk007","name":"Cybersecurity For Sales Professionals","badge":"","level":"Expert"},{"id":"sk008","name":"Develop Your Ai Skills As A Cybersecurity Professional","badge":"","level":"Expert"},{"id":"sk009","name":"The It Professional'S Path To Cybersecurity","badge":"","level":"Expert"},{"id":"sk010","name":"Welcome To The \"Building Ai Products: Security Essentials\"","badge":"","level":"Expert"},{"id":"sk011","name":"Career Essentials In Cybersecurity","badge":"","level":"Expert"},{"id":"sk012","name":"Microsoft Security Essentials","badge":"","level":"Expert"},{"id":"sk013","name":"Ai In Cybersecurity: The Future Of Red Teaming And Blue Teaming","badge":"","level":"Expert"},{"id":"sk014","name":"Ai Product Security: Building Strong Data Governance And Protecti","badge":"","level":"Expert"},{"id":"sk015","name":"Ai Product Security: Incident Response","badge":"","level":"Expert"},{"id":"sk016","name":"Ai Product Security: Secure Architecture, Deployment, And Infrast","badge":"","level":"Expert"},{"id":"sk017","name":"Ai Product Security: Testing, Validation, And Maintenance","badge":"","level":"Expert"},{"id":"sk018","name":"Artificial Intelligence And Application Security","badge":"","level":"Expert"},{"id":"sk019","name":"Artificial Intelligence For Cybersecurity","badge":"","level":"Expert"},{"id":"sk020","name":"Build Your Cybersecurity Awareness Skills","badge":"","level":"Expert"},{"id":"sk021","name":"Building A Cybersecurity Awareness Program","badge":"","level":"Advanced"},{"id":"sk022","name":"Building And Managing A Cybersecurity Program","badge":"","level":"Advanced"},{"id":"sk023","name":"Building Your Cybersecurity Talent Pipeline","badge":"","level":"Advanced"},{"id":"sk024","name":"Cloud Security Architecture For The Enterprise","badge":"","level":"Advanced"},{"id":"sk025","name":"Cloud Security Concepts: Services And Compliance","badge":"","level":"Advanced"},{"id":"sk026","name":"Crisis Communication Planning After A Ransomware Or Other Cyberse","badge":"","level":"Advanced"},{"id":"sk027","name":"Cybersecurity At Work","badge":"","level":"Advanced"},{"id":"sk028","name":"Cybersecurity Awareness: Ai","badge":"","level":"Advanced"},{"id":"sk029","name":"Cybersecurity Awareness: Cloud Security (2022)","badge":"","level":"Advanced"},{"id":"sk030","name":"Cybersecurity Awareness: Cybersecurity Terminology","badge":"","level":"Advanced"},{"id":"sk031","name":"Cybersecurity Awareness: Iot Devices","badge":"","level":"Advanced"},{"id":"sk032","name":"Cybersecurity Awareness: Malware","badge":"","level":"Advanced"},{"id":"sk033","name":"Cybersecurity Awareness: Phishing Attacks","badge":"","level":"Advanced"},{"id":"sk034","name":"Cybersecurity Awareness: Protect Your Privacy","badge":"","level":"Advanced"},{"id":"sk035","name":"Cybersecurity Awareness: Ransomware","badge":"","level":"Advanced"},{"id":"sk036","name":"Cybersecurity Awareness: Social Engineering","badge":"","level":"Advanced"},{"id":"sk037","name":"Cybersecurity Careers And Certifications","badge":"","level":"Advanced"},{"id":"sk038","name":"Cybersecurity For Executives","badge":"","level":"Advanced"},{"id":"sk039","name":"Cybersecurity","badge":"","level":"Advanced"},{"id":"sk040","name":"Cybersecurity: Computer Forensics","badge":"","level":"Advanced"},{"id":"sk041","name":"Cybersecurity Outsourcing: Vendor Selection And Management","badge":"","level":"Advanced"},{"id":"sk042","name":"Cybersecurity With Cloud Computing","badge":"","level":"Advanced"},{"id":"sk043","name":"Ethics In Cybersecurity","badge":"","level":"Advanced"},{"id":"sk044","name":"It And Cybersecurity Risk Management","badge":"","level":"Advanced"},{"id":"sk045","name":"It Security: Core Concepts","badge":"","level":"Advanced"},{"id":"sk046","name":"It Security: Network Security","badge":"","level":"Advanced"},{"id":"sk047","name":"It Security: Operating System Security","badge":"","level":"Advanced"},{"id":"sk048","name":"Land Your First Cybersecurity Job","badge":"","level":"Advanced"},{"id":"sk049","name":"Learning Threat Modeling For Security Professionals","badge":"","level":"Advanced"},{"id":"sk050","name":"Leveraging Ai For Security Testing","badge":"","level":"Advanced"},{"id":"sk051","name":"Leveraging Security Metrics In Your Organization","badge":"","level":"Advanced"},{"id":"sk052","name":"Microsoft Security Copilot","badge":"","level":"Advanced"},{"id":"sk053","name":"Microsoft Security Essentials: Concepts, Solutions, And Ai-Powere","badge":"","level":"Advanced"},{"id":"sk054","name":"Practical Cybersecurity For It Professionals","badge":"","level":"Advanced"},{"id":"sk055","name":"Security Risks In Ai And Machine Learning: Categorizing Attacks A","badge":"","level":"Advanced"},{"id":"sk056","name":"Soft Skills For Information Security Professionals","badge":"","level":"Advanced"},{"id":"sk057","name":"The Cybersecurity Threat Landscape","badge":"","level":"Advanced"},{"id":"sk058","name":"Transitioning To A Career In Cybersecurity","badge":"","level":"Advanced"},{"id":"sk059","name":"Vulnerability Management In Cybersecurity: The Basics","badge":"","level":"Advanced"},{"id":"sk060","name":"Ethical Hacker","badge":"","level":"Advanced"},{"id":"sk061","name":"Introduction to Cybersecurity","badge":"","level":"Advanced"},{"id":"sk062","name":"Penetration Testing By Cybrary","badge":"","level":"Advanced"},{"id":"sk063","name":"Certified Ethical Hacker (Ceh)","badge":"","level":"Advanced"},{"id":"sk064","name":"Offensive Penetration Testing","badge":"","level":"Advanced"},{"id":"sk065","name":"Penetration Testing (2021)","badge":"","level":"Advanced"},{"id":"sk066","name":"Social Media Marketing By Hootsuite","badge":"","level":"Advanced"},{"id":"sk067","name":"Marketing: Copywriting For Social Media","badge":"","level":"Advanced"},{"id":"sk068","name":"Serving Customers Using Social Media","badge":"","level":"Advanced"},{"id":"sk069","name":"Social Media Marketing","badge":"","level":"Advanced"},{"id":"sk070","name":"Social Media Marketing: Strategy And Optimization","badge":"","level":"Advanced"},{"id":"sk071","name":"Strategic Content Marketing: Grow Your Reach On Social Media","badge":"","level":"Advanced"},{"id":"sk072","name":"Red Teaming For Generative Ai: Building Robust And Responsible So","badge":"","level":"Advanced"},{"id":"sk073","name":"Learning The Owasp Top 10","badge":"","level":"Advanced"}]},{"id":"cat002","name":"AI & Machine Learning","items":[{"id":"sk074","name":"Essential Skills In Generative Ai For Creatives By Adobe","badge":"","level":"Advanced"},{"id":"sk075","name":"Responsible Ai","badge":"","level":"Advanced"},{"id":"sk076","name":"Machine Learning With Python By Anaconda","badge":"","level":"Advanced"},{"id":"sk077","name":"Testmu Ai Software Testing","badge":"","level":"Advanced"},{"id":"sk078","name":"Building Ai Products: Security Essentials By Linkedin Learning","badge":"","level":"Advanced"},{"id":"sk079","name":"Develop Your Ai Skills As A Cybersecurity Professional","badge":"","level":"Advanced"},{"id":"sk080","name":"Welcome To The \"Building Ai Products: Security Essentials\"","badge":"","level":"Advanced"},{"id":"sk081","name":"Microsoft Azure Ai Essentials","badge":"","level":"Intermediate"},{"id":"sk082","name":"Generative Ai By Snowflake","badge":"","level":"Intermediate"},{"id":"sk083","name":"Machine Learning Statistical By Wolfram Research","badge":"","level":"Intermediate"},{"id":"sk084","name":"Agentic Ai For Business Analysis","badge":"","level":"Intermediate"},{"id":"sk085","name":"Ai In Cybersecurity: The Future Of Red Teaming And Blue Teaming","badge":"","level":"Intermediate"},{"id":"sk086","name":"Ai Pair Programming With Github Copilot","badge":"","level":"Intermediate"},{"id":"sk087","name":"Ai Product Security: Building Strong Data Governance And Protecti","badge":"","level":"Intermediate"},{"id":"sk088","name":"Ai Product Security: Incident Response","badge":"","level":"Intermediate"},{"id":"sk089","name":"Ai Product Security: Secure Architecture, Deployment, And Infrast","badge":"","level":"Intermediate"},{"id":"sk090","name":"Ai Product Security: Testing, Validation, And Maintenance","badge":"","level":"Intermediate"},{"id":"sk091","name":"Artificial Intelligence And Application Security","badge":"","level":"Intermediate"},{"id":"sk092","name":"Artificial Intelligence For Cybersecurity","badge":"","level":"Intermediate"},{"id":"sk093","name":"Artificial Intelligence: Machine Learning","badge":"","level":"Intermediate"},{"id":"sk094","name":"Building Generative Ai Apps To Talk To Your Data","badge":"","level":"Intermediate"},{"id":"sk095","name":"Built-In Machine Learning In The Wolfram Language","badge":"","level":"Intermediate"},{"id":"sk096","name":"Generative Ai For Business Analysts","badge":"","level":"Intermediate"},{"id":"sk097","name":"Generative Ai Imaging: What Creative Pros Need To Know","badge":"","level":"Intermediate"},{"id":"sk098","name":"Generative Ai: Business And Legal Concerns For Creatives","badge":"","level":"Intermediate"},{"id":"sk099","name":"Generative Ai: Introduction To Large Language Models","badge":"","level":"Intermediate"},{"id":"sk100","name":"Generative Ai: Working With Large Language Models","badge":"","level":"Intermediate"},{"id":"sk101","name":"Governing Agentic Ai Systems","badge":"","level":"Intermediate"},{"id":"sk102","name":"Grammarly: Your Ai Writing Partner","badge":"","level":"Intermediate"},{"id":"sk103","name":"How To Boost Your Productivity With Ai Tools (2023)","badge":"","level":"Intermediate"},{"id":"sk104","name":"Html","badge":"","level":"Intermediate"},{"id":"sk105","name":"Introduction To Artificial Intelligence","badge":"","level":"Intermediate"},{"id":"sk106","name":"Introduction To Gen Ai With Snowflake","badge":"","level":"Intermediate"},{"id":"sk107","name":"Leveraging Ai For Security Testing","badge":"","level":"Intermediate"},{"id":"sk108","name":"Leveraging Ai In Adobe Photoshop And Creative Cloud","badge":"","level":"Intermediate"},{"id":"sk109","name":"Machine Learning And Ai: Classification Modeling","badge":"","level":"Intermediate"},{"id":"sk110","name":"Machine Learning: Calculus","badge":"","level":"Intermediate"},{"id":"sk111","name":"Machine Learning: Linear Algebra","badge":"","level":"Intermediate"},{"id":"sk112","name":"Machine Learning: Probability","badge":"","level":"Intermediate"},{"id":"sk113","name":"Machine Learning: Statistics","badge":"","level":"Intermediate"},{"id":"sk114","name":"Machine Learning With Python: Decision Trees","badge":"","level":"Intermediate"},{"id":"sk115","name":"Machine Learning With Python:","badge":"","level":"Intermediate"},{"id":"sk116","name":"Machine Learning With Python: K-Means Clustering","badge":"","level":"Intermediate"},{"id":"sk117","name":"Machine Learning With Python: Logistic Regression","badge":"","level":"Intermediate"},{"id":"sk118","name":"Microsoft Azure Ai Essentials: Workloads And Machine Learning On ","badge":"","level":"Intermediate"},{"id":"sk119","name":"Operationalizing Ai Governance: Strategy And","badge":"","level":"Intermediate"},{"id":"sk120","name":"Red Teaming For Generative Ai: Building Robust And Responsible So","badge":"","level":"Intermediate"},{"id":"sk121","name":"Security Risks In Ai And Machine Learning: Categorizing Attacks A","badge":"","level":"Intermediate"},{"id":"sk122","name":"Threat Modeling For Ai/Ml Systems","badge":"","level":"Intermediate"},{"id":"sk123","name":"Using Ai As Your Seo Assistant","badge":"","level":"Intermediate"},{"id":"sk124","name":"What Is Generative Ai?","badge":"","level":"Intermediate"}]},{"id":"cat003","name":"Cloud & DevOps","items":[{"id":"sk125","name":"AWS Knowledge: Security Champion","badge":"","level":"Intermediate"},{"id":"sk126","name":"AWS Cloud Quest: Cloud Practitioner","badge":"","level":"Intermediate"},{"id":"sk127","name":"Cloud Strategy By Linkedin Learning","badge":"","level":"Intermediate"},{"id":"sk128","name":"Microsoft Azure Ai Essentials","badge":"","level":"Intermediate"},{"id":"sk129","name":"Data Engineering By Snowflake","badge":"","level":"Intermediate"},{"id":"sk130","name":"Generative Ai By Snowflake","badge":"","level":"Intermediate"},{"id":"sk131","name":"Advanced Data Engineering With Snowflake","badge":"","level":"Intermediate"},{"id":"sk132","name":"Cloud Architecture: Core Concepts","badge":"","level":"Intermediate"},{"id":"sk133","name":"Cloud Architecture: Design Decisions","badge":"","level":"Intermediate"},{"id":"sk134","name":"Cloud For Business: Developing A Cloud Center Of Excellence","badge":"","level":"Intermediate"},{"id":"sk135","name":"Cloud Security Architecture For The Enterprise","badge":"","level":"Intermediate"},{"id":"sk136","name":"Cloud Security Concepts: Services And Compliance","badge":"","level":"Intermediate"},{"id":"sk137","name":"Cybersecurity Awareness: Cloud Security (2022)","badge":"","level":"Intermediate"},{"id":"sk138","name":"Cybersecurity With Cloud Computing","badge":"","level":"Intermediate"},{"id":"sk139","name":"Determining Your Cloud Strategy: Planning For Roadmap, Infrastruc","badge":"","level":"Intermediate"},{"id":"sk140","name":"Finops Essentials For Cloud Deployments","badge":"","level":"Intermediate"},{"id":"sk141","name":"Including Sustainability In Your Cloud Strategy (2022)","badge":"","level":"Intermediate"},{"id":"sk142","name":"Intro To Snowflake For Devs, Data Scientists, Data Engineers","badge":"","level":"Intermediate"},{"id":"sk143","name":"Introduction To Gen Ai With Snowflake","badge":"","level":"Intermediate"},{"id":"sk144","name":"Introduction To Modern Data Engineering With Snowflake","badge":"","level":"Intermediate"},{"id":"sk145","name":"Leveraging Ai In Adobe Photoshop And Creative Cloud","badge":"","level":"Intermediate"},{"id":"sk146","name":"Microsoft Azure Ai Essentials: Workloads And Machine Learning On ","badge":"","level":"Intermediate"},{"id":"sk147","name":"Planning A Multicloud Solution (2022)","badge":"","level":"Intermediate"},{"id":"sk148","name":"Devops By Pagerduty And Linkedin","badge":"","level":"Intermediate"},{"id":"sk149","name":"Devops","badge":"","level":"Intermediate"},{"id":"sk150","name":"Devops: Continuous Delivery/Continuous Integration","badge":"","level":"Intermediate"},{"id":"sk151","name":"Devops: Infrastructure As Code","badge":"","level":"Intermediate"},{"id":"sk152","name":"Docker","badge":"","level":"Intermediate"},{"id":"sk153","name":"Docker: Your First Project","badge":"","level":"Intermediate"},{"id":"sk154","name":"Learning Docker","badge":"","level":"Intermediate"},{"id":"sk155","name":"Learning Docker Compose","badge":"","level":"Intermediate"}]},{"id":"cat004","name":"Programming","items":[{"id":"sk156","name":"Anaconda Python For Data Science","badge":"","level":"Intermediate"},{"id":"sk157","name":"Machine Learning With Python By Anaconda","badge":"","level":"Intermediate"},{"id":"sk158","name":"Openedg Python Institute: Programming With Python","badge":"","level":"Intermediate"},{"id":"sk159","name":"Learning Python (2021)","badge":"","level":"Intermediate"},{"id":"sk160","name":"Level Up: Python","badge":"","level":"Intermediate"},{"id":"sk161","name":"Machine Learning With Python: Decision Trees","badge":"","level":"Intermediate"},{"id":"sk162","name":"Machine Learning With Python:","badge":"","level":"Intermediate"},{"id":"sk163","name":"Machine Learning With Python: K-Means Clustering","badge":"","level":"Intermediate"},{"id":"sk164","name":"Machine Learning With Python: Logistic Regression","badge":"","level":"Intermediate"},{"id":"sk165","name":"Processing Text With Python","badge":"","level":"Intermediate"},{"id":"sk166","name":"Python Data Analysis (2020)","badge":"","level":"Intermediate"},{"id":"sk167","name":"Python","badge":"","level":"Intermediate"},{"id":"sk168","name":"Python Object-Oriented Programming","badge":"","level":"Intermediate"},{"id":"sk169","name":"Javascript By Mozilla","badge":"","level":"Intermediate"},{"id":"sk170","name":"Javascript","badge":"","level":"Intermediate"},{"id":"sk171","name":"Learning The Javascript Language","badge":"","level":"Intermediate"},{"id":"sk172","name":"Node.Js","badge":"","level":"Intermediate"},{"id":"sk173","name":"Java By Jetbrains","badge":"","level":"Intermediate"},{"id":"sk174","name":"Java: Objects And Apis","badge":"","level":"Intermediate"},{"id":"sk175","name":"Java: Syntax And Structure","badge":"","level":"Intermediate"},{"id":"sk176","name":"Java Object-Oriented Programming","badge":"","level":"Intermediate"},{"id":"sk177","name":"Java: Data Structures","badge":"","level":"Intermediate"},{"id":"sk178","name":"C++ Programming By Openedg C++ Institute","badge":"","level":"Intermediate"},{"id":"sk179","name":"C++ Design Patterns: Structural","badge":"","level":"Intermediate"},{"id":"sk180","name":"C++ Development: Advanced Concepts, Lambda Expressions, And Best ","badge":"","level":"Intermediate"},{"id":"sk181","name":"C++","badge":"","level":"Intermediate"},{"id":"sk182","name":"C# And .Net","badge":"","level":"Intermediate"},{"id":"sk183","name":"Nosql","badge":"","level":"Intermediate"},{"id":"sk184","name":"Sql","badge":"","level":"Intermediate"}]},{"id":"cat005","name":"Networking & Linux","items":[{"id":"sk185","name":"Ethical Hacker","badge":"","level":"Intermediate"},{"id":"sk186","name":"Introduction to Cybersecurity","badge":"","level":"Intermediate"},{"id":"sk187","name":"It Security: Network Security","badge":"","level":"Intermediate"},{"id":"sk188","name":"Tls For Beginners: Securing Network Communications","badge":"","level":"Intermediate"},{"id":"sk189","name":"Ubuntu Linux By Canonical","badge":"","level":"Intermediate"},{"id":"sk190","name":"Complete Guide To Red Hat Enterprise Linux 9","badge":"","level":"Intermediate"},{"id":"sk191","name":"Kali Purple","badge":"","level":"Intermediate"},{"id":"sk192","name":"Learning Linux Command Line (2023)","badge":"","level":"Intermediate"},{"id":"sk193","name":"Red Hat Enterprise Linux 8","badge":"","level":"Intermediate"},{"id":"sk194","name":"Ubuntu Linux: Operating System Basics","badge":"","level":"Intermediate"},{"id":"sk195","name":"Ubuntu Linux: Storage Management","badge":"","level":"Intermediate"},{"id":"sk196","name":"Ubuntu Linux: User And Group Management","badge":"","level":"Intermediate"}]},{"id":"cat006","name":"Management & Leadership","items":[{"id":"sk197","name":"Aha! Product Management","badge":"","level":"Intermediate"},{"id":"sk198","name":"Operations Management By Jack Welch Management Institute","badge":"","level":"Intermediate"},{"id":"sk199","name":"Becoming A Manager By Linkedin Learning","badge":"","level":"Intermediate"},{"id":"sk200","name":"Human Skills For Managers By Linkedin Learning","badge":"","level":"Intermediate"},{"id":"sk201","name":"Body Language For Leaders And Managers","badge":"","level":"Intermediate"},{"id":"sk202","name":"Building The Reputation And Skills To Become A First-Time Manager","badge":"","level":"Intermediate"},{"id":"sk203","name":"Communication Skills For Modern Management","badge":"","level":"Intermediate"},{"id":"sk204","name":"Cybersecurity Outsourcing: Vendor Selection And Management","badge":"","level":"Intermediate"},{"id":"sk205","name":"It And Cybersecurity Risk Management","badge":"","level":"Intermediate"},{"id":"sk206","name":"Modern Project Management In Microsoft 365","badge":"","level":"Intermediate"},{"id":"sk207","name":"Operations Management","badge":"","level":"Intermediate"},{"id":"sk208","name":"Practical Github Project Management And Collaboration","badge":"","level":"Intermediate"},{"id":"sk209","name":"Product Management First Steps","badge":"","level":"Intermediate"},{"id":"sk210","name":"Product Management: Building A Product Roadmap","badge":"","level":"Intermediate"},{"id":"sk211","name":"Product Management: Building A Product Strategy","badge":"","level":"Intermediate"},{"id":"sk212","name":"Product Management: Customer Development","badge":"","level":"Intermediate"},{"id":"sk213","name":"Program Management For It Professionals","badge":"","level":"Intermediate"},{"id":"sk214","name":"Quality Management","badge":"","level":"Intermediate"},{"id":"sk215","name":"Succeeding As A First-Time Tech Manager","badge":"","level":"Intermediate"},{"id":"sk216","name":"Technical Product Management","badge":"","level":"Intermediate"},{"id":"sk217","name":"Ubuntu Linux: Storage Management","badge":"","level":"Intermediate"},{"id":"sk218","name":"Ubuntu Linux: User And Group Management","badge":"","level":"Intermediate"},{"id":"sk219","name":"Vulnerability Management In Cybersecurity: The Basics","badge":"","level":"Intermediate"},{"id":"sk220","name":"Ciso Leadership: Managing A Cybersecurity Program","badge":"","level":"Intermediate"},{"id":"sk221","name":"Servicenow It Leadership","badge":"","level":"Intermediate"},{"id":"sk222","name":"Human Leadership","badge":"","level":"Intermediate"},{"id":"sk223","name":"Leadership","badge":"","level":"Intermediate"},{"id":"sk224","name":"Leadership Principles For Emerging Leaders With Bill George","badge":"","level":"Intermediate"}]},{"id":"cat007","name":"Communication & Marketing","items":[{"id":"sk225","name":"Business Writing By Grammarly","badge":"","level":"Intermediate"},{"id":"sk226","name":"Essential Business Communication Skills By Linkedin Learning","badge":"","level":"Intermediate"},{"id":"sk227","name":"Public Speaking Skills By Toastmasters International","badge":"","level":"Intermediate"},{"id":"sk228","name":"Business Writing Principles","badge":"","level":"Intermediate"},{"id":"sk229","name":"Communication","badge":"","level":"Intermediate"},{"id":"sk230","name":"Communication Skills For Modern Management","badge":"","level":"Intermediate"},{"id":"sk231","name":"Crisis Communication Planning After A Ransomware Or Other Cyberse","badge":"","level":"Intermediate"},{"id":"sk232","name":"Grammarly: Your Ai Writing Partner","badge":"","level":"Intermediate"},{"id":"sk233","name":"Impromptu Speaking","badge":"","level":"Intermediate"},{"id":"sk234","name":"Marketing Strategy: Seo Content Writing","badge":"","level":"Intermediate"},{"id":"sk235","name":"Marketing: Copywriting For Social Media","badge":"","level":"Intermediate"},{"id":"sk236","name":"Microsoft Copilot: The Art Of Prompt Writing","badge":"","level":"Intermediate"},{"id":"sk237","name":"Public Speaking","badge":"","level":"Intermediate"},{"id":"sk238","name":"Tls For Beginners: Securing Network Communications","badge":"","level":"Intermediate"},{"id":"sk239","name":"What'S The So What: Writing Clearly For A Business Audience","badge":"","level":"Intermediate"},{"id":"sk240","name":"Writing And Delivering Speeches","badge":"","level":"Intermediate"},{"id":"sk241","name":"Writing Email","badge":"","level":"Intermediate"},{"id":"sk242","name":"Writing Emails People Want To Read","badge":"","level":"Intermediate"},{"id":"sk243","name":"Writing Formal Business Letters And Emails","badge":"","level":"Intermediate"},{"id":"sk244","name":"Digital Marketing By Content Marketing Institute","badge":"","level":"Intermediate"},{"id":"sk245","name":"Social Media Marketing By Hootsuite","badge":"","level":"Intermediate"},{"id":"sk246","name":"Email Marketing By Intuit Mailchimp","badge":"","level":"Intermediate"},{"id":"sk247","name":"A Beginner'S Guide To Email Marketing","badge":"","level":"Intermediate"},{"id":"sk248","name":"Content Marketing","badge":"","level":"Intermediate"},{"id":"sk249","name":"Content Marketing: Ways To Repurpose Video Content","badge":"","level":"Intermediate"},{"id":"sk250","name":"Email And Newsletter Marketing","badge":"","level":"Intermediate"},{"id":"sk251","name":"Email Marketing Strategy: Warm Up A Cold List","badge":"","level":"Intermediate"},{"id":"sk252","name":"Email Marketing: Strategy And Optimization","badge":"","level":"Intermediate"},{"id":"sk253","name":"Marketing Analytics","badge":"","level":"Intermediate"},{"id":"sk254","name":"Marketing (2022)","badge":"","level":"Intermediate"},{"id":"sk255","name":"Marketing: Ecommerce","badge":"","level":"Intermediate"},{"id":"sk256","name":"Marketing: Conversion Rate Optimization","badge":"","level":"Intermediate"},{"id":"sk257","name":"Marketing: How To Use High-Impact Storytelling","badge":"","level":"Intermediate"},{"id":"sk258","name":"Social Media Marketing","badge":"","level":"Intermediate"},{"id":"sk259","name":"Social Media Marketing: Strategy And Optimization","badge":"","level":"Intermediate"},{"id":"sk260","name":"Strategic Content Marketing: Grow Your Reach On Social Media","badge":"","level":"Intermediate"},{"id":"sk261","name":"Learning Youtube Seo","badge":"","level":"Intermediate"},{"id":"sk262","name":"Seo","badge":"","level":"Intermediate"},{"id":"sk263","name":"Technical Seo","badge":"","level":"Intermediate"},{"id":"sk264","name":"Using Ai As Your Seo Assistant","badge":"","level":"Intermediate"}]},{"id":"cat008","name":"Data Science","items":[{"id":"sk265","name":"Anaconda Python For Data Science","badge":"","level":"Intermediate"},{"id":"sk266","name":"Data Science By Knime","badge":"","level":"Intermediate"},{"id":"sk267","name":"Data Engineering By Snowflake","badge":"","level":"Intermediate"},{"id":"sk268","name":"Advanced Data Engineering With Snowflake","badge":"","level":"Intermediate"},{"id":"sk269","name":"Data Science: Fundamentals","badge":"","level":"Intermediate"},{"id":"sk270","name":"Intro To Snowflake For Devs, Data Scientists, Data Engineers","badge":"","level":"Intermediate"},{"id":"sk271","name":"Introduction To Data Science","badge":"","level":"Intermediate"},{"id":"sk272","name":"Introduction To Modern Data Engineering With Snowflake","badge":"","level":"Intermediate"},{"id":"sk273","name":"The Role Of Business Analysis In Data Analytics","badge":"","level":"Intermediate"}]}],"projects":[{"id":"1u05gacf","title":"Cybaashcloud","desc":"CYBAASH \u2014 Autonomous Cyber Range Portfolio\n\n\nA production-grade cybersecurity portfolio that doesn't just talk security \u2014 it practices it. Every layer is engineered with an attacker's mindset.\n\nBuilt an 8-module SOC tracker covering visitor fingerprinting, behavioral anomaly detection, honeypot link injection, URL scanning, rate abuse tracking, and async log relay to a Cloudflare Worker backend \u2014 completely isolated from the admin interface by design.\n\nIntegrated CYBAASH AI (Gemini 2.5 Flash Lite) through a rate-limited Cloudflare Worker proxy \u2014 API keys never exposed client-side, with geo-blocking, CORS enforcement, and graceful offline fallback.\n\nDeployed an 11-step CI/CD pipeline: JS syntax checks, JSON schema validation, SOC assertions, HTML integrity scanning, cert data validation, Worker security audits, secret leak scanning via Gitleaks, and performance budget enforcement on every push.\n\nAdmin CMS uses SHA-256 hashed auth \u2014 no plaintext passwords, no default credentials. All changes committed via GitHub API, creating a full audit trail.\n\nReal-world pentest work documented: MySQL port 3306 public exposure (CVSS 9.8), XML-RPC brute force bypass, REST API admin enumeration, backup config file exposure, and missing security headers \u2014 each with CVSS scoring, attack chain analysis, and remediation guidance.\n\n \u00b7 AWS \u00b7 Cisco \u00b7 Microsoft \u00b7 Penetration Testing \u00b7 AI Red Teaming \u00b7 Cloud Security","tech":[],"status":"Completed","liveUrl":"https://Cybaashcloud.github.io","githubUrl":"https://github.com/cybaashcloud","image":"data:image/jpeg;base64,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elo/GigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAK4e5wMxJnv83Sl3XA58tDz0DdBj1+tT0UAVw913hj/AO+//rU7fcY/1S53HgN2x/jU1FAEUTTEjzUVRt7HPOf8KYHutx/cpt5wd/NWKKAIN9znHkr253fnTlabfhkXbk856DtUtFAEDPchyFhQrng7+35Uhe57Qp06b++fpViigCKJpix81FUAcYbOTTVa543Rxk46hulT0UARSNKpURxhs/eJbGKZvuju/dIOPl+bPNWKKAIg0xfBjAXJ53dv85pJGnDERxoR2LN1qaigCFXnOd0Sjrj5859P601pLkAYgUk46P0qxRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB/9k=","featured":true,"pdf":"/pdfs/cybaashcloud_report.pdf"}],"flags":[]}
+{
+  "about": {
+    "bio": "A dedicated Cybersecurity Specialist and Ethical Hacker driven by a passion for digital defense. As a lifelong knowledge seeker, I specialize in identifying vulnerabilities and securing complex infrastructures. Committed to constant learning, I stay ahead of threats to safeguard data integrity and user trust.",
+    "name": "Mohamed Aasiq",
+    "title": "Cybersecurity | Ethical Hacker",
+    "location": "Pollachi, Tamil Nadu, India",
+    "availability": "freelance",
+    "avatar": "portfolio/avatar.png",
+    "yearsExp": "8",
+    "tagline": "AASIQ_OS",
+    "linkedin": "https://www.linkedin.com/in/mohamedaasiq07/",
+    "github": "https://github.com/cybaash",
+    "email": "mohamedaasiq07@gmail.com",
+    "certCount": 343
+  },
+  "contact": {
+    "email": "mohamedaasiq07@gmail.com",
+    "phone": "+91 95665 96077",
+    "github": "https://github.com/cybaash",
+    "linkedin": "https://linkedin.com/in/mohamedaasiq07",
+    "tryhackme": "https://tryhackme.com",
+    "twitter": "",
+    "address": "Pollachi, Tamil Nadu, India (Remote-friendly)",
+    "ctaMessage": "Open to full stack web development projects and providing security from cyber attacks for websites, apps, servers, databases and social media accounts",
+    "specialization": "Pen Testing | Cloud Security | Network Defense | AI Security",
+    "languages": "Tamil (Native) · Urdu (Native) · English (Professional) · Hindi"
+  },
+  "experience": [
+    {
+      "id": "ex1",
+      "desc": "Leading a wellness enterprise as Managing Director — overseeing full business operations, team management, client relations, and strategic growth. Applied cybersecurity best practices to protect customer data and digital infrastructure.",
+      "role": "Managing Director & Founder",
+      "type": "Full-time",
+      "company": "Detoxy Hijama",
+      "country": "🇮🇳",
+      "current": true,
+      "endDate": "",
+      "location": "Pune, Maharashtra",
+      "startDate": "Aug 2020",
+      "achievements": [
+        "Founded and scaled the business from 0 to operational within 6 months",
+        "Implemented digital security protocols for client data protection",
+        "Built and managed a team of 8 employees"
+      ]
+    },
+    {
+      "id": "ex2",
+      "desc": "Managed 50+ Amazon SKUs — resolved suppressed listings, optimised inbound shipments to cut shipping costs, maintained Star seller rating by handling policy appeals, and automated daily sales reporting via Excel Macros.",
+      "role": "Operations Executive",
+      "type": "Full-time",
+      "company": "Haneez Enterprises Pvt. Ltd.",
+      "country": "🇮🇳",
+      "current": false,
+      "endDate": "Jul 2020",
+      "location": "Pune, Maharashtra",
+      "startDate": "May 2019",
+      "achievements": [
+        "Managed 50+ Amazon SKUs across multiple categories",
+        "Reduced shipping costs by optimising inbound shipments",
+        "Automated daily sales reporting via Excel Macros"
+      ]
+    },
+    {
+      "id": "ex3",
+      "desc": "Managed inventory control, stock audits, vendor coordination, and merchandising for a retail & wholesale outlet.",
+      "role": "Storekeeper",
+      "type": "Full-time",
+      "company": "SKB Multy Shop",
+      "country": "🇮🇳",
+      "current": false,
+      "endDate": "May 2019",
+      "location": "Tamil Nadu",
+      "startDate": "Jun 2018",
+      "achievements": [
+        "Maintained 99% inventory accuracy across 500+ SKUs",
+        "Coordinated with 10+ vendors for timely restocking",
+        "Implemented barcode-based stock tracking system"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "cat001",
+      "name": "Cybersecurity & Security",
+      "items": [
+        {
+          "id": "sk001",
+          "name": "AWS Knowledge: Security Champion",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk002",
+          "name": "Junior Cybersecurity Analyst Career Path",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk003",
+          "name": "Become A Cybersecurity Professional",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk004",
+          "name": "Become An It Security Specialist",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk005",
+          "name": "Building Ai Products: Security Essentials By Linkedin Learning",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk006",
+          "name": "Ciso Leadership: Managing A Cybersecurity Program",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk007",
+          "name": "Cybersecurity For Sales Professionals",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk008",
+          "name": "Develop Your Ai Skills As A Cybersecurity Professional",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk009",
+          "name": "The It Professional'S Path To Cybersecurity",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk010",
+          "name": "Welcome To The \"Building Ai Products: Security Essentials\"",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk011",
+          "name": "Career Essentials In Cybersecurity",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk012",
+          "name": "Microsoft Security Essentials",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk013",
+          "name": "Ai In Cybersecurity: The Future Of Red Teaming And Blue Teaming",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk014",
+          "name": "Ai Product Security: Building Strong Data Governance And Protecti",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk015",
+          "name": "Ai Product Security: Incident Response",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk016",
+          "name": "Ai Product Security: Secure Architecture, Deployment, And Infrast",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk017",
+          "name": "Ai Product Security: Testing, Validation, And Maintenance",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk018",
+          "name": "Artificial Intelligence And Application Security",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk019",
+          "name": "Artificial Intelligence For Cybersecurity",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk020",
+          "name": "Build Your Cybersecurity Awareness Skills",
+          "badge": "",
+          "level": "Expert"
+        },
+        {
+          "id": "sk021",
+          "name": "Building A Cybersecurity Awareness Program",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk022",
+          "name": "Building And Managing A Cybersecurity Program",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk023",
+          "name": "Building Your Cybersecurity Talent Pipeline",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk024",
+          "name": "Cloud Security Architecture For The Enterprise",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk025",
+          "name": "Cloud Security Concepts: Services And Compliance",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk026",
+          "name": "Crisis Communication Planning After A Ransomware Or Other Cyberse",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk027",
+          "name": "Cybersecurity At Work",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk028",
+          "name": "Cybersecurity Awareness: Ai",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk029",
+          "name": "Cybersecurity Awareness: Cloud Security (2022)",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk030",
+          "name": "Cybersecurity Awareness: Cybersecurity Terminology",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk031",
+          "name": "Cybersecurity Awareness: Iot Devices",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk032",
+          "name": "Cybersecurity Awareness: Malware",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk033",
+          "name": "Cybersecurity Awareness: Phishing Attacks",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk034",
+          "name": "Cybersecurity Awareness: Protect Your Privacy",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk035",
+          "name": "Cybersecurity Awareness: Ransomware",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk036",
+          "name": "Cybersecurity Awareness: Social Engineering",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk037",
+          "name": "Cybersecurity Careers And Certifications",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk038",
+          "name": "Cybersecurity For Executives",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk039",
+          "name": "Cybersecurity",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk040",
+          "name": "Cybersecurity: Computer Forensics",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk041",
+          "name": "Cybersecurity Outsourcing: Vendor Selection And Management",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk042",
+          "name": "Cybersecurity With Cloud Computing",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk043",
+          "name": "Ethics In Cybersecurity",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk044",
+          "name": "It And Cybersecurity Risk Management",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk045",
+          "name": "It Security: Core Concepts",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk046",
+          "name": "It Security: Network Security",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk047",
+          "name": "It Security: Operating System Security",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk048",
+          "name": "Land Your First Cybersecurity Job",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk049",
+          "name": "Learning Threat Modeling For Security Professionals",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk050",
+          "name": "Leveraging Ai For Security Testing",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk051",
+          "name": "Leveraging Security Metrics In Your Organization",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk052",
+          "name": "Microsoft Security Copilot",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk053",
+          "name": "Microsoft Security Essentials: Concepts, Solutions, And Ai-Powere",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk054",
+          "name": "Practical Cybersecurity For It Professionals",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk055",
+          "name": "Security Risks In Ai And Machine Learning: Categorizing Attacks A",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk056",
+          "name": "Soft Skills For Information Security Professionals",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk057",
+          "name": "The Cybersecurity Threat Landscape",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk058",
+          "name": "Transitioning To A Career In Cybersecurity",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk059",
+          "name": "Vulnerability Management In Cybersecurity: The Basics",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk060",
+          "name": "Ethical Hacker",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk061",
+          "name": "Introduction to Cybersecurity",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk062",
+          "name": "Penetration Testing By Cybrary",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk063",
+          "name": "Certified Ethical Hacker (Ceh)",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk064",
+          "name": "Offensive Penetration Testing",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk065",
+          "name": "Penetration Testing (2021)",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk066",
+          "name": "Social Media Marketing By Hootsuite",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk067",
+          "name": "Marketing: Copywriting For Social Media",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk068",
+          "name": "Serving Customers Using Social Media",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk069",
+          "name": "Social Media Marketing",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk070",
+          "name": "Social Media Marketing: Strategy And Optimization",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk071",
+          "name": "Strategic Content Marketing: Grow Your Reach On Social Media",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk072",
+          "name": "Red Teaming For Generative Ai: Building Robust And Responsible So",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk073",
+          "name": "Learning The Owasp Top 10",
+          "badge": "",
+          "level": "Advanced"
+        }
+      ]
+    },
+    {
+      "id": "cat002",
+      "name": "AI & Machine Learning",
+      "items": [
+        {
+          "id": "sk074",
+          "name": "Essential Skills In Generative Ai For Creatives By Adobe",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk075",
+          "name": "Responsible Ai",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk076",
+          "name": "Machine Learning With Python By Anaconda",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk077",
+          "name": "Testmu Ai Software Testing",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk078",
+          "name": "Building Ai Products: Security Essentials By Linkedin Learning",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk079",
+          "name": "Develop Your Ai Skills As A Cybersecurity Professional",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk080",
+          "name": "Welcome To The \"Building Ai Products: Security Essentials\"",
+          "badge": "",
+          "level": "Advanced"
+        },
+        {
+          "id": "sk081",
+          "name": "Microsoft Azure Ai Essentials",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk082",
+          "name": "Generative Ai By Snowflake",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk083",
+          "name": "Machine Learning Statistical By Wolfram Research",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk084",
+          "name": "Agentic Ai For Business Analysis",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk085",
+          "name": "Ai In Cybersecurity: The Future Of Red Teaming And Blue Teaming",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk086",
+          "name": "Ai Pair Programming With Github Copilot",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk087",
+          "name": "Ai Product Security: Building Strong Data Governance And Protecti",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk088",
+          "name": "Ai Product Security: Incident Response",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk089",
+          "name": "Ai Product Security: Secure Architecture, Deployment, And Infrast",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk090",
+          "name": "Ai Product Security: Testing, Validation, And Maintenance",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk091",
+          "name": "Artificial Intelligence And Application Security",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk092",
+          "name": "Artificial Intelligence For Cybersecurity",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk093",
+          "name": "Artificial Intelligence: Machine Learning",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk094",
+          "name": "Building Generative Ai Apps To Talk To Your Data",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk095",
+          "name": "Built-In Machine Learning In The Wolfram Language",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk096",
+          "name": "Generative Ai For Business Analysts",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk097",
+          "name": "Generative Ai Imaging: What Creative Pros Need To Know",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk098",
+          "name": "Generative Ai: Business And Legal Concerns For Creatives",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk099",
+          "name": "Generative Ai: Introduction To Large Language Models",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk100",
+          "name": "Generative Ai: Working With Large Language Models",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk101",
+          "name": "Governing Agentic Ai Systems",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk102",
+          "name": "Grammarly: Your Ai Writing Partner",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk103",
+          "name": "How To Boost Your Productivity With Ai Tools (2023)",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk104",
+          "name": "Html",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk105",
+          "name": "Introduction To Artificial Intelligence",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk106",
+          "name": "Introduction To Gen Ai With Snowflake",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk107",
+          "name": "Leveraging Ai For Security Testing",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk108",
+          "name": "Leveraging Ai In Adobe Photoshop And Creative Cloud",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk109",
+          "name": "Machine Learning And Ai: Classification Modeling",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk110",
+          "name": "Machine Learning: Calculus",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk111",
+          "name": "Machine Learning: Linear Algebra",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk112",
+          "name": "Machine Learning: Probability",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk113",
+          "name": "Machine Learning: Statistics",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk114",
+          "name": "Machine Learning With Python: Decision Trees",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk115",
+          "name": "Machine Learning With Python:",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk116",
+          "name": "Machine Learning With Python: K-Means Clustering",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk117",
+          "name": "Machine Learning With Python: Logistic Regression",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk118",
+          "name": "Microsoft Azure Ai Essentials: Workloads And Machine Learning On ",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk119",
+          "name": "Operationalizing Ai Governance: Strategy And",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk120",
+          "name": "Red Teaming For Generative Ai: Building Robust And Responsible So",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk121",
+          "name": "Security Risks In Ai And Machine Learning: Categorizing Attacks A",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk122",
+          "name": "Threat Modeling For Ai/Ml Systems",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk123",
+          "name": "Using Ai As Your Seo Assistant",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk124",
+          "name": "What Is Generative Ai?",
+          "badge": "",
+          "level": "Intermediate"
+        }
+      ]
+    },
+    {
+      "id": "cat003",
+      "name": "Cloud & DevOps",
+      "items": [
+        {
+          "id": "sk125",
+          "name": "AWS Knowledge: Security Champion",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk126",
+          "name": "AWS Cloud Quest: Cloud Practitioner",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk127",
+          "name": "Cloud Strategy By Linkedin Learning",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk128",
+          "name": "Microsoft Azure Ai Essentials",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk129",
+          "name": "Data Engineering By Snowflake",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk130",
+          "name": "Generative Ai By Snowflake",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk131",
+          "name": "Advanced Data Engineering With Snowflake",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk132",
+          "name": "Cloud Architecture: Core Concepts",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk133",
+          "name": "Cloud Architecture: Design Decisions",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk134",
+          "name": "Cloud For Business: Developing A Cloud Center Of Excellence",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk135",
+          "name": "Cloud Security Architecture For The Enterprise",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk136",
+          "name": "Cloud Security Concepts: Services And Compliance",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk137",
+          "name": "Cybersecurity Awareness: Cloud Security (2022)",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk138",
+          "name": "Cybersecurity With Cloud Computing",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk139",
+          "name": "Determining Your Cloud Strategy: Planning For Roadmap, Infrastruc",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk140",
+          "name": "Finops Essentials For Cloud Deployments",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk141",
+          "name": "Including Sustainability In Your Cloud Strategy (2022)",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk142",
+          "name": "Intro To Snowflake For Devs, Data Scientists, Data Engineers",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk143",
+          "name": "Introduction To Gen Ai With Snowflake",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk144",
+          "name": "Introduction To Modern Data Engineering With Snowflake",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk145",
+          "name": "Leveraging Ai In Adobe Photoshop And Creative Cloud",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk146",
+          "name": "Microsoft Azure Ai Essentials: Workloads And Machine Learning On ",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk147",
+          "name": "Planning A Multicloud Solution (2022)",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk148",
+          "name": "Devops By Pagerduty And Linkedin",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk149",
+          "name": "Devops",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk150",
+          "name": "Devops: Continuous Delivery/Continuous Integration",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk151",
+          "name": "Devops: Infrastructure As Code",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk152",
+          "name": "Docker",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk153",
+          "name": "Docker: Your First Project",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk154",
+          "name": "Learning Docker",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk155",
+          "name": "Learning Docker Compose",
+          "badge": "",
+          "level": "Intermediate"
+        }
+      ]
+    },
+    {
+      "id": "cat004",
+      "name": "Programming",
+      "items": [
+        {
+          "id": "sk156",
+          "name": "Anaconda Python For Data Science",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk157",
+          "name": "Machine Learning With Python By Anaconda",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk158",
+          "name": "Openedg Python Institute: Programming With Python",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk159",
+          "name": "Learning Python (2021)",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk160",
+          "name": "Level Up: Python",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk161",
+          "name": "Machine Learning With Python: Decision Trees",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk162",
+          "name": "Machine Learning With Python:",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk163",
+          "name": "Machine Learning With Python: K-Means Clustering",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk164",
+          "name": "Machine Learning With Python: Logistic Regression",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk165",
+          "name": "Processing Text With Python",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk166",
+          "name": "Python Data Analysis (2020)",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk167",
+          "name": "Python",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk168",
+          "name": "Python Object-Oriented Programming",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk169",
+          "name": "Javascript By Mozilla",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk170",
+          "name": "Javascript",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk171",
+          "name": "Learning The Javascript Language",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk172",
+          "name": "Node.Js",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk173",
+          "name": "Java By Jetbrains",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk174",
+          "name": "Java: Objects And Apis",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk175",
+          "name": "Java: Syntax And Structure",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk176",
+          "name": "Java Object-Oriented Programming",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk177",
+          "name": "Java: Data Structures",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk178",
+          "name": "C++ Programming By Openedg C++ Institute",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk179",
+          "name": "C++ Design Patterns: Structural",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk180",
+          "name": "C++ Development: Advanced Concepts, Lambda Expressions, And Best ",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk181",
+          "name": "C++",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk182",
+          "name": "C# And .Net",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk183",
+          "name": "Nosql",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk184",
+          "name": "Sql",
+          "badge": "",
+          "level": "Intermediate"
+        }
+      ]
+    },
+    {
+      "id": "cat005",
+      "name": "Networking & Linux",
+      "items": [
+        {
+          "id": "sk185",
+          "name": "Ethical Hacker",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk186",
+          "name": "Introduction to Cybersecurity",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk187",
+          "name": "It Security: Network Security",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk188",
+          "name": "Tls For Beginners: Securing Network Communications",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk189",
+          "name": "Ubuntu Linux By Canonical",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk190",
+          "name": "Complete Guide To Red Hat Enterprise Linux 9",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk191",
+          "name": "Kali Purple",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk192",
+          "name": "Learning Linux Command Line (2023)",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk193",
+          "name": "Red Hat Enterprise Linux 8",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk194",
+          "name": "Ubuntu Linux: Operating System Basics",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk195",
+          "name": "Ubuntu Linux: Storage Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk196",
+          "name": "Ubuntu Linux: User And Group Management",
+          "badge": "",
+          "level": "Intermediate"
+        }
+      ]
+    },
+    {
+      "id": "cat006",
+      "name": "Management & Leadership",
+      "items": [
+        {
+          "id": "sk197",
+          "name": "Aha! Product Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk198",
+          "name": "Operations Management By Jack Welch Management Institute",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk199",
+          "name": "Becoming A Manager By Linkedin Learning",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk200",
+          "name": "Human Skills For Managers By Linkedin Learning",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk201",
+          "name": "Body Language For Leaders And Managers",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk202",
+          "name": "Building The Reputation And Skills To Become A First-Time Manager",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk203",
+          "name": "Communication Skills For Modern Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk204",
+          "name": "Cybersecurity Outsourcing: Vendor Selection And Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk205",
+          "name": "It And Cybersecurity Risk Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk206",
+          "name": "Modern Project Management In Microsoft 365",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk207",
+          "name": "Operations Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk208",
+          "name": "Practical Github Project Management And Collaboration",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk209",
+          "name": "Product Management First Steps",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk210",
+          "name": "Product Management: Building A Product Roadmap",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk211",
+          "name": "Product Management: Building A Product Strategy",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk212",
+          "name": "Product Management: Customer Development",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk213",
+          "name": "Program Management For It Professionals",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk214",
+          "name": "Quality Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk215",
+          "name": "Succeeding As A First-Time Tech Manager",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk216",
+          "name": "Technical Product Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk217",
+          "name": "Ubuntu Linux: Storage Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk218",
+          "name": "Ubuntu Linux: User And Group Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk219",
+          "name": "Vulnerability Management In Cybersecurity: The Basics",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk220",
+          "name": "Ciso Leadership: Managing A Cybersecurity Program",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk221",
+          "name": "Servicenow It Leadership",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk222",
+          "name": "Human Leadership",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk223",
+          "name": "Leadership",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk224",
+          "name": "Leadership Principles For Emerging Leaders With Bill George",
+          "badge": "",
+          "level": "Intermediate"
+        }
+      ]
+    },
+    {
+      "id": "cat007",
+      "name": "Communication & Marketing",
+      "items": [
+        {
+          "id": "sk225",
+          "name": "Business Writing By Grammarly",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk226",
+          "name": "Essential Business Communication Skills By Linkedin Learning",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk227",
+          "name": "Public Speaking Skills By Toastmasters International",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk228",
+          "name": "Business Writing Principles",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk229",
+          "name": "Communication",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk230",
+          "name": "Communication Skills For Modern Management",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk231",
+          "name": "Crisis Communication Planning After A Ransomware Or Other Cyberse",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk232",
+          "name": "Grammarly: Your Ai Writing Partner",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk233",
+          "name": "Impromptu Speaking",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk234",
+          "name": "Marketing Strategy: Seo Content Writing",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk235",
+          "name": "Marketing: Copywriting For Social Media",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk236",
+          "name": "Microsoft Copilot: The Art Of Prompt Writing",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk237",
+          "name": "Public Speaking",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk238",
+          "name": "Tls For Beginners: Securing Network Communications",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk239",
+          "name": "What'S The So What: Writing Clearly For A Business Audience",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk240",
+          "name": "Writing And Delivering Speeches",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk241",
+          "name": "Writing Email",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk242",
+          "name": "Writing Emails People Want To Read",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk243",
+          "name": "Writing Formal Business Letters And Emails",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk244",
+          "name": "Digital Marketing By Content Marketing Institute",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk245",
+          "name": "Social Media Marketing By Hootsuite",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk246",
+          "name": "Email Marketing By Intuit Mailchimp",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk247",
+          "name": "A Beginner'S Guide To Email Marketing",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk248",
+          "name": "Content Marketing",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk249",
+          "name": "Content Marketing: Ways To Repurpose Video Content",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk250",
+          "name": "Email And Newsletter Marketing",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk251",
+          "name": "Email Marketing Strategy: Warm Up A Cold List",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk252",
+          "name": "Email Marketing: Strategy And Optimization",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk253",
+          "name": "Marketing Analytics",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk254",
+          "name": "Marketing (2022)",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk255",
+          "name": "Marketing: Ecommerce",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk256",
+          "name": "Marketing: Conversion Rate Optimization",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk257",
+          "name": "Marketing: How To Use High-Impact Storytelling",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk258",
+          "name": "Social Media Marketing",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk259",
+          "name": "Social Media Marketing: Strategy And Optimization",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk260",
+          "name": "Strategic Content Marketing: Grow Your Reach On Social Media",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk261",
+          "name": "Learning Youtube Seo",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk262",
+          "name": "Seo",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk263",
+          "name": "Technical Seo",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk264",
+          "name": "Using Ai As Your Seo Assistant",
+          "badge": "",
+          "level": "Intermediate"
+        }
+      ]
+    },
+    {
+      "id": "cat008",
+      "name": "Data Science",
+      "items": [
+        {
+          "id": "sk265",
+          "name": "Anaconda Python For Data Science",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk266",
+          "name": "Data Science By Knime",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk267",
+          "name": "Data Engineering By Snowflake",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk268",
+          "name": "Advanced Data Engineering With Snowflake",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk269",
+          "name": "Data Science: Fundamentals",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk270",
+          "name": "Intro To Snowflake For Devs, Data Scientists, Data Engineers",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk271",
+          "name": "Introduction To Data Science",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk272",
+          "name": "Introduction To Modern Data Engineering With Snowflake",
+          "badge": "",
+          "level": "Intermediate"
+        },
+        {
+          "id": "sk273",
+          "name": "The Role Of Business Analysis In Data Analytics",
+          "badge": "",
+          "level": "Intermediate"
+        }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "1u05gacf",
+      "title": "Cybaashcloud",
+      "desc": "CYBAASH — Autonomous Cyber Range Portfolio\n\n\nA production-grade cybersecurity portfolio that doesn't just talk security — it practices it. Every layer is engineered with an attacker's mindset.\n\nBuilt an 8-module SOC tracker covering visitor fingerprinting, behavioral anomaly detection, honeypot link injection, URL scanning, rate abuse tracking, and async log relay to a Cloudflare Worker backend — completely isolated from the admin interface by design.\n\nIntegrated CYBAASH AI (Gemini 2.5 Flash Lite) through a rate-limited Cloudflare Worker proxy — API keys never exposed client-side, with geo-blocking, CORS enforcement, and graceful offline fallback.\n\nDeployed an 11-step CI/CD pipeline: JS syntax checks, JSON schema validation, SOC assertions, HTML integrity scanning, cert data validation, Worker security audits, secret leak scanning via Gitleaks, and performance budget enforcement on every push.\n\nAdmin CMS uses SHA-256 hashed auth — no plaintext passwords, no default credentials. All changes committed via GitHub API, creating a full audit trail.\n\nReal-world pentest work documented: MySQL port 3306 public exposure (CVSS 9.8), XML-RPC brute force bypass, REST API admin enumeration, backup config file exposure, and missing security headers — each with CVSS scoring, attack chain analysis, and remediation guidance.\n\n · AWS · Cisco · Microsoft · Penetration Testing · AI Red Teaming · Cloud Security",
+      "tech": [],
+      "status": "Completed",
+      "liveUrl": "https://Cybaashcloud.github.io",
+      "githubUrl": "https://github.com/cybaashcloud",
+      "image": "data:image/jpeg;base64,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elo/GigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAK4e5wMxJnv83Sl3XA58tDz0DdBj1+tT0UAVw913hj/AO+//rU7fcY/1S53HgN2x/jU1FAEUTTEjzUVRt7HPOf8KYHutx/cpt5wd/NWKKAIN9znHkr253fnTlabfhkXbk856DtUtFAEDPchyFhQrng7+35Uhe57Qp06b++fpViigCKJpix81FUAcYbOTTVa543Rxk46hulT0UARSNKpURxhs/eJbGKZvuju/dIOPl+bPNWKKAIg0xfBjAXJ53dv85pJGnDERxoR2LN1qaigCFXnOd0Sjrj5859P601pLkAYgUk46P0qxRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB/9k=",
+      "featured": true,
+      "pdf": "/pdfs/cybaashcloud_report.pdf"
+    },
+    {
+      "id": "sj6ufvi9",
+      "title": "Black Box web application Pen Test Report for health care enterprise ",
+      "desc": "Black Box Web Application Penetration Test — Healthcare Sector\nConducted: March 2026 · Methodology: OWASP · Type: Black Box\n\nPerformed a full black box web application security assessment against a live production healthcare website hosted on shared infrastructure. No prior credentials, no source code access — pure external attacker simulation from first scan to final report.\n\nIdentified 9 vulnerabilities across Critical, High, Medium, and Low severity bands with full CVSS scoring, evidence, impact analysis, and prioritized remediation guidance.\n\nCritical findings:\n→ MySQL port 3306 publicly exposed (CVSS 9.8) — database directly reachable from the internet, accepting unauthenticated connection attempts from any IP\n→ xmlrpc.php fully enabled (CVSS 9.1) — system.multicall method allowing thousands of login attempts per request, completely bypassing rate limiting\n\nHigh findings:\n→ Admin username enumerated via unauthenticated REST API endpoint\n→ Backup wp-config files present on server containing plaintext DB credentials\n\nDocumented a complete 4-step attack chain: username enumeration → xmlrpc brute force → authenticated web shell upload → full database dump — demonstrating how individual medium-severity misconfigurations combine into a critical compromise path.\n\nAdditional findings: missing security headers (X-Frame-Options, CSP, HSTS), PHP and server version disclosure, SSL mismatch, WordPress version exposure, and legacy FTP port open.\n\nAll testing was non-destructive. No data modified, exfiltrated, or brute forced against live credentials.\n\nTools: Nmap · WPScan · curl · Manual testing · CVSS v3.1 scoring",
+      "tech": [
+        "Ethical Hacking",
+        "penetration testing",
+        "Black box Pen Testing",
+        "Cyber Security",
+        "Red Team",
+        "SQL+ Injection",
+        "Kali Linux",
+        "Nmap",
+        "Zenmap"
+      ],
+      "status": "Completed",
+      "liveUrl": "",
+      "githubUrl": "",
+      "image": null,
+      "pdf": "https://raw.githubusercontent.com/cybaashcloud/cybaashcloud.github.io/main/frontend/projects/sj6ufvi9.pdf",
+      "featured": true
+    }
+  ],
+  "flags": []
+}
