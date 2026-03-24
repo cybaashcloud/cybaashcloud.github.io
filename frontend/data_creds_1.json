@@ -1710,65 +1710,6 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "a30d01ab778d2e170e7be98aece071712ed804dc5b4000c745963ed507a4f598"
-    },
-    {
-      "id": "li0015",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/30af1784ddf77ba012f1b70aa133fc7ca3adbc854e181ede452a0dbe7afb1ed4",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Machine Learning",
-        "Artificial Intelligence (AI",
-        "Artificial Intelligence Foundations"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0015.jpg",
-      "title": "Artificial Intelligence Foundations: Machine Learning",
-      "issuer": "LinkedIn",
-      "courseId": "artificial-intelligence-foundations-machine-learning",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "30af1784ddf77ba012f1b70aa133fc7ca3adbc854e181ede452a0dbe7afb1ed4"
-    },
-    {
-      "id": "li0016",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Body Language",
-        "Leadership"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0016.jpg",
-      "title": "Body Language for Leaders and Managers",
-      "issuer": "LinkedIn",
-      "courseId": "body-language-for-leaders-and-managers",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "e3d31a8773c60d4733ded4662a0b7948e329b1806d0cd5a7daac88c97c41b2bf"
-    },
-    {
-      "id": "li0017",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Tech Career Skills",
-        "Security Awareness",
-        "Information Security Awareness"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0017.jpg",
-      "title": "Build Your Cybersecurity Awareness Skills",
-      "issuer": "LinkedIn",
-      "courseId": "build-your-cybersecurity-awareness-skills",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "d919e7126fb9c0c407ae9074d052fbc8be41602323e33d903a76903a2fa11861"
     }
   ]
 }
