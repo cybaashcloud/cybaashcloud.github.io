@@ -206,6 +206,7 @@ const _GENERAL_MAX_B64      = 50_000                   // ~37KB — max inline l
 
 /**
  * Strip large base64 blobs from a data object before writing to GitHub.
+ * Handles both data:image/* and data:application/pdf blobs.
  * Returns a cleaned copy; the original is untouched.
  */
 export function stripLargeBase64(obj) {
@@ -213,14 +214,30 @@ export function stripLargeBase64(obj) {
   if (Array.isArray(obj)) return obj.map(stripLargeBase64)
   const out = {}
   for (const [k, v] of Object.entries(obj)) {
-    if (typeof v === 'string' && v.startsWith('data:image/') && v.length > MAX_INLINE_B64_CHARS) {
+    if (typeof v === 'string' && v.length > MAX_INLINE_B64_CHARS &&
+        (v.startsWith('data:image/') || v.startsWith('data:application/pdf'))) {
       out[k] = ''
-      console.warn(`[GitHub] stripLargeBase64: dropped inline image for key "${k}" (${(v.length/1024).toFixed(0)}KB). Use uploadImage() instead.`)
+      console.warn(`[GitHub] stripLargeBase64: dropped inline blob for key "${k}" (${(v.length/1024).toFixed(0)}KB). Use uploadImage()/uploadPdf() instead.`)
     } else {
       out[k] = stripLargeBase64(v)
     }
   }
   return out
+}
+
+/**
+ * Upload a PDF base64 data URL as a file to the repo.
+ * Returns the raw GitHub URL for the file.
+ * @param {string} filename  e.g. "projects/my-project.pdf"
+ * @param {string} dataUrl   full data:application/pdf;base64,... string
+ */
+export async function uploadPdf(filename, dataUrl) {
+  const match = dataUrl.match(/^data:application\/pdf;base64,(.+)$/)
+  if (!match) throw new Error('uploadPdf: invalid data URL')
+  const b64  = match[1]
+  const path = await uploadImage(filename, b64)  // uploadImage works for any binary — path handling is identical
+  const cfg  = getGithubConfig()
+  return `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/main/frontend/${filename}`
 }
 
 /**

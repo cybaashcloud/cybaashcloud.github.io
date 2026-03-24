@@ -234,7 +234,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .proj-card{background:var(--panel);border:1px solid var(--border);position:relative;transition:border-color .2s;overflow:hidden}
 .proj-card:hover{border-color:rgba(0,212,255,.28)}
 .proj-img{width:100%;height:130px;object-fit:cover;display:block;border-bottom:1px solid var(--border)}
-.proj-noimg{width:100%;height:90px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+.proj-noimg{width:100%;height:90px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .proj-noimg svg{width:28px;height:28px;opacity:.12}
 .cr-logo-top{width:100%;height:90px;background:var(--panel2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
 
@@ -1479,22 +1479,30 @@ function rSkills(skills){
 function rProj(proj){
   if(!proj.length){g('pjGrid').innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><div class="empty-t">No projects yet — add via admin panel</div></div>`;return}
   const sc=s=>s?.replace(/\s+/g,'-')||'Completed';
-  g('pjGrid').innerHTML=proj.map(p=>`
+  // hasPdf: only show PDF button when the link is a real URL/path (not a raw base64 blob)
+  const hasPdf=p=>p.pdf&&!p.pdf.startsWith('data:');
+  g('pjGrid').innerHTML=proj.map(p=>{
+    const imgHtml=p.image
+      ?`<img class="proj-img" src="${x(p.image)}" alt="${x(p.title)}" onerror="this.style.display='none'">`
+      :'';
+    const noImgStyle=p.image?'display:none':'';
+    return `
     <div class="proj-card">
       <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
-      ${p.image?`<img class="proj-img" src="${p.image}" alt="${x(p.title)}">`:`<div class="proj-noimg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>`}
+      ${imgHtml}<div class="proj-noimg" style="${noImgStyle}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
       <div class="proj-body">
         <div class="proj-hdr"><div class="proj-title">${x(p.title||'Untitled')}</div><span class="stat-b ${sc(p.status)}">${x(p.status||'Completed')}</span></div>
-        ${p.featured?'<div class="feat-b">FEATURED</div>':''}
-        <p class="proj-desc">${x(p.desc||'')}</p>
+        ${p.featured?'<div class="feat-b">FEATURED</div>':'' }
+        <p class="proj-desc">${x(p.desc||'')} </p>
         ${p.tech?.length?`<div class="tech-row">${p.tech.map(t=>`<span class="tech-t">${x(t)}</span>`).join('')}</div>`:''}
         <div class="proj-links">
-          ${p.liveUrl?`<a class="pl" href="${p.liveUrl}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>LIVE</a>`:''}
-          ${p.githubUrl?`<a class="pl" href="${p.githubUrl}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>GITHUB</a>`:''}
-          ${p.pdf?`<a class="pl pl-pdf" href="${p.pdf}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="9" height="9"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</a>`:''}
+          ${p.liveUrl?`<a class="pl" href="${x(p.liveUrl)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>LIVE</a>`:''}
+          ${p.githubUrl?`<a class="pl" href="${x(p.githubUrl)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="currentColor" width="9" height="9"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>GITHUB</a>`:''}
+          ${hasPdf(p)?`<a class="pl pl-pdf" href="${x(p.pdf)}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="9" height="9"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</a>`:''}
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ── CTF Flags

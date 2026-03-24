@@ -2,7 +2,7 @@
 // NEW v5.0: Background sync for failed SOC logs, Web Push notifications
 // ALL ORIGINAL caching strategies preserved
 
-const VERSION     = 'cybaash-v5.2';
+const VERSION     = 'cybaash-v5.3';
 const SHELL_CACHE = `${VERSION}-shell`;
 const DATA_CACHE  = `${VERSION}-data`;
 const IMAGE_CACHE = `${VERSION}-images`;
@@ -78,6 +78,11 @@ self.addEventListener('fetch', event => {
       fetch(request, { cache: 'no-store' })
         .catch(() => new Response('{"credentials":[]}', { status: 200, headers: { 'Content-Type': 'application/json' } }))
     );
+    return;
+  }
+  // ── Project PDFs — network-first so updated files are always served fresh ─
+  if (url.pathname.startsWith('/pdfs/') || url.pathname.includes('/projects/') && url.pathname.endsWith('.pdf')) {
+    event.respondWith(networkFirst(request, DATA_CACHE));
     return;
   }
   if (url.hostname === self.location.hostname || url.hostname === 'cybaashcloud.github.io') {

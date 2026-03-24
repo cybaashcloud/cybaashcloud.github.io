@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { invalidateAll as invalidatePipelineCache } from './data/cache.js'
 import {
   getGithubConfig, saveGithubConfig, clearGithubConfig, resetClient,
-  loadAll, saveSection, testConnection, registerCacheInvalidator, uploadImage
+  loadAll, saveSection, testConnection, registerCacheInvalidator, uploadImage,
+  uploadPdf,
 } from './github.js'
 
 // Wire pipeline cache invalidation so saveSection clears both caches
@@ -2140,12 +2141,83 @@ function ProjectsSection({ data, onSave }) {
     setItems(u)            // optimistic update
     setSaving(true)
     try {
-      await onSave(u)
+      const cfg = getGithubConfig()
+      const MAX = 50_000
+
+      // Pre-upload any large base64 blobs so data_main.json stays lean
+      const cleaned = await Promise.all(u.map(async p => {
+        if (!cfg?.token) return p
+        const out = { ...p }
+
+        // Upload project screenshot image if it's a large base64 blob
+        const imgVal = out.image
+        if (typeof imgVal === 'string' && imgVal.startsWith('data:image/') && imgVal.length > MAX) {
+          try {
+            const match = imgVal.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/)
+            if (match) {
+              const ext   = match[1].split('/')[1].replace('jpeg','jpg').replace('svg+xml','svg')
+              const fname = `projects/${p.id}_image.${ext}`
+              const path  = await uploadImage(fname, match[2])
+              out.image   = `https://raw.githubusercontent.com/${cfg.owner}/${cfg.repo}/main/frontend/${path}`
+            }
+          } catch(e) {
+            console.warn(`[ProjectsSection] image upload failed for ${p.id}:`, e.message)
+          }
+        }
+
+        // Upload project PDF if it's a base64 blob (any size — PDFs are always files)
+        const pdfVal = out.pdf
+        if (typeof pdfVal === 'string' && pdfVal.startsWith('data:application/pdf')) {
+          try {
+            out.pdf = await uploadPdf(`projects/${p.id}.pdf`, pdfVal)
+            // Generate and store a thumbnail from the first page if no image yet
+            if (!out.image) {
+              try {
+                out.image = await _pdfFirstPageThumb(pdfVal)
+              } catch(te) {
+                console.info('[ProjectsSection] PDF thumb skipped:', te.message)
+              }
+            }
+          } catch(e) {
+            console.warn(`[ProjectsSection] PDF upload failed for ${p.id}:`, e.message)
+          }
+        }
+
+        return out
+      }))
+
+      setItems(cleaned)    // update state with uploaded URLs
+      await onSave(cleaned)
     } catch (e) {
       setItems(prev)       // rollback on failure so UI matches GitHub
       console.error('[ProjectsSection] save failed:', e.message)
       throw e              // bubble up so SyncToast shows the error
     } finally { setSaving(false) }
+  }
+
+  /** Generate a small JPEG thumbnail from page 1 of a PDF data URI using canvas + pdf.js */
+  async function _pdfFirstPageThumb(dataUri) {
+    // Dynamically load pdf.js from CDN only when needed
+    if (!window.pdfjsLib) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script')
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+        s.onload = res; s.onerror = rej
+        document.head.appendChild(s)
+      })
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+    }
+    const raw  = dataUri.replace(/^data:application\/pdf;base64,/, '')
+    const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0))
+    const pdf   = await window.pdfjsLib.getDocument({ data: bytes }).promise
+    const page  = await pdf.getPage(1)
+    const vp    = page.getViewport({ scale: 0.6 })
+    const canvas = document.createElement('canvas')
+    canvas.width  = vp.width
+    canvas.height = vp.height
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise
+    return canvas.toDataURL('image/jpeg', 0.72)
   }
   const open   = (id=null) => { setForm(id?{...items.find(p=>p.id===id)}:BLANK_PROJ()); setModal(id||'new') }
   const stripQuotes = s => (s||'').trim().replace(/^['"]+|['"]+$/g,'')
