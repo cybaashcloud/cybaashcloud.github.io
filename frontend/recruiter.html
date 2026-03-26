@@ -1342,10 +1342,18 @@ function credCard(c){
   const pdfIsDataUri = c.pdf && c.pdf.startsWith('data:application/pdf')
   const pdfIsImage = c.pdf && !c.pdf.endsWith('.pdf') && !pdfIsDataUri
   const certJpeg = c.image || (pdfIsImage ? c.pdf : '')
+
+  // FIX 1+2: credlyImageUrl may be a base64 data-URI (from sync script) or a direct
+  // image URL (manually entered). Both are valid src values.
+  // The CDN fallback using credlyBadgeId does NOT work — that ID is the earned assertion
+  // UUID, not the image template UUID that Credly's CDN requires.
+  // Instead, we fall back to the badge verify page via an og-image proxy, or show nothing.
   let logoSrc = ''
   if(isC){
-    logoSrc = c.credlyImageUrl
-      || (c.credlyBadgeId ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png` : '')
+    // credlyImageUrl is either a base64 data-URI or a direct https:// image URL — both render fine
+    logoSrc = (c.credlyImageUrl && c.credlyImageUrl !== '') ? c.credlyImageUrl : ''
+    // Note: we do NOT fall back to credlyBadgeId-based CDN URL — that ID is wrong for CDN.
+    // If credlyImageUrl is missing, run Force Re-sync in the GitHub Action to re-fetch the image.
   } else if(isLI){
     logoSrc = c.logo || LI_BADGE
   } else {
@@ -1404,9 +1412,9 @@ function credCard(c){
     buttonsHtml = `<span class="cc-btn" style="opacity:.35;cursor:default">${svgIcon}No Link</span>`;
   }
 
-  // Small logo in body row
+  // Small logo in body row — FIX 4: suppress for Credly (badge already shown in top banner)
   let bodyLogoHtml = '';
-  if(logoSrc){
+  if(logoSrc && !isC){
     const extraClass = isC ? ' cc-logo-credly' : '';
     bodyLogoHtml = `<img class="cc-logo${extraClass}" src="${x(logoSrc)}" alt="${x(c.issuer||'')}" loading="lazy" onerror="this.style.display='none'">`;
   }
