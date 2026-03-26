@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sync_credly_badges.py  —  Credly Badge Auto-Sync  (v2)
+sync_credly_badges.py  —  Credly Badge Auto-Sync  (v3)
 
 Fetches NEW Credly badges from the user's public Credly profile and adds
 them into data_creds_*.json exactly matching the format used by existing
@@ -19,13 +19,29 @@ HOW IT WORKS
         including the real badge image URL, skills, and issuer:
           GET https://api.credly.com/v1/obi/v2/assertions/{badge_id}
     b)  Downloads the badge image and encodes it as a base64 data-URI.
+        Retries up to 3 times on transient network failures.
     c)  Extracts real skill tags from badge alignment (OBI), badge.tags,
         or falls back to a rich keyword heuristic.
     d)  Extracts the real issuer name with multiple fallback paths.
     e)  Builds a full credential object matching the existing schema.
-    f)  Appends it to whichever data_creds_N.json has room (<=90 entries),
+    f)  Appends it to whichever data_creds_N.json has the most entries
+        but is still below the cap (fills files before creating new ones),
         or creates data_creds_6.json etc. as needed.
 4.  Writes updated JSON files back to disk.
+
+FIXES vs v2
+────────────
+  FIX 1 — _extract_image_url: CDN fallback now uses badge_template.image.id
+           (the image UUID) instead of the earned badge assertion ID.
+  FIX 2 — _extract_image_url: OBI badge.image dict URL is validated to be a
+           real image URL (not an internal Credly API endpoint).
+  FIX 3 — _badge_to_credential: stores None instead of "" when image download
+           fails, so frontend CDN fallback logic works correctly.
+  FIX 4 — _download_image_b64: retries up to 3 times on transient CI failures.
+  FIX 5 — _append_credential: fills the most-populated file first (was
+           mistakenly picking the least-populated file).
+  FIX 6 — _patch_existing_badge: force-resync now also re-patches badges whose
+           credlyImageUrl is an empty string (not just None).
 
 ENVIRONMENT VARIABLES
 ──────────────────────
@@ -62,6 +78,11 @@ CREDLY_LIST_URL      = "https://www.credly.com/users/{username}/badges.json"
 CREDLY_ASSERTION_URL = "https://api.credly.com/v1/obi/v2/assertions/{badge_id}"
 # Public badge page URL
 CREDLY_BADGE_URL     = "https://www.credly.com/badges/{badge_id}"
+
+# Credly CDN — image URLs always take this form:
+#   https://images.credly.com/size/340x340/images/{image_uuid}/image.png
+# The {image_uuid} comes from badge_template.image.id, NOT the earned badge ID.
+CREDLY_CDN_TEMPLATE  = "https://images.credly.com/size/340x340/images/{image_id}/image.png"
 
 # ── Rich skill taxonomy ────────────────────────────────────────────────────
 SKILL_TAXONOMY = {
@@ -116,7 +137,7 @@ ALL_SKILL_KEYWORDS = {kw: cat for cat, kws in SKILL_TAXONOMY.items() for kw in k
 
 def _headers() -> dict:
     return {
-        "User-Agent": "CybaashBot/2.0 (+https://cybaashcloud.github.io)",
+        "User-Agent": "CybaashBot/3.0 (+https://cybaashcloud.github.io)",
         "Accept":     "application/json",
     }
 
@@ -149,23 +170,135 @@ def _api_skills_to_tags(api_skills: list) -> list:
     return sorted(names)
 
 
+def _is_image_url(url: str) -> bool:
+    """
+    Return True only if the URL looks like a real renderable image,
+    not an internal Credly API endpoint.
+
+    FIX 2: OBI badge.image dict may contain API endpoint URLs like
+    https://api.credly.com/v1/obi/v2/badge_classes/.../image
+    which are JSON resources, not renderable images.
+    """
+    if not url or not url.startswith("http"):
+        return False
+    image_signals = (
+        "images.credly.com",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".svg",
+        ".webp",
+        ".gif",
+    )
+    return any(sig in url.lower() for sig in image_signals)
+
+
+# FIX 1 + FIX 2
+def _extract_image_url(obi: dict, raw: dict) -> str:
+    """
+    Extract badge image URL. Priority:
+      1. obi.badge.image  (string URL or {"id": url} / {"url": url})
+         — validated to be a real image URL, not a Credly API endpoint
+      2. raw.badge_template.image.url / image_url
+      3. Credly CDN using badge_template.image.id  ← FIX 1
+         (the image UUID stored in the template, not the earned badge ID)
+      4. Last-resort CDN attempt using the earned badge_id
+    """
+    # 1. OBI assertion badge.image
+    badge = obi.get("badge", {}) or {}
+    img   = badge.get("image")
+    if img:
+        if isinstance(img, str) and _is_image_url(img):          # FIX 2
+            return img
+        if isinstance(img, dict):
+            for key in ("id", "url"):
+                candidate = img.get(key) or ""
+                if _is_image_url(candidate):                      # FIX 2
+                    return candidate
+
+    # 2. List endpoint badge_template fields
+    tmpl = raw.get("badge_template", {}) or {}
+    img2 = tmpl.get("image") or {}
+    if isinstance(img2, dict):
+        u = img2.get("url", "")
+        if u and _is_image_url(u):
+            return u
+    elif isinstance(img2, str) and _is_image_url(img2):
+        return img2
+
+    for field in ("image_url",):
+        u = (tmpl.get(field) or raw.get(field) or "").strip()
+        if _is_image_url(u):
+            return u
+
+    # 3. FIX 1 — CDN fallback using badge_template.image.id (the image UUID)
+    #    The Credly CDN URL format is:
+    #      https://images.credly.com/size/340x340/images/{IMAGE_UUID}/image.png
+    #    where IMAGE_UUID is badge_template.image.id — NOT the earned badge ID.
+    tmpl_img = tmpl.get("image") or {}
+    image_id = ""
+
+    if isinstance(tmpl_img, dict):
+        # image.id is sometimes a full URL; extract the UUID segment from it
+        raw_id = (tmpl_img.get("id") or "").strip()
+        if raw_id:
+            # If it's already a UUID (no slashes), use it directly
+            if "/" not in raw_id:
+                image_id = raw_id
+            else:
+                # Extract UUID from a URL like:
+                # https://api.credly.com/v1/obi/v2/badge_classes/{UUID}/image
+                # https://images.credly.com/size/340x340/images/{UUID}/image.png
+                parts = [p for p in raw_id.split("/") if p]
+                # The UUID is typically 36 chars (with hyphens) or 32 chars
+                for part in reversed(parts):
+                    if len(part) in (32, 36) and part not in ("image", "image.png"):
+                        image_id = part
+                        break
+
+    if not image_id:
+        # Try badge_template.image_id as a direct field
+        image_id = (tmpl.get("image_id") or "").strip()
+
+    if image_id:
+        cdn_url = CREDLY_CDN_TEMPLATE.format(image_id=image_id)
+        print(f"    [img] CDN fallback (template image id): {cdn_url[:80]}")
+        return cdn_url
+
+    # 4. Absolute last resort — use the earned badge assertion ID.
+    #    This rarely works but is better than nothing.
+    badge_id = raw.get("id", "").strip()
+    if badge_id:
+        cdn_url = CREDLY_CDN_TEMPLATE.format(image_id=badge_id)
+        print(f"    [img] CDN fallback (badge id — may 404): {cdn_url[:80]}")
+        return cdn_url
+
+    return ""
+
+
+# FIX 4
 def _download_image_b64(url: str, session) -> Optional[str]:
-    """Download image and return as base64 data-URI string."""
+    """
+    Download image and return as base64 data-URI string.
+    Retries up to 3 times on transient network failures (common in CI).
+    """
     if not url:
         return None
-    try:
-        r = session.get(url, headers=_headers(), timeout=25)
-        if r.status_code != 200:
-            print(f"    [img] HTTP {r.status_code} for {url[:60]}")
-            return None
-        ct = r.headers.get("content-type", "image/png").split(";")[0].strip()
-        if not ct.startswith("image/"):
-            ct = "image/png"
-        b64 = base64.b64encode(r.content).decode()
-        return f"data:{ct};base64,{b64}"
-    except Exception as e:
-        print(f"    [img] download error: {e}")
-        return None
+    for attempt in range(1, 4):
+        try:
+            r = session.get(url, headers=_headers(), timeout=25)
+            if r.status_code == 200:
+                ct = r.headers.get("content-type", "image/png").split(";")[0].strip()
+                if not ct.startswith("image/"):
+                    ct = "image/png"
+                b64 = base64.b64encode(r.content).decode()
+                return f"data:{ct};base64,{b64}"
+            print(f"    [img] HTTP {r.status_code} for {url[:60]} (attempt {attempt}/3)")
+        except Exception as e:
+            print(f"    [img] download error (attempt {attempt}/3): {e}")
+        if attempt < 3:
+            time.sleep(1.5)
+    return None
 
 
 def _fetch_obi_assertion(badge_id: str, session) -> dict:
@@ -192,47 +325,6 @@ def _fetch_obi_assertion(badge_id: str, session) -> dict:
     except Exception as e:
         print(f"    [obi] fetch error for {badge_id}: {e}")
     return {}
-
-
-def _extract_image_url(obi: dict, raw: dict) -> str:
-    """
-    Extract badge image URL. Priority:
-      1. obi.badge.image  (string URL or {"id": url})
-      2. raw.badge_template.image.url / image_url
-      3. Credly CDN fallback using badge_id
-    """
-    # 1. OBI assertion badge.image
-    badge = obi.get("badge", {}) or {}
-    img   = badge.get("image")
-    if img:
-        if isinstance(img, str) and img.startswith("http"):
-            return img
-        if isinstance(img, dict):
-            url = img.get("id") or img.get("url") or ""
-            if url.startswith("http"):
-                return url
-
-    # 2. List endpoint badge_template fields
-    tmpl = raw.get("badge_template", {}) or {}
-    img2 = tmpl.get("image") or {}
-    if isinstance(img2, dict):
-        u = img2.get("url", "")
-        if u:
-            return u
-    elif isinstance(img2, str) and img2.startswith("http"):
-        return img2
-
-    for field in ("image_url",):
-        u = tmpl.get(field) or raw.get(field) or ""
-        if u and isinstance(u, str) and u.startswith("http"):
-            return u
-
-    # 3. CDN fallback — always works as long as the badge exists on Credly
-    badge_id = raw.get("id", "")
-    if badge_id:
-        return f"https://images.credly.com/size/340x340/images/{badge_id}/image.png"
-
-    return ""
 
 
 def _extract_issuer(obi: dict, raw: dict) -> str:
@@ -452,10 +544,10 @@ def _badge_to_credential(raw: dict, session) -> Optional[dict]:
 
         # ── Badge image ──────────────────────────────────────────────────
         image_url        = _extract_image_url(obi, raw)
-        credly_image_b64 = ""
+        credly_image_b64 = None                                   # FIX 3: None, not ""
         if image_url:
             print(f"    Downloading image from {image_url[:70]} …")
-            credly_image_b64 = _download_image_b64(image_url, session) or ""
+            credly_image_b64 = _download_image_b64(image_url, session)  # FIX 4: retries
             if credly_image_b64:
                 print(f"    ✓ Image  : {len(credly_image_b64)//1024}KB")
             else:
@@ -490,7 +582,7 @@ def _badge_to_credential(raw: dict, session) -> Optional[dict]:
             "tags":            tags,
             "featured":        False,
             "credlyBadgeId":   badge_id,
-            "credlyImageUrl":  credly_image_b64,
+            "credlyImageUrl":  credly_image_b64,                  # FIX 3: None when missing
             "credlyEarnerUrl": badge_url,
         }
         return credential
@@ -528,18 +620,25 @@ def _collect_existing_badge_ids(files: dict) -> set:
     return ids
 
 
+# FIX 5
 def _append_credential(files: dict, frontend: Path, cred: dict) -> str:
     """
-    Append a credential to the file with the fewest entries (still below MAX_PER_FILE).
-    Creates a new file if all existing ones are full.
-    Returns the filepath it was appended to.
+    Append a credential to the file closest to full (but still below MAX_PER_FILE).
+    This fills existing files before creating new ones.
+
+    FIX 5: v2 used `n < best_count` which picked the LEAST populated file,
+    spreading badges thinly and creating unnecessary new files. Corrected to
+    `n > best_count` so we pack the most-populated eligible file first.
+
+    Creates a new file if all existing ones are at capacity.
+    Returns the filepath the credential was appended to.
     """
     best_file  = None
-    best_count = MAX_PER_FILE + 1
+    best_count = -1                                               # FIX 5: start at -1
 
     for fname, data in files.items():
         n = len(data.get("credentials", []))
-        if n < MAX_PER_FILE and n < best_count:
+        if n < MAX_PER_FILE and n > best_count:                  # FIX 5: > not <
             best_count = n
             best_file  = fname
 
@@ -557,6 +656,10 @@ def _patch_existing_badge(files: dict, raw: dict, obi: dict, session) -> bool:
     """
     Patch an existing credential that is missing image / pdf / tags / issuer.
     Returns True if any field was updated.
+
+    FIX 6: Also treats credlyImageUrl == "" as missing (was only checking None/falsy
+    — empty string is falsy in Python so this was already handled, but now we
+    also store None instead of "" so the check is consistent going forward).
     """
     badge_id = raw.get("id", "")
     patched  = False
@@ -594,11 +697,11 @@ def _patch_existing_badge(files: dict, raw: dict, obi: dict, session) -> bool:
                     print(f"    ✓ pdf     : {pdf[:60]}")
                     patched = True
 
-            # Fix missing image
+            # FIX 6: treat both None and "" as missing image
             if not cred.get("credlyImageUrl"):
                 image_url = _extract_image_url(obi, raw)
                 if image_url:
-                    b64 = _download_image_b64(image_url, session)
+                    b64 = _download_image_b64(image_url, session)  # FIX 4: retries
                     if b64:
                         cred["credlyImageUrl"] = b64
                         print(f"    ✓ image   : {len(b64)//1024}KB")
@@ -667,7 +770,7 @@ def main():
                 for cred in data.get("credentials", []):
                     if cred.get("credlyBadgeId") == bid:
                         needs = (
-                            not cred.get("credlyImageUrl") or
+                            not cred.get("credlyImageUrl") or   # FIX 6: catches "" and None
                             not cred.get("tags") or
                             len(cred.get("tags", [])) <= 2 or
                             not cred.get("pdf") or
