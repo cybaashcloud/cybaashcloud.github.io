@@ -1802,5 +1802,19 @@
       "featured": true
     }
   ],
-  "flags": []
+  "flags": [
+    {
+      "id": "ot4g00og",
+      "platform": "TryHackMe",
+      "room": "Pickle Rick",
+      "title": "",
+      "desc": "┌─────────────────────────────────────────┐\n│  🚩 MISSION COMPLETE                    │\n│  ─────────────────────────────────────  │\n│  ROOM     : Pickle Rick                 │\n│  PLATFORM : TryHackMe                  │\n│  CATEGORY : Web Exploitation            │\n│  FLAGS    : 3/3 ✓                       │\n│  DIFFICULTY: Easy                       │\n│  SKILLS   : Dir Enum · Linux · PrivEsc  │\n│  WRITEUP  : [VIEW REPORT →]            │\n└─────────────────────────────────────────┘",
+      "difficulty": "Easy",
+      "date": "2026-03-27",
+      "url": "https://tryhackme.com/room/picklerick?utm_campaign=social_share&utm_medium=social&utm_content=share-completed-room&utm_source=copy&sharerId=69a95d377b427eaba270bfa7",
+      "tags": [
+        "web exploitation"
+      ]
+    }
+  ]
 }
