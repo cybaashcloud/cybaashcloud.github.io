@@ -1810,19 +1810,24 @@ function CredentialsSection({ data, onSave }) {
                 const typeBorder= isC ? 'rgba(255,170,0,.4)' : isCert ? 'rgba(0,255,136,.3)' : 'rgba(0,212,255,.3)'
 
                 // Image logic matching recruiter.html
-                const pdfIsImage = c.pdf && !c.pdf.endsWith('.pdf')
+                // FIX 3: guard against base64 PDFs being used as banner images
+                const pdfIsDataUri = c.pdf && c.pdf.startsWith('data:application/pdf')
+                const pdfIsImage = c.pdf && !c.pdf.endsWith('.pdf') && !pdfIsDataUri
                 const topImg = c.image || (pdfIsImage ? c.pdf : '')
 
+                // FIX 1+2: credlyImageUrl is either a base64 data-URI or a direct https:// URL.
+                // The CDN fallback using credlyBadgeId is WRONG — that ID is the earned assertion
+                // UUID, not the image template UUID the Credly CDN requires.
+                // Use credlyImageUrl directly; if missing, show the no-image placeholder.
                 let logoSrc = ''
                 if (isC) {
-                  logoSrc = c.credlyImageUrl
-                    || (c.credlyBadgeId ? `https://images.credly.com/size/340x340/images/${c.credlyBadgeId}/image.png` : '')
+                  logoSrc = (c.credlyImageUrl && c.credlyImageUrl !== '') ? c.credlyImageUrl : ''
                 } else {
                   const iss = (c.issuer || '').toLowerCase()
                   if (iss.includes('amazon') || iss.includes('aws'))
-                    logoSrc = 'https://images.credly.com/size/340x340/images/aws-logo.png'
+                    logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg'
                   else if (iss.includes('cisco'))
-                    logoSrc = 'https://images.credly.com/size/340x340/images/cisco-logo.png'
+                    logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg'
                   else
                     logoSrc = c.logo || ''
                 }
@@ -2012,10 +2017,21 @@ function CredentialsSection({ data, onSave }) {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Badge Image URL (from Credly)</label>
+                  <label className="form-label">Badge Image (URL or auto-synced base64)</label>
                   <input className="form-input" value={form.credlyImageUrl || ''} onChange={u('credlyImageUrl')}
-                    placeholder="https://images.credly.com/images/.../badge.png"/>
-                  <div className="form-hint">Paste the direct image URL from your Credly badge page</div>
+                    placeholder="https://images.credly.com/images/{image-uuid}/image.png"/>
+                  <div className="form-hint">
+                    Auto-filled by the sync workflow (stored as base64). To manually set, paste a direct Credly image URL
+                    — NOT the badge page URL. Leave blank to re-sync via GitHub Actions → Force Re-sync.
+                  </div>
+                  {form.credlyImageUrl && (
+                    <div style={{marginTop:8,display:'flex',alignItems:'center',gap:10}}>
+                      <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--tx3)',letterSpacing:1}}>PREVIEW:</span>
+                      <img src={form.credlyImageUrl} alt="badge preview"
+                        style={{width:60,height:60,objectFit:'contain',border:'1px solid var(--bd)',background:'var(--bg2)',padding:4,borderRadius:4}}
+                        onError={e=>{e.target.style.display='none'}}/>
+                    </div>
+                  )}
                 </div>
               </>
             )}
