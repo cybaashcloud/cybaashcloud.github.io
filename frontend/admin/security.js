@@ -504,6 +504,10 @@ function getMockData(action, params) {
     };
   }
 
+  if (action === 'resolveAlert') {
+    return { success: true, message: 'Alert resolved in demo mode.' };
+  }
+
   if (action === 'getGeoStats') {
     return { countries: [
       {country:'RU',count:45},{country:'CN',count:32},{country:'NL',count:28},
@@ -1094,75 +1098,291 @@ async function loadAPTAlerts() {
     const data = await callAppsScript('getAPTAlerts');
     const alerts = data.alerts || [];
 
+    // Update APT badge count
+    const badge = el('apt-badge');
+    const activeCount = alerts.filter(a => !a.resolved).length;
+    if (badge) {
+      badge.textContent = activeCount;
+      badge.style.display = alerts.length ? 'inline' : 'none';
+    }
+
     if (!alerts.length) {
       container.innerHTML = '<div class="empty-state"><span class="es-icon">✅</span>No APT alerts detected. System clear.</div>';
       return;
     }
 
-    // Update APT badge count
-    const badge = el('apt-badge');
-    if (badge) {
-      badge.textContent = alerts.filter(a => !a.resolved).length;
-      badge.style.display = alerts.length ? 'inline' : 'none';
+    // ── Threat Intel enrichment (free public APIs, no key needed) ──────────
+    async function enrichIP(ip) {
+      const intel = { isTor: false, abuseScore: null, org: null, country: null };
+      try {
+        // AbuseIPDB public lookup (no key — limited but useful)
+        const r = await fetch(`https://api.ipapi.is/?q=${encodeURIComponent(ip)}`, {
+          signal: AbortSignal.timeout(4000)
+        });
+        if (r.ok) {
+          const d = await r.json();
+          intel.isTor    = d.is_tor === true;
+          intel.isVPN    = d.is_vpn === true;
+          intel.isProxy  = d.is_proxy === true;
+          intel.isBot    = d.is_bot === true;
+          intel.org      = d.company?.name || d.asn?.org || null;
+          intel.country  = d.location?.country || null;
+          intel.asn      = d.asn?.asn ? 'AS' + d.asn.asn : null;
+        }
+      } catch (_) {}
+      return intel;
     }
 
-    container.innerHTML = alerts.map(a => {
-      const risk      = a.risk || 0;
-      const ttps      = Array.isArray(a.ttps) ? a.ttps : (a.ttps ? String(a.ttps).split(',') : []);
-      const action    = a.action || 'BLOCK';
-      const resolved  = a.resolved;
+    // MITRE ATT&CK TTP descriptions (local lookup — no API call needed)
+    const MITRE_DB = {
+      'T1190':    { name: 'Exploit Public-Facing Application', tactic: 'Initial Access', color: '#ff2244' },
+      'T1595':    { name: 'Active Scanning',                   tactic: 'Reconnaissance', color: '#ff6600' },
+      'T1595.001':{ name: 'Scanning IP Blocks',                tactic: 'Reconnaissance', color: '#ff6600' },
+      'T1595.002':{ name: 'Vulnerability Scanning',            tactic: 'Reconnaissance', color: '#ff6600' },
+      'T1046':    { name: 'Network Service Discovery',         tactic: 'Discovery',       color: '#ffd700' },
+      'T1059':    { name: 'Command & Scripting Interpreter',   tactic: 'Execution',       color: '#ff2244' },
+      'T1110':    { name: 'Brute Force',                       tactic: 'Credential Access',color: '#ff6600' },
+      'T1133':    { name: 'External Remote Services',          tactic: 'Persistence',     color: '#ff6600' },
+      'T1505':    { name: 'Server Software Component',         tactic: 'Persistence',     color: '#ff2244' },
+      'T1505.001':{ name: 'SQL Stored Procedures',             tactic: 'Persistence',     color: '#ff2244' },
+      'T1071':    { name: 'Application Layer Protocol',        tactic: 'C2',              color: '#aa44ff' },
+      'T1041':    { name: 'Exfiltration Over C2 Channel',     tactic: 'Exfiltration',    color: '#aa44ff' },
+    };
+
+    // ── Build cards ────────────────────────────────────────────────────────
+    container.innerHTML = '';
+
+    for (const a of alerts) {
+      const risk     = a.risk || 0;
+      const ttps     = Array.isArray(a.ttps) ? a.ttps : (a.ttps ? String(a.ttps).split(',') : []);
+      const action   = a.action || 'BLOCK';
+      const resolved = a.resolved;
+
       const actionColor = action === 'EMERGENCY_BLOCK' ? 'var(--red)' :
                           action === 'BLOCK'            ? 'var(--orange)' :
                           action === 'CHALLENGE'        ? 'var(--yellow)' : 'var(--green)';
 
-      return `
-        <div class="apt-alert-card" style="
-          background: var(--bg-panel, #070f18);
-          border: 1px solid ${risk >= 90 ? 'var(--red)' : risk >= 75 ? 'var(--orange)' : 'var(--border)'};
-          box-shadow: ${risk >= 90 ? '0 0 16px rgba(255,34,68,.15)' : 'none'};
-          border-radius: 4px;
-          padding: 16px;
-          margin-bottom: 12px;
-          position: relative;
-          opacity: ${resolved ? '0.6' : '1'};
-        ">
-          ${risk >= 90 ? '<div style="position:absolute;top:8px;right:8px;width:8px;height:8px;background:var(--red);border-radius:50%;box-shadow:0 0 8px var(--red);animation:pulse 1.2s ease-in-out infinite"></div>' : ''}
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-            <span style="font-family:var(--font-display,monospace);font-size:16px;color:var(--red);font-weight:900">${escapeHtml(a.ip || 'unknown')}</span>
-            <span class="badge badge-gray">${escapeHtml(a.country || '??')}</span>
-            <span class="badge ${riskClass(risk)}">${risk}/100</span>
-            <span style="color:${actionColor};font-size:10px;letter-spacing:2px;font-weight:bold">${escapeHtml(action)}</span>
-            ${resolved ? '<span style="color:var(--green);font-size:10px;letter-spacing:1px">✅ RESOLVED</span>' : ''}
-          </div>
+      // Enrich IP async
+      const intel = await enrichIP(a.ip);
 
-          <div style="margin-bottom:10px">
-            <span style="color:var(--text-muted,#5a7a9a);font-size:10px">ATTACK TYPE: </span>
-            <span class="badge badge-red">${escapeHtml(a.attackType || 'APT')}</span>
-          </div>
+      // Build card using DOM (no innerHTML for user-controlled data)
+      const card = document.createElement('div');
+      card.className = 'apt-alert-card';
+      card.style.cssText = [
+        'background:var(--bg-panel,#070f18)',
+        `border:1px solid ${risk >= 90 ? 'var(--red)' : risk >= 75 ? 'var(--orange)' : 'var(--border)'}`,
+        `box-shadow:${risk >= 90 ? '0 0 20px rgba(255,34,68,.18)' : 'none'}`,
+        'border-radius:4px','padding:18px','margin-bottom:14px','position:relative',
+        `opacity:${resolved ? '0.65' : '1'}`,
+      ].join(';');
 
-          ${ttps.length ? `
-            <div style="margin-bottom:10px">
-              <span style="color:var(--text-muted,#5a7a9a);font-size:9px;letter-spacing:2px">MITRE ATT&CK TTPs: </span><br/>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
-                ${ttps.map(t => `<span style="background:rgba(170,68,255,.15);border:1px solid rgba(170,68,255,.4);color:#aa44ff;padding:2px 8px;border-radius:2px;font-size:9px;font-family:monospace">${escapeHtml(t.trim())}</span>`).join('')}
-              </div>
-            </div>
-          ` : ''}
+      // Pulse indicator for critical
+      if (risk >= 90 && !resolved) {
+        const pulse = document.createElement('div');
+        pulse.style.cssText = 'position:absolute;top:10px;right:10px;width:9px;height:9px;background:var(--red);border-radius:50%;box-shadow:0 0 10px var(--red);animation:pulse 1.2s ease-in-out infinite';
+        card.appendChild(pulse);
+      }
 
-          ${a.summary ? `<div style="color:var(--text-secondary,#8ab0c8);font-size:11px;border-left:2px solid var(--border);padding-left:10px;margin-bottom:10px">${escapeHtml(a.summary)}</div>` : ''}
+      // ── Row 1: IP + badges ─────────────────────────────────────────────
+      const row1 = document.createElement('div');
+      row1.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px';
 
-          <div style="color:var(--text-muted,#5a7a9a);font-size:10px">
-            ${a.timestamp ? new Date(a.timestamp).toLocaleString('en-US',{hour12:false}) : '—'}
-            ${a.notes ? ' · ' + escapeHtml(a.notes) : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
+      const ipEl = document.createElement('span');
+      ipEl.style.cssText = 'font-family:var(--font-display,monospace);font-size:17px;color:var(--red);font-weight:900;letter-spacing:1px';
+      ipEl.textContent = a.ip || 'unknown';
+      row1.appendChild(ipEl);
 
-    termLog('info', `APT Alerts loaded: ${alerts.length} entries`);
+      const mkBadge = (text, extra) => {
+        const b = document.createElement('span');
+        b.className = 'badge badge-gray';
+        if (extra) b.style.cssText = extra;
+        b.textContent = text;
+        return b;
+      };
+
+      row1.appendChild(mkBadge(a.country || '??'));
+
+      const riskBadge = document.createElement('span');
+      riskBadge.className = `badge ${riskClass(risk)}`;
+      riskBadge.textContent = `${risk}/100`;
+      row1.appendChild(riskBadge);
+
+      const actionBadge = document.createElement('span');
+      actionBadge.style.cssText = `color:${actionColor};font-size:10px;letter-spacing:2px;font-weight:bold;font-family:monospace`;
+      actionBadge.textContent = action;
+      row1.appendChild(actionBadge);
+
+      if (resolved) {
+        const resBadge = document.createElement('span');
+        resBadge.style.cssText = 'color:var(--green);font-size:10px;letter-spacing:1px';
+        resBadge.textContent = '✅ RESOLVED';
+        row1.appendChild(resBadge);
+      }
+
+      card.appendChild(row1);
+
+      // ── Row 2: Threat Intel enrichment tags ────────────────────────────
+      const intelRow = document.createElement('div');
+      intelRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;min-height:18px';
+      const mkTag = (label, col) => {
+        const t = document.createElement('span');
+        t.style.cssText = `background:${col}22;border:1px solid ${col}66;color:${col};padding:2px 7px;border-radius:2px;font-size:9px;font-family:monospace;letter-spacing:1px`;
+        t.textContent = label;
+        return t;
+      };
+      if (intel.isTor)   intelRow.appendChild(mkTag('🧅 TOR EXIT NODE',  '#aa44ff'));
+      if (intel.isVPN)   intelRow.appendChild(mkTag('🔒 VPN',            '#ff6600'));
+      if (intel.isProxy) intelRow.appendChild(mkTag('🔀 PROXY',          '#ff6600'));
+      if (intel.isBot)   intelRow.appendChild(mkTag('🤖 BOT',            '#ff2244'));
+      if (intel.org)  {
+        const t = document.createElement('span');
+        t.style.cssText = 'color:var(--text-muted,#5a7a9a);font-size:9px;font-family:monospace;align-self:center';
+        t.textContent = intel.org + (intel.asn ? ' · ' + intel.asn : '');
+        intelRow.appendChild(t);
+      }
+      card.appendChild(intelRow);
+
+      // ── Row 3: Attack type ─────────────────────────────────────────────
+      const typeRow = document.createElement('div');
+      typeRow.style.marginBottom = '10px';
+      const typeLbl = document.createElement('span');
+      typeLbl.style.cssText = 'color:var(--text-muted,#5a7a9a);font-size:10px';
+      typeLbl.textContent = 'ATTACK TYPE: ';
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'badge badge-red';
+      typeBadge.textContent = a.attackType || 'APT';
+      typeRow.append(typeLbl, typeBadge);
+      card.appendChild(typeRow);
+
+      // ── Row 4: MITRE ATT&CK TTPs with enrichment ──────────────────────
+      if (ttps.length) {
+        const ttpSection = document.createElement('div');
+        ttpSection.style.marginBottom = '10px';
+        const ttpLbl = document.createElement('div');
+        ttpLbl.style.cssText = 'color:var(--text-muted,#5a7a9a);font-size:9px;letter-spacing:2px;margin-bottom:8px';
+        ttpLbl.textContent = 'MITRE ATT&CK TTPs:';
+        ttpSection.appendChild(ttpLbl);
+
+        const ttpGrid = document.createElement('div');
+        ttpGrid.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+
+        ttps.map(t => t.trim()).filter(Boolean).forEach(ttpId => {
+          const info = MITRE_DB[ttpId];
+          const color = info?.color || '#5a7a9a';
+
+          const chip = document.createElement('a');
+          chip.href   = `https://attack.mitre.org/techniques/${ttpId.replace('.','/')}`;
+          chip.target = '_blank';
+          chip.rel    = 'noopener noreferrer';
+          chip.style.cssText = [
+            `background:${color}18`,`border:1px solid ${color}55`,`color:${color}`,
+            'padding:4px 10px','border-radius:3px','font-size:9px','font-family:monospace',
+            'text-decoration:none','display:flex','flex-direction:column','gap:2px',
+            'cursor:pointer','transition:background .15s',
+          ].join(';');
+          chip.onmouseover = () => { chip.style.background = color + '30'; };
+          chip.onmouseout  = () => { chip.style.background = color + '18'; };
+
+          const ttpIdEl = document.createElement('span');
+          ttpIdEl.style.fontWeight = 'bold';
+          ttpIdEl.textContent = ttpId;
+          chip.appendChild(ttpIdEl);
+
+          if (info) {
+            const nameEl = document.createElement('span');
+            nameEl.style.cssText = 'font-size:8px;opacity:.8;white-space:nowrap';
+            nameEl.textContent = info.name;
+            chip.appendChild(nameEl);
+
+            const tacticEl = document.createElement('span');
+            tacticEl.style.cssText = 'font-size:7px;opacity:.6;text-transform:uppercase;letter-spacing:1px';
+            tacticEl.textContent = info.tactic;
+            chip.appendChild(tacticEl);
+          }
+
+          ttpGrid.appendChild(chip);
+        });
+        ttpSection.appendChild(ttpGrid);
+        card.appendChild(ttpSection);
+      }
+
+      // ── Row 5: Summary ────────────────────────────────────────────────
+      if (a.summary) {
+        const summaryEl = document.createElement('div');
+        summaryEl.style.cssText = 'color:var(--text-secondary,#8ab0c8);font-size:11px;border-left:2px solid var(--red);padding-left:10px;margin-bottom:12px;line-height:1.5';
+        summaryEl.textContent = a.summary;
+        card.appendChild(summaryEl);
+      }
+
+      // ── Row 6: Timestamp + notes ──────────────────────────────────────
+      const metaEl = document.createElement('div');
+      metaEl.style.cssText = 'color:var(--text-muted,#5a7a9a);font-size:10px;margin-bottom:14px';
+      metaEl.textContent = (a.timestamp ? new Date(a.timestamp).toLocaleString('en-US',{hour12:false}) : '—') +
+                           (a.notes ? ' · ' + a.notes : '');
+      card.appendChild(metaEl);
+
+      // ── Row 7: Action buttons ─────────────────────────────────────────
+      if (!resolved) {
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+
+        const mkBtn = (label, cls, handler) => {
+          const b = document.createElement('button');
+          b.className = `btn ${cls} btn-sm`;
+          b.textContent = label;
+          b.onclick = handler;
+          return b;
+        };
+
+        btnRow.appendChild(mkBtn('🛡 Block IP', 'btn-red', async () => {
+          if (!confirm(`Emergency-block ${a.ip}? This adds a Cloudflare firewall rule.`)) return;
+          await blockIPAction(a.ip, `APT Emergency Block — ${a.attackType} — Risk ${risk}`);
+          card.style.opacity = '0.5';
+          card.querySelector && (card.querySelector('div[style*="background:var(--red)"]') || {}).remove?.();
+          showToast(`${a.ip} blocked and flagged.`, 'success');
+        }));
+
+        btnRow.appendChild(mkBtn('🔍 Investigate', 'btn-blue', () => {
+          const q = encodeURIComponent(a.ip);
+          window.open(`https://www.virustotal.com/gui/ip-address/${q}`, '_blank', 'noopener');
+        }));
+
+        btnRow.appendChild(mkBtn('🌐 WHOIS', 'btn-gray', () => {
+          window.open(`https://www.shodan.io/host/${encodeURIComponent(a.ip)}`, '_blank', 'noopener');
+        }));
+
+        btnRow.appendChild(mkBtn('✅ Mark Resolved', 'btn-green', async () => {
+          await callAppsScript('resolveAlert', { ip: a.ip, timestamp: a.timestamp });
+          card.style.opacity = '0.5';
+          btnRow.remove();
+          const badge2 = document.createElement('span');
+          badge2.style.cssText = 'color:var(--green);font-size:10px;margin-top:4px;display:block';
+          badge2.textContent = '✅ Marked as resolved';
+          card.appendChild(badge2);
+          showToast(`Alert for ${a.ip} resolved.`, 'success');
+          if (badge) {
+            const newCount = Math.max(0, parseInt(badge.textContent || '0') - 1);
+            badge.textContent = newCount;
+            if (!newCount) badge.style.display = 'none';
+          }
+        }));
+
+        card.appendChild(btnRow);
+      }
+
+      container.appendChild(card);
+    }
+
+    termLog('info', `APT Alerts loaded: ${alerts.length} entries (${activeCount} active)`);
 
   } catch (e) {
-    container.innerHTML = `<div class="empty-state"><span class="es-icon">⚠️</span>Error loading APT alerts: ${escapeHtml(e.message)}</div>`;
+    container.innerHTML = '';
+    const errEl = document.createElement('div');
+    errEl.className = 'empty-state';
+    errEl.innerHTML = '<span class="es-icon">⚠️</span>';
+    const errMsg = document.createTextNode('Error loading APT alerts: ' + e.message);
+    errEl.appendChild(errMsg);
+    container.appendChild(errEl);
     termLog('error', 'APT alerts load failed: ' + e.message);
   }
 }

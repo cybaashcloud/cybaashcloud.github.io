@@ -962,3 +962,27 @@ body::before {
 }
 
 .empty-state .es-icon { font-size: 32px; display: block; margin-bottom: 12px; opacity: 0.4; }
+
+/* ── APT PANEL ADDITIONS ─────────────────────────────────────────────────── */
+.btn-blue {
+  color: #00d4ff; border: 1px solid rgba(0,212,255,0.35);
+  background: rgba(0,212,255,0.08);
+  transition: background .15s, box-shadow .15s;
+}
+.btn-blue:hover { background: rgba(0,212,255,0.2); box-shadow: 0 0 10px rgba(0,212,255,.25); }
+
+.btn-gray {
+  color: #8ab0c8; border: 1px solid rgba(138,176,200,0.3);
+  background: rgba(138,176,200,0.06);
+  transition: background .15s;
+}
+.btn-gray:hover { background: rgba(138,176,200,0.14); }
+
+.apt-alert-card {
+  transition: opacity .3s, border-color .3s;
+}
+
+@keyframes spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
