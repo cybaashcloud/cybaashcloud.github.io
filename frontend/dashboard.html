@@ -1,6 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+/* ── EARLY URL GUARD ─────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+  var BAD = [
+    /<script[\s>]/i, /javascript\s*:/i, /on\w+\s*=/i,
+    /(%3C|%3E|%22|%27)/i, /data\s*:\s*text\s*\/\s*html/i,
+    /('|%27|%22|--|;)/i,
+    /\b(union|select|insert|update|delete|drop|exec)\b/i,
+    /\.\.(\/|\\|%2F|%5C)/i,
+  ];
+  var combined = window.location.search + window.location.hash;
+  for (var i = 0; i < BAD.length; i++) {
+    if (BAD[i].test(combined)) {
+      try { window.history.replaceState(null, '', window.location.pathname); } catch(_) {}
+      window.__socEarlyBlock = true;
+      break;
+    }
+  }
+})();
+</script>
+
 <meta charset="UTF-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

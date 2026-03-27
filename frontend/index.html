@@ -1,6 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+/* ── EARLY URL GUARD (runs before any other script) ─────────────────────────
+   Strips XSS, SQLi, and path-traversal payloads from query string + hash
+   before the page renders. Logs detection to console (SOC tracker picks up
+   the rest). This is a defense-in-depth layer — the SOC tracker also scans.
+   ───────────────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+  var BAD = [
+    /<script[\s>]/i, /javascript\s*:/i, /on\w+\s*=/i,
+    /(%3C|%3E|%22|%27)/i, /<\s*img[^>]+onerror/i,
+    /data\s*:\s*text\s*\/\s*html/i,
+    /('|%27|%22|--|;\/\*|\*\/)/i,
+    /(union|select|insert|update|delete|drop|exec|execute)/i,
+    /\.\.(\/|\|%2F|%5C)/i, /%2e%2e/i,
+  ];
+  var combined = window.location.search + window.location.hash;
+  var triggered = false;
+  for (var i = 0; i < BAD.length; i++) {
+    if (BAD[i].test(combined)) { triggered = true; break; }
+  }
+  if (triggered) {
+    try { window.history.replaceState(null, '', window.location.pathname); } catch(_) {}
+    window.__socEarlyBlock = true;
+  }
+})();
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CYBAASH // Autonomous Cyber Range</title>

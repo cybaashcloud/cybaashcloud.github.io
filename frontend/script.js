@@ -97,25 +97,51 @@ function populateSkills(skills) {
   const gridEl   = document.getElementById('skills-grid');
   if (!filterEl || !gridEl) return;
 
-  // Build filter buttons
-  filterEl.innerHTML = `<button class="filter-btn active" data-cat="all" onclick="filterSkills('all',this)">ALL</button>`;
+  // Build filter buttons — use DOM methods to avoid innerHTML injection
+  filterEl.innerHTML = '';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'filter-btn active';
+  allBtn.dataset.cat = 'all';
+  allBtn.textContent = 'ALL';
+  allBtn.onclick = () => filterSkills('all', allBtn);
+  filterEl.appendChild(allBtn);
+
   skills.forEach(cat => {
-    filterEl.innerHTML += `<button class="filter-btn" data-cat="${cat.id}" onclick="filterSkills('${cat.id}',this)">${cat.name.toUpperCase()}</button>`;
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.dataset.cat = escapeHtml(cat.id);
+    btn.textContent = String(cat.name).toUpperCase();
+    btn.onclick = () => filterSkills(cat.id, btn);
+    filterEl.appendChild(btn);
   });
 
-  // Build skill items
+  // Build skill items — textContent for all user-controlled fields
   gridEl.innerHTML = '';
+  const frag = document.createDocumentFragment();
   skills.forEach(cat => {
     cat.items.forEach(sk => {
       const level = sk.level || 'Intermediate';
-      const levelClass = 'level-' + level.toLowerCase().replace(' ', '');
-      gridEl.innerHTML += `
-        <div class="skill-item" data-cat="${cat.id}">
-          <span class="skill-name">${sk.name}</span>
-          <span class="skill-level ${levelClass}">${level.toUpperCase()}</span>
-        </div>`;
+      const safeLevel = /^[A-Za-z ]+$/.test(level) ? level : 'Intermediate';
+      const levelClass = 'level-' + safeLevel.toLowerCase().replace(/\s+/g, '');
+
+      const item = document.createElement('div');
+      item.className = 'skill-item';
+      item.dataset.cat = escapeHtml(cat.id);
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'skill-name';
+      nameSpan.textContent = sk.name;
+
+      const lvlSpan = document.createElement('span');
+      lvlSpan.className = `skill-level ${levelClass}`;
+      lvlSpan.textContent = safeLevel.toUpperCase();
+
+      item.appendChild(nameSpan);
+      item.appendChild(lvlSpan);
+      frag.appendChild(item);
     });
   });
+  gridEl.appendChild(frag);
 }
 
 function filterSkills(catId, btn) {
@@ -130,50 +156,115 @@ function populateExperience(experience) {
   const el = document.getElementById('exp-timeline');
   if (!el) return;
   el.innerHTML = '';
+  const frag = document.createDocumentFragment();
   experience.forEach(exp => {
-    const isCurrent = exp.current;
-    el.innerHTML += `
-      <div class="timeline-item ${isCurrent ? 'current' : ''}">
-        <div class="exp-header">
-          <div>
-            <div class="exp-role">${exp.role}</div>
-            <div class="exp-company">${exp.company} ${exp.country || ''} · ${exp.location}</div>
-            <div class="exp-type">${exp.type}</div>
-          </div>
-          <div style="text-align:right">
-            <div class="exp-date">${exp.startDate} — ${exp.current ? '<span class="current-badge">CURRENT</span>' : (exp.endDate || '')}</div>
-          </div>
-        </div>
-        <div class="exp-desc">${exp.desc}</div>
-        ${exp.achievements?.length ? `
-          <ul class="exp-achievements">
-            ${exp.achievements.map(a => `<li>${a}</li>`).join('')}
-          </ul>` : ''}
-      </div>`;
+    const item = document.createElement('div');
+    item.className = 'timeline-item' + (exp.current ? ' current' : '');
+    const header = document.createElement('div');
+    header.className = 'exp-header';
+    const leftDiv = document.createElement('div');
+    const roleEl = document.createElement('div');
+    roleEl.className = 'exp-role';
+    roleEl.textContent = exp.role || '';
+    const compEl = document.createElement('div');
+    compEl.className = 'exp-company';
+    compEl.textContent = (exp.company || '') + ' ' + (exp.country || '') + ' · ' + (exp.location || '');
+    const typeEl = document.createElement('div');
+    typeEl.className = 'exp-type';
+    typeEl.textContent = exp.type || '';
+    leftDiv.append(roleEl, compEl, typeEl);
+    const rightDiv = document.createElement('div');
+    rightDiv.style.textAlign = 'right';
+    const dateEl = document.createElement('div');
+    dateEl.className = 'exp-date';
+    if (exp.current) {
+      dateEl.textContent = (exp.startDate || '') + ' — ';
+      const badge = document.createElement('span');
+      badge.className = 'current-badge';
+      badge.textContent = 'CURRENT';
+      dateEl.appendChild(badge);
+    } else {
+      dateEl.textContent = (exp.startDate || '') + ' — ' + (exp.endDate || '');
+    }
+    rightDiv.appendChild(dateEl);
+    header.append(leftDiv, rightDiv);
+    const descEl = document.createElement('div');
+    descEl.className = 'exp-desc';
+    descEl.textContent = exp.desc || '';
+    item.append(header, descEl);
+    if (exp.achievements && exp.achievements.length) {
+      const ul = document.createElement('ul');
+      ul.className = 'exp-achievements';
+      exp.achievements.forEach(a => {
+        const li = document.createElement('li');
+        li.textContent = a;
+        ul.appendChild(li);
+      });
+      item.appendChild(ul);
+    }
+    frag.appendChild(item);
   });
+  el.appendChild(frag);
 }
 
 function populateProjects(projects) {
   const el = document.getElementById('projects-grid');
   if (!el) return;
   el.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  const SAFE_URL = /^https?:\/\//i;
   projects.forEach(p => {
-    el.innerHTML += `
-      <div class="project-card">
-        ${p.image ? `<img src="${p.image}" alt="${p.title}" class="project-img" onerror="this.style.display='none'">` : ''}
-        <div class="project-body">
-          <div class="project-title">${p.title}</div>
-          <div class="project-desc">${p.desc}</div>
-          ${p.status ? `<div class="project-status">${p.status.toUpperCase()}</div>` : ''}
-          <div class="project-links">
-            ${p.liveUrl ? `<a href="${p.liveUrl}" target="_blank" class="project-link">🔗 Live Site</a>` : ''}
-            ${p.githubUrl ? `<a href="${p.githubUrl}" target="_blank" class="project-link">🐙 GitHub</a>` : ''}
-          </div>
-        </div>
-      </div>`;
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    if (p.image && SAFE_URL.test(p.image)) {
+      const img = document.createElement('img');
+      img.src = p.image;
+      img.alt = p.title || '';
+      img.className = 'project-img';
+      img.onerror = () => { img.style.display = 'none'; };
+      card.appendChild(img);
+    }
+    const body = document.createElement('div');
+    body.className = 'project-body';
+    const titleEl = document.createElement('div');
+    titleEl.className = 'project-title';
+    titleEl.textContent = p.title || '';
+    const descEl = document.createElement('div');
+    descEl.className = 'project-desc';
+    descEl.textContent = p.desc || '';
+    body.append(titleEl, descEl);
+    if (p.status) {
+      const statusEl = document.createElement('div');
+      statusEl.className = 'project-status';
+      statusEl.textContent = String(p.status).toUpperCase();
+      body.appendChild(statusEl);
+    }
+    const linksEl = document.createElement('div');
+    linksEl.className = 'project-links';
+    if (p.liveUrl && SAFE_URL.test(p.liveUrl)) {
+      const a = document.createElement('a');
+      a.href = p.liveUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.className = 'project-link';
+      a.textContent = '\uD83D\uDD17 Live Site';
+      linksEl.appendChild(a);
+    }
+    if (p.githubUrl && SAFE_URL.test(p.githubUrl)) {
+      const a = document.createElement('a');
+      a.href = p.githubUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.className = 'project-link';
+      a.textContent = '\uD83D\uDC19 GitHub';
+      linksEl.appendChild(a);
+    }
+    body.appendChild(linksEl);
+    card.appendChild(body);
+    frag.appendChild(card);
   });
+  el.appendChild(frag);
 }
-
 /* ══════════════════════════════════════════════════════════════════
    BACKEND STATUS CHECK
    ══════════════════════════════════════════════════════════════════ */
@@ -474,6 +565,23 @@ function setLink(id, href, text) {
 
 function escapeHtml(str) {
   return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/`/g, '&#x60;');
+}
+
+/** Allow only http/https URLs — returns '' for javascript:, data:, etc. */
+function sanitizeUrl(url) {
+  try {
+    var u = new URL(String(url));
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
+  } catch (_) { return ''; }
+}
+
+/** Strip dangerous chars from data-attribute values */
+function sanitizeAttr(str) {
+  return String(str).replace(/[<>"'` -]/g, '');
 }

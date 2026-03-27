@@ -176,25 +176,119 @@
     } catch(_) {}
   }
 
-  // ── 4. URL SCANNING ────────────────────────────────────────────────────────
+  // ── 4. URL SCANNING + ACTIVE BLOCKING ────────────────────────────────────────
   function scanCurrentURL() {
     var fullURL = window.location.href;
-    var sqliPat = [/'|%27|%22|--|;|\/\*/i, /\b(union|select|insert|drop|exec)\b/i];
-    var xssPat  = [/<script|javascript:|onerror=|onload=/i, /(%3C|%3E)/i];
+    var search  = window.location.search;
+    var hash    = window.location.hash;
+    var combined = search + hash;
+
+    // SQLi patterns in query/hash
+    var sqliPat = [
+      /('|%27|%22|--|;|\/\*|\*\/)/i,
+      /(union|select|insert|update|delete|drop|exec|execute|cast|convert|xp_)/i,
+      /(OR|AND)\s+\d+=\d+/i,
+    ];
+    // XSS patterns in query/hash
+    var xssPat = [
+      /<script[\s>]/i, /javascript\s*:/i,
+      /on\w+\s*=/i,
+      /(%3C|%3E|%22|%27)/i,
+      /<\s*img[^>]+onerror/i,
+      /data\s*:\s*text\s*\/\s*html/i,
+    ];
+    // Path traversal patterns
+    var pathPat = [
+      /\.\.(\/|\|%2F|%5C)/i,
+      /%2e%2e/i,
+    ];
+
+    var detected = null;
     for (var i = 0; i < sqliPat.length; i++) {
-      if (sqliPat[i].test(fullURL)) { sendLog('SQLi', 'SQLi pattern in URL'); return; }
+      if (sqliPat[i].test(combined)) { detected = 'SQLi'; break; }
     }
-    for (var j = 0; j < xssPat.length; j++) {
-      if (xssPat[j].test(fullURL)) { sendLog('XSS', 'XSS pattern in URL'); return; }
+    if (!detected) {
+      for (var j = 0; j < xssPat.length; j++) {
+        if (xssPat[j].test(combined)) { detected = 'XSS'; break; }
+      }
+    }
+    if (!detected) {
+      for (var k = 0; k < pathPat.length; k++) {
+        if (pathPat[k].test(window.location.pathname)) { detected = 'PATH_TRAVERSAL'; break; }
+      }
+    }
+
+    if (detected) {
+      // ── ACTIVE BLOCK: strip the malicious params immediately ──
+      sendLog(detected, 'Malicious pattern in URL — stripped');
+      try {
+        // Replace current history entry with clean path (no query/hash)
+        var cleanURL = window.location.origin + window.location.pathname;
+        window.history.replaceState(null, '', cleanURL);
+      } catch(_) {}
+      // Show a brief on-page warning banner (auto-dismisses in 5s)
+      try {
+        var banner = document.createElement('div');
+        banner.id = 'soc-block-banner';
+        banner.setAttribute('role', 'alert');
+        banner.setAttribute('aria-live', 'assertive');
+        banner.style.cssText = [
+          'position:fixed','top:0','left:0','right:0','z-index:2147483647',
+          'background:#1a0008','color:#ff2244','font-family:monospace',
+          'font-size:13px','padding:10px 16px','text-align:center',
+          'border-bottom:2px solid #ff2244','box-shadow:0 2px 12px rgba(255,34,68,.4)',
+        ].join(';');
+        banner.textContent = '⚠️ SOC ALERT: Suspicious request parameters detected and stripped. [' + detected + ']';
+        var dismiss = document.createElement('button');
+        dismiss.textContent = '×';
+        dismiss.style.cssText = 'margin-left:16px;background:none;border:none;color:#ff2244;font-size:16px;cursor:pointer;';
+        dismiss.onclick = function() { banner.remove(); };
+        banner.appendChild(dismiss);
+        document.body ? document.body.prepend(banner) : document.addEventListener('DOMContentLoaded', function() { document.body.prepend(banner); });
+        setTimeout(function() { if (banner.parentNode) banner.remove(); }, 5000);
+      } catch(_) {}
     }
   }
 
-  // ── 5. RATE TRACKING ───────────────────────────────────────────────────────
+  // ── 5. RATE TRACKING + ACTIVE RATE-LIMIT BLOCKING ────────────────────────
+  var RATE_LIMIT_THRESHOLD = 60; // requests per minute before blocking
+  var rateLimitBannerShown = false;
+
   function checkRateLimit() {
     try {
       var stored = JSON.parse(sessionStorage.getItem('soc_ts') || '[]');
-      var now = Date.now(), recent = stored.filter(function(t) { return now - t < 60000; });
-      recent.push(now); sessionStorage.setItem('soc_ts', JSON.stringify(recent.slice(-100)));
+      var now = Date.now();
+      var recent = stored.filter(function(t) { return now - t < 60000; });
+      recent.push(now);
+      sessionStorage.setItem('soc_ts', JSON.stringify(recent.slice(-100)));
+
+      if (recent.length > RATE_LIMIT_THRESHOLD && !rateLimitBannerShown) {
+        rateLimitBannerShown = true;
+        sendLog('RECON', 'Rate limit exceeded: ' + recent.length + ' req/min');
+        try {
+          var banner = document.getElementById('soc-block-banner');
+          if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'soc-block-banner';
+            banner.setAttribute('role', 'alert');
+            banner.style.cssText = [
+              'position:fixed','top:0','left:0','right:0','z-index:2147483647',
+              'background:#1a0800','color:#ff6600','font-family:monospace',
+              'font-size:13px','padding:10px 16px','text-align:center',
+              'border-bottom:2px solid #ff6600','box-shadow:0 2px 12px rgba(255,102,0,.4)',
+            ].join(';');
+            banner.textContent = '⚠️ SOC ALERT: Unusual request rate detected. Automated scanning is not permitted.';
+            var dismiss = document.createElement('button');
+            dismiss.textContent = '×';
+            dismiss.style.cssText = 'margin-left:16px;background:none;border:none;color:#ff6600;font-size:16px;cursor:pointer;';
+            dismiss.onclick = function() { banner.remove(); rateLimitBannerShown = false; };
+            banner.appendChild(dismiss);
+            if (document.body) document.body.prepend(banner);
+            setTimeout(function() { if (banner.parentNode) banner.remove(); rateLimitBannerShown = false; }, 8000);
+          }
+        } catch(_) {}
+      }
+
       return recent.length;
     } catch(_) { return 0; }
   }
