@@ -2317,71 +2317,192 @@ function ProjectsSection({ data, onSave }) {
 // ══════════════════════════════════════════════════════════════════════════
 // CTF FLAGS
 // ══════════════════════════════════════════════════════════════════════════
-const BLANK_FLAG = ()=>({id:uid(),platform:'TryHackMe',room:'',title:'',desc:'',difficulty:'Medium',date:now(),url:'',tags:[]})
+// Canonical flag schema — every field maps 1:1 to what recruiter.html reads.
+// To add a new field: add it here + in recruiter's rCTF(). Nowhere else.
+const BLANK_FLAG = ()=>({
+  id:          uid(),
+  platform:    'TryHackMe',
+  room:        '',
+  difficulty:  'Easy',
+  category:    '',
+  flags_count: 3,
+  date:        new Date().toISOString().split('T')[0],
+  desc:        '',
+  tags:        [],
+  url:         '',
+  verify_url:  '',
+  writeup_url: '',
+})
 const DIFF_COLORS = {Easy:'green',Medium:'amber',Hard:'red',Insane:'red'}
 
 function FlagsSection({ data, onSave }) {
-  const [items, setItems]   = useState(data||[])
-  const [modal, setModal]   = useState(null)
-  const [form, setForm]     = useState({})
+  const [items,   setItems]   = useState(data||[])
+  const [modal,   setModal]   = useState(null)
+  const [form,    setForm]    = useState({})
   const [confirm, setConfirm] = useState(null)
-  const [saving, setSaving] = useState(false)
+  const [saving,  setSaving]  = useState(false)
+
   useEffect(()=>{ setItems(data||[]) }, [data])
-  const commit = async (u, prev) => {
-    setItems(u)            // optimistic update
+
+  // Optimistic save with rollback
+  const commit = async (next, prev) => {
+    setItems(next)
     setSaving(true)
-    try {
-      await onSave(u)
-    } catch (e) {
-      setItems(prev)       // rollback on failure so UI matches GitHub
-      console.error('[FlagsSection] save failed:', e.message)
-      throw e              // bubble up so SyncToast shows the error
-    } finally { setSaving(false) }
+    try     { await onSave(next) }
+    catch(e){ setItems(prev); console.error('[FlagsSection]', e.message); throw e }
+    finally { setSaving(false) }
   }
-  const open   = (id=null) => { setForm(id?{...items.find(f=>f.id===id)}:BLANK_FLAG()); setModal(id||'new') }
-  const save   = async () => {
-    if (!form.room || !form.room.trim()) { alert('Room / Challenge Name is required.'); return; }
-    if (form.url && form.url.trim() && !/^https?:\/\//i.test(form.url.trim())) { alert('Room URL must start with https:// (or leave it blank).'); return; }
-    const prev=items; await commit(modal==='new'?[...items,form]:items.map(f=>f.id===modal?form:f), prev); setModal(null)
+
+  const open = (id=null) => {
+    setForm(id ? {...items.find(f=>f.id===id)} : BLANK_FLAG())
+    setModal(id||'new')
   }
-  const del    = async id  => { const prev=items; await commit(items.filter(f=>f.id!==id), prev); setConfirm(null) }
-  const u      = k => e => setForm(p=>({...p,[k]:e.target.value}))
+
+  // save() writes only canonical fields — no junk enters data_main.json
+  const save = async () => {
+    if (!form.room?.trim()) { alert('Room / Challenge Name is required.'); return }
+    const urlFields = ['url','verify_url','writeup_url']
+    for (const k of urlFields) {
+      if (form[k]?.trim() && !/^https?:\/\//i.test(form[k].trim())) {
+        alert(k.replace(/_/g,' ').toUpperCase()+' must start with https://'); return
+      }
+    }
+    // Build canonical object — only known fields, no ASCII art, no legacy junk
+    const clean = {
+      id:          form.id,
+      platform:    form.platform    || 'TryHackMe',
+      room:        form.room.trim(),
+      difficulty:  form.difficulty  || 'Easy',
+      category:    form.category    || '',
+      flags_count: parseInt(form.flags_count)||3,
+      date:        form.date        || new Date().toISOString().split('T')[0],
+      desc:        (form.desc||'').trim(),
+      tags:        form.tags        || [],
+      url:         (form.url||'').trim(),
+      verify_url:  (form.verify_url||'').trim(),
+      writeup_url: (form.writeup_url||'').trim(),
+    }
+    const prev = items
+    await commit(modal==='new' ? [...items,clean] : items.map(f=>f.id===modal?clean:f), prev)
+    setModal(null)
+  }
+
+  const del = async id => { const prev=items; await commit(items.filter(f=>f.id!==id), prev); setConfirm(null) }
+  const u   = k => e  => setForm(p=>({...p,[k]:e.target.value}))
+
+  // Derived stats
+  const totalFlags = items.reduce((s,f)=>s+(parseInt(f.flags_count)||3),0)
+  const platforms  = [...new Set(items.map(f=>f.platform).filter(Boolean))].length
+
+  const CATS = ['Web Exploitation','Privilege Escalation','Forensics','Cryptography',
+                'Reverse Engineering','OSINT','Network','Steganography','Miscellaneous']
+
   return (
     <div>
+      {/* ── Header */}
       <div className="section-header">
-        <div><span className="section-title">CTF Flags</span><span className="section-count">({items.length})</span></div>
+        <div style={{display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
+          <div><span className="section-title">CTF Flags</span><span className="section-count">({items.length})</span></div>
+          {items.length>0&&(
+            <div style={{display:'flex',border:'1px solid var(--bd)'}}>
+              {[{n:items.length,l:'ROOMS'},{n:totalFlags,l:'FLAGS'},{n:platforms||1,l:'PLATFORMS'}].map((s,i)=>(
+                <div key={s.l} style={{padding:'4px 12px',borderRight:i<2?'1px solid var(--bd)':'none',textAlign:'center'}}>
+                  <div style={{fontFamily:"'Orbitron',monospace",fontSize:13,fontWeight:900,color:'var(--g)',lineHeight:1}}>{s.n}</div>
+                  <div style={{fontSize:7,letterSpacing:2,color:'var(--tx3)',textTransform:'uppercase',marginTop:2}}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <div style={{display:'flex',gap:10,alignItems:'center'}}>
           {saving&&<span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--amber)'}}>⟳ Syncing…</span>}
-          <button className="btn btn-green" onClick={()=>open()}>+ Add Flag</button>
+          <button className="btn btn-green" onClick={()=>open()}>🚩 Capture Flag</button>
         </div>
       </div>
+
+      {/* ── Empty state */}
       {items.length===0&&<div className="empty-state"><div className="empty-state-icon">🚩</div><div className="empty-state-text">No CTF flags yet — start capturing!</div></div>}
+
+      {/* ── Card grid */}
       <div className="grid-2" style={{marginBottom:16}}>
         {items.map(f=>(
-          <div className="card" key={f.id}>
+          <div className="card" key={f.id} style={{borderLeft:`3px solid var(--${DIFF_COLORS[f.difficulty]||'amber'})`}}>
             <div className="card-corner tl"/><div className="card-corner tr"/>
             <div className="card-corner bl"/><div className="card-corner br"/>
-            <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
-              <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:'var(--red)',letterSpacing:2}}>{f.platform}</span>
-              <span className={`badge badge-${DIFF_COLORS[f.difficulty]||'amber'}`} style={{fontSize:9}}>{f.difficulty}</span>
+
+            {/* Mission banner */}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',
+              paddingBottom:8,marginBottom:10,borderBottom:'1px solid rgba(26,58,92,.5)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:7}}>
+                <span>🚩</span>
+                <div>
+                  <div style={{fontFamily:"'Orbitron',monospace",fontSize:7,letterSpacing:3,color:'var(--g)'}}>MISSION COMPLETE</div>
+                  <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:8,color:'var(--tx3)'}}>OPS-ID: {(f.id||'????').toUpperCase()}</div>
+                </div>
+              </div>
+              <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:8,color:'var(--red)',letterSpacing:2,border:'1px solid rgba(255,34,68,.3)',padding:'2px 6px'}}>{f.platform}</span>
+                <span className={`badge badge-${DIFF_COLORS[f.difficulty]||'amber'}`} style={{fontSize:8}}>{f.difficulty}</span>
+              </div>
             </div>
-            <div style={{fontFamily:"'Orbitron',monospace",fontSize:12,color:'var(--tx)',marginBottom:6,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.room||f.title||'Unnamed Room'}</div>
-            {f.desc&&<p style={{fontSize:11,color:'var(--tx2)',lineHeight:1.6,marginBottom:8,overflow:'hidden',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',wordBreak:'break-word'}}>{f.desc}</p>}
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
-              <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:'var(--tx3)'}}>{f.date}</span>
-              <div style={{display:'flex',gap:8}}>
-                {f.url&&<a href={f.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">↗ Room</a>}
+
+            {/* Room name */}
+            <div style={{fontFamily:"'Orbitron',monospace",fontSize:12,color:'var(--tx)',
+              marginBottom:10,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.room||'Unnamed Room'}</div>
+
+            {/* Metrics grid */}
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:1,background:'var(--bd)',border:'1px solid var(--bd)',marginBottom:10}}>
+              {[
+                {v:`${f.flags_count||3}/${f.flags_count||3}`, l:'FLAGS',    c:'var(--g)'},
+                {v:(f.category||f.tags?.[0]||'General').slice(0,10).toUpperCase(), l:'CATEGORY', c:'var(--blue)'},
+                {v: f.verify_url ? '✓ LIVE' : '— N/A',  l:'VERIFY',   c: f.verify_url?'var(--amber)':'var(--tx3)'},
+              ].map(m=>(
+                <div key={m.l} style={{background:'var(--panel)',padding:'6px 4px',textAlign:'center'}}>
+                  <div style={{fontFamily:"'Orbitron',monospace",fontSize:10,fontWeight:900,color:m.c,lineHeight:1,marginBottom:2}}>{m.v}</div>
+                  <div style={{fontSize:6,letterSpacing:2,color:'var(--tx3)',textTransform:'uppercase'}}>{m.l}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tags */}
+            {f.tags?.length>0&&(
+              <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8}}>
+                {f.tags.map(t=><span key={t} style={{fontSize:8,padding:'2px 7px',
+                  border:'1px solid rgba(0,212,255,.18)',color:'rgba(0,212,255,.6)',
+                  fontFamily:"'Share Tech Mono',monospace"}}>{t}</span>)}
+              </div>
+            )}
+
+            {/* Desc */}
+            {f.desc&&<p style={{fontSize:11,color:'var(--tx3)',lineHeight:1.5,marginBottom:8,
+              overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{f.desc}</p>}
+
+            {/* Footer */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',
+              paddingTop:8,borderTop:'1px solid rgba(26,58,92,.35)',flexWrap:'wrap',gap:6}}>
+              <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:'var(--tx3)'}}>{f.date}</span>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {f.verify_url   && <a href={f.verify_url}   target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{color:'var(--g)',borderColor:'rgba(0,255,136,.3)',fontSize:9}}>✓ Verify</a>}
+                {f.url          && <a href={f.url}          target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{fontSize:9}}>↗ Room</a>}
+                {f.writeup_url  && <a href={f.writeup_url}  target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{color:'var(--amber)',borderColor:'rgba(255,215,0,.3)',fontSize:9}}>📄 WU</a>}
                 <button className="btn btn-amber btn-sm btn-icon" onClick={()=>open(f.id)}>✎</button>
-                <button className="btn btn-red btn-sm btn-icon" onClick={()=>setConfirm(f.id)}>✕</button>
+                <button className="btn btn-red   btn-sm btn-icon" onClick={()=>setConfirm(f.id)}>✕</button>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* ── Modal */}
       {modal&&(
-        <div className="modal-overlay"><div className="modal">
-          <div className="modal-header"><span className="modal-title">{modal==='new'?'CAPTURE NEW FLAG':'EDIT FLAG'}</span><button className="modal-close" onClick={()=>setModal(null)} aria-label="Close">×</button></div>
+        <div className="modal-overlay"><div className="modal" style={{maxWidth:660}}>
+          <div className="modal-header">
+            <span className="modal-title">{modal==='new'?'🚩 CAPTURE NEW FLAG':'✎ EDIT FLAG'}</span>
+            <button className="modal-close" onClick={()=>setModal(null)} aria-label="Close">×</button>
+          </div>
           <div className="modal-body">
+
+            {/* Platform + Difficulty */}
             <div className="form-row form-row-2">
               <div className="form-group"><label className="form-label">Platform</label>
                 <select className="form-select" value={form.platform||'TryHackMe'} onChange={u('platform')}>
@@ -2389,23 +2510,81 @@ function FlagsSection({ data, onSave }) {
                 </select>
               </div>
               <div className="form-group"><label className="form-label">Difficulty</label>
-                <select className="form-select" value={form.difficulty||'Medium'} onChange={u('difficulty')}>
+                <select className="form-select" value={form.difficulty||'Easy'} onChange={u('difficulty')}>
                   {['Easy','Medium','Hard','Insane'].map(d=><option key={d}>{d}</option>)}
                 </select>
               </div>
             </div>
+
+            {/* Room + Date */}
             <div className="form-row form-row-2">
-              <div className="form-group"><label className="form-label">Room / Challenge Name</label><input className="form-input" value={form.room||''} onChange={u('room')} placeholder="Mr Robot"/></div>
-              <div className="form-group"><label className="form-label">Date</label><input className="form-input" type="date" value={form.date||''} onChange={u('date')}/></div>
+              <div className="form-group"><label className="form-label">Room / Challenge Name *</label>
+                <input className="form-input" value={form.room||''} onChange={u('room')} placeholder="Pickle Rick"/>
+              </div>
+              <div className="form-group"><label className="form-label">Date Completed</label>
+                <input className="form-input" type="date" value={form.date||''} onChange={u('date')}/>
+              </div>
             </div>
-            <div className="form-group"><label className="form-label">Description</label><textarea className="form-textarea" rows={3} value={form.desc||''} onChange={u('desc')} placeholder="Describe what you learned or how you solved it..."/></div>
-            <div className="form-group"><label className="form-label">Room URL</label><input className="form-input" value={form.url||''} onChange={u('url')} placeholder="https://tryhackme.com/room/..."/></div>
-            <div className="form-group"><label className="form-label">Tags</label><TagInput value={form.tags||[]} onChange={v=>setForm(p=>({...p,tags:v}))} placeholder="Privilege Escalation, Web..."/></div>
+
+            {/* Category + Flags Count */}
+            <div className="form-row form-row-2">
+              <div className="form-group"><label className="form-label">Category</label>
+                <select className="form-select" value={form.category||''} onChange={u('category')}>
+                  <option value="">— Select Category —</option>
+                  {CATS.map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label className="form-label">Flags Captured</label>
+                <input className="form-input" type="number" min="1" max="99"
+                  value={form.flags_count||3} onChange={u('flags_count')} placeholder="3"/>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="form-group"><label className="form-label">Description</label>
+              <textarea className="form-textarea" rows={3} value={form.desc||''} onChange={u('desc')}
+                placeholder="What did you exploit? What did you learn?"/>
+            </div>
+
+            {/* Tags */}
+            <div className="form-group"><label className="form-label">Techniques / Tags</label>
+              <TagInput value={form.tags||[]} onChange={v=>setForm(p=>({...p,tags:v}))}
+                placeholder="Dir Enumeration, Command Injection, Linux PrivEsc…"/>
+            </div>
+
+            {/* URL block */}
+            <div style={{padding:'12px',background:'rgba(0,0,0,.2)',border:'1px solid rgba(26,58,92,.4)',marginTop:4,display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:8,letterSpacing:3,color:'var(--blue)',marginBottom:2}}>// CREDENTIAL LINKS — all optional</div>
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">Room URL</label>
+                <input className="form-input" value={form.url||''} onChange={u('url')}
+                  placeholder="https://tryhackme.com/room/picklerick"/>
+              </div>
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">
+                  Verify URL <span style={{color:'var(--g)',fontSize:9,fontWeight:'normal'}}>→ shows green ✓ VERIFY button on card</span>
+                </label>
+                <input className="form-input" value={form.verify_url||''} onChange={u('verify_url')}
+                  placeholder="https://tryhackme.com/p/AasiqSec"/>
+              </div>
+              <div className="form-group" style={{marginBottom:0}}>
+                <label className="form-label">
+                  Writeup URL <span style={{color:'var(--amber)',fontSize:9,fontWeight:'normal'}}>→ shows gold 📄 WRITEUP button on card</span>
+                </label>
+                <input className="form-input" value={form.writeup_url||''} onChange={u('writeup_url')}
+                  placeholder="https://github.com/you/ctf-writeups/..."/>
+              </div>
+            </div>
+
           </div>
-          <div className="modal-footer"><button className="btn btn-ghost" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-green" onClick={save}>🚩 Capture Flag</button></div>
+          <div className="modal-footer">
+            <button className="btn btn-ghost" onClick={()=>setModal(null)}>Cancel</button>
+            <button className="btn btn-green" onClick={save}>🚩 {modal==='new'?'Capture Flag':'Save Changes'}</button>
+          </div>
         </div></div>
       )}
-      {confirm&&<Confirm msg="Remove this flag?" onConfirm={()=>del(confirm)} onCancel={()=>setConfirm(null)}/>}
+
+      {confirm&&<Confirm msg="Remove this CTF flag?" onConfirm={()=>del(confirm)} onCancel={()=>setConfirm(null)}/>}
     </div>
   )
 }
