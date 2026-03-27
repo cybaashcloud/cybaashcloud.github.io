@@ -4,6 +4,19 @@
  *  Standalone Security Operations Center Dashboard Logic
  *  Completely isolated from main site JavaScript
  * ═══════════════════════════════════════════════════════════════════════════
+ *
+ *  FIXES APPLIED (v2.1):
+ *  [F1] AUTO-BLOCK: checkForNewAlerts now automatically blocks critical/APT/
+ *       Honeypot IPs via Cloudflare instead of only alerting.
+ *  [F2] AUTO-BLOCK TOGGLE: SOC_CONFIG.autoBlockEnabled / autoBlockThreshold /
+ *       autoBlockTypes let you control this without touching code.
+ *  [F3] Removed duplicate refreshAll IIFE patch — integrated directly.
+ *  [F4] Removed duplicate switchTab IIFE patch — integrated directly.
+ *  [F5] _prevLogCount declared only once.
+ *  [F6] security-military-additions.js is now a clean standalone file
+ *       with NO duplicate function declarations — military additions are
+ *       fully merged into this single file.
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 
 'use strict';
@@ -25,6 +38,20 @@ const SOC_CONFIG = {
 
   // Maximum rows to display in logs table
   maxLogRows: 200,
+
+  // ── AUTO-BLOCK SETTINGS [F1][F2] ─────────────────────────────────────────
+  // Set autoBlockEnabled: false to disable automatic IP blocking.
+  // You can also toggle at runtime: SOC_CONFIG.autoBlockEnabled = false
+  autoBlockEnabled: true,
+
+  // Minimum risk score (0-100) to trigger auto-block
+  autoBlockThreshold: 90,
+
+  // Attack types that always trigger auto-block regardless of score
+  autoBlockTypes: ['APT', 'HONEYPOT', 'SQLi'],
+
+  // TOTP 2FA — set to true or localStorage.setItem('soc_totp_enabled','1')
+  totpEnabled: false,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,7 +100,6 @@ function storeJWT(token, expiresIn) {
 }
 
 async function getSessionToken() {
-  // Returns JWT for use in X-JWT-Token header
   return _jwt || getStoredJWT();
 }
 
@@ -190,7 +216,6 @@ function startClock() {
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTHENTICATION
 // ─────────────────────────────────────────────────────────────────────────────
-// ── Login rate limiting constants ─────────────────────────────────────────
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutes
 
@@ -209,7 +234,6 @@ function checkLockout() {
   if (!s.lockedUntil) return null;
   const remaining = s.lockedUntil - Date.now();
   if (remaining > 0) return remaining;
-  // Lockout expired — clear it
   setLoginState({});
   return null;
 }
@@ -284,7 +308,6 @@ async function handleLogin(e) {
       throw new Error(data.error || 'Invalid credentials');
     }
 
-    // Store JWT in sessionStorage (never localStorage)
     storeJWT(data.token, data.expiresIn);
     el('login-password').value = '';
     grantSession();
@@ -302,8 +325,7 @@ async function handleLogin(e) {
   el('login-password').value = '';
 }
 
-// FIX: Single canonical grantSession declaration.
-// The TOTP wrapper below will reassign this via _originalGrantSession.
+// Single canonical grantSession — TOTP wrapper reassigns via _originalGrantSession
 function grantSession() {
   STATE.authenticated = true;
   STATE.sessionExpiry = Date.now() + SOC_CONFIG.sessionTimeout * 60 * 1000;
@@ -311,7 +333,6 @@ function grantSession() {
   el('soc-app').classList.add('active');
   termLog('info', 'Admin session started — JWT active');
   showToast('Authentication successful', 'success');
-  // Mark connection as LIVE
   const badge = el('api-badge');
   if (badge) { badge.textContent = '● LIVE'; badge.className = 'badge badge-green'; }
   const cfgStatus = el('cfg-status');
@@ -328,7 +349,6 @@ function checkSession() {
       _jwt = sess.jwt;
       el('login-screen').style.display = 'none';
       el('soc-app').classList.add('active');
-      // Restore LIVE badge
       const badge = el('api-badge');
       if (badge) { badge.textContent = '● LIVE'; badge.className = 'badge badge-green'; }
       const cfgStatus = el('cfg-status');
@@ -378,7 +398,6 @@ async function callAppsScript(action, params = {}) {
       signal: AbortSignal.timeout(15000),
     });
 
-    // If JWT expired/invalid, force re-login
     if (response.status === 401) {
       termLog('warn', 'Session expired — please log in again');
       logout();
@@ -388,7 +407,6 @@ async function callAppsScript(action, params = {}) {
     if (!response.ok) throw new Error('Worker HTTP ' + response.status);
     const data = await response.json();
 
-    // Update status badge to LIVE on first successful call
     const badge = el('api-badge');
     if (badge && badge.textContent !== '● LIVE') {
       badge.textContent = '● LIVE'; badge.className = 'badge badge-green';
@@ -401,7 +419,6 @@ async function callAppsScript(action, params = {}) {
 
   } catch (err) {
     termLog('warn', 'Worker API error [' + action + ']: ' + err.message);
-    // Show demo badge
     const badge = el('api-badge');
     if (badge) { badge.textContent = '● DEMO'; badge.className = 'badge badge-cyan'; }
     return getMockData(action, params);
@@ -486,7 +503,7 @@ function getMockData(action, params) {
   }
 
   if (action === 'verifyAdmin') {
-    return { ok: false }; // Falls back to local hash
+    return { ok: false };
   }
 
   if (action === 'getAPTAlerts') {
@@ -556,8 +573,11 @@ async function initDashboard() {
   termLog('info', `Dashboard initialized — refresh every ${SOC_CONFIG.refreshInterval}s`);
 }
 
+// [F3] Single canonical refreshAll — no IIFE patch needed
 async function refreshAll() {
   termLog('info', 'Fetching live data from Worker...');
+  const prevCount = STATE.logs ? STATE.logs.length : 0;
+
   const [stats, logs, attackers, blocked] = await Promise.all([
     callAppsScript('getStats'),
     callAppsScript('getLogs'),
@@ -570,10 +590,15 @@ async function refreshAll() {
   if (attackers?.attackers) updateTopAttackers(attackers.attackers);
   if (blocked?.blocked) updateBlockedIPs(blocked.blocked);
 
-  el('last-updated')?.setAttribute('data-time', new Date().toLocaleTimeString('en-US', { hour12: false }));
   const lu = el('last-updated');
   if (lu) lu.textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour12: false });
   termLog('info', 'Data refresh complete');
+
+  // [F1] Run alert check + auto-block after every refresh
+  if (STATE.logs && STATE.logs.length) {
+    checkForNewAlerts(STATE.logs, prevCount);
+    _prevLogCount = STATE.logs.length;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -629,7 +654,6 @@ function initCharts() {
     }},
   };
 
-  // Traffic chart
   const trafficCtx = el('chart-traffic')?.getContext('2d');
   if (trafficCtx) {
     STATE.charts.traffic = new Chart(trafficCtx, {
@@ -654,7 +678,6 @@ function initCharts() {
     });
   }
 
-  // Attack chart
   const attackCtx = el('chart-attacks')?.getContext('2d');
   if (attackCtx) {
     STATE.charts.attacks = new Chart(attackCtx, {
@@ -676,7 +699,6 @@ function initCharts() {
     });
   }
 
-  // Attack type donut
   const typeCtx = el('chart-types')?.getContext('2d');
   if (typeCtx) {
     STATE.charts.types = new Chart(typeCtx, {
@@ -950,6 +972,7 @@ async function unblockManualIP() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TAB NAVIGATION
+// [F4] Single canonical switchTab — no IIFE patch needed
 // ─────────────────────────────────────────────────────────────────────────────
 function switchTab(tabId) {
   qsa('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -959,6 +982,7 @@ function switchTab(tabId) {
   if (tab) tab.classList.add('active');
   if (panel) panel.classList.add('active');
   STATE.activeTab = tabId;
+  if (tabId === 'apt') loadAPTAlerts();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -985,10 +1009,9 @@ function exportLogs() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SETTINGS SAVE
+// SETTINGS
 // ─────────────────────────────────────────────────────────────────────────────
 async function saveSettings() {
-  // Worker URL is fixed — routing all API calls through Cloudflare Worker
   const WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
   SOC_CONFIG.appsScriptUrl = WORKER;
   termLog('info', 'Worker URL confirmed: ' + WORKER);
@@ -996,7 +1019,6 @@ async function saveSettings() {
 }
 
 function loadSettings() {
-  // Always use the Cloudflare Worker as the backend
   const WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
   SOC_CONFIG.appsScriptUrl = WORKER;
   const urlField = el('cfg-apps-script-url');
@@ -1004,59 +1026,41 @@ function loadSettings() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BOOT
-// ─────────────────────────────────────────────────────────────────────────────
-// loadSOCConfig() removed — auth now uses HMAC session tokens (see getSessionToken()).
-// No secrets are fetched from the Worker or stored in the browser.
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EMERGENCY RESET — run in browser console if locked out:
-//   SOCreset()
+// EMERGENCY RESET
 // ─────────────────────────────────────────────────────────────────────────────
 window.SOCreset = function() {
   localStorage.removeItem('soc_pw_hash');
   localStorage.removeItem('soc_apps_script_url');
   sessionStorage.removeItem('soc_session');
-  console.log('[SOC] Reset complete. Refresh the page and log in with: cybaash-soc-admin');
+  console.log('[SOC] Reset complete. Refresh the page and log in.');
   location.reload();
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DOMContentLoaded — single consolidated handler
-// FIX: Merged the two separate DOMContentLoaded listeners into one.
 // ─────────────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
 
-  // Login form
   el('login-form')?.addEventListener('submit', handleLogin);
 
-  // Tab clicks
   qsa('.nav-tab').forEach(tab => {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
 
-  // Log search
   el('log-search')?.addEventListener('input', filterLogs);
-
-  // Logout button
   el('logout-btn')?.addEventListener('click', logout);
-
-  // Manual refresh button
   el('refresh-btn')?.addEventListener('click', () => { refreshAll(); showToast('Refreshing...', 'info', 1500); });
 
-  // Check existing session
   if (!checkSession()) {
     el('login-screen').style.display = 'flex';
   }
 
-  // Password toggle
   el('toggle-pw')?.addEventListener('click', () => {
     const inp = el('login-password');
     inp.type = inp.type === 'password' ? 'text' : 'password';
   });
 
-  // Terminal input — Enter key
   const inp = el('terminal-input');
   if (inp) {
     inp.addEventListener('keydown', function(e) {
@@ -1064,29 +1068,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // APT tab click handler
   const aptTab = document.querySelector('.nav-tab[data-tab="apt"]');
   if (aptTab) {
     aptTab.addEventListener('click', () => loadAPTAlerts());
   }
 
-  // Intel Panel link
   const intelLink = el('intel-panel-link');
   if (intelLink) {
     intelLink.addEventListener('click', () => window.open('/admin/intel.html', '_blank'));
   }
 
-  // Request push notification permission on first user gesture
   document.addEventListener('click', requestNotificationPermission, { once: true });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  MILITARY ADDITIONS v2.0
+//  MILITARY ADDITIONS v2.1 — fully merged, no duplicates
 // ═══════════════════════════════════════════════════════════════════════════
-// FIX: Removed duplicate 'use strict' — already declared at top of file.
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UPGRADE 5A — APT ALERTS TAB
+// APT ALERTS TAB
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadAPTAlerts() {
   const container = el('apt-alerts-list');
@@ -1098,7 +1098,6 @@ async function loadAPTAlerts() {
     const data = await callAppsScript('getAPTAlerts');
     const alerts = data.alerts || [];
 
-    // Update APT badge count
     const badge = el('apt-badge');
     const activeCount = alerts.filter(a => !a.resolved).length;
     if (badge) {
@@ -1111,11 +1110,9 @@ async function loadAPTAlerts() {
       return;
     }
 
-    // ── Threat Intel enrichment (free public APIs, no key needed) ──────────
     async function enrichIP(ip) {
       const intel = { isTor: false, abuseScore: null, org: null, country: null };
       try {
-        // AbuseIPDB public lookup (no key — limited but useful)
         const r = await fetch(`https://api.ipapi.is/?q=${encodeURIComponent(ip)}`, {
           signal: AbortSignal.timeout(4000)
         });
@@ -1133,23 +1130,21 @@ async function loadAPTAlerts() {
       return intel;
     }
 
-    // MITRE ATT&CK TTP descriptions (local lookup — no API call needed)
     const MITRE_DB = {
-      'T1190':    { name: 'Exploit Public-Facing Application', tactic: 'Initial Access', color: '#ff2244' },
-      'T1595':    { name: 'Active Scanning',                   tactic: 'Reconnaissance', color: '#ff6600' },
-      'T1595.001':{ name: 'Scanning IP Blocks',                tactic: 'Reconnaissance', color: '#ff6600' },
-      'T1595.002':{ name: 'Vulnerability Scanning',            tactic: 'Reconnaissance', color: '#ff6600' },
-      'T1046':    { name: 'Network Service Discovery',         tactic: 'Discovery',       color: '#ffd700' },
-      'T1059':    { name: 'Command & Scripting Interpreter',   tactic: 'Execution',       color: '#ff2244' },
-      'T1110':    { name: 'Brute Force',                       tactic: 'Credential Access',color: '#ff6600' },
-      'T1133':    { name: 'External Remote Services',          tactic: 'Persistence',     color: '#ff6600' },
-      'T1505':    { name: 'Server Software Component',         tactic: 'Persistence',     color: '#ff2244' },
-      'T1505.001':{ name: 'SQL Stored Procedures',             tactic: 'Persistence',     color: '#ff2244' },
-      'T1071':    { name: 'Application Layer Protocol',        tactic: 'C2',              color: '#aa44ff' },
-      'T1041':    { name: 'Exfiltration Over C2 Channel',     tactic: 'Exfiltration',    color: '#aa44ff' },
+      'T1190':    { name: 'Exploit Public-Facing Application', tactic: 'Initial Access',    color: '#ff2244' },
+      'T1595':    { name: 'Active Scanning',                   tactic: 'Reconnaissance',    color: '#ff6600' },
+      'T1595.001':{ name: 'Scanning IP Blocks',                tactic: 'Reconnaissance',    color: '#ff6600' },
+      'T1595.002':{ name: 'Vulnerability Scanning',            tactic: 'Reconnaissance',    color: '#ff6600' },
+      'T1046':    { name: 'Network Service Discovery',         tactic: 'Discovery',          color: '#ffd700' },
+      'T1059':    { name: 'Command & Scripting Interpreter',   tactic: 'Execution',          color: '#ff2244' },
+      'T1110':    { name: 'Brute Force',                       tactic: 'Credential Access',  color: '#ff6600' },
+      'T1133':    { name: 'External Remote Services',          tactic: 'Persistence',        color: '#ff6600' },
+      'T1505':    { name: 'Server Software Component',         tactic: 'Persistence',        color: '#ff2244' },
+      'T1505.001':{ name: 'SQL Stored Procedures',             tactic: 'Persistence',        color: '#ff2244' },
+      'T1071':    { name: 'Application Layer Protocol',        tactic: 'C2',                 color: '#aa44ff' },
+      'T1041':    { name: 'Exfiltration Over C2 Channel',      tactic: 'Exfiltration',       color: '#aa44ff' },
     };
 
-    // ── Build cards ────────────────────────────────────────────────────────
     container.innerHTML = '';
 
     for (const a of alerts) {
@@ -1162,10 +1157,8 @@ async function loadAPTAlerts() {
                           action === 'BLOCK'            ? 'var(--orange)' :
                           action === 'CHALLENGE'        ? 'var(--yellow)' : 'var(--green)';
 
-      // Enrich IP async
       const intel = await enrichIP(a.ip);
 
-      // Build card using DOM (no innerHTML for user-controlled data)
       const card = document.createElement('div');
       card.className = 'apt-alert-card';
       card.style.cssText = [
@@ -1176,14 +1169,12 @@ async function loadAPTAlerts() {
         `opacity:${resolved ? '0.65' : '1'}`,
       ].join(';');
 
-      // Pulse indicator for critical
       if (risk >= 90 && !resolved) {
         const pulse = document.createElement('div');
         pulse.style.cssText = 'position:absolute;top:10px;right:10px;width:9px;height:9px;background:var(--red);border-radius:50%;box-shadow:0 0 10px var(--red);animation:pulse 1.2s ease-in-out infinite';
         card.appendChild(pulse);
       }
 
-      // ── Row 1: IP + badges ─────────────────────────────────────────────
       const row1 = document.createElement('div');
       row1.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px';
 
@@ -1218,10 +1209,8 @@ async function loadAPTAlerts() {
         resBadge.textContent = '✅ RESOLVED';
         row1.appendChild(resBadge);
       }
-
       card.appendChild(row1);
 
-      // ── Row 2: Threat Intel enrichment tags ────────────────────────────
       const intelRow = document.createElement('div');
       intelRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;min-height:18px';
       const mkTag = (label, col) => {
@@ -1230,11 +1219,11 @@ async function loadAPTAlerts() {
         t.textContent = label;
         return t;
       };
-      if (intel.isTor)   intelRow.appendChild(mkTag('🧅 TOR EXIT NODE',  '#aa44ff'));
-      if (intel.isVPN)   intelRow.appendChild(mkTag('🔒 VPN',            '#ff6600'));
-      if (intel.isProxy) intelRow.appendChild(mkTag('🔀 PROXY',          '#ff6600'));
-      if (intel.isBot)   intelRow.appendChild(mkTag('🤖 BOT',            '#ff2244'));
-      if (intel.org)  {
+      if (intel.isTor)   intelRow.appendChild(mkTag('🧅 TOR EXIT NODE', '#aa44ff'));
+      if (intel.isVPN)   intelRow.appendChild(mkTag('🔒 VPN',           '#ff6600'));
+      if (intel.isProxy) intelRow.appendChild(mkTag('🔀 PROXY',         '#ff6600'));
+      if (intel.isBot)   intelRow.appendChild(mkTag('🤖 BOT',           '#ff2244'));
+      if (intel.org) {
         const t = document.createElement('span');
         t.style.cssText = 'color:var(--text-muted,#5a7a9a);font-size:9px;font-family:monospace;align-self:center';
         t.textContent = intel.org + (intel.asn ? ' · ' + intel.asn : '');
@@ -1242,7 +1231,6 @@ async function loadAPTAlerts() {
       }
       card.appendChild(intelRow);
 
-      // ── Row 3: Attack type ─────────────────────────────────────────────
       const typeRow = document.createElement('div');
       typeRow.style.marginBottom = '10px';
       const typeLbl = document.createElement('span');
@@ -1254,7 +1242,6 @@ async function loadAPTAlerts() {
       typeRow.append(typeLbl, typeBadge);
       card.appendChild(typeRow);
 
-      // ── Row 4: MITRE ATT&CK TTPs with enrichment ──────────────────────
       if (ttps.length) {
         const ttpSection = document.createElement('div');
         ttpSection.style.marginBottom = '10px';
@@ -1299,14 +1286,12 @@ async function loadAPTAlerts() {
             tacticEl.textContent = info.tactic;
             chip.appendChild(tacticEl);
           }
-
           ttpGrid.appendChild(chip);
         });
         ttpSection.appendChild(ttpGrid);
         card.appendChild(ttpSection);
       }
 
-      // ── Row 5: Summary ────────────────────────────────────────────────
       if (a.summary) {
         const summaryEl = document.createElement('div');
         summaryEl.style.cssText = 'color:var(--text-secondary,#8ab0c8);font-size:11px;border-left:2px solid var(--red);padding-left:10px;margin-bottom:12px;line-height:1.5';
@@ -1314,14 +1299,12 @@ async function loadAPTAlerts() {
         card.appendChild(summaryEl);
       }
 
-      // ── Row 6: Timestamp + notes ──────────────────────────────────────
       const metaEl = document.createElement('div');
       metaEl.style.cssText = 'color:var(--text-muted,#5a7a9a);font-size:10px;margin-bottom:14px';
       metaEl.textContent = (a.timestamp ? new Date(a.timestamp).toLocaleString('en-US',{hour12:false}) : '—') +
                            (a.notes ? ' · ' + a.notes : '');
       card.appendChild(metaEl);
 
-      // ── Row 7: Action buttons ─────────────────────────────────────────
       if (!resolved) {
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
@@ -1338,13 +1321,11 @@ async function loadAPTAlerts() {
           if (!confirm(`Emergency-block ${a.ip}? This adds a Cloudflare firewall rule.`)) return;
           await blockIPAction(a.ip, `APT Emergency Block — ${a.attackType} — Risk ${risk}`);
           card.style.opacity = '0.5';
-          card.querySelector && (card.querySelector('div[style*="background:var(--red)"]') || {}).remove?.();
           showToast(`${a.ip} blocked and flagged.`, 'success');
         }));
 
         btnRow.appendChild(mkBtn('🔍 Investigate', 'btn-blue', () => {
-          const q = encodeURIComponent(a.ip);
-          window.open(`https://www.virustotal.com/gui/ip-address/${q}`, '_blank', 'noopener');
+          window.open(`https://www.virustotal.com/gui/ip-address/${encodeURIComponent(a.ip)}`, '_blank', 'noopener');
         }));
 
         btnRow.appendChild(mkBtn('🌐 WHOIS', 'btn-gray', () => {
@@ -1380,27 +1361,20 @@ async function loadAPTAlerts() {
     const errEl = document.createElement('div');
     errEl.className = 'empty-state';
     errEl.innerHTML = '<span class="es-icon">⚠️</span>';
-    const errMsg = document.createTextNode('Error loading APT alerts: ' + e.message);
-    errEl.appendChild(errMsg);
+    errEl.appendChild(document.createTextNode('Error loading APT alerts: ' + e.message));
     container.appendChild(errEl);
     termLog('error', 'APT alerts load failed: ' + e.message);
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UPGRADE 5B — ADMIN TERMINAL UPGRADE
+// ADMIN TERMINAL
 // ─────────────────────────────────────────────────────────────────────────────
-
-// Store ref to original handler if it exists
-const _originalHandleTerminalCommand = (typeof handleTerminalCommand === 'function')
-  ? handleTerminalCommand
-  : null;
-
 function handleTerminalCommand(input) {
-  const parts   = input.trim().split(/\s+/);
-  const cmd     = (parts[0] || '').toLowerCase();
-  const args    = parts.slice(1);
-  const WORKER  = 'https://cybaash.mohamedaasiq07.workers.dev';
+  const parts  = input.trim().split(/\s+/);
+  const cmd    = (parts[0] || '').toLowerCase();
+  const args   = parts.slice(1);
+  const WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
 
   switch (cmd) {
 
@@ -1429,13 +1403,14 @@ function handleTerminalCommand(input) {
       termPrint(`  Set BLOCKED_COUNTRIES = comma-separated ISO codes (e.g. KP,IR,CN)`);
       return;
 
-    case 'intel':
+    case 'intel': {
       if (args[0] === 'add' && args[1]) {
         const ip = args[1];
         termPrint(`> Adding ${ip} to threat intel...`);
+        // [F8] Use JWT header for authenticated intel calls
         getSessionToken().then(tok => fetch(WORKER + '/intel', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Session-Token': tok },
+          headers: { 'Content-Type': 'application/json', 'X-JWT-Token': tok },
           body: JSON.stringify({ ip, action: 'add', reason: 'Manual — terminal', score: 80 })
         })).then(r => r.json()).then(d => {
           termPrint(d.success ? `  ✅ ${ip} added to threat intel DB` : `  ❌ Failed: ${d.error||'unknown'}`);
@@ -1445,7 +1420,7 @@ function handleTerminalCommand(input) {
         termPrint(`> Removing ${ip} from threat intel...`);
         getSessionToken().then(tok => fetch(WORKER + '/intel', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Session-Token': tok },
+          headers: { 'Content-Type': 'application/json', 'X-JWT-Token': tok },
           body: JSON.stringify({ ip, action: 'remove' })
         })).then(r => r.json()).then(d => {
           termPrint(d.success ? `  ✅ ${ip} removed` : `  ❌ Failed: ${d.error||'unknown'}`);
@@ -1461,7 +1436,9 @@ function handleTerminalCommand(input) {
         termPrint('  Usage: intel add <ip> | intel remove <ip> | intel list');
       }
       return;
+    }
 
+    // [F4] Wrapped case blocks in braces to fix const-in-switch lexical binding error
     case 'purge': {
       const days = parseInt(args[0]) || 30;
       if (!confirm(`Delete SOC logs older than ${days} days?`)) { termPrint('  Aborted.'); return; }
@@ -1512,7 +1489,7 @@ function handleTerminalCommand(input) {
     case 'audit':
       termPrint('> Fetching worker audit log...');
       getSessionToken().then(tok => fetch(WORKER + '/audit', {
-        headers: { 'Content-Type': 'application/json', 'X-Session-Token': tok }
+        headers: { 'Content-Type': 'application/json', 'X-JWT-Token': tok }
       })).then(r => r.json()).then(d => {
         const entries = d.entries || [];
         if (!entries.length) { termPrint('  No audit entries (requires X-SOC-Key).'); return; }
@@ -1527,12 +1504,27 @@ function handleTerminalCommand(input) {
       termPrint('  ✅ Opening Intel Panel...');
       return;
 
-    case 'help':
-      if (_originalHandleTerminalCommand) {
-        _originalHandleTerminalCommand(input);
+    case 'autoblock': {
+      // Runtime toggle for auto-block
+      if (args[0] === 'on') {
+        SOC_CONFIG.autoBlockEnabled = true;
+        termPrint('  ✅ Auto-block ENABLED — critical threats will be blocked automatically.');
+      } else if (args[0] === 'off') {
+        SOC_CONFIG.autoBlockEnabled = false;
+        termPrint('  ⚠ Auto-block DISABLED — threats will alert only, no automatic blocking.');
+      } else if (args[0] === 'status') {
+        termPrint(`  Auto-block: ${SOC_CONFIG.autoBlockEnabled ? 'ENABLED' : 'DISABLED'}`);
+        termPrint(`  Threshold:  risk >= ${SOC_CONFIG.autoBlockThreshold}`);
+        termPrint(`  Types:      ${SOC_CONFIG.autoBlockTypes.join(', ')}`);
+      } else {
+        termPrint('  Usage: autoblock <on|off|status>');
       }
+      return;
+    }
+
+    case 'help':
       termPrint('');
-      termPrint('  ── MILITARY v2.0 COMMANDS ──────────────────');
+      termPrint('  ── SOC COMMANDS ─────────────────────────────');
       termPrint('  apt-alerts          List APT alerts from DB');
       termPrint('  intel list          Show threat intel entries');
       termPrint('  intel add <ip>      Add IP to threat intel DB');
@@ -1545,18 +1537,15 @@ function handleTerminalCommand(input) {
       termPrint('  report              Send daily intel email report');
       termPrint('  scan <url>          Quick passive scan of a URL');
       termPrint('  intel-panel         Open threat intel panel tab');
+      termPrint('  autoblock on|off    Toggle automatic IP blocking');
+      termPrint('  autoblock status    Show auto-block config');
       return;
 
     default:
-      if (_originalHandleTerminalCommand) {
-        _originalHandleTerminalCommand(input);
-      } else {
-        termPrint(`  Unknown command: ${cmd}. Type 'help' for commands.`);
-      }
+      termPrint(`  Unknown command: ${cmd}. Type 'help' for commands.`);
   }
 }
 
-// Terminal print helper
 function termPrint(line) {
   const term = el('terminal-output');
   if (!term) return;
@@ -1567,7 +1556,6 @@ function termPrint(line) {
   term.scrollTop = term.scrollHeight;
 }
 
-// Quick passive scan
 async function quickPassiveScan(url) {
   termPrint(`> Passive scan: ${url}`);
   try {
@@ -1586,7 +1574,6 @@ async function quickPassiveScan(url) {
   }
 }
 
-// Terminal run — called by Run button and Enter key
 function runTerminalCommand() {
   const input = el('terminal-input');
   if (!input) return;
@@ -1598,35 +1585,17 @@ function runTerminalCommand() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UPGRADE 5C — TWO-FACTOR TOTP LOGIN
-//
-// How it works:
-//   1. After password auth succeeds, handleLogin calls grantSession().
-//   2. grantSession is reassigned below to an async wrapper.
-//   3. The wrapper checks a SOC_CONFIG flag (or localStorage override)
-//      to decide whether TOTP is required — no extra network call needed.
-//   4. If TOTP is required → startTOTPFlow() shows the overlay; on success
-//      it calls _originalGrantSession() to complete the login.
-//   5. If TOTP is disabled → falls straight through to _originalGrantSession().
-//
-// To ENABLE TOTP:  set  localStorage.setItem('soc_totp_enabled', '1')
-//                  or   SOC_CONFIG.totpEnabled = true  in the config block.
-// To DISABLE TOTP: localStorage.removeItem('soc_totp_enabled')
+// TWO-FACTOR TOTP LOGIN
 // ─────────────────────────────────────────────────────────────────────────────
 const _originalGrantSession = grantSession;
 
 grantSession = async function() {
-  // Check if TOTP is enabled via config or localStorage override
   const totpEnabled = SOC_CONFIG.totpEnabled ||
                       localStorage.getItem('soc_totp_enabled') === '1';
-
   if (totpEnabled) {
-    // startTOTPFlow will call _originalGrantSession() on success
     await startTOTPFlow();
     return;
   }
-
-  // TOTP not enabled — grant session immediately
   _originalGrantSession();
 };
 
@@ -1720,7 +1689,7 @@ async function startTOTPFlow() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UPGRADE 5D — REAL-TIME ALERT SOUNDS + PUSH NOTIFICATIONS
+// ALERT SOUNDS + PUSH NOTIFICATIONS
 // ─────────────────────────────────────────────────────────────────────────────
 function playAlertSound(level) {
   try {
@@ -1768,14 +1737,18 @@ function requestNotificationPermission() {
   }
 }
 
+// [F5] _prevLogCount declared exactly once
 let _prevLogCount = 0;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// checkForNewAlerts — [F1] NOW AUTO-BLOCKS critical/APT/Honeypot threats
+// ─────────────────────────────────────────────────────────────────────────────
 function checkForNewAlerts(newLogs, prevCount) {
   if (!newLogs || !newLogs.length) return;
 
-  const critical = newLogs.filter(l => l.risk >= 90);
-  const high     = newLogs.filter(l => l.risk >= 70 && l.risk < 90);
-  const aptLogs  = newLogs.filter(l => l.attackType === 'APT' || l.attackType === 'HONEYPOT');
+  const critical = newLogs.filter(l => l.risk >= SOC_CONFIG.autoBlockThreshold);
+  const high     = newLogs.filter(l => l.risk >= 70 && l.risk < SOC_CONFIG.autoBlockThreshold);
+  const aptLogs  = newLogs.filter(l => SOC_CONFIG.autoBlockTypes.includes(l.attackType));
 
   if (critical.length > 0 || aptLogs.length > 0) {
     const target = aptLogs[0] || critical[0];
@@ -1796,30 +1769,25 @@ function checkForNewAlerts(newLogs, prevCount) {
 
     termLog('error', `CRITICAL: ${target.attackType} from ${target.ip} (risk ${target.risk})`);
 
+    // [F1][F2] AUTO-BLOCK — skip if already in blockedIPs list or toggle is off
+    if (SOC_CONFIG.autoBlockEnabled && target.ip) {
+      const alreadyBlocked = STATE.blockedIPs.some(b => b.ip === target.ip);
+      const meetsThreshold = target.risk >= SOC_CONFIG.autoBlockThreshold;
+      const isAutoBlockType = SOC_CONFIG.autoBlockTypes.includes(target.attackType);
+
+      if (!alreadyBlocked && (meetsThreshold || isAutoBlockType)) {
+        termLog('warn', `AUTO-BLOCKING ${target.ip} — ${target.attackType} risk ${target.risk}`);
+        // Fire and forget; refreshAll inside blockIPAction will update the UI
+        blockIPAction(
+          target.ip,
+          `Auto-block: ${target.attackType} — Risk ${target.risk}/100`
+        ).catch(err => termLog('error', `Auto-block failed for ${target.ip}: ${err.message}`));
+      }
+    }
+
   } else if (high.length > 0 && newLogs.length > prevCount) {
     playAlertSound('high');
     showToast(`⚠ HIGH: ${high[0].attackType} from ${high[0].ip}`, 'warning', 5000);
+    termLog('warn', `HIGH: ${high[0].attackType} from ${high[0].ip} (risk ${high[0].risk})`);
   }
 }
-
-// PATCH: Extend refreshAll to call checkForNewAlerts after each data refresh
-(function() {
-  var _origRefreshAll = refreshAll;
-  refreshAll = async function() {
-    var prevCount = STATE.logs ? STATE.logs.length : 0;
-    await _origRefreshAll();
-    if (STATE.logs && STATE.logs.length) {
-      checkForNewAlerts(STATE.logs, prevCount);
-      _prevLogCount = STATE.logs.length;
-    }
-  };
-})();
-
-// PATCH: Extend switchTab to load APT alerts when apt tab is opened
-(function() {
-  var _origSwitchTab = switchTab;
-  switchTab = function(tabId) {
-    _origSwitchTab(tabId);
-    if (tabId === 'apt') loadAPTAlerts();
-  };
-})();
