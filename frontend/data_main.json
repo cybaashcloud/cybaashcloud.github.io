@@ -23,16 +23,16 @@
     "address": "Pollachi, Tamil Nadu, India (Remote-friendly)",
     "ctaMessage": "Open to full stack web development projects and providing security from cyber attacks for websites, apps, servers, databases and social media accounts",
     "specialization": "Pen Testing | Cloud Security | Network Defense | AI Security",
-    "languages": "Tamil (Native) · Urdu (Native) · English (Professional) · Hindi"
+    "languages": "Tamil (Native) \u00b7 Urdu (Native) \u00b7 English (Professional) \u00b7 Hindi"
   },
   "experience": [
     {
       "id": "ex1",
-      "desc": "Leading a wellness enterprise as Managing Director — overseeing full business operations, team management, client relations, and strategic growth. Applied cybersecurity best practices to protect customer data and digital infrastructure.",
+      "desc": "Leading a wellness enterprise as Managing Director \u2014 overseeing full business operations, team management, client relations, and strategic growth. Applied cybersecurity best practices to protect customer data and digital infrastructure.",
       "role": "Managing Director & Founder",
       "type": "Full-time",
       "company": "Detoxy Hijama",
-      "country": "🇮🇳",
+      "country": "\ud83c\uddee\ud83c\uddf3",
       "current": true,
       "endDate": "",
       "location": "Pune, Maharashtra",
@@ -45,11 +45,11 @@
     },
     {
       "id": "ex2",
-      "desc": "Managed 50+ Amazon SKUs — resolved suppressed listings, optimised inbound shipments to cut shipping costs, maintained Star seller rating by handling policy appeals, and automated daily sales reporting via Excel Macros.",
+      "desc": "Managed 50+ Amazon SKUs \u2014 resolved suppressed listings, optimised inbound shipments to cut shipping costs, maintained Star seller rating by handling policy appeals, and automated daily sales reporting via Excel Macros.",
       "role": "Operations Executive",
       "type": "Full-time",
       "company": "Haneez Enterprises Pvt. Ltd.",
-      "country": "🇮🇳",
+      "country": "\ud83c\uddee\ud83c\uddf3",
       "current": false,
       "endDate": "Jul 2020",
       "location": "Pune, Maharashtra",
@@ -66,7 +66,7 @@
       "role": "Storekeeper",
       "type": "Full-time",
       "company": "SKB Multy Shop",
-      "country": "🇮🇳",
+      "country": "\ud83c\uddee\ud83c\uddf3",
       "current": false,
       "endDate": "May 2019",
       "location": "Tamil Nadu",
@@ -1770,7 +1770,7 @@
     {
       "id": "1u05gacf",
       "title": "Cybaashcloud",
-      "desc": "CYBAASH — Autonomous Cyber Range Portfolio\n\n\nA production-grade cybersecurity portfolio that doesn't just talk security — it practices it. Every layer is engineered with an attacker's mindset.\n\nBuilt an 8-module SOC tracker covering visitor fingerprinting, behavioral anomaly detection, honeypot link injection, URL scanning, rate abuse tracking, and async log relay to a Cloudflare Worker backend — completely isolated from the admin interface by design.\n\nIntegrated CYBAASH AI (Gemini 2.5 Flash Lite) through a rate-limited Cloudflare Worker proxy — API keys never exposed client-side, with geo-blocking, CORS enforcement, and graceful offline fallback.\n\nDeployed an 11-step CI/CD pipeline: JS syntax checks, JSON schema validation, SOC assertions, HTML integrity scanning, cert data validation, Worker security audits, secret leak scanning via Gitleaks, and performance budget enforcement on every push.\n\nAdmin CMS uses SHA-256 hashed auth — no plaintext passwords, no default credentials. All changes committed via GitHub API, creating a full audit trail.\n\nReal-world pentest work documented: MySQL port 3306 public exposure (CVSS 9.8), XML-RPC brute force bypass, REST API admin enumeration, backup config file exposure, and missing security headers — each with CVSS scoring, attack chain analysis, and remediation guidance.\n\n · AWS · Cisco · Microsoft · Penetration Testing · AI Red Teaming · Cloud Security",
+      "desc": "CYBAASH \u2014 Autonomous Cyber Range Portfolio\n\n\nA production-grade cybersecurity portfolio that doesn't just talk security \u2014 it practices it. Every layer is engineered with an attacker's mindset.\n\nBuilt an 8-module SOC tracker covering visitor fingerprinting, behavioral anomaly detection, honeypot link injection, URL scanning, rate abuse tracking, and async log relay to a Cloudflare Worker backend \u2014 completely isolated from the admin interface by design.\n\nIntegrated CYBAASH AI (Gemini 2.5 Flash Lite) through a rate-limited Cloudflare Worker proxy \u2014 API keys never exposed client-side, with geo-blocking, CORS enforcement, and graceful offline fallback.\n\nDeployed an 11-step CI/CD pipeline: JS syntax checks, JSON schema validation, SOC assertions, HTML integrity scanning, cert data validation, Worker security audits, secret leak scanning via Gitleaks, and performance budget enforcement on every push.\n\nAdmin CMS uses SHA-256 hashed auth \u2014 no plaintext passwords, no default credentials. All changes committed via GitHub API, creating a full audit trail.\n\nReal-world pentest work documented: MySQL port 3306 public exposure (CVSS 9.8), XML-RPC brute force bypass, REST API admin enumeration, backup config file exposure, and missing security headers \u2014 each with CVSS scoring, attack chain analysis, and remediation guidance.\n\n \u00b7 AWS \u00b7 Cisco \u00b7 Microsoft \u00b7 Penetration Testing \u00b7 AI Red Teaming \u00b7 Cloud Security",
       "tech": [],
       "status": "Completed",
       "liveUrl": "https://Cybaashcloud.github.io",
@@ -1782,7 +1782,7 @@
     {
       "id": "sj6ufvi9",
       "title": "Black Box web application Pen Test Report for health care enterprise ",
-      "desc": "Black Box Web Application Penetration Test — Healthcare Sector\nConducted: March 2026 · Methodology: OWASP · Type: Black Box\n\nPerformed a full black box web application security assessment against a live production healthcare website hosted on shared infrastructure. No prior credentials, no source code access — pure external attacker simulation from first scan to final report.\n\nIdentified 9 vulnerabilities across Critical, High, Medium, and Low severity bands with full CVSS scoring, evidence, impact analysis, and prioritized remediation guidance.\n\nCritical findings:\n→ MySQL port 3306 publicly exposed (CVSS 9.8) — database directly reachable from the internet, accepting unauthenticated connection attempts from any IP\n→ xmlrpc.php fully enabled (CVSS 9.1) — system.multicall method allowing thousands of login attempts per request, completely bypassing rate limiting\n\nHigh findings:\n→ Admin username enumerated via unauthenticated REST API endpoint\n→ Backup wp-config files present on server containing plaintext DB credentials\n\nDocumented a complete 4-step attack chain: username enumeration → xmlrpc brute force → authenticated web shell upload → full database dump — demonstrating how individual medium-severity misconfigurations combine into a critical compromise path.\n\nAdditional findings: missing security headers (X-Frame-Options, CSP, HSTS), PHP and server version disclosure, SSL mismatch, WordPress version exposure, and legacy FTP port open.\n\nAll testing was non-destructive. No data modified, exfiltrated, or brute forced against live credentials.\n\nTools: Nmap · WPScan · curl · Manual testing · CVSS v3.1 scoring",
+      "desc": "Black Box Web Application Penetration Test \u2014 Healthcare Sector\nConducted: March 2026 \u00b7 Methodology: OWASP \u00b7 Type: Black Box\n\nPerformed a full black box web application security assessment against a live production healthcare website hosted on shared infrastructure. No prior credentials, no source code access \u2014 pure external attacker simulation from first scan to final report.\n\nIdentified 9 vulnerabilities across Critical, High, Medium, and Low severity bands with full CVSS scoring, evidence, impact analysis, and prioritized remediation guidance.\n\nCritical findings:\n\u2192 MySQL port 3306 publicly exposed (CVSS 9.8) \u2014 database directly reachable from the internet, accepting unauthenticated connection attempts from any IP\n\u2192 xmlrpc.php fully enabled (CVSS 9.1) \u2014 system.multicall method allowing thousands of login attempts per request, completely bypassing rate limiting\n\nHigh findings:\n\u2192 Admin username enumerated via unauthenticated REST API endpoint\n\u2192 Backup wp-config files present on server containing plaintext DB credentials\n\nDocumented a complete 4-step attack chain: username enumeration \u2192 xmlrpc brute force \u2192 authenticated web shell upload \u2192 full database dump \u2014 demonstrating how individual medium-severity misconfigurations combine into a critical compromise path.\n\nAdditional findings: missing security headers (X-Frame-Options, CSP, HSTS), PHP and server version disclosure, SSL mismatch, WordPress version exposure, and legacy FTP port open.\n\nAll testing was non-destructive. No data modified, exfiltrated, or brute forced against live credentials.\n\nTools: Nmap \u00b7 WPScan \u00b7 curl \u00b7 Manual testing \u00b7 CVSS v3.1 scoring",
       "tech": [
         "Ethical Hacking",
         "penetration testing",
@@ -1807,14 +1807,20 @@
       "id": "ot4g00og",
       "platform": "TryHackMe",
       "room": "Pickle Rick",
-      "title": "",
-      "desc": "┌─────────────────────────────────────────┐\n│  🚩 MISSION COMPLETE                    │\n│  ─────────────────────────────────────  │\n│  ROOM     : Pickle Rick                 │\n│  PLATFORM : TryHackMe                  │\n│  CATEGORY : Web Exploitation            │\n│  FLAGS    : 3/3 ✓                       │\n│  DIFFICULTY: Easy                       │\n│  SKILLS   : Dir Enum · Linux · PrivEsc  │\n│  WRITEUP  : [VIEW REPORT →]            │\n└─────────────────────────────────────────┘",
       "difficulty": "Easy",
+      "category": "Web Exploitation",
+      "flags_count": 3,
       "date": "2026-03-27",
-      "url": "https://tryhackme.com/room/picklerick?utm_campaign=social_share&utm_medium=social&utm_content=share-completed-room&utm_source=copy&sharerId=69a95d377b427eaba270bfa7",
+      "desc": "Exploit a Rick & Morty themed vulnerable web server. Find 3 secret ingredients hidden across the machine using web enumeration, command injection, and Linux privilege escalation.",
       "tags": [
-        "web exploitation"
-      ]
+        "Web Exploitation",
+        "Dir Enumeration",
+        "Command Injection",
+        "Linux PrivEsc"
+      ],
+      "url": "https://tryhackme.com/room/picklerick",
+      "verify_url": "https://tryhackme.com/p/AasiqSec",
+      "writeup_url": ""
     }
   ]
 }

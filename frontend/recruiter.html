@@ -325,30 +325,83 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .pl:hover{border-color:var(--blue);color:var(--blue)}
 .pl svg{width:9px;height:9px}
 
-/* ── CTF ── */
-.ctf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:9px}
-.ctf-card{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--border);padding:13px 15px;transition:border-color .2s}
-.ctf-card:hover{border-color:rgba(0,212,255,.2);border-left-color:inherit}
-.ctf-card.easy{border-left-color:var(--green)}
-.ctf-card.medium{border-left-color:var(--yellow)}
-.ctf-card.hard{border-left-color:var(--red)}
-.ctf-card.insane{border-left-color:var(--purple)}
-.ctf-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.ctf-plat{font-family:'Orbitron',monospace;font-size:7px;letter-spacing:2px;color:var(--red);text-shadow:var(--glow-r)}
-.diff{font-family:'Orbitron',monospace;font-size:7px;letter-spacing:1px;padding:2px 6px;border:1px solid}
-.diff.Easy{border-color:rgba(0,255,136,.28);color:var(--green)}
-.diff.Medium{border-color:rgba(255,215,0,.28);color:var(--yellow)}
-.diff.Hard{border-color:rgba(255,34,68,.28);color:var(--red)}
-.diff.Insane{border-color:rgba(170,68,255,.28);color:var(--purple)}
-.ctf-room{font-family:'Orbitron',monospace;font-size:10px;color:var(--text);letter-spacing:1.5px;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ctf-tags{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:7px}
-.ctf-t{font-size:8px;padding:1px 6px;border:1px solid rgba(26,58,92,.55);color:var(--dim)}
-.ctf-desc{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--dim);line-height:1.5;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:400}
-.ctf-foot{display:flex;justify-content:space-between;align-items:center}
-.ctf-date{font-size:9px;color:var(--dim);letter-spacing:1px}
-.ctf-lnk{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600;letter-spacing:1px;padding:3px 9px;border:1px solid var(--border);color:var(--dim);text-decoration:none;transition:all .2s;display:flex;align-items:center;gap:4px;text-transform:uppercase}
-.ctf-lnk:hover{border-color:var(--blue);color:var(--blue)}
-.ctf-lnk svg{width:8px;height:8px}
+/* ── CTF — MILITARY GRADE ── */
+/* Schema: platform, room, difficulty, category, flags_count, date, desc, tags, url, verify_url, writeup_url */
+.ctf-ops-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.ctf-ops-left{display:flex;align-items:center;gap:10px}
+.ctf-ops-title{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:4px;color:var(--dim);display:flex;align-items:center;gap:10px}
+.ctf-ops-title::before{content:'';display:inline-block;width:20px;height:1px;background:var(--red);box-shadow:0 0 8px rgba(255,34,68,.6)}
+.ctf-ops-stats{display:flex;gap:0;border:1px solid var(--border)}
+.ctf-ops-stat{padding:6px 16px;border-right:1px solid var(--border);text-align:center}
+.ctf-ops-stat:last-child{border-right:none}
+.ctf-ops-stat-n{font-family:'Orbitron',monospace;font-size:14px;font-weight:900;color:var(--green);text-shadow:var(--glow-g);line-height:1}
+.ctf-ops-stat-l{font-size:7px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-top:2px}
+
+.ctf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.ctf-card{background:var(--panel);border:1px solid var(--border);position:relative;overflow:hidden;transition:border-color .25s,box-shadow .25s}
+.ctf-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .3s}
+.ctf-card.easy::after  {background:linear-gradient(90deg,transparent,var(--green),transparent)}
+.ctf-card.medium::after{background:linear-gradient(90deg,transparent,var(--yellow),transparent)}
+.ctf-card.hard::after  {background:linear-gradient(90deg,transparent,var(--red),transparent)}
+.ctf-card.insane::after{background:linear-gradient(90deg,transparent,var(--purple),transparent)}
+.ctf-card:hover{border-color:rgba(0,212,255,.3);box-shadow:0 0 28px rgba(0,0,0,.5),inset 0 0 40px rgba(0,212,255,.02)}
+.ctf-card:hover::after{opacity:1}
+.ctf-cc{position:absolute;width:10px;height:10px;border-color:rgba(0,212,255,.2);border-style:solid}
+.ctf-cc.tl{top:0;left:0;border-width:1.5px 0 0 1.5px}
+.ctf-cc.tr{top:0;right:0;border-width:1.5px 1.5px 0 0}
+.ctf-cc.bl{bottom:0;left:0;border-width:0 0 1.5px 1.5px}
+.ctf-cc.br{bottom:0;right:0;border-width:0 1.5px 1.5px 0}
+
+.ctf-scan{position:absolute;left:0;right:0;height:1px;top:-2px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.12),transparent)}
+@keyframes ctfScan{0%{top:-2px}100%{top:102%}}
+@keyframes ctfFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.ctf-card:hover .ctf-scan{animation:ctfScan 1.8s linear infinite}
+
+.ctf-banner{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 14px 8px;border-bottom:1px solid rgba(26,58,92,.5);background:rgba(0,0,0,.15)}
+.ctf-banner-left{display:flex;align-items:center;gap:8px}
+.ctf-mission-label{font-family:'Orbitron',monospace;font-size:7px;letter-spacing:3px;color:var(--green);text-shadow:var(--glow-g)}
+.ctf-ops-id{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:1px}
+.ctf-plat{font-family:'Orbitron',monospace;font-size:6px;letter-spacing:2px;padding:3px 8px;border:1px solid;text-transform:uppercase}
+.ctf-plat.tryhackme{border-color:rgba(255,34,68,.35);color:var(--red);background:rgba(255,34,68,.06)}
+.ctf-plat.hackthebox{border-color:rgba(0,255,136,.35);color:var(--green);background:rgba(0,255,136,.06)}
+.ctf-plat.default{border-color:rgba(0,212,255,.25);color:var(--blue);background:rgba(0,212,255,.05)}
+
+.ctf-body{padding:14px}
+.ctf-room-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.ctf-room{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:var(--text);letter-spacing:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.diff{font-family:'Orbitron',monospace;font-size:6px;letter-spacing:1.5px;padding:3px 7px;border:1px solid;flex-shrink:0;text-transform:uppercase}
+.diff.Easy  {border-color:rgba(0,255,136,.35);color:var(--green);background:rgba(0,255,136,.05)}
+.diff.Medium{border-color:rgba(255,215,0,.35);color:var(--yellow);background:rgba(255,215,0,.05)}
+.diff.Hard  {border-color:rgba(255,34,68,.35);color:var(--red);background:rgba(255,34,68,.05)}
+.diff.Insane{border-color:rgba(170,68,255,.35);color:var(--purple);background:rgba(170,68,255,.05)}
+
+.ctf-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:12px}
+.ctf-metric{background:var(--panel2);padding:8px 6px;text-align:center}
+.ctf-metric-val{font-family:'Orbitron',monospace;font-size:12px;font-weight:900;line-height:1;margin-bottom:2px}
+.ctf-metric-lbl{font-size:6px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+
+.ctf-tech-lbl{font-size:7px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:6px}
+.ctf-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.ctf-t{font-family:'Share Tech Mono',monospace;font-size:8px;padding:3px 8px;
+  border:1px solid rgba(0,212,255,.18);color:rgba(0,212,255,.6);background:rgba(0,212,255,.03);letter-spacing:.5px}
+
+.ctf-desc{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:12px;
+  font-weight:400;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.ctf-foot{display:flex;gap:6px;padding-top:10px;border-top:1px solid rgba(26,58,92,.4);align-items:center;flex-wrap:wrap}
+.ctf-date{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:1px;margin-right:auto}
+.ctf-btn{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;
+  padding:5px 12px;border:1px solid;color:var(--dim);text-decoration:none;transition:all .18s;
+  display:inline-flex;align-items:center;gap:5px;text-transform:uppercase;background:transparent;min-height:28px}
+.ctf-btn svg{width:9px;height:9px;flex-shrink:0}
+.ctf-btn.verify {border-color:rgba(0,255,136,.25);color:rgba(0,255,136,.6)}
+.ctf-btn.verify:hover {border-color:var(--green);color:var(--green);background:rgba(0,255,136,.06);box-shadow:0 0 10px rgba(0,255,136,.15)}
+.ctf-btn.room   {border-color:rgba(0,212,255,.25);color:rgba(0,212,255,.6)}
+.ctf-btn.room:hover   {border-color:var(--blue);color:var(--blue);background:rgba(0,212,255,.06);box-shadow:0 0 10px rgba(0,212,255,.15)}
+.ctf-btn.writeup{border-color:rgba(255,215,0,.25);color:rgba(255,215,0,.6)}
+.ctf-btn.writeup:hover{border-color:var(--yellow);color:var(--yellow);background:rgba(255,215,0,.06)}
 
 /* ── CONTACT BAND ── */
 .cband{background:linear-gradient(135deg,#040d16,#071626,#040d16);border-top:1px solid var(--border);padding:28px 20px}
@@ -912,7 +965,16 @@ input[placeholder*="search"] {
 
 <!-- TAB: CTF -->
 <div id="tctf" class="content" style="display:none">
-  <div class="sec-label">CTF FLAGS CAPTURED</div>
+  <div class="ctf-ops-header">
+    <div class="ctf-ops-left">
+      <div class="ctf-ops-title">🚩 CTF FLAGS CAPTURED</div>
+    </div>
+    <div class="ctf-ops-stats">
+      <div class="ctf-ops-stat"><div class="ctf-ops-stat-n" id="ctfStatRooms">0</div><div class="ctf-ops-stat-l">ROOMS</div></div>
+      <div class="ctf-ops-stat"><div class="ctf-ops-stat-n" id="ctfStatFlags">0</div><div class="ctf-ops-stat-l">FLAGS</div></div>
+      <div class="ctf-ops-stat"><div class="ctf-ops-stat-n" id="ctfStatPlats">0</div><div class="ctf-ops-stat-l">PLATFORMS</div></div>
+    </div>
+  </div>
   <div class="ctf-grid" id="ctfGrid"></div>
 </div>
 
@@ -1546,21 +1608,103 @@ function _projNoImgInner(p, i){
 }
 
 // ── CTF Flags
+// Reads canonical fields directly from data_main.json — no client-side parsing.
+// Fields: platform, room, difficulty, category, flags_count, date, desc, tags,
+//         url, verify_url, writeup_url
+// To add a new field: add it in admin BLANK_FLAG → it appears here automatically.
 function rCTF(flags){
-  if(!flags.length){g('ctfGrid').innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg><div class="empty-t">No CTF flags yet — add via admin panel</div></div>`;return}
-  g('ctfGrid').innerHTML=flags.map(f=>`
-    <div class="ctf-card ${(f.difficulty||'Medium').toLowerCase()}">
-      <div class="ctf-top"><span class="ctf-plat">${x(f.platform||'')}</span><span class="diff ${f.difficulty||'Medium'}">${x(f.difficulty||'Medium')}</span></div>
-      <div class="ctf-room">${x(f.room||f.title||'Unnamed Room')}</div>
-      ${f.tags?.length?`<div class="ctf-tags">${f.tags.map(t=>`<span class="ctf-t">${x(t)}</span>`).join('')}</div>`:''}
-      ${f.desc?`<p class="ctf-desc">${x(f.desc)}</p>`:''}
-      <div class="ctf-foot">
-        <span class="ctf-date">${x(f.date||'')}</span>
-        ${f.url?`<a class="ctf-lnk" href="${f.url}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>ROOM</a>`:''}
-      </div>
-    </div>`).join('');
-}
+  const grid = g('ctfGrid');
 
+  // Update ops stats
+  const totalFlags = flags.reduce((s,f)=>s+(parseInt(f.flags_count)||3), 0);
+  const platforms  = [...new Set(flags.map(f=>f.platform).filter(Boolean))].length;
+  const sr = g('ctfStatRooms'), sf = g('ctfStatFlags'), sp = g('ctfStatPlats');
+  if(sr) sr.textContent = flags.length;
+  if(sf) sf.textContent = totalFlags;
+  if(sp) sp.textContent = platforms || (flags.length ? 1 : 0);
+
+  if(!flags.length){
+    grid.innerHTML=`<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+        <line x1="4" y1="22" x2="4" y2="15"/>
+      </svg>
+      <div class="empty-t">No CTF flags yet</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = flags.map((f, i) => {
+    const diff     = f.difficulty || 'Easy';
+    const diffLow  = diff.toLowerCase();
+    const platLow  = (f.platform||'').toLowerCase();
+    const platCls  = platLow.includes('tryhackme') ? 'tryhackme'
+                   : platLow.includes('hack')      ? 'hackthebox' : 'default';
+    const fc       = parseInt(f.flags_count) || 3;
+    const cat      = (f.category || (f.tags||[])[0] || 'General').toUpperCase().slice(0,11);
+    const dateStr  = f.date
+      ? new Date(f.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase()
+      : '';
+    const opsId    = (f.id||String(i+1).padStart(4,'0')).toUpperCase().slice(0,8);
+
+    return `
+    <div class="ctf-card ${diffLow}" style="animation:ctfFadeIn .35s ease ${i*0.07}s both">
+      <div class="ctf-cc tl"></div><div class="ctf-cc tr"></div>
+      <div class="ctf-cc bl"></div><div class="ctf-cc br"></div>
+      <div class="ctf-scan"></div>
+
+      <div class="ctf-banner">
+        <div class="ctf-banner-left">
+          <span style="font-size:13px">🚩</span>
+          <div>
+            <div class="ctf-mission-label">MISSION COMPLETE</div>
+            <div class="ctf-ops-id">OPS-ID: ${opsId}</div>
+          </div>
+        </div>
+        <span class="ctf-plat ${platCls}">${x(f.platform||'CTF')}</span>
+      </div>
+
+      <div class="ctf-body">
+        <div class="ctf-room-row">
+          <div class="ctf-room">${x(f.room||'UNNAMED ROOM')}</div>
+          <span class="diff ${diff}">${x(diff)}</span>
+        </div>
+
+        <div class="ctf-metrics">
+          <div class="ctf-metric">
+            <div class="ctf-metric-val" style="color:var(--green);text-shadow:var(--glow-g)">${fc}/${fc}</div>
+            <div class="ctf-metric-lbl">FLAGS</div>
+          </div>
+          <div class="ctf-metric">
+            <div class="ctf-metric-val" style="color:var(--blue);text-shadow:var(--glow-b)">${x(cat)}</div>
+            <div class="ctf-metric-lbl">CATEGORY</div>
+          </div>
+          <div class="ctf-metric">
+            <div class="ctf-metric-val" style="color:${f.verify_url?'var(--yellow)':'var(--dim)'}">${f.verify_url?'✓ LIVE':'— N/A'}</div>
+            <div class="ctf-metric-lbl">VERIFY</div>
+          </div>
+        </div>
+
+        ${f.tags?.length ? `
+          <div class="ctf-tech-lbl">// TECHNIQUES</div>
+          <div class="ctf-tags">${f.tags.map(t=>`<span class="ctf-t">${x(t)}</span>`).join('')}</div>
+        ` : ''}
+
+        ${f.desc ? `<p class="ctf-desc">${x(f.desc)}</p>` : ''}
+
+        <div class="ctf-foot">
+          ${dateStr ? `<span class="ctf-date">${dateStr}</span>` : ''}
+          ${f.verify_url  ? `<a class="ctf-btn verify"  href="${f.verify_url}"  target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>VERIFY</a>` : ''}
+          ${f.url         ? `<a class="ctf-btn room"    href="${f.url}"         target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>ROOM</a>` : ''}
+          ${f.writeup_url ? `<a class="ctf-btn writeup" href="${f.writeup_url}" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>WRITEUP</a>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
 // ── Contact Band
 function rCBand(ct){
   const items=[
