@@ -1,6 +1,44 @@
 {
   "credentials": [
     {
+      "id": "li0265",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/fcb1d969bbf661063c9021594be67b5c947b6f5870df7208d1f0f82cf8d490ff",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Vulnerability Management"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0265.jpg",
+      "title": "Vulnerability Management in Cybersecurity: The Basics",
+      "issuer": "LinkedIn",
+      "courseId": "vulnerability-management-in-cybersecurity-the-basics",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "fcb1d969bbf661063c9021594be67b5c947b6f5870df7208d1f0f82cf8d490ff"
+    },
+    {
+      "id": "li0266",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/09e3aa04ffd56b3931dfb5528dc1067df635ea5ccf0d17c4572eb0cf06ba87ca",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Generative AI Tools",
+        "Artificial Intelligence (AI",
+        "Generative AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0266.jpg",
+      "title": "What Is Generative AI?",
+      "issuer": "LinkedIn",
+      "courseId": "what-is-generative-ai",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "09e3aa04ffd56b3931dfb5528dc1067df635ea5ccf0d17c4572eb0cf06ba87ca"
+    },
+    {
       "id": "li0267",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/7ce2f3bf3f54dc7c84074349e16b32e940b4c971cf8721780d20f1f6ef7c0bff",
