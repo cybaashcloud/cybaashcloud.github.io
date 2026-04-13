@@ -1,6 +1,43 @@
 {
   "credentials": [
     {
+      "id": "li0097",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/dc6fe4883d82bb1b65fd3b2e7b8eb9d2f1935b7d46a678668b581bfab92ad7b4",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "System Deployment",
+        "Financial Operations"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0097.jpg",
+      "title": "FinOps Essentials for Cloud Deployments",
+      "issuer": "LinkedIn",
+      "courseId": "finops-essentials-for-cloud-deployments",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "dc6fe4883d82bb1b65fd3b2e7b8eb9d2f1935b7d46a678668b581bfab92ad7b4"
+    },
+    {
+      "id": "li0098",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/c5c9f37dbe7966310b4f3150f8dacfdd6d16e54299060921cde8fcfaec7e9242",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Diversity, Equity, Inclusion and Belonging (DEIB"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0098.jpg",
+      "title": "Foundations of Diversity, Equity, Inclusion, and Belonging",
+      "issuer": "LinkedIn",
+      "courseId": "foundations-of-diversity-equity-inclusion-and-belonging",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "c5c9f37dbe7966310b4f3150f8dacfdd6d16e54299060921cde8fcfaec7e9242"
+    },
+    {
       "id": "li0099",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/a12976f56c009c8efb6bc74ffc72fe48afc6da1badaadc26de92f8d90fd0bdba",
@@ -1536,42 +1573,6 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "50307a07755a8e135e0cf384b33bc201a02b0ecf74491cd720dc7e5ef98621e4"
-    },
-    {
-      "id": "li0181",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/be9b993360b5122795cd1aa4dee4d8aa3aaeb509a51c44bc601c428d440534aa",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "SEO Copywriting"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0181.jpg",
-      "title": "Marketing Strategy: SEO Content Writing",
-      "issuer": "LinkedIn",
-      "courseId": "marketing-strategy-seo-content-writing",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "be9b993360b5122795cd1aa4dee4d8aa3aaeb509a51c44bc601c428d440534aa"
-    },
-    {
-      "id": "li0182",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/30dde50d24e59f16fdd2e6dc7640e5b60e2599cb0e94156d09977bacd05a1886",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Conversion Marketing"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0182.jpg",
-      "title": "Marketing: Conversion Rate Optimization",
-      "issuer": "LinkedIn",
-      "courseId": "marketing-conversion-rate-optimization",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "30dde50d24e59f16fdd2e6dc7640e5b60e2599cb0e94156d09977bacd05a1886"
     }
   ]
 }
