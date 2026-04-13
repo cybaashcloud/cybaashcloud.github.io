@@ -1,6 +1,42 @@
 {
   "credentials": [
     {
+      "id": "li0181",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/be9b993360b5122795cd1aa4dee4d8aa3aaeb509a51c44bc601c428d440534aa",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "SEO Copywriting"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0181.jpg",
+      "title": "Marketing Strategy: SEO Content Writing",
+      "issuer": "LinkedIn",
+      "courseId": "marketing-strategy-seo-content-writing",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "be9b993360b5122795cd1aa4dee4d8aa3aaeb509a51c44bc601c428d440534aa"
+    },
+    {
+      "id": "li0182",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/30dde50d24e59f16fdd2e6dc7640e5b60e2599cb0e94156d09977bacd05a1886",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Conversion Marketing"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0182.jpg",
+      "title": "Marketing: Conversion Rate Optimization",
+      "issuer": "LinkedIn",
+      "courseId": "marketing-conversion-rate-optimization",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "30dde50d24e59f16fdd2e6dc7640e5b60e2599cb0e94156d09977bacd05a1886"
+    },
+    {
       "id": "li0183",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/e0322259a18c03f1c133e901527b29990fd3d670b0b2c0f99017bd2c08325f2b",
@@ -1523,44 +1559,6 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "8b3a2f31a4f074fa86d628c93644e35686fc6e80fd1b2828075e1a9287cf0ef1"
-    },
-    {
-      "id": "li0265",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/fcb1d969bbf661063c9021594be67b5c947b6f5870df7208d1f0f82cf8d490ff",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Vulnerability Management"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0265.jpg",
-      "title": "Vulnerability Management in Cybersecurity: The Basics",
-      "issuer": "LinkedIn",
-      "courseId": "vulnerability-management-in-cybersecurity-the-basics",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "fcb1d969bbf661063c9021594be67b5c947b6f5870df7208d1f0f82cf8d490ff"
-    },
-    {
-      "id": "li0266",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/09e3aa04ffd56b3931dfb5528dc1067df635ea5ccf0d17c4572eb0cf06ba87ca",
-      "date": "2026-02",
-      "logo": "",
-      "tags": [
-        "Generative AI Tools",
-        "Artificial Intelligence (AI",
-        "Generative AI"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0266.jpg",
-      "title": "What Is Generative AI?",
-      "issuer": "LinkedIn",
-      "courseId": "what-is-generative-ai",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "09e3aa04ffd56b3931dfb5528dc1067df635ea5ccf0d17c4572eb0cf06ba87ca"
     }
   ]
 }
