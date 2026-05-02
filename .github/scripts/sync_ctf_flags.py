@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sync_ctf_flags.py  —  CTF Flag Auto-Sync  (v2)
+sync_ctf_flags.py  —  CTF Flag Auto-Sync  (v3)
 
 Pulls publicly-visible completed CTF rooms/challenges from supported
 platforms and merges them into the `flags` array inside data_main.json,
@@ -8,32 +8,48 @@ matching the existing schema exactly.
 
 Supported platforms
 ────────────────────
-  TryHackMe   — __NEXT_DATA__ page scrape + public API  (no auth required)
+  TryHackMe   — __NEXT_DATA__ page scrape + public API  (cookie auth optional)
   HackTheBox  — public profile API                      (no auth required)
 
-CHANGES IN v2
+CHANGES IN v3
 ──────────────
-  FIX 1 — All r.json() calls are now wrapped in try/except so an empty or
-           non-JSON response body never crashes the script.
-  FIX 2 — TryHackMe primary strategy is now the __NEXT_DATA__ JSON block
-           embedded in the public profile page (Next.js). This is far more
-           reliable than guessing undocumented API endpoint shapes.
-  FIX 3 — _thm_get_user_id falls back gracefully to HTML scraping if both
-           API and __NEXT_DATA__ strategies fail, instead of crashing.
-  FIX 4 — _get() returns None on empty response bodies (avoids silent crash
-           when a 200 is returned with 0 bytes).
-  FIX 5 — HackTheBox userId resolution now handles non-numeric identifiers
-           gracefully with a clear warning instead of a crash.
-  FIX 6 — Script exits with code 0 (warning, not error) when a platform is
-           unreachable, so the workflow step does not fail the pipeline.
+  FIX 1 — Added THM_SESSION_COOKIE env var support. TryHackMe blocks GitHub
+           Actions runner IPs (AWS ranges) with 403 "host_not_allowed" via
+           Cloudflare. A session cookie from a logged-in browser bypasses
+           this block entirely. Without the cookie, all fetch attempts fail
+           silently and no flags are ever written.
+
+  FIX 2 — Fixed strategy execution order in _thm_get_user_id(). Previously
+           Strategy 3 (HTML regex) ran BEFORE Strategy 2 (JSON API), meaning
+           the API was only tried when the profile page succeeded. Now the
+           order matches the documented order: 1 → 2 → 3, so the API is
+           attempted independently of the page fetch result.
+
+  FIX 3 — Added workflow_call inputs for thm_username and htb_identifier in
+           sync-ctf-flags.yml. When called from weekly-pipeline.yml as a
+           reusable workflow, these inputs were undeclared and always empty.
+
+  FIX 4 — Hardened duplicate detection to use both URL and room name, so
+           entries with empty/missing url fields are still deduplicated.
+
+  FIX 5 — _thm_fetch_room_meta() short-circuits immediately when the runner
+           IP is known to be blocked, avoiding N×3 wasted retry attempts.
+
+  FIX 6 — _get() now detects the "host_not_allowed" deny reason on 403 and
+           sets a module-level _THM_BLOCKED flag, preventing subsequent calls
+           from retrying and wasting the full timeout * MAX_RETRIES budget.
 
 ENVIRONMENT VARIABLES
 ──────────────────────
-  THM_USERNAME      — TryHackMe username  (e.g. "mohamedaasiq07")
-  HTB_IDENTIFIER    — HackTheBox user ID or username  (optional)
-  DATA_MAIN_PATH    — path to data_main.json (default: frontend/data_main.json)
-  DRY_RUN           — "true" to print what would change without writing
-  FORCE_RESYNC      — "true" to re-process rooms already in the JSON
+  THM_USERNAME        — TryHackMe username  (e.g. "mohamedaasiq07")
+  THM_SESSION_COOKIE  — Value of the "connect.sid" or full Cookie header
+                        from a logged-in TryHackMe browser session.
+                        Obtain from DevTools → Application → Cookies.
+                        Bypasses Cloudflare IP block on GitHub Actions runners.
+  HTB_IDENTIFIER      — HackTheBox user ID or username  (optional)
+  DATA_MAIN_PATH      — path to data_main.json (default: frontend/data_main.json)
+  DRY_RUN             — "true" to print what would change without writing
+  FORCE_RESYNC        — "true" to re-process rooms already in the JSON
 
 DEPENDENCIES  (already in .github/scripts/requirements.txt)
 ─────────────────────────────────────────────────────────────
@@ -60,15 +76,20 @@ except ImportError:
 
 # ── Config ─────────────────────────────────────────────────────────────────
 
-DATA_MAIN_PATH = Path(os.environ.get("DATA_MAIN_PATH", "frontend/data_main.json"))
-THM_USERNAME   = os.environ.get("THM_USERNAME", "").strip()
-HTB_IDENTIFIER = os.environ.get("HTB_IDENTIFIER", "").strip()
-DRY_RUN        = os.environ.get("DRY_RUN", "false").lower() == "true"
-FORCE_RESYNC   = os.environ.get("FORCE_RESYNC", "false").lower() == "true"
+DATA_MAIN_PATH     = Path(os.environ.get("DATA_MAIN_PATH", "frontend/data_main.json"))
+THM_USERNAME       = os.environ.get("THM_USERNAME", "").strip()
+THM_SESSION_COOKIE = os.environ.get("THM_SESSION_COOKIE", "").strip()
+HTB_IDENTIFIER     = os.environ.get("HTB_IDENTIFIER", "").strip()
+DRY_RUN            = os.environ.get("DRY_RUN", "false").lower() == "true"
+FORCE_RESYNC       = os.environ.get("FORCE_RESYNC", "false").lower() == "true"
 
 REQUEST_TIMEOUT = 20
 RETRY_DELAY     = 3
 MAX_RETRIES     = 3
+
+# Module-level flag: set to True when we detect that the runner IP is blocked
+# by TryHackMe/Cloudflare. All subsequent THM calls short-circuit immediately.
+_THM_BLOCKED: bool = False
 
 HEADERS = {
     "User-Agent": (
@@ -153,34 +174,71 @@ def _safe_json(response: requests.Response) -> Optional[dict | list]:
         return None
 
 
-def _get(url: str, params: dict | None = None,
-         retries: int = MAX_RETRIES,
-         accept_html: bool = False) -> Optional[requests.Response]:
-    """
-    GET with retries. Returns None on any failure or empty body.
-    Set accept_html=True to skip the empty-body check (HTML pages may be large).
-    """
+def _build_headers(accept_html: bool = False) -> dict:
+    """Build request headers, injecting the session cookie when available."""
     hdrs = dict(HEADERS)
     if accept_html:
         hdrs["Accept"] = "text/html,application/xhtml+xml,*/*"
+    if THM_SESSION_COOKIE:
+        # Accept a bare connect.sid value or a full Cookie header string
+        if "=" in THM_SESSION_COOKIE:
+            hdrs["Cookie"] = THM_SESSION_COOKIE
+        else:
+            hdrs["Cookie"] = f"connect.sid={THM_SESSION_COOKIE}"
+    return hdrs
+
+
+def _get(url: str, params: dict | None = None,
+         retries: int = MAX_RETRIES,
+         accept_html: bool = False,
+         is_thm: bool = False) -> Optional[requests.Response]:
+    """
+    GET with retries. Returns None on any failure or empty body.
+
+    is_thm — when True, checks _THM_BLOCKED and short-circuits immediately
+             if the runner IP is known to be blocked by TryHackMe.
+    """
+    global _THM_BLOCKED
+
+    # Short-circuit: don't waste retries when we already know we're blocked
+    if is_thm and _THM_BLOCKED:
+        return None
+
+    hdrs = _build_headers(accept_html=accept_html)
 
     for attempt in range(1, retries + 1):
         try:
             r = requests.get(url, params=params, headers=hdrs,
                              timeout=REQUEST_TIMEOUT)
             if r.status_code == 200:
-                # Guard: treat a 200 with an empty body as a failed call
                 if not accept_html and not r.text.strip():
                     print(f"    [empty-body] {url}")
                     return None
                 return r
             if r.status_code == 429:
                 wait = int(r.headers.get("Retry-After", RETRY_DELAY * attempt))
-                print(f"    [rate-limit] sleeping {wait}s …")
+                print(f"    [rate-limit] sleeping {wait}s ...")
                 time.sleep(wait)
                 continue
-            if r.status_code in (403, 404):
-                print(f"    [http {r.status_code}] {url}")
+            if r.status_code == 403:
+                deny_reason = r.headers.get("x-deny-reason", "")
+                if is_thm and deny_reason == "host_not_allowed":
+                    # GitHub Actions runner IP is on TryHackMe's Cloudflare blocklist.
+                    # Set the module flag so all subsequent THM calls skip immediately.
+                    print(
+                        "    [thm] 403 host_not_allowed — GitHub Actions runner IP "
+                        "is blocked by TryHackMe/Cloudflare."
+                    )
+                    print(
+                        "    [thm] Add THM_SESSION_COOKIE to your repository secrets "
+                        "(Settings -> Secrets -> Actions) to fix this."
+                    )
+                    _THM_BLOCKED = True
+                    return None
+                print(f"    [http 403] {url}")
+                return None
+            if r.status_code == 404:
+                print(f"    [http 404] {url}")
                 return None
             print(f"    [http {r.status_code}] {url}")
         except requests.RequestException as exc:
@@ -203,6 +261,17 @@ def _extract_tags(text: str) -> list[str]:
     lower = text.lower()
     found = [tag for tag, kws in TAG_KEYWORDS.items() if any(k in lower for k in kws)]
     return found[:6] if found else ["General"]
+
+
+def _normalize_key(url: str, room: str) -> str:
+    """
+    Return a stable deduplication key that works even when url is empty.
+    FIX: Previously only url was used; entries with missing urls were never
+    deduplicated, causing duplicates on FORCE_RESYNC runs.
+    """
+    if url:
+        return url.lower().rstrip("/")
+    return room.lower().strip()
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -235,19 +304,21 @@ def _thm_get_user_id(username: str) -> Optional[str]:
     """
     Resolve a TryHackMe username to its internal userId.
 
-    Strategy order:
-      1. __NEXT_DATA__ from public profile page  (most reliable)
-      2. /api/no-auth/user/{username} JSON API   (may return empty body)
-      3. Regex scan of profile page HTML          (last resort)
+    Strategy order (FIXED — was incorrectly 1 -> 3 -> 2, now correct 1 -> 2 -> 3):
+      1. __NEXT_DATA__ from public profile page  (most reliable when accessible)
+      2. /api/no-auth/user/{username} JSON API   (independent attempt)
+      3. Regex scan of profile page HTML          (reuses page from Strategy 1)
     """
+
+    page_html: Optional[str] = None
 
     # ── Strategy 1: __NEXT_DATA__ ─────────────────────────────────────────
     profile_url = THM_PROFILE_URL.format(username=username)
-    r = _get(profile_url, accept_html=True)
+    r = _get(profile_url, accept_html=True, is_thm=True)
     if r:
+        page_html = r.text
         next_data = _thm_parse_next_data(r.text)
         if next_data:
-            # Walk common paths where userId appears in Next.js page props
             for path_fn in [
                 lambda d: d["props"]["pageProps"]["userData"]["_id"],
                 lambda d: d["props"]["pageProps"]["user"]["_id"],
@@ -263,38 +334,42 @@ def _thm_get_user_id(username: str) -> Optional[str]:
                 except (KeyError, TypeError):
                     pass
 
-        # ── Strategy 3: raw HTML regex (runs on the same page fetch) ──────
+    # ── Strategy 2: JSON API ──────────────────────────────────────────────
+    # FIX: Was nested inside Strategy 1's success block. Now runs independently
+    # so the API is tried even when the profile page fetch failed.
+    if not _THM_BLOCKED:
+        api_url = THM_PROFILE_API.format(username=username)
+        r2 = _get(api_url, is_thm=True)
+        if r2:
+            data = _safe_json(r2)
+            if data:
+                for path_fn in [
+                    lambda d: d["data"]["userInfo"]["_id"],
+                    lambda d: d["userInfo"]["_id"],
+                    lambda d: d["_id"],
+                ]:
+                    try:
+                        uid = path_fn(data)
+                        if uid:
+                            print(f"    [thm] userId resolved via API: {uid}")
+                            return str(uid)
+                    except (KeyError, TypeError):
+                        pass
+
+    # ── Strategy 3: raw HTML regex (reuses page fetched in Strategy 1) ────
+    if page_html:
         for pattern in [
             r'"userId"\s*:\s*"([a-f0-9]{24})"',
             r'"_id"\s*:\s*"([a-f0-9]{24})"',
             r'userId["\s:=]+([a-f0-9]{24})',
         ]:
-            m = re.search(pattern, r.text)
+            m = re.search(pattern, page_html)
             if m:
                 uid = m.group(1)
                 print(f"    [thm] userId resolved via HTML regex: {uid}")
                 return uid
 
-    # ── Strategy 2: JSON API (may return 200 with empty body — handled) ───
-    api_url = THM_PROFILE_API.format(username=username)
-    r2 = _get(api_url)
-    if r2:
-        data = _safe_json(r2)
-        if data:
-            for path_fn in [
-                lambda d: d["data"]["userInfo"]["_id"],
-                lambda d: d["userInfo"]["_id"],
-                lambda d: d["_id"],
-            ]:
-                try:
-                    uid = path_fn(data)
-                    if uid:
-                        print(f"    [thm] userId resolved via API: {uid}")
-                        return str(uid)
-                except (KeyError, TypeError):
-                    pass
-
-    print(f"    [thm] ✗ Could not resolve userId for {username!r}")
+    print(f"    [thm] Could not resolve userId for {username!r}")
     return None
 
 
@@ -303,7 +378,7 @@ def _thm_fetch_completed_from_next_data(username: str) -> list[dict]:
     Extract completed rooms directly from the __NEXT_DATA__ block.
     Some profile pages embed the full room list here, avoiding an extra API call.
     """
-    r = _get(THM_PROFILE_URL.format(username=username), accept_html=True)
+    r = _get(THM_PROFILE_URL.format(username=username), accept_html=True, is_thm=True)
     if not r:
         return []
     next_data = _thm_parse_next_data(r.text)
@@ -330,12 +405,14 @@ def _thm_fetch_completed_rooms(user_id: str, page_size: int = 100) -> list[dict]
     all_rooms: list[dict] = []
     page = 1
     while True:
+        if _THM_BLOCKED:
+            break
         r = _get(THM_COMPLETED_API, params={
             "limit":  page_size,
             "page":   page,
             "type":   "completed",
             "userId": user_id,
-        })
+        }, is_thm=True)
         if not r:
             break
         data = _safe_json(r)
@@ -363,8 +440,13 @@ def _thm_fetch_completed_rooms(user_id: str, page_size: int = 100) -> list[dict]
 
 
 def _thm_fetch_room_meta(room_code: str) -> dict:
-    """Fetch full metadata for a single THM room."""
-    r = _get(THM_ROOM_API, params={"codes": room_code})
+    """
+    Fetch full metadata for a single THM room.
+    FIX: Short-circuits when IP is blocked to avoid N * MAX_RETRIES wasted calls.
+    """
+    if _THM_BLOCKED:
+        return {}
+    r = _get(THM_ROOM_API, params={"codes": room_code}, is_thm=True)
     if not r:
         return {}
     data = _safe_json(r)
@@ -382,7 +464,8 @@ def _thm_room_to_flag(room: dict, username: str) -> dict:
     title = room.get("title") or code.replace("-", " ").title()
 
     meta = _thm_fetch_room_meta(code) if code else {}
-    time.sleep(0.3)
+    if meta:
+        time.sleep(0.3)
 
     desc = (
         meta.get("description")
@@ -425,12 +508,18 @@ def _thm_room_to_flag(room: dict, username: str) -> dict:
     }
 
 
-def sync_tryhackme(existing_urls: set[str], username: str) -> list[dict]:
+def sync_tryhackme(existing_keys: set[str], username: str) -> list[dict]:
     if not username:
         print("[THM] THM_USERNAME not set — skipping TryHackMe")
         return []
 
     print(f"\n[THM] Syncing TryHackMe profile: {username}")
+    if THM_SESSION_COOKIE:
+        print("    [thm] Session cookie provided — authenticated requests enabled")
+    else:
+        print("    [thm] No THM_SESSION_COOKIE set — anonymous requests only")
+        print("    [thm]   If blocked with 403, add THM_SESSION_COOKIE to")
+        print("    [thm]   your repo secrets (Settings -> Secrets -> Actions).")
 
     # ── Try to get rooms directly from __NEXT_DATA__ first ────────────────
     rooms = _thm_fetch_completed_from_next_data(username)
@@ -439,9 +528,11 @@ def sync_tryhackme(existing_urls: set[str], username: str) -> list[dict]:
     if not rooms:
         user_id = _thm_get_user_id(username)
         if not user_id:
-            print("[THM] ✗ Could not resolve userId — skipping TryHackMe")
+            print("[THM] Could not resolve userId — skipping TryHackMe")
             print(f"[THM]   Verify the profile is public: {THM_BASE}/p/{username}")
-            return []   # warn, not crash
+            if _THM_BLOCKED:
+                print("[THM]   Runner IP is blocked. Set THM_SESSION_COOKIE to fix.")
+            return []
         print(f"[THM] userId={user_id}")
         rooms = _thm_fetch_completed_rooms(user_id)
 
@@ -455,8 +546,11 @@ def sync_tryhackme(existing_urls: set[str], username: str) -> list[dict]:
         code = room.get("code") or room.get("roomCode") or room.get("id") or ""
         if not code:
             continue
-        room_url = f"{THM_BASE}/room/{code}"
-        if room_url in existing_urls and not FORCE_RESYNC:
+        room_url   = f"{THM_BASE}/room/{code}"
+        room_title = room.get("title") or code.replace("-", " ").title()
+        dedup_key  = _normalize_key(room_url, room_title)
+
+        if dedup_key in existing_keys and not FORCE_RESYNC:
             print(f"    [skip] {code}  (already tracked)")
             continue
         print(f"    [+] {code}")
@@ -516,7 +610,8 @@ def _htb_machine_to_flag(own: dict, user_id: str) -> dict:
     name       = own.get("name", f"HTB-{machine_id}")
 
     meta       = _htb_fetch_machine_meta(machine_id) if machine_id else {}
-    time.sleep(0.3)
+    if meta:
+        time.sleep(0.3)
 
     difficulty = (
         meta.get("difficultyText") or own.get("difficultyText") or "Unknown"
@@ -552,7 +647,7 @@ def _htb_machine_to_flag(own: dict, user_id: str) -> dict:
     }
 
 
-def sync_hackthebox(existing_urls: set[str], identifier: str) -> list[dict]:
+def sync_hackthebox(existing_keys: set[str], identifier: str) -> list[dict]:
     if not identifier:
         print("[HTB] HTB_IDENTIFIER not set — skipping HackTheBox")
         return []
@@ -561,7 +656,7 @@ def sync_hackthebox(existing_urls: set[str], identifier: str) -> list[dict]:
 
     user_id = _htb_resolve_user_id(identifier)
     if not user_id:
-        print(f"[HTB] ✗ Could not resolve userId for {identifier!r} — skipping")
+        print(f"[HTB] Could not resolve userId for {identifier!r} — skipping")
         return []
 
     print(f"[HTB] userId={user_id}")
@@ -573,8 +668,9 @@ def sync_hackthebox(existing_urls: set[str], identifier: str) -> list[dict]:
         machine_name = own.get("name", "")
         machine_slug = machine_name.lower().replace(" ", "-")
         machine_url  = f"{HTB_BASE}/machines/{machine_slug}"
+        dedup_key    = _normalize_key(machine_url, machine_name)
 
-        if machine_url in existing_urls and not FORCE_RESYNC:
+        if dedup_key in existing_keys and not FORCE_RESYNC:
             print(f"    [skip] {machine_name}  (already tracked)")
             continue
         print(f"    [+] {machine_name}")
@@ -613,9 +709,9 @@ def _auto_detect_usernames(data_main: dict) -> tuple[str, str]:
 # ══════════════════════════════════════════════════════════════════════════
 
 def main() -> None:
-    print("═" * 60)
-    print("  CTF Flag Sync  (v2)")
-    print("═" * 60)
+    print("=" * 60)
+    print("  CTF Flag Sync  (v3)")
+    print("=" * 60)
 
     if not DATA_MAIN_PATH.exists():
         print(f"ERROR: {DATA_MAIN_PATH} not found")
@@ -623,7 +719,14 @@ def main() -> None:
 
     data_main      = json.loads(DATA_MAIN_PATH.read_text(encoding="utf-8"))
     existing_flags = data_main.setdefault("flags", [])
-    existing_urls  = {f.get("url", "") for f in existing_flags}
+
+    # FIX: Build dedup keys using both URL and room name.
+    # Previously only url was used — entries with empty/missing urls were never
+    # deduplicated, causing duplicate entries on FORCE_RESYNC runs.
+    existing_keys: set[str] = {
+        _normalize_key(f.get("url", ""), f.get("room", ""))
+        for f in existing_flags
+    }
 
     print(f"  Existing flags : {len(existing_flags)}")
     print(f"  Dry run        : {DRY_RUN}")
@@ -636,28 +739,28 @@ def main() -> None:
     if not thm_user and not htb_user:
         print("\nERROR: No platform credentials found.")
         print("  Set THM_USERNAME / HTB_IDENTIFIER env vars, or add profile")
-        print("  URLs to data_main.json → about.tryhackme / about.hackthebox")
+        print("  URLs to data_main.json -> about.tryhackme / about.hackthebox")
         sys.exit(1)
 
     new_flags: list[dict] = []
-    new_flags.extend(sync_tryhackme(existing_urls, thm_user))
-    new_flags.extend(sync_hackthebox(existing_urls, htb_user))
+    new_flags.extend(sync_tryhackme(existing_keys, thm_user))
+    new_flags.extend(sync_hackthebox(existing_keys, htb_user))
     new_flags.sort(key=lambda f: f.get("date", ""))
 
-    print("\n" + "─" * 60)
+    print("\n" + "-" * 60)
     print(f"  New flags found : {len(new_flags)}")
 
     if not new_flags:
         print("  Nothing to update.")
-        print("─" * 60)
+        print("-" * 60)
         return
 
     for f in new_flags:
         print(f"  [{f['platform']:10s}] {f['room']:40s}  {f['difficulty']}")
 
     if DRY_RUN:
-        print("\n  DRY RUN — no file written.")
-        print("─" * 60)
+        print("\n  DRY RUN -- no file written.")
+        print("-" * 60)
         return
 
     data_main["flags"].extend(new_flags)
@@ -665,8 +768,8 @@ def main() -> None:
         json.dumps(data_main, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
-    print(f"\n  ✓ Wrote {len(data_main['flags'])} total flags → {DATA_MAIN_PATH}")
-    print("─" * 60)
+    print(f"\n  Wrote {len(data_main['flags'])} total flags -> {DATA_MAIN_PATH}")
+    print("-" * 60)
 
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:

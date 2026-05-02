@@ -70,9 +70,10 @@ jobs:
 
       - name: Sync CTF flags
         env:
-          DATA_MAIN_PATH: frontend/data_main.json
-          DRY_RUN:        ${{ inputs.dry_run          && 'true' || 'false' }}
-          FORCE_RESYNC:   ${{ inputs.force_ctf_resync && 'true' || 'false' }}
+          DATA_MAIN_PATH:     frontend/data_main.json
+          DRY_RUN:            ${{ inputs.dry_run          && 'true' || 'false' }}
+          FORCE_RESYNC:       ${{ inputs.force_ctf_resync && 'true' || 'false' }}
+          THM_SESSION_COOKIE: ${{ secrets.THM_SESSION_COOKIE || '' }}
         run: python3 .github/scripts/sync_ctf_flags.py
 
       - name: Commit CTF flags
