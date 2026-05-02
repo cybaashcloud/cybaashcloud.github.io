@@ -1,6 +1,26 @@
 {
   "credentials": [
     {
+      "id": "li0264",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/8b3a2f31a4f074fa86d628c93644e35686fc6e80fd1b2828075e1a9287cf0ef1",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Database Development",
+        "Vector Databases",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0264.jpg",
+      "title": "Vector Databases in Practice: Deep Dive",
+      "issuer": "LinkedIn",
+      "courseId": "vector-databases-in-practice-deep-dive",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "8b3a2f31a4f074fa86d628c93644e35686fc6e80fd1b2828075e1a9287cf0ef1"
+    },
+    {
       "id": "li0265",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/fcb1d969bbf661063c9021594be67b5c947b6f5870df7208d1f0f82cf8d490ff",
