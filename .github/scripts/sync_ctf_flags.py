@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sync_ctf_flags.py  —  CTF Flag Auto-Sync  (v1)
+sync_ctf_flags.py  —  CTF Flag Auto-Sync  (v2)
 
 Pulls publicly-visible completed CTF rooms/challenges from supported
 platforms and merges them into the `flags` array inside data_main.json,
@@ -8,21 +8,24 @@ matching the existing schema exactly.
 
 Supported platforms
 ────────────────────
-  TryHackMe   — public profile API  (no auth required)
-  HackTheBox  — public profile API  (no auth required)
+  TryHackMe   — __NEXT_DATA__ page scrape + public API  (no auth required)
+  HackTheBox  — public profile API                      (no auth required)
 
-HOW IT WORKS
-─────────────
-1.  Reads all existing flag IDs from data_main.json (no duplicates ever).
-2.  For each configured platform it calls the public JSON API to fetch
-    completed rooms / challenges for the given username.
-3.  For every room NOT already tracked:
-    a)  Fetches room metadata (description, difficulty, tags).
-    b)  Classifies the room into a CTF category using a keyword taxonomy.
-    c)  Builds a flag object matching the existing schema.
-    d)  Appends it to the flags list.
-4.  Writes the updated data_main.json back to disk (pretty-printed, same
-    indentation as the original file).
+CHANGES IN v2
+──────────────
+  FIX 1 — All r.json() calls are now wrapped in try/except so an empty or
+           non-JSON response body never crashes the script.
+  FIX 2 — TryHackMe primary strategy is now the __NEXT_DATA__ JSON block
+           embedded in the public profile page (Next.js). This is far more
+           reliable than guessing undocumented API endpoint shapes.
+  FIX 3 — _thm_get_user_id falls back gracefully to HTML scraping if both
+           API and __NEXT_DATA__ strategies fail, instead of crashing.
+  FIX 4 — _get() returns None on empty response bodies (avoids silent crash
+           when a 200 is returned with 0 bytes).
+  FIX 5 — HackTheBox userId resolution now handles non-numeric identifiers
+           gracefully with a clear warning instead of a crash.
+  FIX 6 — Script exits with code 0 (warning, not error) when a platform is
+           unreachable, so the workflow step does not fail the pipeline.
 
 ENVIRONMENT VARIABLES
 ──────────────────────
@@ -63,103 +66,130 @@ HTB_IDENTIFIER = os.environ.get("HTB_IDENTIFIER", "").strip()
 DRY_RUN        = os.environ.get("DRY_RUN", "false").lower() == "true"
 FORCE_RESYNC   = os.environ.get("FORCE_RESYNC", "false").lower() == "true"
 
-REQUEST_TIMEOUT = 15   # seconds
-RETRY_DELAY     = 2    # seconds between retries
+REQUEST_TIMEOUT = 20
+RETRY_DELAY     = 3
 MAX_RETRIES     = 3
 
 HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (compatible; CTF-flag-sync/1.0; "
-        "github-actions/portfolio-sync)"
+        "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0"
     ),
-    "Accept": "application/json, text/html, */*",
+    "Accept":          "text/html,application/xhtml+xml,application/json,*/*",
+    "Accept-Language": "en-US,en;q=0.9",
 }
 
 # ── Category / tag taxonomy ────────────────────────────────────────────────
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
-    "Web Exploitation":    ["web", "http", "sql", "injection", "xss", "ssrf",
-                            "lfi", "rfi", "upload", "auth bypass", "cookie",
-                            "session", "api", "php", "flask", "django"],
-    "Network":             ["network", "packet", "wireshark", "tcp", "udp",
-                            "nmap", "port", "scan", "sniff", "pcap", "smtp",
-                            "ftp", "ssh", "dns", "http"],
-    "Cryptography":        ["crypto", "cipher", "encrypt", "decrypt", "rsa",
-                            "aes", "hash", "base64", "rot13", "otp",
-                            "steganography", "steg"],
-    "Reverse Engineering": ["reverse", "binary", "disassemble", "decompile",
-                            "ghidra", "ida", "radare", "elf", "exe", "dll",
-                            "crackme", "keygen"],
-    "Pwn / Binary Exploit":["pwn", "buffer overflow", "bof", "rop", "heap",
-                            "stack", "shellcode", "format string", "exploit",
-                            "ret2libc", "aslr", "pie", "canary"],
-    "Forensics":           ["forensic", "memory", "volatility", "disk",
-                            "artifact", "log analysis", "autopsy", "carve",
-                            "recover", "deleted"],
-    "OSINT":               ["osint", "recon", "reconnaissance", "open source",
-                            "google", "shodan", "maltego", "social media",
-                            "geolocation"],
-    "Linux PrivEsc":       ["privilege escalation", "privesc", "sudo", "suid",
-                            "cron", "kernel exploit", "lxd", "docker escape",
-                            "capabilities"],
-    "Active Directory":    ["active directory", "ad", "ldap", "kerberos",
-                            "kerberoast", "pass the hash", "bloodhound",
-                            "mimikatz", "domain"],
-    "Steganography":       ["steganography", "steg", "hidden", "image",
-                            "audio", "lsb", "exif"],
-    "Miscellaneous":       [],   # fallback
+    "Web Exploitation":     ["web", "http", "sql", "injection", "xss", "ssrf",
+                             "lfi", "rfi", "upload", "auth bypass", "cookie",
+                             "session", "api", "php", "flask", "django", "cms"],
+    "Network":              ["network", "packet", "wireshark", "tcp", "udp",
+                             "nmap", "port scan", "sniff", "pcap", "smtp",
+                             "ftp", "ssh", "dns"],
+    "Cryptography":         ["crypto", "cipher", "encrypt", "decrypt", "rsa",
+                             "aes", "hash", "base64", "rot13", "otp",
+                             "encoding", "steganography"],
+    "Reverse Engineering":  ["reverse", "binary", "disassemble", "decompile",
+                             "ghidra", "ida", "radare", "elf", "exe", "dll",
+                             "crackme", "keygen", "obfuscat"],
+    "Pwn / Binary Exploit": ["pwn", "buffer overflow", "bof", "rop", "heap",
+                             "stack", "shellcode", "format string",
+                             "ret2libc", "aslr", "pie", "canary"],
+    "Forensics":            ["forensic", "memory", "volatility", "disk",
+                             "artifact", "log analysis", "autopsy", "carve",
+                             "recover", "deleted", "timeline"],
+    "OSINT":                ["osint", "recon", "reconnaissance", "open source",
+                             "google", "shodan", "maltego", "social media",
+                             "geolocation", "username"],
+    "Linux PrivEsc":        ["privilege escalation", "privesc", "sudo", "suid",
+                             "cron", "kernel exploit", "lxd", "docker escape",
+                             "capabilities", "writable"],
+    "Active Directory":     ["active directory", " ad ", "ldap", "kerberos",
+                             "kerberoast", "pass the hash", "bloodhound",
+                             "mimikatz", "domain controller"],
+    "Steganography":        ["steganography", "steg", "hidden message",
+                             "lsb", "exif", "metadata"],
+    "Miscellaneous":        [],
 }
 
 TAG_KEYWORDS: dict[str, list[str]] = {
-    "Web Exploitation":    ["web", "http", "sql", "xss", "ssrf", "lfi", "rfi",
-                            "injection", "api"],
-    "Dir Enumeration":     ["directory", "gobuster", "dirb", "dirbuster",
-                            "feroxbuster", "ffuf", "enumeration"],
-    "Command Injection":   ["command injection", "rce", "remote code", "exec"],
-    "Linux PrivEsc":       ["privilege escalation", "privesc", "linux", "sudo",
-                            "suid"],
-    "SQL Injection":       ["sql injection", "sqli", "sqlmap"],
-    "Cryptography":        ["crypto", "cipher", "encrypt", "hash"],
-    "Forensics":           ["forensic", "memory", "volatility", "disk"],
-    "Reverse Engineering": ["reverse", "disassemble", "ghidra", "binary"],
-    "OSINT":               ["osint", "recon", "reconnaissance"],
-    "Active Directory":    ["active directory", "kerberos", "ldap"],
-    "Networking":          ["network", "packet", "wireshark", "tcp"],
-    "Steganography":       ["steganography", "steg"],
-    "Buffer Overflow":     ["buffer overflow", "bof", "stack", "shellcode"],
+    "Web Exploitation":     ["web", "http", "sql", "xss", "ssrf", "lfi", "rfi",
+                             "injection", "api", "cms"],
+    "Dir Enumeration":      ["directory", "gobuster", "dirb", "dirbuster",
+                             "feroxbuster", "ffuf", "enumeration", "fuzzing"],
+    "Command Injection":    ["command injection", "rce", "remote code", "exec",
+                             "os command"],
+    "Linux PrivEsc":        ["privilege escalation", "privesc", "linux", "sudo",
+                             "suid", "capabilities"],
+    "SQL Injection":        ["sql injection", "sqli", "sqlmap", "database"],
+    "Cryptography":         ["crypto", "cipher", "encrypt", "hash", "encoding"],
+    "Forensics":            ["forensic", "memory", "volatility", "disk", "carve"],
+    "Reverse Engineering":  ["reverse", "disassemble", "ghidra", "binary", "crackme"],
+    "OSINT":                ["osint", "recon", "reconnaissance", "footprint"],
+    "Active Directory":     ["active directory", "kerberos", "ldap", "domain"],
+    "Networking":           ["network", "packet", "wireshark", "tcp", "nmap"],
+    "Steganography":        ["steganography", "steg", "hidden"],
+    "Buffer Overflow":      ["buffer overflow", "bof", "stack", "shellcode", "rop"],
 }
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 def _make_id(length: int = 8) -> str:
-    """Generate a random alphanumeric ID matching the existing format."""
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 
+def _safe_json(response: requests.Response) -> Optional[dict | list]:
+    """
+    Safely parse JSON from a response.
+    Returns None (never raises) on empty body or parse error.
+    """
+    try:
+        text = response.text.strip()
+        if not text:
+            return None
+        return json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+
 def _get(url: str, params: dict | None = None,
-         retries: int = MAX_RETRIES) -> Optional[requests.Response]:
-    """GET with retries; returns Response or None on failure."""
+         retries: int = MAX_RETRIES,
+         accept_html: bool = False) -> Optional[requests.Response]:
+    """
+    GET with retries. Returns None on any failure or empty body.
+    Set accept_html=True to skip the empty-body check (HTML pages may be large).
+    """
+    hdrs = dict(HEADERS)
+    if accept_html:
+        hdrs["Accept"] = "text/html,application/xhtml+xml,*/*"
+
     for attempt in range(1, retries + 1):
         try:
-            r = requests.get(url, params=params, headers=HEADERS,
+            r = requests.get(url, params=params, headers=hdrs,
                              timeout=REQUEST_TIMEOUT)
             if r.status_code == 200:
+                # Guard: treat a 200 with an empty body as a failed call
+                if not accept_html and not r.text.strip():
+                    print(f"    [empty-body] {url}")
+                    return None
                 return r
             if r.status_code == 429:
                 wait = int(r.headers.get("Retry-After", RETRY_DELAY * attempt))
                 print(f"    [rate-limit] sleeping {wait}s …")
                 time.sleep(wait)
                 continue
+            if r.status_code in (403, 404):
+                print(f"    [http {r.status_code}] {url}")
+                return None
             print(f"    [http {r.status_code}] {url}")
-            return None
         except requests.RequestException as exc:
-            print(f"    [attempt {attempt}/{retries}] {exc}")
-            time.sleep(RETRY_DELAY * attempt)
+            print(f"    [attempt {attempt}/{retries}] network error: {exc}")
+        time.sleep(RETRY_DELAY * attempt)
     return None
 
 
 def _classify_category(text: str) -> str:
-    """Return the best-matching CTF category for the given description."""
     lower = text.lower()
     for category, keywords in CATEGORY_KEYWORDS.items():
         if category == "Miscellaneous":
@@ -170,12 +200,8 @@ def _classify_category(text: str) -> str:
 
 
 def _extract_tags(text: str) -> list[str]:
-    """Extract up to 6 descriptive tags from the given text."""
     lower = text.lower()
-    found = []
-    for tag, keywords in TAG_KEYWORDS.items():
-        if any(kw in lower for kw in keywords):
-            found.append(tag)
+    found = [tag for tag, kws in TAG_KEYWORDS.items() if any(k in lower for k in kws)]
     return found[:6] if found else ["General"]
 
 
@@ -184,57 +210,123 @@ def _extract_tags(text: str) -> list[str]:
 # ══════════════════════════════════════════════════════════════════════════
 
 THM_BASE          = "https://tryhackme.com"
+THM_PROFILE_URL   = f"{THM_BASE}/p/{{username}}"
 THM_PROFILE_API   = f"{THM_BASE}/api/no-auth/user/{{username}}"
 THM_COMPLETED_API = f"{THM_BASE}/api/no-auth/hacktivities"
 THM_ROOM_API      = f"{THM_BASE}/api/room/details"
 
 
+def _thm_parse_next_data(html: str) -> Optional[dict]:
+    """
+    Extract the __NEXT_DATA__ JSON payload embedded in a TryHackMe page.
+    This is the most reliable source of structured profile data.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    tag = soup.find("script", {"id": "__NEXT_DATA__"})
+    if not tag or not tag.string:
+        return None
+    try:
+        return json.loads(tag.string)
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+
 def _thm_get_user_id(username: str) -> Optional[str]:
-    """Resolve a THM username to its numeric userId."""
-    url = THM_PROFILE_API.format(username=username)
-    r = _get(url)
-    if not r:
-        return None
-    data = r.json()
-    # Multiple possible response shapes across API versions
-    for path in [
-        lambda d: d["data"]["userInfo"]["_id"],
-        lambda d: d["userInfo"]["_id"],
-        lambda d: d["_id"],
-        lambda d: str(d["data"]["userInfo"]["userId"]),
-    ]:
-        try:
-            uid = path(data)
-            if uid:
-                return str(uid)
-        except (KeyError, TypeError):
-            pass
-    # Fallback: scrape profile page
-    print("    [thm] JSON profile lookup failed, falling back to page scrape …")
-    return _thm_scrape_user_id(username)
+    """
+    Resolve a TryHackMe username to its internal userId.
 
+    Strategy order:
+      1. __NEXT_DATA__ from public profile page  (most reliable)
+      2. /api/no-auth/user/{username} JSON API   (may return empty body)
+      3. Regex scan of profile page HTML          (last resort)
+    """
 
-def _thm_scrape_user_id(username: str) -> Optional[str]:
-    """Scrape the public profile page to extract the userId."""
-    r = _get(f"{THM_BASE}/p/{username}")
-    if not r:
-        return None
-    soup = BeautifulSoup(r.text, "html.parser")
-    # The userId often appears in a <script> tag as window.__USER_ID__ or similar
-    for script in soup.find_all("script"):
-        text = script.string or ""
-        m = re.search(r'"userId"\s*:\s*"([^"]+)"', text)
-        if m:
-            return m.group(1)
-        m = re.search(r'userId["\s:=]+([a-f0-9]{24})', text)
-        if m:
-            return m.group(1)
+    # ── Strategy 1: __NEXT_DATA__ ─────────────────────────────────────────
+    profile_url = THM_PROFILE_URL.format(username=username)
+    r = _get(profile_url, accept_html=True)
+    if r:
+        next_data = _thm_parse_next_data(r.text)
+        if next_data:
+            # Walk common paths where userId appears in Next.js page props
+            for path_fn in [
+                lambda d: d["props"]["pageProps"]["userData"]["_id"],
+                lambda d: d["props"]["pageProps"]["user"]["_id"],
+                lambda d: d["props"]["pageProps"]["profileData"]["userId"],
+                lambda d: str(d["props"]["pageProps"]["userData"]["userId"]),
+                lambda d: d["query"]["userId"],
+            ]:
+                try:
+                    uid = path_fn(next_data)
+                    if uid:
+                        print(f"    [thm] userId resolved via __NEXT_DATA__: {uid}")
+                        return str(uid)
+                except (KeyError, TypeError):
+                    pass
+
+        # ── Strategy 3: raw HTML regex (runs on the same page fetch) ──────
+        for pattern in [
+            r'"userId"\s*:\s*"([a-f0-9]{24})"',
+            r'"_id"\s*:\s*"([a-f0-9]{24})"',
+            r'userId["\s:=]+([a-f0-9]{24})',
+        ]:
+            m = re.search(pattern, r.text)
+            if m:
+                uid = m.group(1)
+                print(f"    [thm] userId resolved via HTML regex: {uid}")
+                return uid
+
+    # ── Strategy 2: JSON API (may return 200 with empty body — handled) ───
+    api_url = THM_PROFILE_API.format(username=username)
+    r2 = _get(api_url)
+    if r2:
+        data = _safe_json(r2)
+        if data:
+            for path_fn in [
+                lambda d: d["data"]["userInfo"]["_id"],
+                lambda d: d["userInfo"]["_id"],
+                lambda d: d["_id"],
+            ]:
+                try:
+                    uid = path_fn(data)
+                    if uid:
+                        print(f"    [thm] userId resolved via API: {uid}")
+                        return str(uid)
+                except (KeyError, TypeError):
+                    pass
+
+    print(f"    [thm] ✗ Could not resolve userId for {username!r}")
     return None
 
 
-def _thm_fetch_completed_rooms(user_id: str,
-                               page_size: int = 100) -> list[dict]:
-    """Fetch all completed rooms for a THM userId."""
+def _thm_fetch_completed_from_next_data(username: str) -> list[dict]:
+    """
+    Extract completed rooms directly from the __NEXT_DATA__ block.
+    Some profile pages embed the full room list here, avoiding an extra API call.
+    """
+    r = _get(THM_PROFILE_URL.format(username=username), accept_html=True)
+    if not r:
+        return []
+    next_data = _thm_parse_next_data(r.text)
+    if not next_data:
+        return []
+
+    for path_fn in [
+        lambda d: d["props"]["pageProps"]["completedRooms"],
+        lambda d: d["props"]["pageProps"]["userData"]["completedRooms"],
+        lambda d: d["props"]["pageProps"]["rooms"],
+    ]:
+        try:
+            rooms = path_fn(next_data)
+            if isinstance(rooms, list) and rooms:
+                print(f"    [thm] {len(rooms)} rooms from __NEXT_DATA__")
+                return rooms
+        except (KeyError, TypeError):
+            pass
+    return []
+
+
+def _thm_fetch_completed_rooms(user_id: str, page_size: int = 100) -> list[dict]:
+    """Fetch all completed rooms via the public hacktivities API."""
     all_rooms: list[dict] = []
     page = 1
     while True:
@@ -246,50 +338,49 @@ def _thm_fetch_completed_rooms(user_id: str,
         })
         if not r:
             break
-        data = r.json()
-        # API may return {"data": {"docs": [...]}} or {"docs": [...]}
+        data = _safe_json(r)
+        if not data:
+            print(f"    [thm] empty/invalid JSON from hacktivities API (page {page})")
+            break
         docs: list[dict] = (
-            data.get("data", {}).get("docs")
-            or data.get("docs")
-            or data.get("data")
-            or []
-        )
+            data.get("data", {}).get("docs") if isinstance(data, dict) else None
+        ) or (
+            data.get("docs") if isinstance(data, dict) else None
+        ) or []
         if not docs:
             break
         all_rooms.extend(docs)
-        # Pagination
         has_more = (
-            data.get("data", {}).get("hasMore")
-            or data.get("hasMore")
+            (data.get("data", {}).get("hasMore") if isinstance(data, dict) else False)
+            or (data.get("hasMore") if isinstance(data, dict) else False)
             or (len(docs) == page_size)
         )
         if not has_more:
             break
         page += 1
-        time.sleep(0.5)   # be polite
+        time.sleep(0.5)
     return all_rooms
 
 
 def _thm_fetch_room_meta(room_code: str) -> dict:
-    """Fetch full metadata for a THM room (title, desc, difficulty, tasks)."""
+    """Fetch full metadata for a single THM room."""
     r = _get(THM_ROOM_API, params={"codes": room_code})
     if not r:
         return {}
-    data = r.json()
-    # data is often a list; pick the first item
+    data = _safe_json(r)
+    if not data:
+        return {}
     if isinstance(data, list) and data:
         return data[0]
     if isinstance(data, dict):
-        return data.get(data.get("code", room_code), data)
+        return data.get(room_code, data)
     return {}
 
 
 def _thm_room_to_flag(room: dict, username: str) -> dict:
-    """Convert a raw THM completed-room object to the flag schema."""
-    code  = room.get("code", room.get("roomCode", room.get("id", "")))
-    title = room.get("title", code.replace("-", " ").title())
+    code  = room.get("code") or room.get("roomCode") or room.get("id") or ""
+    title = room.get("title") or code.replace("-", " ").title()
 
-    # Fetch detailed metadata (description, task count, difficulty)
     meta = _thm_fetch_room_meta(code) if code else {}
     time.sleep(0.3)
 
@@ -299,50 +390,35 @@ def _thm_room_to_flag(room: dict, username: str) -> dict:
         or room.get("description", "")
         or f"TryHackMe room: {title}"
     )
-    desc = re.sub(r"\s+", " ", desc).strip()
-    if len(desc) > 300:
-        desc = desc[:297] + "…"
+    desc = re.sub(r"\s+", " ", desc).strip()[:300]
 
     difficulty = (
-        meta.get("difficulty")
-        or room.get("difficulty", "")
-        or "Unknown"
+        meta.get("difficulty") or room.get("difficulty") or "Unknown"
     ).capitalize()
 
     task_count = (
-        meta.get("totalTasks")
-        or meta.get("taskCount")
-        or room.get("totalTasks")
-        or 1
+        meta.get("totalTasks") or meta.get("taskCount")
+        or room.get("totalTasks") or 1
     )
 
-    # Date: use completedAt → createdAt → today
     raw_date = (
-        room.get("completedAt")
-        or room.get("completed_at")
-        or room.get("createdAt")
-        or ""
+        room.get("completedAt") or room.get("completed_at")
+        or room.get("createdAt") or ""
     )
-    if raw_date:
-        # Normalise ISO-8601 to YYYY-MM-DD
-        date_str = re.sub(r"T.*", "", str(raw_date))
-    else:
-        date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    date_str = re.sub(r"T.*", "", str(raw_date)) if raw_date else \
+        datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     full_text = f"{title} {desc}"
-    tags = _extract_tags(full_text)
-    category = _classify_category(full_text)
-
     return {
         "id":          _make_id(),
         "platform":    "TryHackMe",
         "room":        title,
         "difficulty":  difficulty,
-        "category":    category,
+        "category":    _classify_category(full_text),
         "flags_count": task_count,
         "date":        date_str,
         "desc":        desc,
-        "tags":        tags,
+        "tags":        _extract_tags(full_text),
         "url":         f"{THM_BASE}/room/{code}",
         "verify_url":  f"{THM_BASE}/p/{username}",
         "writeup_url": "",
@@ -350,27 +426,33 @@ def _thm_room_to_flag(room: dict, username: str) -> dict:
 
 
 def sync_tryhackme(existing_urls: set[str], username: str) -> list[dict]:
-    """Return a list of new flag objects fetched from TryHackMe."""
     if not username:
         print("[THM] THM_USERNAME not set — skipping TryHackMe")
         return []
 
     print(f"\n[THM] Syncing TryHackMe profile: {username}")
 
-    user_id = _thm_get_user_id(username)
-    if not user_id:
-        print(f"[THM] ✗ Could not resolve userId for {username!r}")
-        print("[THM]   Make sure the profile is public: "
-              f"https://tryhackme.com/p/{username}")
-        return []
+    # ── Try to get rooms directly from __NEXT_DATA__ first ────────────────
+    rooms = _thm_fetch_completed_from_next_data(username)
 
-    print(f"[THM] userId={user_id}")
-    rooms = _thm_fetch_completed_rooms(user_id)
-    print(f"[THM] {len(rooms)} completed rooms found")
+    # ── Fall back to API if page didn't have them embedded ────────────────
+    if not rooms:
+        user_id = _thm_get_user_id(username)
+        if not user_id:
+            print("[THM] ✗ Could not resolve userId — skipping TryHackMe")
+            print(f"[THM]   Verify the profile is public: {THM_BASE}/p/{username}")
+            return []   # warn, not crash
+        print(f"[THM] userId={user_id}")
+        rooms = _thm_fetch_completed_rooms(user_id)
+
+    print(f"[THM] {len(rooms)} completed room(s) found")
+    if not rooms:
+        print("[THM] No rooms returned — profile may be private or API changed")
+        return []
 
     new_flags: list[dict] = []
     for room in rooms:
-        code = room.get("code", room.get("roomCode", room.get("id", "")))
+        code = room.get("code") or room.get("roomCode") or room.get("id") or ""
         if not code:
             continue
         room_url = f"{THM_BASE}/room/{code}"
@@ -378,8 +460,7 @@ def sync_tryhackme(existing_urls: set[str], username: str) -> list[dict]:
             print(f"    [skip] {code}  (already tracked)")
             continue
         print(f"    [+] {code}")
-        flag = _thm_room_to_flag(room, username)
-        new_flags.append(flag)
+        new_flags.append(_thm_room_to_flag(room, username))
 
     print(f"[THM] {len(new_flags)} new room(s) to add")
     return new_flags
@@ -390,22 +471,20 @@ def sync_tryhackme(existing_urls: set[str], username: str) -> list[dict]:
 # ══════════════════════════════════════════════════════════════════════════
 
 HTB_BASE         = "https://www.hackthebox.com"
-HTB_PROFILE_API  = f"{HTB_BASE}/api/v4/profile/{{identifier}}"
-HTB_ACTIVITY_API = f"{HTB_BASE}/api/v4/profile/activity/{{user_id}}"
+HTB_USER_API     = f"{HTB_BASE}/api/v4/user/profile/basic/{{identifier}}"
 HTB_MACHINES_API = f"{HTB_BASE}/api/v4/profile/progress/machines/owns/{{user_id}}"
 HTB_MACHINE_API  = f"{HTB_BASE}/api/v4/machine/profile/{{machine_id}}"
 
 
 def _htb_resolve_user_id(identifier: str) -> Optional[str]:
-    """Resolve username or direct ID for HackTheBox."""
-    # Try as direct integer ID first
     if identifier.isdigit():
         return identifier
-    # Otherwise query by username
-    r = _get(f"{HTB_BASE}/api/v4/user/profile/basic/{identifier}")
+    r = _get(HTB_USER_API.format(identifier=identifier))
     if not r:
         return None
-    data = r.json()
+    data = _safe_json(r)
+    if not data:
+        return None
     try:
         return str(data["profile"]["id"])
     except (KeyError, TypeError):
@@ -413,56 +492,48 @@ def _htb_resolve_user_id(identifier: str) -> Optional[str]:
 
 
 def _htb_fetch_owned_machines(user_id: str) -> list[dict]:
-    """Fetch machines owned (user + root) from the public HTB profile."""
     r = _get(HTB_MACHINES_API.format(user_id=user_id))
     if not r:
         return []
-    data = r.json()
+    data = _safe_json(r)
+    if not data or not isinstance(data, dict):
+        return []
     return data.get("profile", {}).get("userOwns", []) or []
 
 
 def _htb_fetch_machine_meta(machine_id: int | str) -> dict:
-    """Fetch metadata for a single HTB machine."""
     r = _get(HTB_MACHINE_API.format(machine_id=machine_id))
     if not r:
         return {}
-    return r.json().get("info", {})
+    data = _safe_json(r)
+    if not data or not isinstance(data, dict):
+        return {}
+    return data.get("info", {})
 
 
 def _htb_machine_to_flag(own: dict, user_id: str) -> dict:
-    """Convert an HTB machine-own object to the flag schema."""
     machine_id = own.get("id", "")
     name       = own.get("name", f"HTB-{machine_id}")
 
-    meta = _htb_fetch_machine_meta(machine_id) if machine_id else {}
+    meta       = _htb_fetch_machine_meta(machine_id) if machine_id else {}
     time.sleep(0.3)
 
     difficulty = (
-        meta.get("difficultyText")
-        or own.get("difficultyText", "")
-        or "Unknown"
+        meta.get("difficultyText") or own.get("difficultyText") or "Unknown"
     ).capitalize()
 
-    os_name   = meta.get("os", "Linux")
-    desc      = (
-        meta.get("synopsis")
-        or meta.get("description")
-        or f"HackTheBox machine running {os_name}. Compromise the box to earn user and root flags."
+    os_name = meta.get("os", "Linux")
+    desc    = (
+        meta.get("synopsis") or meta.get("description")
+        or f"HackTheBox {os_name} machine. Gain user and root access."
     )
-    desc = re.sub(r"\s+", " ", desc).strip()
-    if len(desc) > 300:
-        desc = desc[:297] + "…"
+    desc = re.sub(r"\s+", " ", desc).strip()[:300]
 
-    raw_date  = own.get("user_own_time") or own.get("root_own_time") or ""
-    if raw_date:
-        date_str = re.sub(r"T.*", "", str(raw_date))
-    else:
-        date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    raw_date = own.get("user_own_time") or own.get("root_own_time") or ""
+    date_str = re.sub(r"T.*", "", str(raw_date)) if raw_date else \
+        datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    full_text = f"{name} {desc} {os_name}"
-    tags      = _extract_tags(full_text)
-    category  = _classify_category(full_text)
-
+    full_text    = f"{name} {desc} {os_name}"
     machine_slug = name.lower().replace(" ", "-")
 
     return {
@@ -470,11 +541,11 @@ def _htb_machine_to_flag(own: dict, user_id: str) -> dict:
         "platform":    "HackTheBox",
         "room":        name,
         "difficulty":  difficulty,
-        "category":    category,
-        "flags_count": 2,   # user flag + root flag
+        "category":    _classify_category(full_text),
+        "flags_count": 2,
         "date":        date_str,
         "desc":        desc,
-        "tags":        tags,
+        "tags":        _extract_tags(full_text),
         "url":         f"{HTB_BASE}/machines/{machine_slug}",
         "verify_url":  f"{HTB_BASE}/profile/{user_id}",
         "writeup_url": "",
@@ -482,7 +553,6 @@ def _htb_machine_to_flag(own: dict, user_id: str) -> dict:
 
 
 def sync_hackthebox(existing_urls: set[str], identifier: str) -> list[dict]:
-    """Return a list of new flag objects fetched from HackTheBox."""
     if not identifier:
         print("[HTB] HTB_IDENTIFIER not set — skipping HackTheBox")
         return []
@@ -491,16 +561,15 @@ def sync_hackthebox(existing_urls: set[str], identifier: str) -> list[dict]:
 
     user_id = _htb_resolve_user_id(identifier)
     if not user_id:
-        print(f"[HTB] ✗ Could not resolve userId for {identifier!r}")
+        print(f"[HTB] ✗ Could not resolve userId for {identifier!r} — skipping")
         return []
 
     print(f"[HTB] userId={user_id}")
     owns = _htb_fetch_owned_machines(user_id)
-    print(f"[HTB] {len(owns)} owned machines found")
+    print(f"[HTB] {len(owns)} owned machine(s) found")
 
     new_flags: list[dict] = []
     for own in owns:
-        machine_id   = own.get("id", "")
         machine_name = own.get("name", "")
         machine_slug = machine_name.lower().replace(" ", "-")
         machine_url  = f"{HTB_BASE}/machines/{machine_slug}"
@@ -509,36 +578,30 @@ def sync_hackthebox(existing_urls: set[str], identifier: str) -> list[dict]:
             print(f"    [skip] {machine_name}  (already tracked)")
             continue
         print(f"    [+] {machine_name}")
-        flag = _htb_machine_to_flag(own, user_id)
-        new_flags.append(flag)
+        new_flags.append(_htb_machine_to_flag(own, user_id))
 
     print(f"[HTB] {len(new_flags)} new machine(s) to add")
     return new_flags
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# Auto-detect config from data_main.json
+# Auto-detect usernames from data_main.json
 # ══════════════════════════════════════════════════════════════════════════
 
-def _auto_detect_username(data_main: dict) -> tuple[str, str]:
-    """
-    Try to read THM username and HTB identifier from data_main.json
-    when environment variables are not set.
-    """
-    about = data_main.get("about", {})
-    thm = about.get("tryhackme", "")
-    htb = about.get("hackthebox", "")
+def _auto_detect_usernames(data_main: dict) -> tuple[str, str]:
+    about   = data_main.get("about", {})
+    thm_url = about.get("tryhackme", "")
+    htb_url = about.get("hackthebox", "")
 
-    # Extract username from profile URLs
     thm_user = ""
-    if thm:
-        m = re.search(r"/p/([^/?\s]+)", thm)
+    if thm_url:
+        m = re.search(r"/p/([^/?\s]+)", thm_url)
         if m:
             thm_user = m.group(1)
 
     htb_user = ""
-    if htb:
-        m = re.search(r"/profile/([^/?\s]+)", htb)
+    if htb_url:
+        m = re.search(r"/profile/([^/?\s]+)", htb_url)
         if m:
             htb_user = m.group(1)
 
@@ -551,44 +614,36 @@ def _auto_detect_username(data_main: dict) -> tuple[str, str]:
 
 def main() -> None:
     print("═" * 60)
-    print("  CTF Flag Sync")
+    print("  CTF Flag Sync  (v2)")
     print("═" * 60)
 
-    # ── Load data_main.json ───────────────────────────────────────
     if not DATA_MAIN_PATH.exists():
         print(f"ERROR: {DATA_MAIN_PATH} not found")
         sys.exit(1)
 
-    raw_text = DATA_MAIN_PATH.read_text(encoding="utf-8")
-    data_main = json.loads(raw_text)
-
-    existing_flags: list[dict] = data_main.setdefault("flags", [])
-    existing_urls: set[str] = {f.get("url", "") for f in existing_flags}
+    data_main      = json.loads(DATA_MAIN_PATH.read_text(encoding="utf-8"))
+    existing_flags = data_main.setdefault("flags", [])
+    existing_urls  = {f.get("url", "") for f in existing_flags}
 
     print(f"  Existing flags : {len(existing_flags)}")
     print(f"  Dry run        : {DRY_RUN}")
     print(f"  Force resync   : {FORCE_RESYNC}")
 
-    # ── Resolve usernames ─────────────────────────────────────────
-    auto_thm, auto_htb = _auto_detect_username(data_main)
-    thm_user = THM_USERNAME or auto_thm
+    auto_thm, auto_htb = _auto_detect_usernames(data_main)
+    thm_user = THM_USERNAME   or auto_thm
     htb_user = HTB_IDENTIFIER or auto_htb
 
     if not thm_user and not htb_user:
         print("\nERROR: No platform credentials found.")
-        print("  Set THM_USERNAME and/or HTB_IDENTIFIER env vars,")
-        print("  or add profile URLs to data_main.json → about.tryhackme/hackthebox")
+        print("  Set THM_USERNAME / HTB_IDENTIFIER env vars, or add profile")
+        print("  URLs to data_main.json → about.tryhackme / about.hackthebox")
         sys.exit(1)
 
-    # ── Fetch from each platform ──────────────────────────────────
     new_flags: list[dict] = []
     new_flags.extend(sync_tryhackme(existing_urls, thm_user))
     new_flags.extend(sync_hackthebox(existing_urls, htb_user))
-
-    # ── Sort new flags by date (newest last, matching existing order) ─
     new_flags.sort(key=lambda f: f.get("date", ""))
 
-    # ── Summary ───────────────────────────────────────────────────
     print("\n" + "─" * 60)
     print(f"  New flags found : {len(new_flags)}")
 
@@ -600,35 +655,32 @@ def main() -> None:
     for f in new_flags:
         print(f"  [{f['platform']:10s}] {f['room']:40s}  {f['difficulty']}")
 
-    # ── Write ─────────────────────────────────────────────────────
     if DRY_RUN:
         print("\n  DRY RUN — no file written.")
         print("─" * 60)
         return
 
     data_main["flags"].extend(new_flags)
-
-    updated = json.dumps(data_main, indent=2, ensure_ascii=False) + "\n"
-    DATA_MAIN_PATH.write_text(updated, encoding="utf-8")
-
+    DATA_MAIN_PATH.write_text(
+        json.dumps(data_main, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
     print(f"\n  ✓ Wrote {len(data_main['flags'])} total flags → {DATA_MAIN_PATH}")
     print("─" * 60)
 
-    # GitHub Actions step summary
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
-        with open(summary_path, "a", encoding="utf-8") as f:
-            f.write("## CTF Flag Sync\n")
-            f.write(f"- **New rooms added:** {len(new_flags)}\n")
-            f.write(f"- **Total flags:** {len(data_main['flags'])}\n\n")
-            if new_flags:
-                f.write("| Platform | Room | Difficulty | Date |\n")
-                f.write("|---|---|---|---|\n")
-                for flag in new_flags:
-                    f.write(
-                        f"| {flag['platform']} | {flag['room']} "
-                        f"| {flag['difficulty']} | {flag['date']} |\n"
-                    )
+        with open(summary_path, "a", encoding="utf-8") as fh:
+            fh.write("## CTF Flag Sync\n")
+            fh.write(f"- **New rooms added:** {len(new_flags)}\n")
+            fh.write(f"- **Total flags:** {len(data_main['flags'])}\n\n")
+            fh.write("| Platform | Room | Difficulty | Date |\n")
+            fh.write("|---|---|---|---|\n")
+            for flag in new_flags:
+                fh.write(
+                    f"| {flag['platform']} | {flag['room']} "
+                    f"| {flag['difficulty']} | {flag['date']} |\n"
+                )
 
 
 if __name__ == "__main__":
