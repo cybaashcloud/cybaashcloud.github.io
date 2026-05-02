@@ -1,6 +1,26 @@
 {
   "credentials": [
     {
+      "id": "li0096",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/b2e393b6bfdc11389f23b34e971cdb2d925b309d97d61e32fe46b0ea1f0782a0",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Data Analysis",
+        "Microsoft Copilot",
+        "AI for Business Analysis"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0096.jpg",
+      "title": "Excel with Copilot: AI-Driven Data Analysis",
+      "issuer": "LinkedIn",
+      "courseId": "excel-with-copilot-ai-driven-data-analysis",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "b2e393b6bfdc11389f23b34e971cdb2d925b309d97d61e32fe46b0ea1f0782a0"
+    },
+    {
       "id": "li0097",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/dc6fe4883d82bb1b65fd3b2e7b8eb9d2f1935b7d46a678668b581bfab92ad7b4",
@@ -1555,24 +1575,6 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "6bcce90421fce92a5694939be3c073e985c8ea99228d11e457a48412eacb29dd"
-    },
-    {
-      "id": "li0180",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/50307a07755a8e135e0cf384b33bc201a02b0ecf74491cd720dc7e5ef98621e4",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Marketing"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0180.jpg",
-      "title": "Marketing Foundations: Ecommerce",
-      "issuer": "LinkedIn",
-      "courseId": "marketing-foundations-ecommerce",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "50307a07755a8e135e0cf384b33bc201a02b0ecf74491cd720dc7e5ef98621e4"
     }
   ]
 }
