@@ -1169,7 +1169,8 @@ function render(){
   g('hAvail').textContent=ab.availability?ab.availability[0].toUpperCase()+ab.availability.slice(1):'Available';
   if(ct.linkedin){g('hLI').href=ct.linkedin;g('hLI').textContent='linkedin.com/in/mohamedaasiq07'}
   if(ct.github){g('hGH').href=ct.github;g('hGH').textContent='github.com/cybaash'}
-  if(ct.tryhackme){g('hTHM').href=ct.tryhackme;g('hTHM').textContent='tryhackme.com/p/AasiqSec'}
+  if(ct.tryhackme){g('hTHM').href=ct.tryhackme;g('hTHM').textContent='tryhackme.com/mohamedaasiq07'}
+  if(ct.HacktheBox){g('hHTB').href=ct.HackTheBox;g('hHTB').textContent='hackthebox.com/mohamedaasiq07'}
 
   const secCat=skills.find(s=>/cyber|security/i.test(s.name));
   g('kCerts').textContent=D.creds.length;
