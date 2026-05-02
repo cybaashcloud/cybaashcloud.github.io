@@ -1,0 +1,133 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# CTF FLAG SYNC — Pull completed rooms/machines from public CTF platforms
+#                 and commit updates to data_main.json
+#
+# Platforms:   TryHackMe  •  HackTheBox
+# Trigger:     Weekly (Sunday 03:00 UTC) + manual dispatch
+# Auth needed: None — all endpoints are publicly accessible
+# ═══════════════════════════════════════════════════════════════════════════
+name: Sync CTF Flags
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'     # Sunday 03:00 UTC (after weekly pipeline starts)
+
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — print changes without committing'
+        type: boolean
+        default: false
+      force_resync:
+        description: 'Re-process rooms already in data_main.json'
+        type: boolean
+        default: false
+      thm_username:
+        description: 'Override TryHackMe username'
+        type: string
+        default: ''
+      htb_identifier:
+        description: 'Override HackTheBox username or user ID'
+        type: string
+        default: ''
+
+  # Can also be called as a reusable step from weekly-pipeline.yml
+  workflow_call:
+    inputs:
+      dry_run:
+        type: boolean
+        default: false
+      force_resync:
+        type: boolean
+        default: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # ── Username config ───────────────────────────────────────────────────
+  # Primary source: read from data_main.json → about.tryhackme/hackthebox
+  # Override below (or pass as workflow_dispatch input) if needed.
+  THM_USERNAME:   ${{ inputs.thm_username  || vars.THM_USERNAME  || '' }}
+  HTB_IDENTIFIER: ${{ inputs.htb_identifier || vars.HTB_IDENTIFIER || '' }}
+
+jobs:
+  sync-flags:
+    name: Sync CTF Flags
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      # ── 2. Python setup ──────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: .github/scripts/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r .github/scripts/requirements.txt
+
+      # ── 3. Copy script to working location ──────────────────────────────
+      - name: Prepare sync script
+        run: |
+          # Script lives alongside the other sync scripts
+          ls .github/scripts/sync_ctf_flags.py
+
+      # ── 4. Run the sync ──────────────────────────────────────────────────
+      - name: Sync CTF flags
+        env:
+          DATA_MAIN_PATH: frontend/data_main.json
+          DRY_RUN:        ${{ inputs.dry_run      && 'true' || 'false' }}
+          FORCE_RESYNC:   ${{ inputs.force_resync && 'true' || 'false' }}
+        run: |
+          python3 .github/scripts/sync_ctf_flags.py
+
+      # ── 5. Show diff ─────────────────────────────────────────────────────
+      - name: Show changes
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git diff --stat frontend/data_main.json || echo "(no changes)"
+          echo "---"
+          git diff frontend/data_main.json | head -120 || true
+
+      # ── 6. Commit & push ─────────────────────────────────────────────────
+      - name: Commit updated flags
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add frontend/data_main.json
+
+          if git diff --cached --quiet; then
+            echo "No new CTF flags found — nothing to commit."
+            echo "## CTF Flag Sync" >> $GITHUB_STEP_SUMMARY
+            echo "✅ No new flags — already up to date." >> $GITHUB_STEP_SUMMARY
+          else
+            # Count new entries for the commit message
+            NEW=$(git diff --cached frontend/data_main.json \
+                  | grep '^+.*"platform"' | wc -l | tr -d ' ')
+            git commit -m "feat: sync ${NEW} CTF flag(s) from public profiles [skip ci]"
+            git push
+            echo "✅ Pushed ${NEW} new flag(s)."
+          fi
+
+      # ── 7. Optional: trigger deploy ──────────────────────────────────────
+      - name: Trigger deploy (if flags changed)
+        if: ${{ !inputs.dry_run && success() }}
+        run: |
+          # Only trigger deploy if data_main.json was actually modified
+          CHANGED=$(git log -1 --name-only --pretty="" | grep "data_main.json" || true)
+          if [ -n "$CHANGED" ]; then
+            echo "data_main.json was updated — deploy will trigger via push event."
+          else
+            echo "No changes — skipping deploy trigger."
+          fi
