@@ -1822,6 +1822,41 @@
       "url": "https://tryhackme.com/room/picklerick",
       "verify_url": "https://tryhackme.com/p/mohamedaasiq07",
       "writeup_url": ""
+    },
+    {
+      "id": "fwg5yx5o",
+      "platform": "TryHackMe",
+      "room": "Neighbour",
+      "difficulty": "Easy",
+      "category": "Web Exploitation",
+      "flags_count": 1,
+      "date": "2026-04-01",
+      "desc": "Check out our new cloud service, Authentication Anywhere. Exploit insecure direct object reference (IDOR) to access other users' secrets.",
+      "tags": [
+        "Web Exploitation",
+        "IDOR",
+        "Authentication Bypass"
+      ],
+      "url": "https://tryhackme.com/room/neighbour",
+      "verify_url": "https://tryhackme.com/p/mohamedaasiq07",
+      "writeup_url": ""
+    },
+    {
+      "id": "epyw4r1n",
+      "platform": "TryHackMe",
+      "room": "Plant Photographer",
+      "difficulty": "Hard",
+      "category": "Forensics",
+      "flags_count": 2,
+      "date": "2026-04-10",
+      "desc": "Dig deeper and try to uncover the flag hidden behind the scenes. Steganography and image forensics challenge.",
+      "tags": [
+        "Forensics",
+        "Steganography"
+      ],
+      "url": "https://tryhackme.com/room/plantphotographer",
+      "verify_url": "https://tryhackme.com/p/mohamedaasiq07",
+      "writeup_url": ""
     }
   ]
 }
