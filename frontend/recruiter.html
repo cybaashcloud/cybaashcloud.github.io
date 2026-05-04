@@ -877,7 +877,7 @@ input[placeholder*="search"] {
       <div class="kpi"><div class="kpi-num b" id="kCerts">—</div><div class="kpi-lbl">Credentials</div></div>
       <div class="kpi"><div class="kpi-num g" id="kExp">—</div><div class="kpi-lbl">Yrs Experience</div></div>
       <div class="kpi"><div class="kpi-num r" id="kSec">—</div><div class="kpi-lbl">Security Certs</div></div>
-      <div class="kpi"><div class="kpi-num y">5</div><div class="kpi-lbl">Industry Badges</div></div>
+      <div class="kpi"><div class="kpi-num y" id="kBadges">—</div><div class="kpi-lbl">Industry Badges</div></div>
     </div>
   </div>
 </div>
@@ -918,10 +918,6 @@ input[placeholder*="search"] {
       <div id="dna"></div>
     </div>
     <div class="card"><div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
-      <div class="card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>INDUSTRY BADGES</div>
-      <div class="bdg-grid" id="badges"></div>
-    </div>
-    <div class="card"><div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
       <div class="card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>CAREER TRAJECTORY</div>
       <div id="preds"></div>
     </div>
@@ -958,7 +954,6 @@ input[placeholder*="search"] {
 
 <!-- TAB: CREDENTIALS -->
 <div id="tcr" class="content" style="display:none">
-  <div class="cred-stats" id="csBar"></div>
   <div class="filter-bar" id="fBar"></div>
   <div class="cred-grid" id="crGrid"></div>
   <button class="more-btn" id="moreBtn" style="display:none" onclick="moreCreds()">
@@ -1177,11 +1172,12 @@ function render(){
   g('kSec').textContent=secCat?secCat.items.length:73;
   const yr=exp.length?Math.max(1,new Date().getFullYear()-parseInt((exp[exp.length-1].startDate||'2018').match(/\d{4}/)?.[0]||2018)):5;
   g('kExp').textContent=yr+'+';
+  g('kBadges').textContent=BADGES.length;
   g('tcCr').textContent=D.creds.length;
   g('tcPj').textContent=proj.length;
   g('tcCTF').textContent=flags.length;
 
-  rDNA(skills); rBadges(); rPreds(); rGap(); rBio(ab,ct);
+  rDNA(skills); rPreds(); rGap(); rBio(ab,ct);
   rCreds(); rExp(exp); rSkills(skills); rProj(proj); rCTF(flags); rCBand(ct);
 }
 
