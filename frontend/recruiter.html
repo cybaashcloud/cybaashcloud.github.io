@@ -877,7 +877,6 @@ input[placeholder*="search"] {
       <div class="kpi"><div class="kpi-num b" id="kCerts">—</div><div class="kpi-lbl">Credentials</div></div>
       <div class="kpi"><div class="kpi-num g" id="kExp">—</div><div class="kpi-lbl">Yrs Experience</div></div>
       <div class="kpi"><div class="kpi-num r" id="kSec">—</div><div class="kpi-lbl">Security Certs</div></div>
-      <div class="kpi"><div class="kpi-num y" id="kBadges">—</div><div class="kpi-lbl">Industry Badges</div></div>
     </div>
   </div>
 </div>
@@ -1172,7 +1171,6 @@ function render(){
   g('kSec').textContent=secCat?secCat.items.length:73;
   const yr=exp.length?Math.max(1,new Date().getFullYear()-parseInt((exp[exp.length-1].startDate||'2018').match(/\d{4}/)?.[0]||2018)):5;
   g('kExp').textContent=yr+'+';
-  g('kBadges').textContent=BADGES.length;
   g('tcCr').textContent=D.creds.length;
   g('tcPj').textContent=proj.length;
   g('tcCTF').textContent=flags.length;
