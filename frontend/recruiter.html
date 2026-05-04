@@ -1378,16 +1378,6 @@ let SUB_CS={}; // per-subsection show count
 function rCreds(){
   const tc={};
   D.creds.forEach(c=>(c.tags||[]).forEach(t=>{tc[t]=(tc[t]||0)+1}));
-  const stats=[
-    {lbl:'TOTAL',    n:D.creds.length,           col:'var(--blue)'},
-    {lbl:'CREDLY',   n:D.creds.filter(c=>c.type==='credly').length, col:'#f7931e'},
-    {lbl:'CERTIFICATES',n:D.creds.filter(c=>c.type==='certificate').length,col:'var(--green)'},
-    {lbl:'SECURITY', n:tc['Security']||0,         col:'var(--red)'},
-    {lbl:'AI / ML',  n:tc['AI/ML']||0,            col:'var(--purple)'},
-    {lbl:'CLOUD',    n:tc['Cloud']||0,             col:'var(--blue)'},
-  ];
-  g('csBar').innerHTML=stats.map(c=>`<div class="cs"><div class="cs-n" style="color:${c.col};text-shadow:0 0 10px ${c.col}">${c.n}</div><div class="cs-l">${c.lbl}</div></div>`).join('');
-
   // Build subsection tabs
   const grouped={};
   D.creds.forEach(c=>{
