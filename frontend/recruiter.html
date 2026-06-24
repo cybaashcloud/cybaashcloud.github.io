@@ -1452,12 +1452,17 @@ function credCard(c){
     : '';
 
   const hasPdf    = c.pdf && (c.pdf.endsWith('.pdf') || c.pdf.startsWith('data:application/pdf'));
+  const pdfIsBase64 = hasPdf && c.pdf.startsWith('data:application/pdf');
+  // Store base64 PDF in a window map so onclick can retrieve it without embedding in HTML
+  const _pdfKey = pdfIsBase64 ? ('_pdf_'+Math.random().toString(36).slice(2)) : '';
+  if(pdfIsBase64){ window._pdfStore = window._pdfStore||{}; window._pdfStore[_pdfKey]=c.pdf; }
   const badgeHref = c.url || '#';           // Credly / cert URL
-  const pdfHref   = hasPdf ? c.pdf : '';   // PDF link if present
+  const pdfHref   = hasPdf && !pdfIsBase64 ? c.pdf : '';   // PDF link if present (not base64)
   // imageHref: when c.pdf is an image URL (jpeg/png/etc), treat it as a viewable cert image
   const imageHref = pdfIsImage ? c.pdf : '';
   // Primary click target on the card itself
-  const cardHref  = badgeHref !== '#' ? badgeHref : pdfHref || imageHref || '#';
+  // For base64 PDFs, card click is handled via onclick on the card div (openPdf), so use '#'
+  const cardHref  = badgeHref !== '#' ? badgeHref : pdfHref || imageHref || (pdfIsBase64 ? '#' : '#');
 
   // Build buttons — always show primary action; add PDF button when both exist
   const svgIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
@@ -1469,10 +1474,14 @@ function credCard(c){
   if(isC){
     // Credly: "View Badge" always; add "PDF" if a PDF also exists
     buttonsHtml += `<a class="cc-btn" href="${x(badgeHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}View Badge</a>`;
-    if(hasPdf) buttonsHtml += `<a class="cc-btn cc-btn-pdf" href="${x(pdfHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}PDF</a>`;
+    if(hasPdf) buttonsHtml += pdfIsBase64
+      ? `<button class="cc-btn cc-btn-pdf" type="button" onclick="event.stopPropagation();openPdf(window._pdfStore['${_pdfKey}'])">${svgIcon}PDF</button>`
+      : `<a class="cc-btn cc-btn-pdf" href="${x(pdfHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}PDF</a>`;
   } else if(hasPdf){
     // Cert with PDF: show "View PDF" always
-    buttonsHtml = `<a class="cc-btn cc-btn-pdf" href="${x(pdfHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}View PDF</a>`;
+    buttonsHtml = pdfIsBase64
+      ? `<button class="cc-btn cc-btn-pdf" type="button" onclick="event.stopPropagation();openPdf(window._pdfStore['${_pdfKey}'])">${svgIcon}View PDF</button>`
+      : `<a class="cc-btn cc-btn-pdf" href="${x(pdfHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}View PDF</a>`;
     // Only add "Cert" button if URL is a real verifiable link (not a placeholder)
     if(hasRealUrl) buttonsHtml += `<a class="cc-btn" href="${x(badgeHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}Cert</a>`;
   } else if(hasRealUrl){
@@ -1495,7 +1504,10 @@ function credCard(c){
     bodyLogoHtml = `<img class="cc-logo${extraClass}" src="${x(logoSrc)}" alt="${x(c.issuer||'')}" loading="lazy" onerror="this.style.display='none'">`;
   }
 
-  return `<div class="proj-card cc-card" onclick="window.open('${x(cardHref)}','_blank')">
+  const cardOnClick = (pdfIsBase64 && badgeHref === '#')
+    ? `openPdf(window._pdfStore['${_pdfKey}'])`
+    : `window.open('${x(cardHref)}','_blank')`;
+  return `<div class="proj-card cc-card" onclick="${cardOnClick}">
     <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
     ${topHtml}
     <div class="cc-body">
@@ -1745,6 +1757,22 @@ function sw(id,el){
 function g(id){return document.getElementById(id)}
 function x(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function empty(msg){return`<div class="empty"><div class="empty-t">${msg}</div></div>`}
+// openPdf: base64 data URIs cannot be used as href in modern browsers.
+// Convert to a Blob URL and open in a new tab.
+function openPdf(dataUri){
+  try{
+    const parts=dataUri.split(",");
+    const mime=parts[0].match(/:(.*?);/)[1];
+    const bytes=atob(parts[1]);
+    const arr=new Uint8Array(bytes.length);
+    for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+    const blob=new Blob([arr],{type:mime});
+    const url=URL.createObjectURL(blob);
+    window.open(url,"_blank");
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+  }catch(e){console.error("openPdf failed",e);}
+  return false;
+}
 
 boot();
 </script>
