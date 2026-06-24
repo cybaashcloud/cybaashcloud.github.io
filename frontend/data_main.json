@@ -1847,7 +1847,7 @@
       "room": "Plant Photographer",
       "difficulty": "Hard",
       "category": "Forensics",
-      "flags_count": 2,
+      "flags_count": 3,
       "date": "2026-04-10",
       "desc": "Dig deeper and try to uncover the flag hidden behind the scenes. Steganography and image forensics challenge.",
       "tags": [
