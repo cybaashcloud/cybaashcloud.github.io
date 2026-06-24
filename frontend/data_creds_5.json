@@ -1,6 +1,27 @@
 {
   "credentials": [
     {
+      "id": "crd_ibm_skillsbuild_cyber",
+      "type": "credly",
+      "title": "IBM SkillsBuild Cybersecurity Certificate",
+      "issuer": "IBM",
+      "date": "2026-06",
+      "url": "https://www.credly.com/badges/e62723ff-ee9f-4e14-b2f8-cf3c2b8ebb0c/public_url",
+      "image": "/cert_logos/ibm_skillsbuild_cybersecurity.png",
+      "logo": "",
+      "tags": [
+        "Cybersecurity",
+        "IBM SkillsBuild",
+        "Security Fundamentals",
+        "Information Security",
+        "Professional Development"
+      ],
+      "featured": true,
+      "credlyBadgeId": "e62723ff-ee9f-4e14-b2f8-cf3c2b8ebb0c",
+      "credlyEarnerUrl": "https://www.credly.com/badges/e62723ff-ee9f-4e14-b2f8-cf3c2b8ebb0c/public_url",
+      "pdf": "/certificates/ibm_skillsbuild_cybersecurity.pdf"
+    },
+    {
       "id": "li0264",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/8b3a2f31a4f074fa86d628c93644e35686fc6e80fd1b2828075e1a9287cf0ef1",
