@@ -1,6 +1,24 @@
 {
   "credentials": [
     {
+      "id": "li0179",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/6bcce90421fce92a5694939be3c073e985c8ea99228d11e457a48412eacb29dd",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "Marketing"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0179.jpg",
+      "title": "Marketing Foundations (2022)",
+      "issuer": "LinkedIn",
+      "courseId": "marketing-foundations-2022",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "6bcce90421fce92a5694939be3c073e985c8ea99228d11e457a48412eacb29dd"
+    },
+    {
       "id": "li0180",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/50307a07755a8e135e0cf384b33bc201a02b0ecf74491cd720dc7e5ef98621e4",
@@ -1537,26 +1555,6 @@
       "courseId": "ubuntu-linux-user-and-group-management",
       "featured": false,
       "learningPathName": ""
-    },
-    {
-      "id": "li0263",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/f1ca7a4d3f14219ad9c824c3d76963e69d70559ac39f26e30e0e150e63567dd5",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "AI for Business",
-        "Search Engine Optimization (SEO",
-        "Artificial Intelligence (AI"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0263.jpg",
-      "title": "Using AI as Your SEO Assistant",
-      "issuer": "LinkedIn",
-      "courseId": "using-ai-as-your-seo-assistant",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "f1ca7a4d3f14219ad9c824c3d76963e69d70559ac39f26e30e0e150e63567dd5"
     }
   ]
 }
