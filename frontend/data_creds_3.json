@@ -1,6 +1,24 @@
 {
   "credentials": [
     {
+      "id": "li0095",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/7aea2a50890a6c60b00b671f56e5470b05b6de15f531173196ace54f7625a06b",
+      "date": "2026-02",
+      "logo": "",
+      "tags": [
+        "Microsoft Excel"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0095.jpg",
+      "title": "Excel Essential Training (Microsoft 365)",
+      "issuer": "LinkedIn",
+      "courseId": "excel-essential-training-microsoft-365",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "7aea2a50890a6c60b00b671f56e5470b05b6de15f531173196ace54f7625a06b"
+    },
+    {
       "id": "li0096",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/b2e393b6bfdc11389f23b34e971cdb2d925b309d97d61e32fe46b0ea1f0782a0",
@@ -1557,24 +1575,6 @@
       "featured": false,
       "learningPathName": "",
       "certNumber": "d87b6f257bbbb3c41000adca7454ce78b6f0b60f4a1041c2d383a64b0640516d"
-    },
-    {
-      "id": "li0179",
-      "pdf": null,
-      "url": "https://www.linkedin.com/learning/certificates/6bcce90421fce92a5694939be3c073e985c8ea99228d11e457a48412eacb29dd",
-      "date": "2026-03",
-      "logo": "",
-      "tags": [
-        "Marketing"
-      ],
-      "type": "linkedin",
-      "image": "/certificates/auto/li0179.jpg",
-      "title": "Marketing Foundations (2022)",
-      "issuer": "LinkedIn",
-      "courseId": "marketing-foundations-2022",
-      "featured": false,
-      "learningPathName": "",
-      "certNumber": "6bcce90421fce92a5694939be3c073e985c8ea99228d11e457a48412eacb29dd"
     }
   ]
 }
