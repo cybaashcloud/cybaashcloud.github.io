@@ -1454,8 +1454,10 @@ function credCard(c){
   const hasPdf    = c.pdf && (c.pdf.endsWith('.pdf') || c.pdf.startsWith('data:application/pdf'));
   const badgeHref = c.url || '#';           // Credly / cert URL
   const pdfHref   = hasPdf ? c.pdf : '';   // PDF link if present
+  // imageHref: when c.pdf is an image URL (jpeg/png/etc), treat it as a viewable cert image
+  const imageHref = pdfIsImage ? c.pdf : '';
   // Primary click target on the card itself
-  const cardHref  = badgeHref !== '#' ? badgeHref : pdfHref || '#';
+  const cardHref  = badgeHref !== '#' ? badgeHref : pdfHref || imageHref || '#';
 
   // Build buttons — always show primary action; add PDF button when both exist
   const svgIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
@@ -1476,6 +1478,11 @@ function credCard(c){
   } else if(hasRealUrl){
     // LinkedIn / cert with URL only (no PDF)
     buttonsHtml = `<a class="cc-btn" href="${x(badgeHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}View Cert</a>`;
+    // If there's also an image cert stored in pdf field, show it as secondary button
+    if(imageHref) buttonsHtml += `<a class="cc-btn cc-btn-pdf" href="${x(imageHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}PDF</a>`;
+  } else if(imageHref){
+    // Only an image cert (jpeg/png stored in pdf field) — show as "View Cert"
+    buttonsHtml = `<a class="cc-btn cc-btn-pdf" href="${x(imageHref)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${svgIcon}View Cert</a>`;
   } else {
     // No PDF, no real URL — show nothing or a disabled state
     buttonsHtml = `<span class="cc-btn" style="opacity:.35;cursor:default">${svgIcon}No Link</span>`;
