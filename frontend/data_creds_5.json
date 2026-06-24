@@ -1,6 +1,26 @@
 {
   "credentials": [
     {
+      "id": "li0263",
+      "pdf": null,
+      "url": "https://www.linkedin.com/learning/certificates/f1ca7a4d3f14219ad9c824c3d76963e69d70559ac39f26e30e0e150e63567dd5",
+      "date": "2026-03",
+      "logo": "",
+      "tags": [
+        "AI for Business",
+        "Search Engine Optimization (SEO",
+        "Artificial Intelligence (AI"
+      ],
+      "type": "linkedin",
+      "image": "/certificates/auto/li0263.jpg",
+      "title": "Using AI as Your SEO Assistant",
+      "issuer": "LinkedIn",
+      "courseId": "using-ai-as-your-seo-assistant",
+      "featured": false,
+      "learningPathName": "",
+      "certNumber": "f1ca7a4d3f14219ad9c824c3d76963e69d70559ac39f26e30e0e150e63567dd5"
+    },
+    {
       "id": "li0264",
       "pdf": null,
       "url": "https://www.linkedin.com/learning/certificates/8b3a2f31a4f074fa86d628c93644e35686fc6e80fd1b2828075e1a9287cf0ef1",
