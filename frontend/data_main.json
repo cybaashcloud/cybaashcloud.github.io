@@ -1831,7 +1831,7 @@
       "category": "Web Exploitation",
       "flags_count": 1,
       "date": "2026-04-01",
-      "desc": "Check out our new cloud service, Authentication Anywhere. Exploit insecure direct object reference (IDOR) to access other users' secrets.",
+      "desc": "Core Concepts Covered\nIDOR (Insecure Direct Object Reference): This is the main learning objective. An IDOR occurs when an application provides direct access to objects based on user-supplied input without performing an adequate authorization check.\n\nAuthentication Bypassing: You will learn how to look for flaws in how a website handles user sessions or profile access.\n\nWeb Enumeration: You will need to inspect how URLs or request parameters change when you view different resources.\n\nHow the Challenge Generally Plays Out\nReconnaissance: As with most CTFs, you start by scanning the target machine to identify the web service.\n\nWeb Exploration: You explore the provided website and create an account or log in to see how the application manages user profiles or data.\n\nIdentifying the Flaw: You will notice that when viewing your own profile or data, the URL or a parameter in the background request likely contains an identifier (like an ID number or username).\n\nExploitation: By manipulating this identifier (e.g., changing an ID from 1001 to 1002), you can often view information belonging to other users, effectively bypassing the intended access controls.\n\nFlag Retrieval: By successfully accessing unauthorized data, you will find the \"flags\" required to complete the room's tasks.",
       "tags": [
         "Web Exploitation",
         "IDOR",
