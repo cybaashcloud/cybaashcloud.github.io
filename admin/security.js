@@ -1,0 +1,1793 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  CYBAASH SOC — security.js
+ *  Standalone Security Operations Center Dashboard Logic
+ *  Completely isolated from main site JavaScript
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ *  FIXES APPLIED (v2.1):
+ *  [F1] AUTO-BLOCK: checkForNewAlerts now automatically blocks critical/APT/
+ *       Honeypot IPs via Cloudflare instead of only alerting.
+ *  [F2] AUTO-BLOCK TOGGLE: SOC_CONFIG.autoBlockEnabled / autoBlockThreshold /
+ *       autoBlockTypes let you control this without touching code.
+ *  [F3] Removed duplicate refreshAll IIFE patch — integrated directly.
+ *  [F4] Removed duplicate switchTab IIFE patch — integrated directly.
+ *  [F5] _prevLogCount declared only once.
+ *  [F6] security-military-additions.js is now a clean standalone file
+ *       with NO duplicate function declarations — military additions are
+ *       fully merged into this single file.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+'use strict';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIGURATION — Edit these before deploying
+// ─────────────────────────────────────────────────────────────────────────────
+// SOC Dashboard config — appsScriptUrl loaded from Cloudflare Worker at runtime
+// Worker: https://cybaash.mohamedaasiq07.workers.dev/config
+// No secrets in this file
+const SOC_CONFIG = {
+  appsScriptUrl: '', // populated at runtime from Worker /config
+
+  // Session timeout in minutes (must match Worker JWT_EXPIRY)
+  sessionTimeout: 480, // 8 hours
+
+  // Auto-refresh interval (seconds)
+  refreshInterval: 30,
+
+  // Maximum rows to display in logs table
+  maxLogRows: 200,
+
+  // ── AUTO-BLOCK SETTINGS [F1][F2] ─────────────────────────────────────────
+  // Set autoBlockEnabled: false to disable automatic IP blocking.
+  // You can also toggle at runtime: SOC_CONFIG.autoBlockEnabled = false
+  autoBlockEnabled: true,
+
+  // Minimum risk score (0-100) to trigger auto-block
+  autoBlockThreshold: 90,
+
+  // Attack types that always trigger auto-block regardless of score
+  autoBlockTypes: ['APT', 'HONEYPOT', 'SQLi'],
+
+  // TOTP 2FA — set to true or localStorage.setItem('soc_totp_enabled','1')
+  totpEnabled: false,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+const STATE = {
+  authenticated: false,
+  sessionExpiry: null,
+  activeTab: 'dashboard',
+  logs: [],
+  alerts: [],
+  blockedIPs: [],
+  threatStats: { total: 0, blocked: 0, sqli: 0, xss: 0, honeypot: 0, rateAbuse: 0 },
+  trafficHistory: Array(20).fill(0),
+  attackHistory: Array(20).fill(0),
+  topAttackers: [],
+  charts: {},
+  refreshTimer: null,
+  terminalLines: [],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// JWT TOKEN — issued by Cloudflare Worker after passphrase verification
+// ─────────────────────────────────────────────────────────────────────────────
+let _jwt = '';
+
+function getStoredJWT() {
+  try {
+    const sess = JSON.parse(sessionStorage.getItem('soc_session') || '{}');
+    if (sess.jwt && sess.exp && Date.now() < sess.exp) {
+      _jwt = sess.jwt;
+      return _jwt;
+    }
+  } catch(_) {}
+  return '';
+}
+
+function storeJWT(token, expiresIn) {
+  _jwt = token;
+  try {
+    sessionStorage.setItem('soc_session', JSON.stringify({
+      jwt: token,
+      exp: Date.now() + expiresIn,
+    }));
+  } catch(_) {}
+}
+
+async function getSessionToken() {
+  return _jwt || getStoredJWT();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────────────────────────────────────
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function el(id) { return document.getElementById(id); }
+function qs(sel) { return document.querySelector(sel); }
+function qsa(sel) { return document.querySelectorAll(sel); }
+function formatDateTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+}
+
+function timeAgo(ts) {
+  const diff = Date.now() - new Date(ts).getTime();
+  if (diff < 60000) return `${Math.floor(diff/1000)}s ago`;
+  if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
+  return `${Math.floor(diff/86400000)}d ago`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function riskClass(score) {
+  if (score >= 80) return 'badge-red';
+  if (score >= 60) return 'badge-orange';
+  if (score >= 40) return 'badge-yellow';
+  return 'badge-green';
+}
+
+function riskLabel(score) {
+  if (score >= 80) return 'CRITICAL';
+  if (score >= 60) return 'HIGH';
+  if (score >= 40) return 'MEDIUM';
+  if (score >= 20) return 'LOW';
+  return 'SAFE';
+}
+
+function riskBarClass(score) {
+  if (score >= 80) return 'risk-100';
+  if (score >= 60) return 'risk-85';
+  if (score >= 40) return 'risk-70';
+  if (score >= 20) return 'risk-40';
+  return 'risk-10';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TOAST NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+function showToast(message, type = 'info', duration = 3500) {
+  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  const container = el('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icons[type] || 'ℹ'}</span><span>${escapeHtml(message)}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TERMINAL LOG
+// ─────────────────────────────────────────────────────────────────────────────
+function termLog(level, msg) {
+  const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+  const line = { time, level, msg };
+  STATE.terminalLines.push(line);
+  if (STATE.terminalLines.length > 150) STATE.terminalLines.shift();
+  renderTerminal();
+}
+
+function renderTerminal() {
+  const term = el('terminal-output');
+  if (!term) return;
+  term.innerHTML = STATE.terminalLines.map(l =>
+    `<div class="t-line"><span class="t-time">[${l.time}]</span><span class="t-level-${l.level}">[${l.level.toUpperCase()}]</span><span class="t-msg">${escapeHtml(l.msg)}</span></div>`
+  ).join('');
+  term.scrollTop = term.scrollHeight;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLOCK
+// ─────────────────────────────────────────────────────────────────────────────
+function startClock() {
+  function tick() {
+    const now = new Date();
+    const clockEl = el('topbar-clock');
+    if (clockEl) {
+      clockEl.textContent = now.toLocaleTimeString('en-US', { hour12: false }) + ' UTC';
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTHENTICATION
+// ─────────────────────────────────────────────────────────────────────────────
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutes
+
+function getLoginState() {
+  try {
+    return JSON.parse(sessionStorage.getItem('soc_login_state') || '{}');
+  } catch(_) { return {}; }
+}
+
+function setLoginState(state) {
+  sessionStorage.setItem('soc_login_state', JSON.stringify(state));
+}
+
+function checkLockout() {
+  const s = getLoginState();
+  if (!s.lockedUntil) return null;
+  const remaining = s.lockedUntil - Date.now();
+  if (remaining > 0) return remaining;
+  setLoginState({});
+  return null;
+}
+
+function recordFailedAttempt() {
+  const s = getLoginState();
+  const attempts = (s.attempts || 0) + 1;
+  if (attempts >= LOGIN_MAX_ATTEMPTS) {
+    setLoginState({ attempts, lockedUntil: Date.now() + LOGIN_LOCKOUT_MS });
+    return { locked: true, remaining: LOGIN_LOCKOUT_MS };
+  }
+  setLoginState({ attempts });
+  return { locked: false, attempts, remaining: LOGIN_MAX_ATTEMPTS - attempts };
+}
+
+function showLockoutTimer(ms) {
+  const errorEl = el('login-error');
+  const btn = el('login-btn') || document.querySelector('.login-btn');
+  if (btn) btn.disabled = true;
+
+  function tick() {
+    const remaining = checkLockout();
+    if (!remaining) {
+      if (errorEl) { errorEl.classList.remove('show'); errorEl.textContent = ''; }
+      if (btn) btn.disabled = false;
+      return;
+    }
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    if (errorEl) {
+      errorEl.textContent = 'Too many attempts. Locked for ' +
+        mins + 'm ' + secs.toString().padStart(2,'0') + 's';
+      errorEl.classList.add('show');
+    }
+    setTimeout(tick, 1000);
+  }
+  tick();
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const passphrase = el('login-password').value.trim();
+  const errorEl    = el('login-error');
+  const btn        = document.querySelector('.login-btn');
+
+  if (!passphrase) {
+    errorEl.textContent = 'Passphrase required.';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  if (btn) { btn.textContent = 'VERIFYING…'; btn.disabled = true; }
+
+  try {
+    const resp = await fetch('https://cybaash.mohamedaasiq07.workers.dev/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passphrase }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    const data = await resp.json();
+
+    if (resp.status === 429) {
+      errorEl.textContent = data.error || 'Too many attempts. Please wait.';
+      errorEl.classList.add('show');
+      if (btn) { btn.textContent = 'CONNECT →'; btn.disabled = true; }
+      return;
+    }
+
+    if (!resp.ok || !data.ok) {
+      throw new Error(data.error || 'Invalid credentials');
+    }
+
+    storeJWT(data.token, data.expiresIn);
+    el('login-password').value = '';
+    grantSession();
+    return;
+
+  } catch (err) {
+    errorEl.textContent = err.message === 'Invalid credentials'
+      ? 'Invalid credentials. Access denied.'
+      : 'Connection error — check your network.';
+    errorEl.classList.add('show');
+    setTimeout(() => errorEl.classList.remove('show'), 4000);
+    if (btn) { btn.textContent = 'CONNECT →'; btn.disabled = false; }
+  }
+
+  el('login-password').value = '';
+}
+
+// Single canonical grantSession — TOTP wrapper reassigns via _originalGrantSession
+function grantSession() {
+  STATE.authenticated = true;
+  STATE.sessionExpiry = Date.now() + SOC_CONFIG.sessionTimeout * 60 * 1000;
+  el('login-screen').style.display = 'none';
+  el('soc-app').classList.add('active');
+  termLog('info', 'Admin session started — JWT active');
+  showToast('Authentication successful', 'success');
+  const badge = el('api-badge');
+  if (badge) { badge.textContent = '● LIVE'; badge.className = 'badge badge-green'; }
+  const cfgStatus = el('cfg-status');
+  if (cfgStatus) { cfgStatus.textContent = 'LIVE'; cfgStatus.className = 'badge badge-green'; }
+  initDashboard();
+}
+
+function checkSession() {
+  try {
+    const sess = JSON.parse(sessionStorage.getItem('soc_session') || '{}');
+    if (sess.expiry && Date.now() < sess.expiry && sess.jwt) {
+      STATE.authenticated = true;
+      STATE.sessionExpiry = sess.expiry;
+      _jwt = sess.jwt;
+      el('login-screen').style.display = 'none';
+      el('soc-app').classList.add('active');
+      const badge = el('api-badge');
+      if (badge) { badge.textContent = '● LIVE'; badge.className = 'badge badge-green'; }
+      const cfgStatus = el('cfg-status');
+      if (cfgStatus) { cfgStatus.textContent = 'LIVE'; cfgStatus.className = 'badge badge-green'; }
+      initDashboard();
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+function logout() {
+  STATE.authenticated = false;
+  sessionStorage.removeItem('soc_session');
+  if (STATE.refreshTimer) clearInterval(STATE.refreshTimer);
+  el('soc-app').classList.remove('active');
+  el('login-screen').style.display = 'flex';
+  el('login-password').value = '';
+  showToast('Session ended', 'info');
+}
+
+// Session timeout monitor
+setInterval(() => {
+  if (STATE.authenticated && STATE.sessionExpiry && Date.now() > STATE.sessionExpiry) {
+    showToast('Session expired — please log in again', 'warning');
+    logout();
+  }
+}, 30000);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APPS SCRIPT API
+// ─────────────────────────────────────────────────────────────────────────────
+async function callAppsScript(action, params = {}) {
+  const WORKER_API = 'https://cybaash.mohamedaasiq07.workers.dev/api';
+
+  try {
+    const jwt = _jwt || getStoredJWT();
+    if (!jwt) throw new Error('No JWT — please log in');
+
+    const response = await fetch(WORKER_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-JWT-Token': jwt,
+      },
+      body: JSON.stringify({ action, ...params }),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (response.status === 401) {
+      termLog('warn', 'Session expired — please log in again');
+      logout();
+      return null;
+    }
+
+    if (!response.ok) throw new Error('Worker HTTP ' + response.status);
+    const data = await response.json();
+
+    const badge = el('api-badge');
+    if (badge && badge.textContent !== '● LIVE') {
+      badge.textContent = '● LIVE'; badge.className = 'badge badge-green';
+    }
+    const cfgStatus = el('cfg-status');
+    if (cfgStatus && cfgStatus.textContent !== 'LIVE') {
+      cfgStatus.textContent = 'LIVE'; cfgStatus.className = 'badge badge-green';
+    }
+    return data;
+
+  } catch (err) {
+    termLog('warn', 'Worker API error [' + action + ']: ' + err.message);
+    const badge = el('api-badge');
+    if (badge) { badge.textContent = '● DEMO'; badge.className = 'badge badge-cyan'; }
+    return getMockData(action, params);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MOCK DATA (Demo mode when Apps Script not configured)
+// ─────────────────────────────────────────────────────────────────────────────
+function getMockData(action, params) {
+  const ips = ['103.21.244.8', '185.220.101.47', '45.142.212.100', '195.54.160.149', '77.88.55.66', '198.199.94.201', '104.21.36.83', '172.67.182.3'];
+  const urls = ['/admin-test', '/?id=1%27OR%271=1', '/wp-admin', '/<script>alert(1)</script>', '/phpmyadmin', '/index.html', '/recruiter.html', '/.env'];
+  const agents = ['sqlmap/1.7.2', 'Mozilla/5.0 (compatible; Googlebot)', 'python-requests/2.28.0', 'curl/7.88.1', 'Nikto/2.1.6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'];
+  const attackTypes = ['SQLi', 'XSS', 'HONEYPOT', 'RATE_ABUSE', 'PATH_TRAVERSAL', 'CLEAN'];
+  const now = Date.now();
+
+  if (action === 'getLogs') {
+    const logs = [];
+    for (let i = 0; i < 50; i++) {
+      const risk = Math.floor(Math.random() * 100);
+      const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+      logs.push({
+        id: `log_${i}`,
+        timestamp: new Date(now - i * 47000 - Math.random() * 30000).toISOString(),
+        ip: ips[Math.floor(Math.random() * ips.length)],
+        url: urls[Math.floor(Math.random() * urls.length)],
+        userAgent: agents[Math.floor(Math.random() * agents.length)],
+        risk,
+        attackType: risk > 40 ? attackType : 'CLEAN',
+        fingerprint: Math.random().toString(16).substr(2, 8),
+        country: ['CN', 'RU', 'US', 'DE', 'NL', 'BR'][Math.floor(Math.random() * 6)],
+        blocked: risk > 75,
+      });
+    }
+    return { logs };
+  }
+
+  if (action === 'getStats') {
+    return {
+      total: 1247 + Math.floor(Math.random() * 50),
+      blocked: 89 + Math.floor(Math.random() * 10),
+      sqli: 34 + Math.floor(Math.random() * 5),
+      xss: 18 + Math.floor(Math.random() * 3),
+      honeypot: 12 + Math.floor(Math.random() * 2),
+      rateAbuse: 25 + Math.floor(Math.random() * 5),
+      trafficHistory: Array.from({ length: 20 }, () => Math.floor(Math.random() * 80) + 10),
+      attackHistory: Array.from({ length: 20 }, () => Math.floor(Math.random() * 20)),
+    };
+  }
+
+  if (action === 'getTopAttackers') {
+    return {
+      attackers: ips.slice(0, 6).map(ip => ({
+        ip,
+        requests: Math.floor(Math.random() * 200) + 20,
+        risk: Math.floor(Math.random() * 60) + 40,
+        attacks: Math.floor(Math.random() * 15),
+        lastSeen: new Date(now - Math.random() * 3600000).toISOString(),
+        blocked: Math.random() > 0.5,
+        country: ['CN', 'RU', 'NL', 'US', 'DE'][Math.floor(Math.random() * 5)],
+      }))
+    };
+  }
+
+  if (action === 'getBlockedIPs') {
+    return {
+      blocked: ips.slice(0, 4).map(ip => ({
+        ip,
+        reason: ['SQLi detected', 'XSS attempt', 'Honeypot triggered', 'Rate abuse'][Math.floor(Math.random() * 4)],
+        blockedAt: new Date(now - Math.random() * 86400000).toISOString(),
+        cloudflare: Math.random() > 0.3,
+      }))
+    };
+  }
+
+  if (action === 'blockIP') {
+    return { success: true, message: `IP ${params.ip} blocked successfully` };
+  }
+
+  if (action === 'unblockIP') {
+    return { success: true, message: `IP ${params.ip} unblocked` };
+  }
+
+  if (action === 'verifyAdmin') {
+    return { ok: false };
+  }
+
+  if (action === 'getAPTAlerts') {
+    return {
+      alerts: [
+        { timestamp: new Date().toISOString(), ip: '185.220.101.47', country: 'RU',
+          attackType: 'APT', risk: 95, ttps: ['T1190','T1595.002','T1046'],
+          summary: 'Coordinated multi-vector attack with APT-like persistence indicators',
+          action: 'EMERGENCY_BLOCK', resolved: false, notes: 'Demo alert' },
+        { timestamp: new Date(Date.now()-3600000).toISOString(), ip: '45.142.212.100', country: 'NL',
+          attackType: 'HONEYPOT', risk: 88, ttps: ['T1595.001'],
+          summary: 'Honeypot triggered — likely automated scanner',
+          action: 'BLOCK', resolved: true, notes: '' }
+      ]
+    };
+  }
+
+  if (action === 'resolveAlert') {
+    return { success: true, message: 'Alert resolved in demo mode.' };
+  }
+
+  if (action === 'getGeoStats') {
+    return { countries: [
+      {country:'RU',count:45},{country:'CN',count:32},{country:'NL',count:28},
+      {country:'US',count:18},{country:'DE',count:12},{country:'BR',count:8}
+    ]};
+  }
+
+  if (action === 'getBehaviorStats') {
+    return { stats: { total: 247, botDetected: 63, humanLikely: 184 }};
+  }
+
+  if (action === 'purgeOldLogs') {
+    return { success: true, deleted: 0, keepDays: params.keepDays || 30 };
+  }
+
+  if (action === 'exportCSV') {
+    return { success: true, csv: 'Timestamp,IP,Country,URL,AttackType,RiskScore\n' +
+      new Date().toISOString() + ',1.2.3.4,US,/test,CLEAN,0', rows: 1 };
+  }
+
+  if (action === 'sendDailyReport') {
+    return { success: true, date: new Date().toISOString().split('T')[0] };
+  }
+
+  if (action === 'generateTOTP') {
+    return { success: true, message: 'Code sent to alert email' };
+  }
+
+  if (action === 'verifyTOTP') {
+    return { ok: false, reason: 'Demo mode — TOTP not active' };
+  }
+
+  return { error: 'Unknown action' };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DASHBOARD INITIALIZATION
+// ─────────────────────────────────────────────────────────────────────────────
+async function initDashboard() {
+  startClock();
+  initCharts();
+  await refreshAll();
+  STATE.refreshTimer = setInterval(() => {
+    if (STATE.authenticated) refreshAll();
+  }, SOC_CONFIG.refreshInterval * 1000);
+  termLog('info', `Dashboard initialized — refresh every ${SOC_CONFIG.refreshInterval}s`);
+}
+
+// [F3] Single canonical refreshAll — no IIFE patch needed
+async function refreshAll() {
+  termLog('info', 'Fetching live data from Worker...');
+  const prevCount = STATE.logs ? STATE.logs.length : 0;
+
+  const [stats, logs, attackers, blocked] = await Promise.all([
+    callAppsScript('getStats'),
+    callAppsScript('getLogs'),
+    callAppsScript('getTopAttackers'),
+    callAppsScript('getBlockedIPs'),
+  ]);
+
+  if (stats) updateStats(stats);
+  if (logs?.logs) updateLogs(logs.logs);
+  if (attackers?.attackers) updateTopAttackers(attackers.attackers);
+  if (blocked?.blocked) updateBlockedIPs(blocked.blocked);
+
+  const lu = el('last-updated');
+  if (lu) lu.textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour12: false });
+  termLog('info', 'Data refresh complete');
+
+  // [F1] Run alert check + auto-block after every refresh
+  if (STATE.logs && STATE.logs.length) {
+    checkForNewAlerts(STATE.logs, prevCount);
+    _prevLogCount = STATE.logs.length;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATS UPDATE
+// ─────────────────────────────────────────────────────────────────────────────
+function updateStats(stats) {
+  animateCount('stat-total',    stats.total    || 0);
+  animateCount('stat-blocked',  stats.blocked  || 0);
+  animateCount('stat-sqli',     stats.sqli     || 0);
+  animateCount('stat-xss',      stats.xss      || 0);
+  animateCount('stat-honeypot', stats.honeypot || 0);
+  animateCount('stat-rate',     stats.rateAbuse || 0);
+
+  STATE.trafficHistory = stats.trafficHistory || STATE.trafficHistory;
+  STATE.attackHistory  = stats.attackHistory  || STATE.attackHistory;
+  STATE.threatStats = stats;
+
+  updateCharts();
+}
+
+function animateCount(id, target) {
+  const el_ = el(id);
+  if (!el_) return;
+  const start = parseInt(el_.textContent) || 0;
+  const diff = target - start;
+  const steps = 20;
+  let step = 0;
+  const timer = setInterval(() => {
+    step++;
+    el_.textContent = Math.round(start + diff * (step / steps));
+    if (step >= steps) { el_.textContent = target; clearInterval(timer); }
+  }, 30);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CHARTS
+// ─────────────────────────────────────────────────────────────────────────────
+function initCharts() {
+  if (typeof Chart === 'undefined') {
+    termLog('warn', 'Chart.js not loaded — charts unavailable');
+    return;
+  }
+
+  const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: {
+      backgroundColor: '#0c1e2e',
+      borderColor: 'rgba(0,200,255,0.3)',
+      borderWidth: 1,
+      titleFont: { family: 'Share Tech Mono', size: 11 },
+      bodyFont: { family: 'Share Tech Mono', size: 11 },
+    }},
+  };
+
+  const trafficCtx = el('chart-traffic')?.getContext('2d');
+  if (trafficCtx) {
+    STATE.charts.traffic = new Chart(trafficCtx, {
+      type: 'line',
+      data: {
+        labels: Array.from({ length: 20 }, (_, i) => `-${20 - i}m`),
+        datasets: [{
+          data: STATE.trafficHistory,
+          borderColor: '#00c8ff',
+          backgroundColor: 'rgba(0,200,255,0.06)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 2,
+          pointBackgroundColor: '#00c8ff',
+        }]
+      },
+      options: { ...chartDefaults, scales: {
+        x: { grid: { color: 'rgba(0,200,255,0.05)' }, ticks: { color: '#3a6a85', font: { family: 'Share Tech Mono', size: 9 } } },
+        y: { grid: { color: 'rgba(0,200,255,0.05)' }, ticks: { color: '#3a6a85', font: { family: 'Share Tech Mono', size: 9 } } }
+      }}
+    });
+  }
+
+  const attackCtx = el('chart-attacks')?.getContext('2d');
+  if (attackCtx) {
+    STATE.charts.attacks = new Chart(attackCtx, {
+      type: 'bar',
+      data: {
+        labels: Array.from({ length: 20 }, (_, i) => `-${20 - i}m`),
+        datasets: [{
+          data: STATE.attackHistory,
+          backgroundColor: 'rgba(255,51,85,0.3)',
+          borderColor: '#ff3355',
+          borderWidth: 1,
+          borderRadius: 2,
+        }]
+      },
+      options: { ...chartDefaults, scales: {
+        x: { grid: { color: 'rgba(255,51,85,0.05)' }, ticks: { color: '#3a6a85', font: { family: 'Share Tech Mono', size: 9 } } },
+        y: { grid: { color: 'rgba(255,51,85,0.05)' }, ticks: { color: '#3a6a85', font: { family: 'Share Tech Mono', size: 9 } } }
+      }}
+    });
+  }
+
+  const typeCtx = el('chart-types')?.getContext('2d');
+  if (typeCtx) {
+    STATE.charts.types = new Chart(typeCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['SQLi', 'XSS', 'Honeypot', 'Rate Abuse', 'Other'],
+        datasets: [{
+          data: [34, 18, 12, 25, 10],
+          backgroundColor: ['rgba(255,51,85,0.7)', 'rgba(255,140,0,0.7)', 'rgba(255,215,0,0.7)', 'rgba(0,200,255,0.7)', 'rgba(122,179,204,0.5)'],
+          borderColor: ['#ff3355', '#ff8c00', '#ffd700', '#00c8ff', '#7ab3cc'],
+          borderWidth: 1,
+        }]
+      },
+      options: {
+        ...chartDefaults,
+        plugins: {
+          ...chartDefaults.plugins,
+          legend: { display: true, position: 'bottom', labels: { color: '#7ab3cc', font: { family: 'Share Tech Mono', size: 10 }, padding: 12, boxWidth: 12 } }
+        },
+        cutout: '60%',
+      }
+    });
+  }
+}
+
+function updateCharts() {
+  if (STATE.charts.traffic) {
+    STATE.charts.traffic.data.datasets[0].data = STATE.trafficHistory;
+    STATE.charts.traffic.update('none');
+  }
+  if (STATE.charts.attacks) {
+    STATE.charts.attacks.data.datasets[0].data = STATE.attackHistory;
+    STATE.charts.attacks.update('none');
+  }
+  if (STATE.charts.types && STATE.threatStats) {
+    const s = STATE.threatStats;
+    const other = Math.max(0, (s.total || 0) - (s.sqli||0) - (s.xss||0) - (s.honeypot||0) - (s.rateAbuse||0));
+    STATE.charts.types.data.datasets[0].data = [s.sqli||34, s.xss||18, s.honeypot||12, s.rateAbuse||25, other||10];
+    STATE.charts.types.update('none');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGS TABLE
+// ─────────────────────────────────────────────────────────────────────────────
+function updateLogs(logs) {
+  STATE.logs = logs.slice(0, SOC_CONFIG.maxLogRows);
+  renderLogsTable();
+  generateAlerts(logs);
+}
+
+function renderLogsTable(filter = '') {
+  const tbody = el('logs-tbody');
+  if (!tbody) return;
+
+  let rows = STATE.logs;
+  if (filter) {
+    const q = filter.toLowerCase();
+    rows = rows.filter(r =>
+      (r.ip || '').includes(q) ||
+      (r.url || '').toLowerCase().includes(q) ||
+      (r.attackType || '').toLowerCase().includes(q) ||
+      (r.country || '').toLowerCase().includes(q)
+    );
+  }
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span class="es-icon">📋</span>No logs found</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const risk = r.risk || 0;
+    return `
+      <tr>
+        <td class="td-time">${formatDateTime(r.timestamp)}</td>
+        <td class="td-ip">${escapeHtml(r.ip || '—')}</td>
+        <td><span class="badge badge-gray">${escapeHtml(r.country || '??')}</span></td>
+        <td class="td-url" title="${escapeHtml(r.url)}">${escapeHtml(r.url || '/')}</td>
+        <td><span class="badge ${r.attackType !== 'CLEAN' ? 'badge-red' : 'badge-green'}">${escapeHtml(r.attackType || 'CLEAN')}</span></td>
+        <td>
+          <div class="risk-bar-wrap">
+            <div class="risk-bar-bg"><div class="risk-bar-fill ${riskBarClass(risk)}"></div></div>
+            <span class="risk-val" style="color:${risk>=80?'var(--red)':risk>=60?'var(--orange)':risk>=40?'var(--yellow)':'var(--green)'}">${risk}</span>
+          </div>
+        </td>
+        <td>
+          ${r.blocked
+            ? `<span class="badge badge-red">BLOCKED</span>`
+            : `<button class="btn btn-red btn-sm" onclick="blockIPQuick('${escapeHtml(r.ip)}')">Block</button>`
+          }
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ALERTS
+// ─────────────────────────────────────────────────────────────────────────────
+function generateAlerts(logs) {
+  const alertMap = {
+    'SQLi': { icon: '💉', level: 'critical', label: 'SQL Injection Detected' },
+    'XSS': { icon: '⚡', level: 'high', label: 'XSS Attack Detected' },
+    'HONEYPOT': { icon: '🍯', level: 'critical', label: 'Honeypot Triggered' },
+    'RATE_ABUSE': { icon: '🔄', level: 'medium', label: 'Rate Limit Abuse' },
+    'PATH_TRAVERSAL': { icon: '🗂️', level: 'high', label: 'Path Traversal Attempt' },
+  };
+
+  const newAlerts = [];
+  const seen = new Set();
+
+  for (const log of logs) {
+    if (log.attackType && log.attackType !== 'CLEAN') {
+      const key = `${log.ip}:${log.attackType}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        const meta = alertMap[log.attackType] || { icon: '⚠️', level: 'medium', label: log.attackType };
+        newAlerts.push({
+          ...meta,
+          ip: log.ip,
+          timestamp: log.timestamp,
+          url: log.url,
+          risk: log.risk,
+        });
+      }
+    }
+  }
+
+  STATE.alerts = newAlerts.slice(0, 30);
+  renderAlerts();
+  el('alert-count').textContent = STATE.alerts.filter(a => a.level === 'critical' || a.level === 'high').length;
+}
+
+function renderAlerts() {
+  const feed = el('alert-feed');
+  if (!feed) return;
+
+  if (!STATE.alerts.length) {
+    feed.innerHTML = '<div class="empty-state"><span class="es-icon">✅</span>No active alerts</div>';
+    return;
+  }
+
+  feed.innerHTML = STATE.alerts.map(a => `
+    <div class="alert-item ${a.level}">
+      <span class="alert-icon">${a.icon}</span>
+      <div class="alert-body">
+        <div class="alert-title">${escapeHtml(a.label)} — <strong>${escapeHtml(a.ip)}</strong></div>
+        <div class="alert-meta">${escapeHtml(a.url)} · Risk ${a.risk} · ${timeAgo(a.timestamp)}</div>
+      </div>
+      <span class="badge ${riskClass(a.risk)}">${riskLabel(a.risk)}</span>
+    </div>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TOP ATTACKERS
+// ─────────────────────────────────────────────────────────────────────────────
+function updateTopAttackers(attackers) {
+  STATE.topAttackers = attackers;
+  const tbody = el('attackers-tbody');
+  if (!tbody) return;
+
+  if (!attackers.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span class="es-icon">🛡️</span>No threat actors identified</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = attackers.map(a => `
+    <tr>
+      <td class="td-ip">${escapeHtml(a.ip)}</td>
+      <td><span class="badge badge-gray">${escapeHtml(a.country || '??')}</span></td>
+      <td style="color:var(--text-primary)">${a.requests}</td>
+      <td style="color:var(--red)">${a.attacks}</td>
+      <td>
+        <div class="risk-bar-wrap">
+          <div class="risk-bar-bg"><div class="risk-bar-fill ${riskBarClass(a.risk)}"></div></div>
+          <span class="risk-val" style="color:${a.risk>=80?'var(--red)':a.risk>=60?'var(--orange)':'var(--yellow)'}">${a.risk}</span>
+        </div>
+      </td>
+      <td class="td-time">${timeAgo(a.lastSeen)}</td>
+      <td>
+        ${a.blocked
+          ? `<button class="btn btn-green btn-sm" onclick="unblockIP('${escapeHtml(a.ip)}')">Unblock</button>`
+          : `<button class="btn btn-red btn-sm" onclick="blockIPQuick('${escapeHtml(a.ip)}')">Block</button>`
+        }
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BLOCKED IPs
+// ─────────────────────────────────────────────────────────────────────────────
+function updateBlockedIPs(blocked) {
+  STATE.blockedIPs = blocked;
+  const tbody = el('blocked-tbody');
+  if (!tbody) return;
+
+  if (!blocked.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span class="es-icon">✅</span>No IPs currently blocked</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = blocked.map(b => `
+    <tr>
+      <td class="td-ip">${escapeHtml(b.ip)}</td>
+      <td style="color:var(--text-secondary)">${escapeHtml(b.reason)}</td>
+      <td class="td-time">${formatDateTime(b.blockedAt)}</td>
+      <td>${b.cloudflare ? `<span class="badge badge-orange">☁ Cloudflare</span>` : `<span class="badge badge-gray">Local</span>`}</td>
+      <td><button class="btn btn-green btn-sm" onclick="unblockIP('${escapeHtml(b.ip)}')">Unblock</button></td>
+    </tr>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IP BLOCK / UNBLOCK ACTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+async function blockIPQuick(ip) {
+  if (!ip) return;
+  if (!confirm(`Block IP ${ip}? This will add a Cloudflare firewall rule.`)) return;
+  await blockIPAction(ip, 'Manual block from SOC dashboard');
+}
+
+async function blockIPAction(ip, reason = 'Manual block') {
+  termLog('info', `Blocking IP: ${ip} — ${reason}`);
+  showToast(`Blocking ${ip}...`, 'warning', 2000);
+
+  const result = await callAppsScript('blockIP', { ip, reason });
+  if (result?.success) {
+    termLog('block', `IP BLOCKED: ${ip} via Cloudflare`);
+    showToast(`${ip} blocked successfully`, 'success');
+    await refreshAll();
+  } else {
+    termLog('error', `Block failed for ${ip}: ${result?.error || 'unknown'}`);
+    showToast(`Failed to block ${ip}`, 'error');
+  }
+}
+
+async function unblockIP(ip) {
+  if (!ip) return;
+  if (!confirm(`Unblock IP ${ip}?`)) return;
+
+  termLog('info', `Unblocking IP: ${ip}`);
+  const result = await callAppsScript('unblockIP', { ip });
+  if (result?.success) {
+    termLog('info', `IP UNBLOCKED: ${ip}`);
+    showToast(`${ip} unblocked`, 'success');
+    await refreshAll();
+  } else {
+    showToast(`Failed to unblock ${ip}`, 'error');
+  }
+}
+
+async function blockManualIP() {
+  const ip = el('manual-ip-input').value.trim();
+  const reason = el('manual-reason-input')?.value.trim() || 'Manual block';
+  if (!ip) { showToast('Enter a valid IP address', 'error'); return; }
+  if (!/^(\d{1,3}\.){3}\d{1,3}(\/\d+)?$/.test(ip)) {
+    showToast('Invalid IP format', 'error'); return;
+  }
+  await blockIPAction(ip, reason);
+  el('manual-ip-input').value = '';
+}
+
+async function unblockManualIP() {
+  const ip = el('manual-ip-input').value.trim();
+  if (!ip) { showToast('Enter a valid IP address', 'error'); return; }
+  await unblockIP(ip);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB NAVIGATION
+// [F4] Single canonical switchTab — no IIFE patch needed
+// ─────────────────────────────────────────────────────────────────────────────
+function switchTab(tabId) {
+  qsa('.nav-tab').forEach(t => t.classList.remove('active'));
+  qsa('.tab-panel').forEach(p => p.classList.remove('active'));
+  const tab = document.querySelector(`.nav-tab[data-tab="${tabId}"]`);
+  const panel = el(`panel-${tabId}`);
+  if (tab) tab.classList.add('active');
+  if (panel) panel.classList.add('active');
+  STATE.activeTab = tabId;
+  if (tabId === 'apt') loadAPTAlerts();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOG FILTER
+// ─────────────────────────────────────────────────────────────────────────────
+function filterLogs() {
+  const q = el('log-search')?.value || '';
+  renderLogsTable(q);
+}
+
+function exportLogs() {
+  const rows = STATE.logs;
+  if (!rows.length) { showToast('No logs to export', 'warning'); return; }
+  const csv = [
+    'Timestamp,IP,Country,URL,Attack Type,Risk Score,Blocked',
+    ...rows.map(r => `"${r.timestamp}","${r.ip}","${r.country}","${r.url}","${r.attackType}",${r.risk},${r.blocked}`)
+  ].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `soc-logs-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  showToast('Logs exported as CSV', 'success');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SETTINGS
+// ─────────────────────────────────────────────────────────────────────────────
+async function saveSettings() {
+  const WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
+  SOC_CONFIG.appsScriptUrl = WORKER;
+  termLog('info', 'Worker URL confirmed: ' + WORKER);
+  showToast('Settings saved', 'success');
+}
+
+function loadSettings() {
+  const WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
+  SOC_CONFIG.appsScriptUrl = WORKER;
+  const urlField = el('cfg-apps-script-url');
+  if (urlField) urlField.value = WORKER;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMERGENCY RESET
+// ─────────────────────────────────────────────────────────────────────────────
+window.SOCreset = function() {
+  localStorage.removeItem('soc_pw_hash');
+  localStorage.removeItem('soc_apps_script_url');
+  sessionStorage.removeItem('soc_session');
+  console.log('[SOC] Reset complete. Refresh the page and log in.');
+  location.reload();
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOMContentLoaded — single consolidated handler
+// ─────────────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+
+  el('login-form')?.addEventListener('submit', handleLogin);
+
+  qsa('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+  });
+
+  el('log-search')?.addEventListener('input', filterLogs);
+  el('logout-btn')?.addEventListener('click', logout);
+  el('refresh-btn')?.addEventListener('click', () => { refreshAll(); showToast('Refreshing...', 'info', 1500); });
+
+  if (!checkSession()) {
+    el('login-screen').style.display = 'flex';
+  }
+
+  el('toggle-pw')?.addEventListener('click', () => {
+    const inp = el('login-password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
+
+  const inp = el('terminal-input');
+  if (inp) {
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') runTerminalCommand();
+    });
+  }
+
+  const aptTab = document.querySelector('.nav-tab[data-tab="apt"]');
+  if (aptTab) {
+    aptTab.addEventListener('click', () => loadAPTAlerts());
+  }
+
+  const intelLink = el('intel-panel-link');
+  if (intelLink) {
+    intelLink.addEventListener('click', () => window.open('/admin/intel.html', '_blank'));
+  }
+
+  document.addEventListener('click', requestNotificationPermission, { once: true });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MILITARY ADDITIONS v2.1 — fully merged, no duplicates
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APT ALERTS TAB
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadAPTAlerts() {
+  const container = el('apt-alerts-list');
+  if (!container) return;
+
+  container.innerHTML = '<div class="empty-state"><span class="es-icon" style="animation:spin 1s linear infinite">⚙</span>Loading APT alerts...</div>';
+
+  try {
+    const data = await callAppsScript('getAPTAlerts');
+    const alerts = data.alerts || [];
+
+    const badge = el('apt-badge');
+    const activeCount = alerts.filter(a => !a.resolved).length;
+    if (badge) {
+      badge.textContent = activeCount;
+      badge.style.display = alerts.length ? 'inline' : 'none';
+    }
+
+    if (!alerts.length) {
+      container.innerHTML = '<div class="empty-state"><span class="es-icon">✅</span>No APT alerts detected. System clear.</div>';
+      return;
+    }
+
+    async function enrichIP(ip) {
+      const intel = { isTor: false, abuseScore: null, org: null, country: null };
+      try {
+        const r = await fetch(`https://api.ipapi.is/?q=${encodeURIComponent(ip)}`, {
+          signal: AbortSignal.timeout(4000)
+        });
+        if (r.ok) {
+          const d = await r.json();
+          intel.isTor    = d.is_tor === true;
+          intel.isVPN    = d.is_vpn === true;
+          intel.isProxy  = d.is_proxy === true;
+          intel.isBot    = d.is_bot === true;
+          intel.org      = d.company?.name || d.asn?.org || null;
+          intel.country  = d.location?.country || null;
+          intel.asn      = d.asn?.asn ? 'AS' + d.asn.asn : null;
+        }
+      } catch (_) {}
+      return intel;
+    }
+
+    const MITRE_DB = {
+      'T1190':    { name: 'Exploit Public-Facing Application', tactic: 'Initial Access',    color: '#ff2244' },
+      'T1595':    { name: 'Active Scanning',                   tactic: 'Reconnaissance',    color: '#ff6600' },
+      'T1595.001':{ name: 'Scanning IP Blocks',                tactic: 'Reconnaissance',    color: '#ff6600' },
+      'T1595.002':{ name: 'Vulnerability Scanning',            tactic: 'Reconnaissance',    color: '#ff6600' },
+      'T1046':    { name: 'Network Service Discovery',         tactic: 'Discovery',          color: '#ffd700' },
+      'T1059':    { name: 'Command & Scripting Interpreter',   tactic: 'Execution',          color: '#ff2244' },
+      'T1110':    { name: 'Brute Force',                       tactic: 'Credential Access',  color: '#ff6600' },
+      'T1133':    { name: 'External Remote Services',          tactic: 'Persistence',        color: '#ff6600' },
+      'T1505':    { name: 'Server Software Component',         tactic: 'Persistence',        color: '#ff2244' },
+      'T1505.001':{ name: 'SQL Stored Procedures',             tactic: 'Persistence',        color: '#ff2244' },
+      'T1071':    { name: 'Application Layer Protocol',        tactic: 'C2',                 color: '#aa44ff' },
+      'T1041':    { name: 'Exfiltration Over C2 Channel',      tactic: 'Exfiltration',       color: '#aa44ff' },
+    };
+
+    container.innerHTML = '';
+
+    for (const a of alerts) {
+      const risk     = a.risk || 0;
+      const ttps     = Array.isArray(a.ttps) ? a.ttps : (a.ttps ? String(a.ttps).split(',') : []);
+      const action   = a.action || 'BLOCK';
+      const resolved = a.resolved;
+
+      const actionColor = action === 'EMERGENCY_BLOCK' ? 'var(--red)' :
+                          action === 'BLOCK'            ? 'var(--orange)' :
+                          action === 'CHALLENGE'        ? 'var(--yellow)' : 'var(--green)';
+
+      const intel = await enrichIP(a.ip);
+
+      const card = document.createElement('div');
+      card.className = 'apt-alert-card';
+      card.style.cssText = [
+        'background:var(--bg-panel,#070f18)',
+        `border:1px solid ${risk >= 90 ? 'var(--red)' : risk >= 75 ? 'var(--orange)' : 'var(--border)'}`,
+        `box-shadow:${risk >= 90 ? '0 0 20px rgba(255,34,68,.18)' : 'none'}`,
+        'border-radius:4px','padding:18px','margin-bottom:14px','position:relative',
+        `opacity:${resolved ? '0.65' : '1'}`,
+      ].join(';');
+
+      if (risk >= 90 && !resolved) {
+        const pulse = document.createElement('div');
+        pulse.style.cssText = 'position:absolute;top:10px;right:10px;width:9px;height:9px;background:var(--red);border-radius:50%;box-shadow:0 0 10px var(--red);animation:pulse 1.2s ease-in-out infinite';
+        card.appendChild(pulse);
+      }
+
+      const row1 = document.createElement('div');
+      row1.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px';
+
+      const ipEl = document.createElement('span');
+      ipEl.style.cssText = 'font-family:var(--font-display,monospace);font-size:17px;color:var(--red);font-weight:900;letter-spacing:1px';
+      ipEl.textContent = a.ip || 'unknown';
+      row1.appendChild(ipEl);
+
+      const mkBadge = (text, extra) => {
+        const b = document.createElement('span');
+        b.className = 'badge badge-gray';
+        if (extra) b.style.cssText = extra;
+        b.textContent = text;
+        return b;
+      };
+
+      row1.appendChild(mkBadge(a.country || '??'));
+
+      const riskBadge = document.createElement('span');
+      riskBadge.className = `badge ${riskClass(risk)}`;
+      riskBadge.textContent = `${risk}/100`;
+      row1.appendChild(riskBadge);
+
+      const actionBadge = document.createElement('span');
+      actionBadge.style.cssText = `color:${actionColor};font-size:10px;letter-spacing:2px;font-weight:bold;font-family:monospace`;
+      actionBadge.textContent = action;
+      row1.appendChild(actionBadge);
+
+      if (resolved) {
+        const resBadge = document.createElement('span');
+        resBadge.style.cssText = 'color:var(--green);font-size:10px;letter-spacing:1px';
+        resBadge.textContent = '✅ RESOLVED';
+        row1.appendChild(resBadge);
+      }
+      card.appendChild(row1);
+
+      const intelRow = document.createElement('div');
+      intelRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;min-height:18px';
+      const mkTag = (label, col) => {
+        const t = document.createElement('span');
+        t.style.cssText = `background:${col}22;border:1px solid ${col}66;color:${col};padding:2px 7px;border-radius:2px;font-size:9px;font-family:monospace;letter-spacing:1px`;
+        t.textContent = label;
+        return t;
+      };
+      if (intel.isTor)   intelRow.appendChild(mkTag('🧅 TOR EXIT NODE', '#aa44ff'));
+      if (intel.isVPN)   intelRow.appendChild(mkTag('🔒 VPN',           '#ff6600'));
+      if (intel.isProxy) intelRow.appendChild(mkTag('🔀 PROXY',         '#ff6600'));
+      if (intel.isBot)   intelRow.appendChild(mkTag('🤖 BOT',           '#ff2244'));
+      if (intel.org) {
+        const t = document.createElement('span');
+        t.style.cssText = 'color:var(--text-muted,#5a7a9a);font-size:9px;font-family:monospace;align-self:center';
+        t.textContent = intel.org + (intel.asn ? ' · ' + intel.asn : '');
+        intelRow.appendChild(t);
+      }
+      card.appendChild(intelRow);
+
+      const typeRow = document.createElement('div');
+      typeRow.style.marginBottom = '10px';
+      const typeLbl = document.createElement('span');
+      typeLbl.style.cssText = 'color:var(--text-muted,#5a7a9a);font-size:10px';
+      typeLbl.textContent = 'ATTACK TYPE: ';
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'badge badge-red';
+      typeBadge.textContent = a.attackType || 'APT';
+      typeRow.append(typeLbl, typeBadge);
+      card.appendChild(typeRow);
+
+      if (ttps.length) {
+        const ttpSection = document.createElement('div');
+        ttpSection.style.marginBottom = '10px';
+        const ttpLbl = document.createElement('div');
+        ttpLbl.style.cssText = 'color:var(--text-muted,#5a7a9a);font-size:9px;letter-spacing:2px;margin-bottom:8px';
+        ttpLbl.textContent = 'MITRE ATT&CK TTPs:';
+        ttpSection.appendChild(ttpLbl);
+
+        const ttpGrid = document.createElement('div');
+        ttpGrid.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+
+        ttps.map(t => t.trim()).filter(Boolean).forEach(ttpId => {
+          const info = MITRE_DB[ttpId];
+          const color = info?.color || '#5a7a9a';
+
+          const chip = document.createElement('a');
+          chip.href   = `https://attack.mitre.org/techniques/${ttpId.replace('.','/')}`;
+          chip.target = '_blank';
+          chip.rel    = 'noopener noreferrer';
+          chip.style.cssText = [
+            `background:${color}18`,`border:1px solid ${color}55`,`color:${color}`,
+            'padding:4px 10px','border-radius:3px','font-size:9px','font-family:monospace',
+            'text-decoration:none','display:flex','flex-direction:column','gap:2px',
+            'cursor:pointer','transition:background .15s',
+          ].join(';');
+          chip.onmouseover = () => { chip.style.background = color + '30'; };
+          chip.onmouseout  = () => { chip.style.background = color + '18'; };
+
+          const ttpIdEl = document.createElement('span');
+          ttpIdEl.style.fontWeight = 'bold';
+          ttpIdEl.textContent = ttpId;
+          chip.appendChild(ttpIdEl);
+
+          if (info) {
+            const nameEl = document.createElement('span');
+            nameEl.style.cssText = 'font-size:8px;opacity:.8;white-space:nowrap';
+            nameEl.textContent = info.name;
+            chip.appendChild(nameEl);
+
+            const tacticEl = document.createElement('span');
+            tacticEl.style.cssText = 'font-size:7px;opacity:.6;text-transform:uppercase;letter-spacing:1px';
+            tacticEl.textContent = info.tactic;
+            chip.appendChild(tacticEl);
+          }
+          ttpGrid.appendChild(chip);
+        });
+        ttpSection.appendChild(ttpGrid);
+        card.appendChild(ttpSection);
+      }
+
+      if (a.summary) {
+        const summaryEl = document.createElement('div');
+        summaryEl.style.cssText = 'color:var(--text-secondary,#8ab0c8);font-size:11px;border-left:2px solid var(--red);padding-left:10px;margin-bottom:12px;line-height:1.5';
+        summaryEl.textContent = a.summary;
+        card.appendChild(summaryEl);
+      }
+
+      const metaEl = document.createElement('div');
+      metaEl.style.cssText = 'color:var(--text-muted,#5a7a9a);font-size:10px;margin-bottom:14px';
+      metaEl.textContent = (a.timestamp ? new Date(a.timestamp).toLocaleString('en-US',{hour12:false}) : '—') +
+                           (a.notes ? ' · ' + a.notes : '');
+      card.appendChild(metaEl);
+
+      if (!resolved) {
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+
+        const mkBtn = (label, cls, handler) => {
+          const b = document.createElement('button');
+          b.className = `btn ${cls} btn-sm`;
+          b.textContent = label;
+          b.onclick = handler;
+          return b;
+        };
+
+        btnRow.appendChild(mkBtn('🛡 Block IP', 'btn-red', async () => {
+          if (!confirm(`Emergency-block ${a.ip}? This adds a Cloudflare firewall rule.`)) return;
+          await blockIPAction(a.ip, `APT Emergency Block — ${a.attackType} — Risk ${risk}`);
+          card.style.opacity = '0.5';
+          showToast(`${a.ip} blocked and flagged.`, 'success');
+        }));
+
+        btnRow.appendChild(mkBtn('🔍 Investigate', 'btn-blue', () => {
+          window.open(`https://www.virustotal.com/gui/ip-address/${encodeURIComponent(a.ip)}`, '_blank', 'noopener');
+        }));
+
+        btnRow.appendChild(mkBtn('🌐 WHOIS', 'btn-gray', () => {
+          window.open(`https://www.shodan.io/host/${encodeURIComponent(a.ip)}`, '_blank', 'noopener');
+        }));
+
+        btnRow.appendChild(mkBtn('✅ Mark Resolved', 'btn-green', async () => {
+          await callAppsScript('resolveAlert', { ip: a.ip, timestamp: a.timestamp });
+          card.style.opacity = '0.5';
+          btnRow.remove();
+          const badge2 = document.createElement('span');
+          badge2.style.cssText = 'color:var(--green);font-size:10px;margin-top:4px;display:block';
+          badge2.textContent = '✅ Marked as resolved';
+          card.appendChild(badge2);
+          showToast(`Alert for ${a.ip} resolved.`, 'success');
+          if (badge) {
+            const newCount = Math.max(0, parseInt(badge.textContent || '0') - 1);
+            badge.textContent = newCount;
+            if (!newCount) badge.style.display = 'none';
+          }
+        }));
+
+        card.appendChild(btnRow);
+      }
+
+      container.appendChild(card);
+    }
+
+    termLog('info', `APT Alerts loaded: ${alerts.length} entries (${activeCount} active)`);
+
+  } catch (e) {
+    container.innerHTML = '';
+    const errEl = document.createElement('div');
+    errEl.className = 'empty-state';
+    errEl.innerHTML = '<span class="es-icon">⚠️</span>';
+    errEl.appendChild(document.createTextNode('Error loading APT alerts: ' + e.message));
+    container.appendChild(errEl);
+    termLog('error', 'APT alerts load failed: ' + e.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN TERMINAL
+// ─────────────────────────────────────────────────────────────────────────────
+function handleTerminalCommand(input) {
+  const parts  = input.trim().split(/\s+/);
+  const cmd    = (parts[0] || '').toLowerCase();
+  const args   = parts.slice(1);
+  const WORKER = 'https://cybaash.mohamedaasiq07.workers.dev';
+
+  switch (cmd) {
+
+    case 'apt-alerts':
+      termPrint('> Loading APT alerts...');
+      callAppsScript('getAPTAlerts').then(data => {
+        const alerts = (data.alerts || []);
+        if (!alerts.length) { termPrint('  ✅ No APT alerts in database.'); return; }
+        termPrint(`  Found ${alerts.length} APT alert(s):`);
+        alerts.slice(0, 10).forEach(a => {
+          termPrint(`  [${a.risk||0}] ${a.ip || '?'} — ${a.attackType||'?'} — ${a.action||'?'}`);
+          if (a.ttps && a.ttps.length) termPrint(`       TTPs: ${Array.isArray(a.ttps) ? a.ttps.join(', ') : a.ttps}`);
+        });
+      }).catch(e => termPrint('  ❌ Error: ' + e.message));
+      return;
+
+    case 'geoblock':
+      if (!args[0]) { termPrint('  Usage: geoblock <add|remove|list> <COUNTRY_CODE>'); return; }
+      if (args[0] === 'list') {
+        termPrint('  To view blocked countries: check BLOCKED_COUNTRIES in Cloudflare Worker secrets.');
+        termPrint('  Current policy is enforced at the Worker layer (env.BLOCKED_COUNTRIES).');
+        return;
+      }
+      termPrint(`  ⚠ Geo-blocking managed via Cloudflare Worker secrets.`);
+      termPrint(`  Go to: Cloudflare Dashboard → Workers → cybaash → Settings → Variables`);
+      termPrint(`  Set BLOCKED_COUNTRIES = comma-separated ISO codes (e.g. KP,IR,CN)`);
+      return;
+
+    case 'intel': {
+      if (args[0] === 'add' && args[1]) {
+        const ip = args[1];
+        termPrint(`> Adding ${ip} to threat intel...`);
+        // [F8] Use JWT header for authenticated intel calls
+        getSessionToken().then(tok => fetch(WORKER + '/intel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-JWT-Token': tok },
+          body: JSON.stringify({ ip, action: 'add', reason: 'Manual — terminal', score: 80 })
+        })).then(r => r.json()).then(d => {
+          termPrint(d.success ? `  ✅ ${ip} added to threat intel DB` : `  ❌ Failed: ${d.error||'unknown'}`);
+        }).catch(e => termPrint('  ❌ ' + e.message));
+      } else if (args[0] === 'remove' && args[1]) {
+        const ip = args[1];
+        termPrint(`> Removing ${ip} from threat intel...`);
+        getSessionToken().then(tok => fetch(WORKER + '/intel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-JWT-Token': tok },
+          body: JSON.stringify({ ip, action: 'remove' })
+        })).then(r => r.json()).then(d => {
+          termPrint(d.success ? `  ✅ ${ip} removed` : `  ❌ Failed: ${d.error||'unknown'}`);
+        }).catch(e => termPrint('  ❌ ' + e.message));
+      } else if (args[0] === 'list') {
+        termPrint('> Fetching threat intel list...');
+        fetch(WORKER + '/threats').then(r => r.json()).then(d => {
+          const t = d.threats || [];
+          if (!t.length) { termPrint('  ✅ No entries in threat intel.'); return; }
+          t.forEach(e => termPrint(`  ${e.ip} — score:${e.score||'?'} — ${e.reason||'no reason'}`));
+        }).catch(e => termPrint('  ❌ ' + e.message));
+      } else {
+        termPrint('  Usage: intel add <ip> | intel remove <ip> | intel list');
+      }
+      return;
+    }
+
+    // [F4] Wrapped case blocks in braces to fix const-in-switch lexical binding error
+    case 'purge': {
+      const days = parseInt(args[0]) || 30;
+      if (!confirm(`Delete SOC logs older than ${days} days?`)) { termPrint('  Aborted.'); return; }
+      termPrint(`> Purging logs older than ${days} days...`);
+      callAppsScript('purgeOldLogs', { keepDays: days }).then(d => {
+        termPrint(d.success ? `  ✅ Deleted ${d.deleted} rows (kept last ${days} days)` : `  ❌ ${d.error}`);
+      }).catch(e => termPrint('  ❌ ' + e.message));
+      return;
+    }
+
+    case 'export': {
+      const limit = parseInt(args[1]) || 1000;
+      termPrint(`> Exporting ${limit} logs as CSV...`);
+      callAppsScript('exportCSV', { limit }).then(d => {
+        if (!d.success || !d.csv) { termPrint('  ❌ Export failed: ' + (d.error||'no data')); return; }
+        const blob = new Blob([d.csv], { type: 'text/csv' });
+        const a    = document.createElement('a');
+        a.href     = URL.createObjectURL(blob);
+        a.download = `soc-logs-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        termPrint(`  ✅ Exported ${d.rows} rows`);
+      }).catch(e => termPrint('  ❌ ' + e.message));
+      return;
+    }
+
+    case 'report':
+      termPrint('> Sending daily intel briefing...');
+      callAppsScript('sendDailyReport').then(d => {
+        termPrint(d.success ? '  ✅ Daily report sent to alert email' : '  ❌ ' + (d.error||'unknown'));
+      }).catch(e => termPrint('  ❌ ' + e.message));
+      return;
+
+    case 'scan':
+      if (!args[0]) { termPrint('  Usage: scan <url>'); return; }
+      quickPassiveScan(args[0]);
+      return;
+
+    case 'geo':
+      termPrint('> Fetching geo stats...');
+      callAppsScript('getGeoStats').then(d => {
+        const countries = d.countries || [];
+        if (!countries.length) { termPrint('  No geo data yet.'); return; }
+        termPrint('  TOP ATTACK COUNTRIES:');
+        countries.slice(0, 10).forEach(c => termPrint(`  ${c.country.padEnd(4)} — ${c.count} requests`));
+      }).catch(e => termPrint('  ❌ ' + e.message));
+      return;
+
+    case 'audit':
+      termPrint('> Fetching worker audit log...');
+      getSessionToken().then(tok => fetch(WORKER + '/audit', {
+        headers: { 'Content-Type': 'application/json', 'X-JWT-Token': tok }
+      })).then(r => r.json()).then(d => {
+        const entries = d.entries || [];
+        if (!entries.length) { termPrint('  No audit entries (requires X-SOC-Key).'); return; }
+        termPrint(`  Last ${Math.min(entries.length, 10)} audit entries:`);
+        entries.slice(0, 10).forEach(e =>
+          termPrint(`  [${e.statusCode}] ${e.method} ${e.path} — ${e.ip} (${e.country})`));
+      }).catch(e => termPrint('  No audit access: ' + e.message));
+      return;
+
+    case 'intel-panel':
+      window.open('/admin/intel.html', '_blank');
+      termPrint('  ✅ Opening Intel Panel...');
+      return;
+
+    case 'autoblock': {
+      // Runtime toggle for auto-block
+      if (args[0] === 'on') {
+        SOC_CONFIG.autoBlockEnabled = true;
+        termPrint('  ✅ Auto-block ENABLED — critical threats will be blocked automatically.');
+      } else if (args[0] === 'off') {
+        SOC_CONFIG.autoBlockEnabled = false;
+        termPrint('  ⚠ Auto-block DISABLED — threats will alert only, no automatic blocking.');
+      } else if (args[0] === 'status') {
+        termPrint(`  Auto-block: ${SOC_CONFIG.autoBlockEnabled ? 'ENABLED' : 'DISABLED'}`);
+        termPrint(`  Threshold:  risk >= ${SOC_CONFIG.autoBlockThreshold}`);
+        termPrint(`  Types:      ${SOC_CONFIG.autoBlockTypes.join(', ')}`);
+      } else {
+        termPrint('  Usage: autoblock <on|off|status>');
+      }
+      return;
+    }
+
+    case 'help':
+      termPrint('');
+      termPrint('  ── SOC COMMANDS ─────────────────────────────');
+      termPrint('  apt-alerts          List APT alerts from DB');
+      termPrint('  intel list          Show threat intel entries');
+      termPrint('  intel add <ip>      Add IP to threat intel DB');
+      termPrint('  intel remove <ip>   Remove IP from threat intel');
+      termPrint('  geoblock list       Show geo-block policy');
+      termPrint('  geo                 Show attack geography stats');
+      termPrint('  audit               Show worker audit log');
+      termPrint('  purge <days>        Purge logs older than N days');
+      termPrint('  export csv <n>      Export N logs as CSV download');
+      termPrint('  report              Send daily intel email report');
+      termPrint('  scan <url>          Quick passive scan of a URL');
+      termPrint('  intel-panel         Open threat intel panel tab');
+      termPrint('  autoblock on|off    Toggle automatic IP blocking');
+      termPrint('  autoblock status    Show auto-block config');
+      return;
+
+    default:
+      termPrint(`  Unknown command: ${cmd}. Type 'help' for commands.`);
+  }
+}
+
+function termPrint(line) {
+  const term = el('terminal-output');
+  if (!term) return;
+  const div = document.createElement('div');
+  div.className = 't-line';
+  div.innerHTML = `<span class="t-msg" style="color:var(--text-secondary,#8ab0c8)">${escapeHtml(line)}</span>`;
+  term.appendChild(div);
+  term.scrollTop = term.scrollHeight;
+}
+
+async function quickPassiveScan(url) {
+  termPrint(`> Passive scan: ${url}`);
+  try {
+    const resp = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+    termPrint('  Status: ' + resp.status);
+    const hdrs = ['Server','X-Powered-By','X-Frame-Options','X-Content-Type-Options','Strict-Transport-Security'];
+    hdrs.forEach(h => {
+      const v = resp.headers.get(h);
+      termPrint('  ' + h + ': ' + (v || '(not set)'));
+    });
+    if (!resp.headers.get('X-Frame-Options')) termPrint('  ⚠ X-Frame-Options missing — possible clickjacking');
+    if (!resp.headers.get('Strict-Transport-Security')) termPrint('  ⚠ HSTS missing');
+    termPrint('  ✅ Passive scan complete');
+  } catch(e) {
+    termPrint('  ❌ Scan failed (CORS or unreachable): ' + e.message);
+  }
+}
+
+function runTerminalCommand() {
+  const input = el('terminal-input');
+  if (!input) return;
+  const cmd = input.value.trim();
+  if (!cmd) return;
+  termLog('info', '$ ' + cmd);
+  input.value = '';
+  handleTerminalCommand(cmd);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TWO-FACTOR TOTP LOGIN
+// ─────────────────────────────────────────────────────────────────────────────
+const _originalGrantSession = grantSession;
+
+grantSession = async function() {
+  const totpEnabled = SOC_CONFIG.totpEnabled ||
+                      localStorage.getItem('soc_totp_enabled') === '1';
+  if (totpEnabled) {
+    await startTOTPFlow();
+    return;
+  }
+  _originalGrantSession();
+};
+
+async function startTOTPFlow() {
+  termLog('info', '2FA required — sending code to alert email...');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'totp-overlay';
+  overlay.style.cssText = [
+    'position:fixed;inset:0;background:rgba(3,10,15,.97);',
+    'display:flex;align-items:center;justify-content:center;z-index:9999;',
+    'font-family:"Courier New",monospace;',
+  ].join('');
+
+  overlay.innerHTML = `
+    <div style="background:#070f18;border:1px solid var(--border,#1a3a5c);border-radius:4px;padding:40px;max-width:380px;width:90%;text-align:center">
+      <div style="color:#00d4ff;font-size:12px;letter-spacing:4px;margin-bottom:8px">TWO-FACTOR AUTH</div>
+      <div style="color:#5a7a9a;font-size:11px;margin-bottom:24px">A 6-digit code has been sent to your alert email.</div>
+      <input type="text" id="totp-input" maxlength="6" placeholder="000000"
+        style="width:140px;background:#0a1520;border:1px solid var(--border,#1a3a5c);color:#00d4ff;
+               padding:12px;font-size:24px;letter-spacing:8px;text-align:center;font-family:monospace;
+               border-radius:2px;outline:none;display:block;margin:0 auto 16px;" />
+      <div id="totp-error" style="color:#ff2244;font-size:11px;min-height:16px;margin-bottom:16px;display:none"></div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="totp-verify-btn" class="btn btn-ghost" style="min-width:100px">VERIFY</button>
+        <button id="totp-cancel-btn" class="btn btn-red" style="min-width:80px">Cancel</button>
+      </div>
+      <div id="totp-timer" style="color:#5a7a9a;font-size:10px;margin-top:16px">Code expires in <span id="totp-countdown">120</span>s</div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('totp-input')?.focus(), 100);
+
+  try {
+    await callAppsScript('generateTOTP');
+    termLog('info', 'TOTP code sent to alert email');
+  } catch(e) {
+    termLog('warn', 'TOTP send failed: ' + e.message);
+  }
+
+  let seconds = 120;
+  const countdown = setInterval(() => {
+    seconds--;
+    const el_ = document.getElementById('totp-countdown');
+    if (el_) el_.textContent = seconds;
+    if (seconds <= 0) {
+      clearInterval(countdown);
+      overlay.remove();
+      showToast('TOTP code expired. Please log in again.', 'error');
+      logout();
+    }
+  }, 1000);
+
+  document.getElementById('totp-verify-btn').addEventListener('click', async () => {
+    const code = (document.getElementById('totp-input').value || '').trim();
+    if (!code || code.length < 6) {
+      const err = document.getElementById('totp-error');
+      err.textContent = 'Enter the 6-digit code from your email.';
+      err.style.display = 'block';
+      return;
+    }
+    try {
+      const result = await callAppsScript('verifyTOTP', { code });
+      if (result && result.ok) {
+        clearInterval(countdown);
+        overlay.remove();
+        termLog('info', '2FA verified — session granted');
+        _originalGrantSession();
+      } else {
+        const err = document.getElementById('totp-error');
+        err.textContent = 'Invalid code. ' + (result.reason || 'Try again.');
+        err.style.display = 'block';
+      }
+    } catch(e) {
+      const err = document.getElementById('totp-error');
+      err.textContent = 'Verification error: ' + e.message;
+      err.style.display = 'block';
+    }
+  });
+
+  document.getElementById('totp-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('totp-verify-btn').click();
+  });
+
+  document.getElementById('totp-cancel-btn').addEventListener('click', () => {
+    clearInterval(countdown);
+    overlay.remove();
+    logout();
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ALERT SOUNDS + PUSH NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+function playAlertSound(level) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx  = new AudioCtx();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (level === 'critical') {
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+      setTimeout(() => {
+        try {
+          const ctx2 = new AudioCtx();
+          const osc2 = ctx2.createOscillator();
+          const g2   = ctx2.createGain();
+          osc2.connect(g2); g2.connect(ctx2.destination);
+          osc2.frequency.value = 660;
+          g2.gain.setValueAtTime(0.3, ctx2.currentTime);
+          g2.gain.exponentialRampToValueAtTime(0.01, ctx2.currentTime + 0.4);
+          osc2.start(); osc2.stop(ctx2.currentTime + 0.5);
+        } catch(_) {}
+      }, 600);
+    } else {
+      osc.frequency.value = 440;
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    }
+  } catch(_) {}
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().then(perm => {
+      termLog('info', 'Notification permission: ' + perm);
+    });
+  }
+}
+
+// [F5] _prevLogCount declared exactly once
+let _prevLogCount = 0;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// checkForNewAlerts — [F1] NOW AUTO-BLOCKS critical/APT/Honeypot threats
+// ─────────────────────────────────────────────────────────────────────────────
+function checkForNewAlerts(newLogs, prevCount) {
+  if (!newLogs || !newLogs.length) return;
+
+  const critical = newLogs.filter(l => l.risk >= SOC_CONFIG.autoBlockThreshold);
+  const high     = newLogs.filter(l => l.risk >= 70 && l.risk < SOC_CONFIG.autoBlockThreshold);
+  const aptLogs  = newLogs.filter(l => SOC_CONFIG.autoBlockTypes.includes(l.attackType));
+
+  if (critical.length > 0 || aptLogs.length > 0) {
+    const target = aptLogs[0] || critical[0];
+
+    playAlertSound('critical');
+    showToast(`🔴 CRITICAL: ${target.attackType} from ${target.ip}`, 'error', 8000);
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification('CYBAASH SOC — CRITICAL ALERT', {
+          body: `${target.attackType} from ${target.ip} | Risk: ${target.risk}/100`,
+          icon: '/icons/icon-192x192.png',
+          requireInteraction: true,
+          tag: 'soc-critical-' + target.ip,
+        });
+      } catch(_) {}
+    }
+
+    termLog('error', `CRITICAL: ${target.attackType} from ${target.ip} (risk ${target.risk})`);
+
+    // [F1][F2] AUTO-BLOCK — skip if already in blockedIPs list or toggle is off
+    if (SOC_CONFIG.autoBlockEnabled && target.ip) {
+      const alreadyBlocked = STATE.blockedIPs.some(b => b.ip === target.ip);
+      const meetsThreshold = target.risk >= SOC_CONFIG.autoBlockThreshold;
+      const isAutoBlockType = SOC_CONFIG.autoBlockTypes.includes(target.attackType);
+
+      if (!alreadyBlocked && (meetsThreshold || isAutoBlockType)) {
+        termLog('warn', `AUTO-BLOCKING ${target.ip} — ${target.attackType} risk ${target.risk}`);
+        // Fire and forget; refreshAll inside blockIPAction will update the UI
+        blockIPAction(
+          target.ip,
+          `Auto-block: ${target.attackType} — Risk ${target.risk}/100`
+        ).catch(err => termLog('error', `Auto-block failed for ${target.ip}: ${err.message}`));
+      }
+    }
+
+  } else if (high.length > 0 && newLogs.length > prevCount) {
+    playAlertSound('high');
+    showToast(`⚠ HIGH: ${high[0].attackType} from ${high[0].ip}`, 'warning', 5000);
+    termLog('warn', `HIGH: ${high[0].attackType} from ${high[0].ip} (risk ${high[0].risk})`);
+  }
+}
