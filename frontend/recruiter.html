@@ -1275,6 +1275,9 @@ function tagHas(c, ...kws){ const tags=(c.tags||[]).map(t=>t.toLowerCase()); ret
 
 // Assign each cred to its first matching subsection
 function getSubsection(c){
+  // ── Manual override wins — set from admin panel subsection picker ──────────
+  if(c.subsection) return c.subsection;
+
   // ── Credly badges
   if(c.type==='credly') return 'credly';
 

@@ -1495,6 +1495,9 @@ const CRED_SUBS = [
 
 // Same classification logic as recruiter.html getSubsection()
 function getSubsection(c) {
+  // ── Manual override wins — set from admin panel subsection picker ──────────
+  if (c.subsection) return c.subsection
+
   if (c.type === 'credly' || c.type === 'badge') return 'credly'
   if (c.type === 'certificate' || c.type === 'exam') {
     const iss = (c.issuer || '').toLowerCase()
@@ -1704,9 +1707,15 @@ function CredentialsSection({ data, onSave }) {
       // If the stored logo is a base64 data URL, pre-populate logoUpload for preview
       const logoUpload = existing?.logo?.startsWith('data:image') ? existing.logo : null
       setForm({ ...existing, logoUpload })
+      // Sync credTab to the credential's actual type so the right form sections show
+      const t = existing?.type || ''
+      if (t === 'credly' || t === 'badge') setCredTab('credly')
+      else if (t === 'certificate' || t === 'exam') setCredTab('professional')
+      else setCredTab('linkedin')
     } else {
       const tabCfg = CRED_TABS.find(t => t.id === credTab)
-      setForm(tabCfg.blank())
+      // Pre-populate subsection from the currently active subsection view
+      setForm({ ...tabCfg.blank(), subsection: subSec !== 'credly' ? subSec : '' })
     }
     setModal(id || 'new')
   }
@@ -1948,6 +1957,47 @@ function CredentialsSection({ data, onSave }) {
             <button className="modal-close" onClick={() => setModal(null)} aria-label="Close">×</button>
           </div>
           <div className="modal-body">
+
+            {/* ─ Credential Type (controls which template/fields show) ─ */}
+            <div className="form-group" style={{marginBottom: 14}}>
+              <label className="form-label">Credential Type</label>
+              <div style={{display:'flex', gap:6}}>
+                {CRED_TABS.map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      setCredTab(t.id)
+                      setForm(p => ({ ...t.blank(), ...p, type: t.blank().type }))
+                    }}
+                    style={{
+                      flex:1, padding:'6px 4px', border:'1px solid',
+                      fontFamily:"'Share Tech Mono',monospace", fontSize:9, letterSpacing:1,
+                      cursor:'pointer', transition:'all .15s',
+                      borderColor: credTab === t.id ? t.color : 'var(--bd)',
+                      color: credTab === t.id ? t.color : 'var(--tx3)',
+                      background: credTab === t.id ? `${t.color}10` : 'none',
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ─ Subsection Override ─ */}
+            <div className="form-group" style={{marginBottom:18}}>
+              <label className="form-label">⊞ Subsection</label>
+              <select className="form-select" value={form.subsection || ''} onChange={u('subsection')}>
+                <option value="">— Auto-classify by title / tags —</option>
+                {CRED_SUBS.map(s => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+              <div className="form-hint">
+                Pin this credential to a specific subsection. Leave blank to auto-detect from keywords.
+              </div>
+            </div>
 
             {/* ─ Common fields ─ */}
             <div className="form-row form-row-2">
